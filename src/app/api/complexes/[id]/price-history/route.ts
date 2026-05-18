@@ -53,5 +53,10 @@ export async function GET(
       price: Math.round(ps.reduce((s, p) => s + p, 0) / ps.length),
     }))
 
-  return NextResponse.json({ prices })
+  return NextResponse.json({ prices }, {
+    headers: {
+      // Vercel Edge 1시간 캐시 — 첫 호출 이후 동일 단지는 즉시 응답
+      'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+    },
+  })
 }

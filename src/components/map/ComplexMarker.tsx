@@ -15,8 +15,15 @@ function formatPrice(price: number): string {
   return `${price.toLocaleString()}만`
 }
 
-// 미니 차트 컴포넌트 — 월별 평균 거래가 추이 선 그래프
+// 미니 차트 컴포넌트 — 월별 평균 거래가 추이 선 그래프 (draw-in 애니메이션)
 function MiniPriceChart({ data }: { data: PricePoint[] }) {
+  const [revealed, setRevealed] = useState(false)
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setRevealed(true))
+    return () => cancelAnimationFrame(id)
+  }, [])
+
   if (data.length < 2) return null
 
   const W = 164, H = 48
@@ -34,6 +41,12 @@ function MiniPriceChart({ data }: { data: PricePoint[] }) {
     y: pad.t + (1 - (d.price - minP) / range) * plotH,
   }))
 
+  let totalLen = 0
+  for (let i = 1; i < pts.length; i++) {
+    totalLen += Math.hypot(pts[i]!.x - pts[i - 1]!.x, pts[i]!.y - pts[i - 1]!.y)
+  }
+  totalLen = Math.ceil(totalLen)
+
   const areaPoints = [
     `${pts[0]!.x},${pad.t + plotH}`,
     ...pts.map(p => `${p.x},${p.y}`),
@@ -44,9 +57,13 @@ function MiniPriceChart({ data }: { data: PricePoint[] }) {
 
   return (
     <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }}>
-      {/* 영역 채우기 */}
-      <polygon points={areaPoints} fill="#FFF7ED" />
-      {/* 추이선 */}
+      {/* 영역 채우기 — 페이드인 */}
+      <polygon
+        points={areaPoints}
+        fill="#FFF7ED"
+        style={{ transition: 'opacity 0.45s ease-out', opacity: revealed ? 1 : 0 }}
+      />
+      {/* 추이선 — 왼쪽에서 오른쪽으로 draw-in */}
       <polyline
         points={linePoints}
         fill="none"
@@ -54,16 +71,37 @@ function MiniPriceChart({ data }: { data: PricePoint[] }) {
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
+        strokeDasharray={totalLen}
+        strokeDashoffset={revealed ? 0 : totalLen}
+        style={{ transition: 'stroke-dashoffset 0.55s cubic-bezier(0.4, 0, 0.2, 1)' }}
       />
-      {/* 데이터 점 */}
+      {/* 데이터 점 — 순차 페이드인 */}
       {pts.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r="2" fill="#F97316" />
+        <circle
+          key={i}
+          cx={p.x}
+          cy={p.y}
+          r="2"
+          fill="#F97316"
+          style={{
+            transition: `opacity 0.25s ease-out ${0.35 + i * 0.07}s`,
+            opacity: revealed ? 1 : 0,
+          }}
+        />
       ))}
       {/* 첫/마지막 월 라벨 */}
-      <text x={pts[0]!.x} y={H - 2} textAnchor="start" fontSize="8" fill="#9CA3AF" fontFamily="system-ui,sans-serif">
+      <text
+        x={pts[0]!.x} y={H - 2}
+        textAnchor="start" fontSize="8" fill="#9CA3AF" fontFamily="system-ui,sans-serif"
+        style={{ transition: 'opacity 0.3s ease-out 0.5s', opacity: revealed ? 1 : 0 }}
+      >
         {data[0]!.month.slice(5, 7)}월
       </text>
-      <text x={pts[pts.length - 1]!.x} y={H - 2} textAnchor="end" fontSize="8" fill="#9CA3AF" fontFamily="system-ui,sans-serif">
+      <text
+        x={pts[pts.length - 1]!.x} y={H - 2}
+        textAnchor="end" fontSize="8" fill="#9CA3AF" fontFamily="system-ui,sans-serif"
+        style={{ transition: 'opacity 0.3s ease-out 0.5s', opacity: revealed ? 1 : 0 }}
+      >
         {data[data.length - 1]!.month.slice(5, 7)}월
       </text>
     </svg>
@@ -253,27 +291,12 @@ export const ComplexMarker = memo(function ComplexMarker({
         {/* 핀 */}
         <div
           onClick={() => onSelect(id)}
-          style={{ cursor: 'pointer', userSelect: 'none', position: 'relative', display: 'inline-block' }}
+          style={{ cursor: 'pointer', userSelect: 'none' }}
           role="button"
           aria-label={`${name} 단지 선택`}
           tabIndex={0}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelect(id) }}
         >
-          {/* 왕관 뱃지 — 핀 우상단 absolute (세로 높이 차지 안 함) */}
-          {badge === 'hot' && (
-            <div style={{ position: 'absolute', top: 6, right: -8, zIndex: 2, pointerEvents: 'none' }}>
-              <svg width="18" height="12" viewBox="0 0 18 12">
-                <path
-                  d="M1,12 L1,7 L2.5,9 L5.5,3 L7.5,7.5 L9,1 L10.5,7.5 L12.5,3 L15.5,9 L17,7 L17,12 Z"
-                  fill="#FCD34D"
-                  stroke="#D97706"
-                  strokeWidth="0.9"
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-          )}
           <HouseMarker
             badge={badge}
             recentPrice={recentPrice ?? (avgSalePerPyeong !== null ? Math.round(avgSalePerPyeong * 25) : null)}
