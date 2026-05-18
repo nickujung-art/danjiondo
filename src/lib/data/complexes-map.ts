@@ -20,27 +20,23 @@ export interface ComplexMapItem {
   si:              string | null
   gu:              string | null
   dong:            string | null
-  recent_price:    number | null  // 만원 단위 — 최근 3개월 이내 거래 1건
+  recent_price:    number | null  // 만원 단위 — 최근 6개월 이내 거래 1건
   recent_date:     string | null  // 'YYYY-MM-DD'
   recent_area_m2:  number | null  // m² 단위
 }
 
-/**
- * complexes.hagwon_score (0~1 백분위) → 등급 문자열 변환.
- * 임계값은 src/lib/data/facility-edu.ts의 HagwonStats.grade 계산과 동일.
- * facility_edu 테이블 JOIN 없이 complexes 컬럼만 사용.
- */
-function scoreToGradeInline(score: number | null): string | null {
-  if (score === null) return null
-  if (score >= 0.933) return 'A+'
-  if (score >= 0.867) return 'A'
-  if (score >= 0.800) return 'A-'
-  if (score >= 0.700) return 'B+'
-  if (score >= 0.600) return 'B'
-  if (score >= 0.500) return 'B-'
-  if (score >= 0.400) return 'C+'
-  if (score >= 0.300) return 'C'
-  if (score >= 0.200) return 'C-'
+// hagwon_score 0-1 백분위 → 등급 문자열 변환 (facility-edu.ts와 동일 임계값)
+function percentileToGrade(percentile: number | null): string | null {
+  if (percentile === null) return null
+  if (percentile >= 0.933) return 'A+'
+  if (percentile >= 0.867) return 'A'
+  if (percentile >= 0.800) return 'A-'
+  if (percentile >= 0.700) return 'B+'
+  if (percentile >= 0.600) return 'B'
+  if (percentile >= 0.500) return 'B-'
+  if (percentile >= 0.400) return 'C+'
+  if (percentile >= 0.300) return 'C'
+  if (percentile >= 0.200) return 'C-'
   return 'D'
 }
 
@@ -87,11 +83,24 @@ export async function getComplexesForMap(
 
   if (rows.length === 0) return []
 
-  // 스텝 2: 최근 3개월 거래 조회
+  // hagwon_score (raw 정수) → 백분위(0-1) → 등급 변환
+  // 로드된 단지들의 분포에서 경험적 백분위 계산 (전수 DB 쿼리 없이)
+  const hagwonScores = rows
+    .map(r => r.hagwon_score)
+    .filter((s): s is number => s !== null)
+    .sort((a, b) => a - b)
+
+  function hagwonGrade(score: number | null): string | null {
+    if (score === null || hagwonScores.length === 0) return null
+    const below = hagwonScores.filter(s => s < score).length
+    return percentileToGrade(below / hagwonScores.length)
+  }
+
+  // 스텝 2: 최근 6개월 거래 조회 (3개월보다 더 많은 단지에 가격 표시)
   // CRITICAL: cancel_date IS NULL AND superseded_by IS NULL 필수 (CLAUDE.md)
-  const threeMonthsAgo = new Date()
-  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
-  const threeMonthsAgoStr = threeMonthsAgo.toISOString().slice(0, 10)
+  const sixMonthsAgo = new Date()
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+  const sixMonthsAgoStr = sixMonthsAgo.toISOString().slice(0, 10)
 
   const ids = rows.map((r) => r.id)
 
@@ -102,7 +111,7 @@ export async function getComplexesForMap(
     .eq('deal_type', 'sale')
     .is('cancel_date', null)
     .is('superseded_by', null)
-    .gte('deal_date', threeMonthsAgoStr)
+    .gte('deal_date', sixMonthsAgoStr)
     .order('deal_date', { ascending: false })
 
   // 스텝 3: complex_id별 첫 번째(최신) 거래만 Map으로 구성
@@ -137,7 +146,7 @@ export async function getComplexesForMap(
       status:              r.status ?? 'active',
       built_year:          r.built_year ?? null,
       household_count:     r.household_count ?? null,
-      hagwon_grade:        scoreToGradeInline(r.hagwon_score ?? null),
+      hagwon_grade:        hagwonGrade(r.hagwon_score ?? null),
       si:                  r.si ?? null,
       gu:                  r.gu ?? null,
       dong:                r.dong ?? null,

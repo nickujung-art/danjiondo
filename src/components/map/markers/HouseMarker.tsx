@@ -58,14 +58,13 @@ export const HouseMarker = memo(function HouseMarker({
         />
       </svg>
 
-      {/* 왕관 — hot 단지만, 바디 바로 위 성채 스타일 (바디와 동색으로 이어짐) */}
+      {/* 왕관 — hot 단지만, 바디 바로 위에 이어지는 왕관 아이콘 */}
       {isHot && (
-        <svg width="44" height="8" viewBox="0 0 44 8" style={{ display: 'block' }}>
-          <rect x="4"  y="0" width="8" height="6" fill={bodyColor} />
-          <rect x="18" y="0" width="8" height="6" fill={bodyColor} />
-          <rect x="32" y="0" width="8" height="6" fill={bodyColor} />
-          {/* 이음 기단부 — 이빨과 바디를 자연스럽게 연결 */}
-          <rect x="0"  y="3" width="44" height="5" fill={bodyColor} />
+        <svg width="44" height="12" viewBox="0 0 44 12" style={{ display: 'block' }}>
+          <polygon
+            points="0,12 0,8 5,8 11,2 17,8 22,0 27,8 33,2 39,8 44,8 44,12"
+            fill={bodyColor}
+          />
         </svg>
       )}
 
@@ -112,19 +111,7 @@ export const HouseMarker = memo(function HouseMarker({
               </span>
             )}
           </>
-        ) : (
-          <span
-            style={{
-              color: 'rgba(255,255,255,0.7)',
-              fontSize: 8,
-              fontWeight: 400,
-              lineHeight: 1,
-              fontFamily: 'system-ui, -apple-system, sans-serif',
-            }}
-          >
-            정보없음
-          </span>
-        )}
+        ) : null}
       </div>
 
       {/* 포인터 삼각형 */}
