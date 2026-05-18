@@ -53,6 +53,44 @@ function createSupabaseClient() {
 
 type SupabaseClientType = ReturnType<typeof createSupabaseClient>
 
+// ── Step 0: complex_aliases exact-match lookup ──────────────────
+// raw_complex_name + sgg_code로 수동 매핑 테이블에서 직접 조회
+// 이 단계에서 매칭되면 matchByAdminCode 호출 없이 즉시 자동 연결 가능
+async function matchByAliasLookup(
+  params: { sggCode: string; rawName: string },
+  supabase: SupabaseClientType,
+): Promise<{ complexId: string; confidence: number } | null> {
+  // alias_name으로 후보 조회
+  const { data: aliasRows, error } = await supabase
+    .from('complex_aliases')
+    .select('complex_id, confidence')
+    .eq('alias_name', params.rawName)
+    .order('confidence', { ascending: false })
+
+  if (error || !aliasRows || aliasRows.length === 0) return null
+
+  // sgg_code 필터: 후보 complex_id 중 sgg_code가 일치하는 단지 찾기
+  const complexIds = (aliasRows as Array<{ complex_id: string; confidence: number }>).map(
+    r => r.complex_id,
+  )
+  const { data: complexRow } = await supabase
+    .from('complexes')
+    .select('id')
+    .in('id', complexIds)
+    .eq('sgg_code', params.sggCode)
+    .neq('status', 'demolished')
+    .limit(1)
+    .maybeSingle()
+
+  if (!complexRow) return null
+
+  const matched = (aliasRows as Array<{ complex_id: string; confidence: number }>).find(
+    r => r.complex_id === (complexRow as { id: string }).id,
+  )
+  if (!matched) return null
+  return { complexId: matched.complex_id, confidence: matched.confidence ?? 0.95 }
+}
+
 // ── 중복 방지 가드 (Pitfall 3) ──────────────────────────────────
 // complex_match_queue에 동일 transaction_id가 이미 존재하면 true 반환
 async function isAlreadyQueued(
@@ -180,13 +218,25 @@ async function main(): Promise<void> {
 
     const linkedPairs: Array<{ id: string; complexId: string }> = []
 
-    // 3. 각 행에 대해 matchByAdminCode 호출
+    // 3. 각 행에 대해 Step 0 (alias) → matchByAdminCode 순으로 매칭
     for (const tx of rows as Array<{ id: string; sgg_code: string; raw_complex_name: string }>) {
       const nameNormalized = nameNormalize(tx.raw_complex_name)
 
+      // Step 0: complex_aliases exact-match (수동 매핑 우선 조회)
+      const aliasResult = await matchByAliasLookup(
+        { sggCode: tx.sgg_code, rawName: tx.raw_complex_name },
+        supabase,
+      )
+      if (aliasResult && aliasResult.confidence >= AUTO_THRESHOLD) {
+        linkedPairs.push({ id: tx.id, complexId: aliasResult.complexId })
+        continue
+      }
+
       // CLAUDE.md 필수: sgg_code + pg_trgm 복합 매칭 — 이름 단독 매칭 절대 금지
+      // confidenceCap: 0.9 — 개선된 RPC(word_sim + LIKE unique fallback)의 0.90 반환값을
+      //   자동 연결 임계값(AUTO_THRESHOLD=0.9)에 도달하도록 허용
       const matchResult = await matchByAdminCode(
-        { sggCode: tx.sgg_code, nameNormalized },
+        { sggCode: tx.sgg_code, nameNormalized, confidenceCap: 0.9 },
         supabase,
       )
 

@@ -161,7 +161,7 @@ export async function matchByCoordinate(
 // ── Axis 3: sgg_code + trigram ≥ 0.5 (fallback) ───────────
 
 export async function matchByAdminCode(
-  params: { sggCode: string; nameNormalized: string },
+  params: { sggCode: string; nameNormalized: string; confidenceCap?: number },
   supabase: SupabaseClient,
 ): Promise<MatchResult | null> {
   const { data, error } = await supabase.rpc('match_complex_by_admin', {
@@ -173,8 +173,10 @@ export async function matchByAdminCode(
   if (!data || (data as unknown[]).length === 0) return null
 
   const row = (data as { id: string; trgm_sim: number }[])[0]!
-  // axis 3 confidence는 ADMIN_CONFIDENCE_CAP으로 제한
-  const confidence = Math.min(Number(row.trgm_sim), ADMIN_CONFIDENCE_CAP)
+  // axis 3 confidence는 cap으로 제한 (기본값: ADMIN_CONFIDENCE_CAP=0.85)
+  // link-transactions 재연결 시 confidenceCap: 0.9 사용해 자동 연결 허용
+  const cap = params.confidenceCap ?? ADMIN_CONFIDENCE_CAP
+  const confidence = Math.min(Number(row.trgm_sim), cap)
   return { complexId: row.id, confidence, axis: 'admin_code' }
 }
 

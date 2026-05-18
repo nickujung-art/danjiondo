@@ -26,11 +26,14 @@ export function nameNormalize(raw: string): string {
     return `${SINO_UNIT_MAP.get(num) ?? num}${suffix}`
   })
 
+  // 林 한자 → 림 (예: 자은프라林 → 자은프라림)
+  s = s.replace(/林/g, '림')
+
   // '아파트' 접미사 제거
   s = s.replace(/아파트$/, '')
 
-  // 공백·특수문자 제거
-  s = s.replace(/[\s\-\(\)\[\],\.·]/g, '')
+  // 공백·특수문자 제거 (콜론 포함 — 예: '다:숲' → '다숲')
+  s = s.replace(/[\s\-\(\)\[\],\.·:]/g, '')
 
   // lowercase (영문 브랜드명 통일)
   s = s.toLowerCase()
