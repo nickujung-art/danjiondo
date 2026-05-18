@@ -18,18 +18,18 @@ function formatPriceShort(price: number): string {
   return `${Math.round(price / 100) * 100}만`
 }
 
-function getAccentColor(badge: BadgeType): string {
-  if (badge === 'pre_sale') return '#EF4444'
-  if (badge === 'new_build') return '#14B8A6'
-  if (badge === 'hot')       return '#F97316'
-  return '#94A3B8'
+function getAccentColor(badge: BadgeType, hasData: boolean): string {
+  if (!hasData)              return '#94A3B8'  // 거래 데이터 없음 → 회색
+  if (badge === 'pre_sale')  return '#EF4444'  // 분양 → 빨강
+  if (badge === 'new_build') return '#14B8A6'  // 신축 → 초록(teal)
+  return '#F97316'                             // 일반·거래상위 → 오렌지
 }
 
 export const HouseMarker = memo(function HouseMarker({
   badge, recentPrice, pyeong, name,
 }: HouseMarkerProps) {
-  const accent     = getAccentColor(badge)
-  const showCrown  = badge === 'hot' || badge === 'new_build'
+  const accent    = getAccentColor(badge, recentPrice !== null)
+  const showCrown = badge === 'hot' || badge === 'new_build'
 
   return (
     <div
@@ -42,88 +42,110 @@ export const HouseMarker = memo(function HouseMarker({
       }}
       aria-label={name}
     >
-      {/* 레이블 칩 */}
+      {/*
+        왕관 섹션(있을 때) + 가격 섹션을 같은 border로 감싸서 이어지는 느낌
+        overflow:hidden으로 모서리 자연스럽게 클립
+      */}
       <div
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 5,
-          background: 'white',
           border: `1.5px solid ${accent}`,
           borderRadius: 4,
-          paddingTop: 5,
-          paddingBottom: 5,
-          paddingLeft: 4,
-          paddingRight: 8,
+          overflow: 'hidden',
         }}
       >
-        {/* 왼쪽 색상 강조 바 */}
-        <div
-          style={{
-            width: 3,
-            alignSelf: 'stretch',
-            background: accent,
-            borderRadius: 1,
-            flexShrink: 0,
-          }}
-        />
-
-        {/* 왕관 아이콘 (hot·new_build) */}
+        {/* 왕관 섹션 — 배지 색상 배경, 바로 위에서 연결 */}
         {showCrown && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src="/img/crown.png"
-            alt=""
-            width={11}
-            height={11}
-            style={{ flexShrink: 0, opacity: 0.65 }}
-          />
+          <div
+            style={{
+              background: accent,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              paddingTop: 3,
+              paddingBottom: 3,
+              borderBottom: '1px solid rgba(255,255,255,0.25)',
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/img/crown.png"
+              alt=""
+              width={11}
+              height={11}
+              style={{ filter: 'brightness(0) invert(1)', opacity: 0.85 }}
+            />
+          </div>
         )}
 
-        {/* 텍스트 */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          {recentPrice !== null ? (
-            <>
-              <span
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: '#111827',
-                  lineHeight: 1,
-                  letterSpacing: '-0.4px',
-                  fontFamily: 'system-ui, -apple-system, sans-serif',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {formatPriceShort(recentPrice)}
-              </span>
-              {pyeong != null && (
+        {/* 가격 섹션 — 흰 배경 */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            background: 'white',
+            paddingTop: 5,
+            paddingBottom: 5,
+            paddingLeft: 4,
+            paddingRight: 8,
+          }}
+        >
+          {/* 왼쪽 색상 강조 바 */}
+          <div
+            style={{
+              width: 3,
+              alignSelf: 'stretch',
+              background: accent,
+              borderRadius: 1,
+              flexShrink: 0,
+            }}
+          />
+
+          {/* 텍스트 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+            {recentPrice !== null ? (
+              <>
                 <span
                   style={{
-                    fontSize: 9,
-                    fontWeight: 400,
-                    color: '#9CA3AF',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: '#111827',
                     lineHeight: 1,
+                    letterSpacing: '-0.4px',
                     fontFamily: 'system-ui, -apple-system, sans-serif',
+                    whiteSpace: 'nowrap',
                   }}
                 >
-                  {pyeong}평
+                  {formatPriceShort(recentPrice)}
                 </span>
-              )}
-            </>
-          ) : (
-            <span
-              style={{
-                fontSize: 10,
-                fontWeight: 400,
-                color: '#CBD5E1',
-                lineHeight: 1,
-                fontFamily: 'system-ui, -apple-system, sans-serif',
-              }}
-            >
-              —
-            </span>
-          )}
+                {pyeong != null && (
+                  <span
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 400,
+                      color: '#9CA3AF',
+                      lineHeight: 1,
+                      fontFamily: 'system-ui, -apple-system, sans-serif',
+                    }}
+                  >
+                    {pyeong}평
+                  </span>
+                )}
+              </>
+            ) : (
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 400,
+                  color: '#CBD5E1',
+                  lineHeight: 1,
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                }}
+              >
+                —
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
