@@ -18,30 +18,11 @@ export interface MapPanelData {
   detail_url:   string
 }
 
-/**
- * complexes.hagwon_score (0~1 백분위) → 등급 문자열 변환.
- * 임계값은 src/lib/data/facility-edu.ts의 HagwonStats.grade 계산과 동일.
- * facility_edu 테이블 JOIN 없이 complexes 컬럼만 사용.
- */
-function scoreToGradeInline(score: number | null): string | null {
-  if (score === null) return null
-  if (score >= 0.933) return 'A+'
-  if (score >= 0.867) return 'A'
-  if (score >= 0.800) return 'A-'
-  if (score >= 0.700) return 'B+'
-  if (score >= 0.600) return 'B'
-  if (score >= 0.500) return 'B-'
-  if (score >= 0.400) return 'C+'
-  if (score >= 0.300) return 'C'
-  if (score >= 0.200) return 'C-'
-  return 'D'
-}
-
 export async function getMapPanelData(
   complexId: string,
   supabase: SupabaseClient,
 ): Promise<MapPanelData | null> {
-  // 단지 기본정보 조회 — hagwon_score는 complexes 테이블 직접 컬럼
+  // 단지 기본정보 조회
   const { data: complex, error: complexError } = await supabase
     .from('complexes')
     .select('id, canonical_name, si, gu, avg_sale_per_pyeong, household_count, built_year, hagwon_score')
@@ -89,7 +70,10 @@ export async function getMapPanelData(
       area_m2:   (t.area_m2 as number | null) ?? null,
       floor:     (t.floor as number | null) ?? null,
     })),
-    hagwon_grade: scoreToGradeInline(r.hagwon_score ?? null),
+    // hagwon_score는 정수(raw 학원수 가중합) — PERCENT_RANK RPC로 전체 분포 대비 등급 계산
+    hagwon_grade: r.hagwon_score !== null
+      ? ((await supabase.rpc('get_hagwon_grade', { p_complex_id: complexId })).data ?? null) as string | null
+      : null,
     detail_url:   `/complexes/${complexId}`,
   }
 }
