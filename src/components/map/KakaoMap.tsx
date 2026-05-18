@@ -201,6 +201,7 @@ export function KakaoMap({
               recentDate={props.recent_date ?? null}
               recentAreaM2={props.recent_area_m2 ?? null}
               builtYear={props.built_year ?? null}
+              avgSalePerPyeong={props.avg_sale_per_pyeong ?? null}
             />
           )
         })}

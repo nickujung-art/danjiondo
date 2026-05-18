@@ -62,7 +62,7 @@ export const HouseMarker = memo(function HouseMarker({
         <path
           d="M0,14 L20,2 L40,14"
           stroke="#9CA3AF"
-          strokeWidth="5"
+          strokeWidth="3"
           strokeLinecap="round"
           strokeLinejoin="round"
         />

@@ -71,25 +71,26 @@ function MiniPriceChart({ data }: { data: PricePoint[] }) {
 }
 
 interface Props {
-  id:             string
-  name:           string
-  lat:            number
-  lng:            number
-  badge:          BadgeType
-  onSelect:       (id: string) => void
-  householdCount: number | null
-  si:             string | null
-  gu:             string | null
-  recentPrice:    number | null
-  recentDate:     string | null
-  recentAreaM2:   number | null
-  builtYear:      number | null
+  id:                  string
+  name:                string
+  lat:                 number
+  lng:                 number
+  badge:               BadgeType
+  onSelect:            (id: string) => void
+  householdCount:      number | null
+  si:                  string | null
+  gu:                  string | null
+  recentPrice:         number | null
+  recentDate:          string | null
+  recentAreaM2:        number | null
+  builtYear:           number | null
+  avgSalePerPyeong:    number | null
 }
 
 export const ComplexMarker = memo(function ComplexMarker({
   id, name, lat, lng,
   badge, onSelect, householdCount,
-  si, gu, recentPrice, recentDate, recentAreaM2, builtYear,
+  si, gu, recentPrice, recentDate, recentAreaM2, builtYear, avgSalePerPyeong,
 }: Props) {
   const [hover, setHover] = useState(false)
   const [chartData, setChartData] = useState<PricePoint[] | null>(null)
@@ -239,7 +240,11 @@ export const ComplexMarker = memo(function ComplexMarker({
           tabIndex={0}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelect(id) }}
         >
-          <HouseMarker badge={badge} recentPrice={recentPrice} name={name} />
+          <HouseMarker
+          badge={badge}
+          recentPrice={recentPrice ?? (avgSalePerPyeong !== null ? Math.round(avgSalePerPyeong * 25) : null)}
+          name={name}
+        />
         </div>
       </div>
     </CustomOverlayMap>
