@@ -4,6 +4,7 @@ import { CustomOverlayMap } from 'react-kakao-maps-sdk'
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { HouseMarker } from './markers/HouseMarker'
 import type { BadgeType } from './markers/badge-logic'
+import { getPriceHistory } from '@/lib/price-history-cache'
 
 interface PricePoint { month: string; price: number }
 
@@ -131,9 +132,10 @@ export const ComplexMarker = memo(function ComplexMarker({
   si, gu, recentPrice, recentDate, recentAreaM2, builtYear, avgSalePerPyeong,
 }: Props) {
   const [hover, setHover] = useState(false)
-  const [chartData, setChartData] = useState<PricePoint[] | null>(null)
+  // 프리페치 캐시에서 즉시 초기화 — hover 전에 데이터 있으면 로딩 없음
+  const [chartData, setChartData] = useState<PricePoint[] | null>(() => getPriceHistory(id))
   const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const hasFetchedRef = useRef(false)
+  const hasFetchedRef = useRef(getPriceHistory(id) !== null)
 
   const handleMouseEnter = useCallback(() => {
     if (leaveTimer.current) { clearTimeout(leaveTimer.current); leaveTimer.current = null }
@@ -146,9 +148,12 @@ export const ComplexMarker = memo(function ComplexMarker({
 
   useEffect(() => () => { if (leaveTimer.current) clearTimeout(leaveTimer.current) }, [])
 
-  // 첫 hover 시 가격 이력 fetch (이후 캐시)
+  // 첫 hover 시 fetch (프리페치 캐시 미스 시에만)
   useEffect(() => {
     if (!hover || hasFetchedRef.current) return
+    // 캐시가 hover 시점에 채워졌을 수도 있으므로 재확인
+    const cached = getPriceHistory(id)
+    if (cached !== null) { setChartData(cached); hasFetchedRef.current = true; return }
     hasFetchedRef.current = true
     let cancelled = false
     fetch(`/api/complexes/${id}/price-history`)
@@ -300,7 +305,7 @@ export const ComplexMarker = memo(function ComplexMarker({
           <HouseMarker
             badge={badge}
             recentPrice={recentPrice ?? (avgSalePerPyeong !== null ? Math.round(avgSalePerPyeong * 25) : null)}
-            pyeong={recentPrice !== null ? pyeong : null}
+            pyeong={pyeong}
             name={name}
           />
         </div>

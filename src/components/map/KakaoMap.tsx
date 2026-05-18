@@ -1,7 +1,8 @@
 'use client'
 
 import { Map as KakaoMapView, useKakaoLoader } from 'react-kakao-maps-sdk'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { prefetchPriceHistory } from '@/lib/price-history-cache'
 import {
   buildClusterIndex,
   type ComplexMapItem,
@@ -101,6 +102,18 @@ export function KakaoMap({
       memberLngs: e.lngs,
     }))
   }, [showOnlyCluster, complexes])
+
+  // clusters 변경 시 보이는 단지들의 가격 이력 백그라운드 프리페치
+  useEffect(() => {
+    if (showOnlyCluster) return
+    const ids = clusters
+      .filter(f => !f.properties.cluster)
+      .map(f => (f.properties as { id: string }).id)
+      .filter((id): id is string => typeof id === 'string')
+    if (ids.length === 0) return
+    const timer = setTimeout(() => prefetchPriceHistory(ids), 400)
+    return () => clearTimeout(timer)
+  }, [clusters, showOnlyCluster])
 
   const computeClusters = useCallback(
     (map: kakao.maps.Map) => {
