@@ -162,8 +162,27 @@ export const ComplexMarker = memo(function ComplexMarker({
               {name}
             </div>
             {sigu && (
-              <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 6 }}>
+              <div style={{ fontSize: 11, color: '#6B7280', marginBottom: badge === 'hot' ? 4 : 6 }}>
                 {sigu}
+              </div>
+            )}
+
+            {/* 왕관 단지 설명 */}
+            {badge === 'hot' && (
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                marginBottom: 6,
+                padding: '3px 7px',
+                background: '#FFF7ED',
+                border: '1px solid #FED7AA',
+                borderRadius: 4,
+                fontSize: 10,
+                color: '#C2410C',
+                fontWeight: 600,
+              }}>
+                최근 30일 거래량 상위 5% 단지
               </div>
             )}
 
@@ -234,17 +253,33 @@ export const ComplexMarker = memo(function ComplexMarker({
         {/* 핀 */}
         <div
           onClick={() => onSelect(id)}
-          style={{ cursor: 'pointer', userSelect: 'none' }}
+          style={{ cursor: 'pointer', userSelect: 'none', position: 'relative', display: 'inline-block' }}
           role="button"
           aria-label={`${name} 단지 선택`}
           tabIndex={0}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelect(id) }}
         >
+          {/* 왕관 뱃지 — 핀 우상단 absolute (세로 높이 차지 안 함) */}
+          {badge === 'hot' && (
+            <div style={{ position: 'absolute', top: 6, right: -8, zIndex: 2, pointerEvents: 'none' }}>
+              <svg width="18" height="12" viewBox="0 0 18 12">
+                <path
+                  d="M1,12 L1,7 L2.5,9 L5.5,3 L7.5,7.5 L9,1 L10.5,7.5 L12.5,3 L15.5,9 L17,7 L17,12 Z"
+                  fill="#FCD34D"
+                  stroke="#D97706"
+                  strokeWidth="0.9"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
+          )}
           <HouseMarker
-          badge={badge}
-          recentPrice={recentPrice ?? (avgSalePerPyeong !== null ? Math.round(avgSalePerPyeong * 25) : null)}
-          name={name}
-        />
+            badge={badge}
+            recentPrice={recentPrice ?? (avgSalePerPyeong !== null ? Math.round(avgSalePerPyeong * 25) : null)}
+            pyeong={recentPrice !== null ? pyeong : null}
+            name={name}
+          />
         </div>
       </div>
     </CustomOverlayMap>
