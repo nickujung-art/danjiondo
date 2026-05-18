@@ -58,7 +58,7 @@ export async function getComplexesForMap(
     .in('sgg_code', sggCodes)
     .not('lat', 'is', null)
     .not('lng', 'is', null)
-    .neq('status', 'demolished')
+    .not('status', 'in', '(demolished,merged,rental)')
 
   if (error) throw new Error(`getComplexesForMap failed: ${error.message}`)
 
