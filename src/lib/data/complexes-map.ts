@@ -96,25 +96,21 @@ export async function getComplexesForMap(
     return percentileToGrade(below / hagwonScores.length)
   }
 
-  // 스텝 2: 최근 12개월 거래 조회 (더 많은 단지에 area_m2 표시)
-  // CRITICAL: cancel_date IS NULL AND superseded_by IS NULL 필수 (CLAUDE.md)
+  // 스텝 2: 최근 12개월 단지별 최신 거래 1건 조회
+  // DISTINCT ON RPC 사용 — PostgREST 기본 1,000행 제한 우회 + 서버에서 필터링
   const twelveMonthsAgo = new Date()
   twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12)
-  const sixMonthsAgoStr = twelveMonthsAgo.toISOString().slice(0, 10)
+  const sinceDateStr = twelveMonthsAgo.toISOString().slice(0, 10)
 
   const ids = rows.map((r) => r.id)
 
   const { data: txData } = await supabase
-    .from('transactions')
-    .select('complex_id, price, deal_date, area_m2')
-    .in('complex_id', ids)
-    .eq('deal_type', 'sale')
-    .is('cancel_date', null)
-    .is('superseded_by', null)
-    .gte('deal_date', sixMonthsAgoStr)
-    .order('deal_date', { ascending: false })
+    .rpc('get_recent_complex_sales', {
+      p_complex_ids: ids,
+      p_since:       sinceDateStr,
+    })
 
-  // 스텝 3: complex_id별 첫 번째(최신) 거래만 Map으로 구성
+  // 스텝 3: RPC가 DISTINCT ON으로 단지별 1건만 반환하므로 그대로 Map화
   const recentTxMap = new Map<string, { price: number; deal_date: string; area_m2: number }>()
   for (const tx of (txData ?? []) as Array<{
     complex_id: string
@@ -122,13 +118,11 @@ export async function getComplexesForMap(
     deal_date: string
     area_m2: number
   }>) {
-    if (!recentTxMap.has(tx.complex_id)) {
-      recentTxMap.set(tx.complex_id, {
-        price:     tx.price,
-        deal_date: tx.deal_date,
-        area_m2:   tx.area_m2,
-      })
-    }
+    recentTxMap.set(tx.complex_id, {
+      price:     tx.price,
+      deal_date: tx.deal_date,
+      area_m2:   tx.area_m2,
+    })
   }
 
   return rows.map((r) => {

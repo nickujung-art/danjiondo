@@ -42,11 +42,9 @@ export const HouseMarker = memo(function HouseMarker({
       aria-label={name}
     >
       {/*
-        지붕 SVG (높이 28px, 항상 동일)
-        V 꼭짓점: (27, 14), 하단 모서리: (0, 28) / (54, 28)
-        왕관은 V 삼각형 내부 하단(바디 바로 위)에 배치 — translate(19, 16)
-        V 경사 at x=19: y=14+(27-19)/27*14=18.1 → 왕관 상단(y=16.0) 내부 ✓
-        비-hot 핀: SVG 상단 14px 투명(지도 배경 그대로), 레이아웃 불변
+        지붕 SVG (높이 28px) — V 꼭짓점: (27, 8), 하단: (0,28)/(54,28)
+        왕관 translate(19, 18): 왕관 바닥(y=28) = 바디 상단 → 이어지는 느낌
+        V 경사 at x=19: y=8+(27-19)*20/27≈14 → 왕관 상단(y≈19.5) 내부 ✓
       */}
       <svg
         width="54"
@@ -56,7 +54,7 @@ export const HouseMarker = memo(function HouseMarker({
         style={{ display: 'block', marginBottom: 0 }}
       >
         {isHot && (
-          <g transform="translate(19, 16)" fill={bodyColor}>
+          <g transform="translate(19, 18)" fill={bodyColor}>
             <circle cx="2"  cy="3.5" r="2" />
             <circle cx="8"  cy="1.5" r="2" />
             <circle cx="14" cy="3.5" r="2" />
@@ -64,7 +62,7 @@ export const HouseMarker = memo(function HouseMarker({
           </g>
         )}
         <path
-          d="M0,28 L27,14 L54,28"
+          d="M0,28 L27,8 L54,28"
           stroke="#9CA3AF"
           strokeWidth="3.5"
           strokeLinecap="round"
