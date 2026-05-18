@@ -163,9 +163,9 @@ export const ComplexMarker = memo(function ComplexMarker({
     return () => { cancelled = true }
   }, [hover, id])
 
-  // area_m2 → 평 변환 (0 제외)
+  // area_m2 → 평 변환 (0 제외, 정수로 표시)
   const pyeong = recentAreaM2 !== null && recentAreaM2 > 0
-    ? (recentAreaM2 / 3.3058).toFixed(1)
+    ? String(Math.round(recentAreaM2 / 3.3058))
     : null
 
   const sigu = [si, gu].filter(Boolean).join(' ')

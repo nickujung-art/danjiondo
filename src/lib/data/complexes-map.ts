@@ -96,11 +96,11 @@ export async function getComplexesForMap(
     return percentileToGrade(below / hagwonScores.length)
   }
 
-  // 스텝 2: 최근 6개월 거래 조회 (3개월보다 더 많은 단지에 가격 표시)
+  // 스텝 2: 최근 12개월 거래 조회 (더 많은 단지에 area_m2 표시)
   // CRITICAL: cancel_date IS NULL AND superseded_by IS NULL 필수 (CLAUDE.md)
-  const sixMonthsAgo = new Date()
-  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
-  const sixMonthsAgoStr = sixMonthsAgo.toISOString().slice(0, 10)
+  const twelveMonthsAgo = new Date()
+  twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12)
+  const sixMonthsAgoStr = twelveMonthsAgo.toISOString().slice(0, 10)
 
   const ids = rows.map((r) => r.id)
 
