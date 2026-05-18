@@ -43,23 +43,23 @@ export const DongClusterChip = memo(function DongClusterChip({
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleClick() }}
         style={{
           background: 'white',
-          border: '1px solid #E5E7EB',
-          borderRadius: 6,
-          padding: '6px 10px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+          border: '1.5px solid #E5E7EB',
+          borderRadius: 20,
+          padding: '10px 16px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
           cursor: 'pointer',
           userSelect: 'none',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-start',
-          gap: 1,
+          gap: 2,
         }}
       >
-        <span style={{ fontSize: 12, fontWeight: 700, color: '#111827', lineHeight: 1.3 }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: '#111827', lineHeight: 1.3 }}>
           {gu}
         </span>
         {maxPrice !== null && (
-          <span style={{ fontSize: 11, fontWeight: 500, color: '#F97316', lineHeight: 1.2 }}>
+          <span style={{ fontSize: 12, fontWeight: 500, color: '#F97316', lineHeight: 1.2 }}>
             {formatPrice(maxPrice)}
           </span>
         )}

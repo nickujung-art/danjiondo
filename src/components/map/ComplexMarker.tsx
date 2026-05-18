@@ -136,6 +136,8 @@ export const ComplexMarker = memo(function ComplexMarker({
         {/* hover 툴팁: 핀 바로 위에 절대 위치 */}
         {hover && (
           <div
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
             style={{
               position: 'absolute',
               bottom: '100%',
@@ -147,7 +149,7 @@ export const ComplexMarker = memo(function ComplexMarker({
               borderRadius: 8,
               padding: '10px 12px',
               boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-              pointerEvents: 'none',
+              pointerEvents: 'auto',
               whiteSpace: 'nowrap',
               minWidth: 190,
               zIndex: 100,
@@ -182,13 +184,16 @@ export const ComplexMarker = memo(function ComplexMarker({
               </div>
             )}
 
-            {/* 미니 실거래 차트 — 데이터 도착 후 렌더 */}
-            {chartData !== null && chartData.length >= 2 && (
-              <div style={{ borderTop: '1px solid #F3F4F6', paddingTop: 6, marginBottom: 6 }}>
-                <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 4 }}>실거래 추이</div>
-                <MiniPriceChart data={chartData} />
-              </div>
-            )}
+            {/* 미니 실거래 차트 — 항상 섹션 표시, 데이터 상태에 따라 내용 분기 */}
+            <div style={{ borderTop: '1px solid #F3F4F6', paddingTop: 6, marginBottom: 6 }}>
+              <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 4 }}>실거래 추이</div>
+              {chartData === null
+                ? <div style={{ fontSize: 11, color: '#D1D5DB', height: 48, display: 'flex', alignItems: 'center' }}>불러오는 중…</div>
+                : chartData.length < 2
+                  ? <div style={{ fontSize: 10, color: '#D1D5DB', height: 48, display: 'flex', alignItems: 'center' }}>최근 거래 없음</div>
+                  : <MiniPriceChart data={chartData} />
+              }
+            </div>
 
             {/* 세대수 · 준공연도 · 신축 배지 */}
             {(householdCount !== null || builtYear !== null) && (

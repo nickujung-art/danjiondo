@@ -9,7 +9,6 @@ export interface HouseMarkerProps {
   name:        string
 }
 
-// 핀 바디 안에 표시할 축약 가격
 function formatPriceShort(price: number): string {
   if (price >= 10000) {
     const tenths = Math.round(price / 1000)
@@ -30,27 +29,21 @@ export const HouseMarker = memo(function HouseMarker({
   const bodyColor = getBodyColor(badge)
 
   return (
-    // 외부 div: 고정 44×58px, 왕관은 bottom: 100%로 위에 절대 위치
-    <div style={{ position: 'relative', width: 44, height: 58 }} aria-label={name}>
-
-      {/* 왕관 — hot 배지만, 핀 SVG 위에 절대 배치 */}
+    <div
+      style={{
+        display: 'inline-flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.20))',
+        userSelect: 'none',
+      }}
+      aria-label={name}
+    >
+      {/* 왕관 — hot 배지만, 지붕 위 정상 플로우 */}
       {badge === 'hot' && (
-        <svg
-          width="22"
-          height="11"
-          viewBox="0 0 22 11"
-          style={{
-            position: 'absolute',
-            bottom: '100%',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            display: 'block',
-            marginBottom: 1,
-            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.25))',
-          }}
-        >
+        <svg width="20" height="10" viewBox="0 0 20 10" style={{ display: 'block', marginBottom: 1 }}>
           <path
-            d="M0,11 L3.5,4 L8,8.5 L11,0 L14,8.5 L18.5,4 L22,11 Z"
+            d="M0,10 L3,3.5 L7,8 L10,0 L13,8 L17,3.5 L20,10 Z"
             fill="#FCD34D"
             stroke="#D97706"
             strokeWidth="0.8"
@@ -58,54 +51,54 @@ export const HouseMarker = memo(function HouseMarker({
         </svg>
       )}
 
-      {/* 핀 SVG: 바디 먼저 렌더 후 지붕 선을 위에 렌더 */}
+      {/* 지붕: 열린 V선, 끝 라운드, 회색, 아래에서 4px 띄움 */}
       <svg
-        width="44"
-        height="58"
-        viewBox="0 0 44 58"
+        width="40"
+        height="14"
+        viewBox="0 0 40 14"
         fill="none"
-        style={{ display: 'block', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.18))' }}
+        style={{ display: 'block', overflow: 'visible', marginBottom: 4 }}
       >
-        {/* 바디 */}
-        <rect x="0" y="28" width="44" height="22" fill={bodyColor} />
-
-        {/* 포인터 */}
-        <polygon points="14,50 22,58 30,50" fill={bodyColor} />
-
-        {/* 지붕: 열린 V선 (하단 연결선 없음), 끝 라운드, 회색 굵은 선 */}
         <path
-          d="M0,28 L22,10 L44,28"
+          d="M0,14 L20,2 L40,14"
           stroke="#9CA3AF"
-          strokeWidth="4"
+          strokeWidth="5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          fill="none"
         />
       </svg>
 
-      {/* 가격 HTML 오버레이 — SVG text 대신 HTML로 렌더링 신뢰도 향상 */}
-      {recentPrice !== null && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 28,
-            left: 0,
-            right: 0,
-            height: 22,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 10,
-            fontWeight: 700,
-            color: 'white',
-            pointerEvents: 'none',
-            lineHeight: 1,
-            letterSpacing: '-0.2px',
-          }}
-        >
-          {formatPriceShort(recentPrice)}
-        </div>
-      )}
+      {/* 바디: 실거래가 HTML span */}
+      <div
+        style={{
+          width: 44,
+          height: 22,
+          background: bodyColor,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {recentPrice !== null && (
+          <span
+            style={{
+              color: 'white',
+              fontSize: 10,
+              fontWeight: 700,
+              lineHeight: 1,
+              letterSpacing: '-0.2px',
+              fontFamily: 'system-ui, -apple-system, sans-serif',
+            }}
+          >
+            {formatPriceShort(recentPrice)}
+          </span>
+        )}
+      </div>
+
+      {/* 포인터 삼각형 */}
+      <svg width="44" height="9" viewBox="0 0 44 9" style={{ display: 'block' }}>
+        <polygon points="14,0 22,9 30,0" fill={bodyColor} />
+      </svg>
     </div>
   )
 })

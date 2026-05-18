@@ -64,13 +64,17 @@ export function KakaoMap({
 
     for (const c of complexes) {
       const key = c.gu ?? '기타'
+      // recent_price 없으면 avg_sale_per_pyeong × 25평으로 추정
+      const priceEst = c.recent_price ?? (
+        c.avg_sale_per_pyeong !== null ? Math.round(c.avg_sale_per_pyeong * 25) : null
+      )
       const entry = guMap.get(key)
       if (!entry) {
         guMap.set(key, {
           totalLat: c.lat,
           totalLng: c.lng,
           count:    1,
-          maxPrice: c.recent_price ?? null,
+          maxPrice: priceEst,
           lats:     [c.lat],
           lngs:     [c.lng],
         })
@@ -80,10 +84,10 @@ export function KakaoMap({
         entry.count    += 1
         entry.lats.push(c.lat)
         entry.lngs.push(c.lng)
-        if (c.recent_price !== null) {
+        if (priceEst !== null) {
           entry.maxPrice = entry.maxPrice !== null
-            ? Math.max(entry.maxPrice, c.recent_price)
-            : c.recent_price
+            ? Math.max(entry.maxPrice, priceEst)
+            : priceEst
         }
       }
     }
