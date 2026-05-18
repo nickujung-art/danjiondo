@@ -42,28 +42,29 @@ export const HouseMarker = memo(function HouseMarker({
       aria-label={name}
     >
       {/*
-        지붕 SVG — 항상 22px 높이, 왕관 유무와 무관하게 레이아웃 고정.
-        상단 10px(y=0-10): 왕관이 hot 배지일 때 채워짐 (없으면 투명)
-        하단 12px(y=10-22): 회색 V선 (peak y=10)
-        왕관은 V 꼭짓점 안에 완전히 들어오는 크기/위치
+        지붕 SVG (높이 28px, 항상 동일)
+        V 꼭짓점: (27, 14), 하단 모서리: (0, 28) / (54, 28)
+        왕관은 V 삼각형 내부 하단(바디 바로 위)에 배치 — translate(19, 16)
+        V 경사 at x=19: y=14+(27-19)/27*14=18.1 → 왕관 상단(y=16.0) 내부 ✓
+        비-hot 핀: SVG 상단 14px 투명(지도 배경 그대로), 레이아웃 불변
       */}
       <svg
         width="54"
-        height="22"
-        viewBox="0 0 54 22"
+        height="28"
+        viewBox="0 0 54 28"
         fill="none"
         style={{ display: 'block', marginBottom: 0 }}
       >
         {isHot && (
-          <g transform="translate(19, 0)" fill={bodyColor}>
-            <circle cx="2"  cy="3.5" r="2.2" />
-            <circle cx="8"  cy="1.5" r="2.2" />
-            <circle cx="14" cy="3.5" r="2.2" />
-            <path d="M0,11 L0,7 L2.5,5.5 L5.5,8.5 L8,4.5 L10.5,8.5 L13.5,5.5 L16,7 L16,11 Z" />
+          <g transform="translate(19, 16)" fill={bodyColor}>
+            <circle cx="2"  cy="3.5" r="2" />
+            <circle cx="8"  cy="1.5" r="2" />
+            <circle cx="14" cy="3.5" r="2" />
+            <path d="M0,10 L0,6.5 L2.5,5 L5.5,7.5 L8,4 L10.5,7.5 L13.5,5 L16,6.5 L16,10 Z" />
           </g>
         )}
         <path
-          d="M0,22 L27,10 L54,22"
+          d="M0,28 L27,14 L54,28"
           stroke="#9CA3AF"
           strokeWidth="3.5"
           strokeLinecap="round"
@@ -71,19 +72,19 @@ export const HouseMarker = memo(function HouseMarker({
         />
       </svg>
 
-      {/* 바디: 가격 + 평형 */}
+      {/* 바디 — 정사각형에 가깝게 (54×44) */}
       <div
         style={{
           width: 54,
-          minHeight: 28,
+          minHeight: 44,
           background: bodyColor,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          paddingTop: 4,
-          paddingBottom: 4,
-          gap: 2,
+          paddingTop: 6,
+          paddingBottom: 6,
+          gap: 4,
         }}
       >
         {recentPrice !== null && (
@@ -91,7 +92,7 @@ export const HouseMarker = memo(function HouseMarker({
             <span
               style={{
                 color: 'white',
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: 700,
                 lineHeight: 1,
                 letterSpacing: '-0.3px',
@@ -103,8 +104,8 @@ export const HouseMarker = memo(function HouseMarker({
             {pyeong != null && (
               <span
                 style={{
-                  color: 'rgba(255,255,255,0.9)',
-                  fontSize: 10,
+                  color: 'rgba(255,255,255,0.92)',
+                  fontSize: 11,
                   fontWeight: 600,
                   lineHeight: 1,
                   fontFamily: 'system-ui, -apple-system, sans-serif',
@@ -118,8 +119,8 @@ export const HouseMarker = memo(function HouseMarker({
       </div>
 
       {/* 포인터 삼각형 */}
-      <svg width="54" height="10" viewBox="0 0 54 10" style={{ display: 'block' }}>
-        <polygon points="19,0 27,10 35,0" fill={bodyColor} />
+      <svg width="54" height="11" viewBox="0 0 54 11" style={{ display: 'block' }}>
+        <polygon points="19,0 27,11 35,0" fill={bodyColor} />
       </svg>
     </div>
   )
