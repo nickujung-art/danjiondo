@@ -1,0 +1,61 @@
+name: MOLIT 일배치 (전월+당월 실거래가)
+
+on:
+  schedule:
+    - cron: '0 19 * * *'   # 04:00 KST — 매일 자동 실행
+  workflow_dispatch:
+    inputs:
+      from_ym:
+        description: '시작 연월 (예: 202604). 미입력 시 전월 자동 계산'
+        required: false
+        default: ''
+      to_ym:
+        description: '종료 연월 (예: 202605). 미입력 시 당월 자동 계산'
+        required: false
+        default: ''
+
+jobs:
+  ingest:
+    name: 실거래가 수집 (전월+당월)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: 수집 기간 계산
+        id: months
+        run: |
+          FROM="${{ inputs.from_ym }}"
+          TO="${{ inputs.to_ym }}"
+          if [ -z "$FROM" ]; then
+            FROM=$(node -e "const d=new Date(new Date().getFullYear(),new Date().getMonth()-1,1);process.stdout.write(d.getFullYear()+''+String(d.getMonth()+1).padStart(2,'0'))")
+          fi
+          if [ -z "$TO" ]; then
+            TO=$(node -e "const d=new Date();process.stdout.write(d.getFullYear()+''+String(d.getMonth()+1).padStart(2,'0'))")
+          fi
+          echo "from=$FROM" >> $GITHUB_OUTPUT
+          echo "to=$TO"     >> $GITHUB_OUTPUT
+          echo "수집 기간: $FROM ~ $TO"
+
+      - name: MOLIT 실거래가 수집
+        env:
+          MOLIT_API_KEY:              ${{ secrets.MOLIT_API_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL:   ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY:  ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          npx tsx scripts/backfill-realprice.ts \
+            --from=${{ steps.months.outputs.from }} \
+            --to=${{ steps.months.outputs.to }}
+
+      - name: 완료
+        if: always()
+        run: echo "ingest_runs 테이블에서 결과 확인 가능"

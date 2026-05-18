@@ -2,12 +2,17 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { ingestMonth } from '@/lib/data/realprice'
 import type { IngestResult } from '@/lib/data/realprice'
 
+export const maxDuration = 60
+
 function prevYearMonth(): string {
   const d = new Date()
   d.setMonth(d.getMonth() - 1)
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  return `${y}${m}`
+  return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+function currentYearMonth(): string {
+  const d = new Date()
+  return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
 export async function GET(request: Request): Promise<Response> {
@@ -18,7 +23,13 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   const supabase = createSupabaseAdminClient()
-  const yearMonth = prevYearMonth()
+
+  // 30분 이상 stuck된 running 행 정리 (타임아웃으로 종료된 이전 실행)
+  await supabase
+    .from('ingest_runs')
+    .update({ status: 'failed', error_message: 'timeout: cleaned up by next run' })
+    .eq('status', 'running')
+    .lt('started_at', new Date(Date.now() - 30 * 60 * 1000).toISOString())
 
   // 활성 지역 목록 조회
   const { data: regions, error: regErr } = await supabase
@@ -30,30 +41,34 @@ export async function GET(request: Request): Promise<Response> {
     return Response.json({ error: regErr.message }, { status: 500 })
   }
 
+  const months = [prevYearMonth(), currentYearMonth()]
   const results: Record<string, IngestResult> = {}
 
-  for (const { sgg_code } of (regions ?? []) as { sgg_code: string }[]) {
-    try {
-      results[sgg_code] = await ingestMonth(sgg_code, yearMonth, supabase)
-    } catch (err) {
-      results[sgg_code] = {
-        runId:        '',
-        sggCode:      sgg_code,
-        yearMonth,
-        rowsFetched:  0,
-        rowsUpserted: 0,
-        rowsSkipped:  0,
-        rowsFailed:   0,
-        status:       'failed',
+  for (const yearMonth of months) {
+    for (const { sgg_code } of (regions ?? []) as { sgg_code: string }[]) {
+      const key = `${yearMonth}/${sgg_code}`
+      try {
+        results[key] = await ingestMonth(sgg_code, yearMonth, supabase)
+      } catch (err) {
+        results[key] = {
+          runId:        '',
+          sggCode:      sgg_code,
+          yearMonth,
+          rowsFetched:  0,
+          rowsUpserted: 0,
+          rowsSkipped:  0,
+          rowsFailed:   0,
+          status:       'failed',
+        }
+        console.error(`ingestMonth failed for ${sgg_code} ${yearMonth}:`, err)
       }
-      console.error(`ingestMonth failed for ${sgg_code}:`, err)
     }
   }
 
   const total = Object.values(results)
   const summary = {
-    yearMonth,
-    regions:      total.length,
+    months,
+    regions:      (regions ?? []).length,
     rowsUpserted: total.reduce((s, r) => s + r.rowsUpserted, 0),
     failed:       total.filter(r => r.status === 'failed').length,
   }
