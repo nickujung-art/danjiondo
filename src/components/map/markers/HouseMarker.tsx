@@ -28,7 +28,7 @@ export const HouseMarker = memo(function HouseMarker({
   badge, recentPrice, pyeong, name,
 }: HouseMarkerProps) {
   const bodyColor = getBodyColor(badge)
-  const isHot = badge === 'hot'
+  const showCrown = badge === 'hot' || badge === 'new_build'
 
   return (
     <div
@@ -42,9 +42,10 @@ export const HouseMarker = memo(function HouseMarker({
       aria-label={name}
     >
       {/*
-        지붕 SVG (높이 28px) — V 꼭짓점: (27, 8), 하단: (0,28)/(54,28)
-        왕관 translate(19, 18): 왕관 바닥(y=28) = 바디 상단 → 이어지는 느낌
-        V 경사 at x=19: y=8+(27-19)*20/27≈14 → 왕관 상단(y≈19.5) 내부 ✓
+        지붕 SVG — 회색 채움(#E5E7EB), V 꼭짓점 (27, 8)
+        왕관 translate(19, 11): circle1 top y≈12.5 > V left at x=21(y≈12.44) ✓
+        separator line y=23, x=7~47 (V 내부 ✓, V fills to x=6.75~47.25 at y=23)
+        신축(teal)·거래상위(orange) 모두 bodyColor 왕관
       */}
       <svg
         width="54"
@@ -53,24 +54,36 @@ export const HouseMarker = memo(function HouseMarker({
         fill="none"
         style={{ display: 'block', marginBottom: 0 }}
       >
-        {isHot && (
-          <g transform="translate(19, 18)" fill={bodyColor}>
-            <circle cx="2"  cy="3.5" r="2" />
-            <circle cx="8"  cy="1.5" r="2" />
-            <circle cx="14" cy="3.5" r="2" />
-            <path d="M0,10 L0,6.5 L2.5,5 L5.5,7.5 L8,4 L10.5,7.5 L13.5,5 L16,6.5 L16,10 Z" />
-          </g>
+        {/* 회색 지붕 채움 */}
+        <path d="M0,28 L27,8 L54,28 Z" fill="#E5E7EB" />
+
+        {/* 왕관 + 구분선 (hot·new_build만) */}
+        {showCrown && (
+          <>
+            <g transform="translate(19, 11)" fill={bodyColor}>
+              <circle cx="2"  cy="3.5" r="2" />
+              <circle cx="8"  cy="1.5" r="2" />
+              <circle cx="14" cy="3.5" r="2" />
+              <path d="M0,10 L0,6.5 L2.5,5 L5.5,7.5 L8,4 L10.5,7.5 L13.5,5 L16,6.5 L16,10 Z" />
+            </g>
+            <line
+              x1="7" y1="23" x2="47" y2="23"
+              stroke={bodyColor} strokeWidth="1" strokeOpacity="0.5"
+            />
+          </>
         )}
+
+        {/* 지붕 외곽선 */}
         <path
           d="M0,28 L27,8 L54,28"
-          stroke="#9CA3AF"
-          strokeWidth="3.5"
+          stroke="#D1D5DB"
+          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
       </svg>
 
-      {/* 바디 — 정사각형에 가깝게 (54×44) */}
+      {/* 바디 */}
       <div
         style={{
           width: 54,
@@ -82,7 +95,7 @@ export const HouseMarker = memo(function HouseMarker({
           justifyContent: 'center',
           paddingTop: 6,
           paddingBottom: 6,
-          gap: 4,
+          gap: 3,
         }}
       >
         {recentPrice !== null && (
@@ -102,9 +115,9 @@ export const HouseMarker = memo(function HouseMarker({
             {pyeong != null && (
               <span
                 style={{
-                  color: 'rgba(255,255,255,0.92)',
-                  fontSize: 11,
-                  fontWeight: 600,
+                  color: 'rgba(255,255,255,0.9)',
+                  fontSize: 10,
+                  fontWeight: 400,
                   lineHeight: 1,
                   fontFamily: 'system-ui, -apple-system, sans-serif',
                 }}
@@ -116,9 +129,9 @@ export const HouseMarker = memo(function HouseMarker({
         )}
       </div>
 
-      {/* 포인터 삼각형 */}
-      <svg width="54" height="11" viewBox="0 0 54 11" style={{ display: 'block' }}>
-        <polygon points="19,0 27,11 35,0" fill={bodyColor} />
+      {/* 포인터 삼각형 — 이전보다 작게 */}
+      <svg width="54" height="8" viewBox="0 0 54 8" style={{ display: 'block' }}>
+        <polygon points="21,0 27,8 33,0" fill={bodyColor} />
       </svg>
     </div>
   )
