@@ -25,6 +25,23 @@ function getAccentColor(badge: BadgeType, hasData: boolean): string {
   return '#F97316'                             // 일반·거래상위 → 오렌지
 }
 
+function CrownSvg({ color }: { color: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 16"
+      width="16"
+      height="11"
+      style={{ display: 'block' }}
+      aria-hidden="true"
+    >
+      <path d="M0 14 L0 16 L24 16 L24 14 L21 5 L17 11 L12 0 L7 11 L3 5 Z" fill={color} />
+      <circle cx="3"  cy="5" r="1.5" fill={color} />
+      <circle cx="12" cy="0" r="2"   fill={color} />
+      <circle cx="21" cy="5" r="1.5" fill={color} />
+    </svg>
+  )
+}
+
 export const HouseMarker = memo(function HouseMarker({
   badge, recentPrice, pyeong, name,
 }: HouseMarkerProps) {
@@ -42,10 +59,14 @@ export const HouseMarker = memo(function HouseMarker({
       }}
       aria-label={name}
     >
-      {/*
-        왕관 섹션(있을 때) + 가격 섹션을 같은 border로 감싸서 이어지는 느낌
-        overflow:hidden으로 모서리 자연스럽게 클립
-      */}
+      {/* 왕관 — 박스 외부 상단 중앙, accent 색상 */}
+      {showCrown && (
+        <div style={{ marginBottom: 2 }}>
+          <CrownSvg color={accent} />
+        </div>
+      )}
+
+      {/* 가격 박스 */}
       <div
         style={{
           border: `1.5px solid ${accent}`,
@@ -53,31 +74,6 @@ export const HouseMarker = memo(function HouseMarker({
           overflow: 'hidden',
         }}
       >
-        {/* 왕관 섹션 — 배지 색상 배경, 바로 위에서 연결 */}
-        {showCrown && (
-          <div
-            style={{
-              background: accent,
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              paddingTop: 3,
-              paddingBottom: 3,
-              borderBottom: '1px solid rgba(255,255,255,0.25)',
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/img/crown.png"
-              alt=""
-              width={11}
-              height={11}
-              style={{ filter: 'brightness(0) invert(1)', opacity: 0.85 }}
-            />
-          </div>
-        )}
-
-        {/* 가격 섹션 — 흰 배경 */}
         <div
           style={{
             display: 'flex',
