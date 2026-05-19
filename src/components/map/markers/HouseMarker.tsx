@@ -19,25 +19,39 @@ function formatPriceShort(price: number): string {
 }
 
 function getAccentColor(badge: BadgeType, hasData: boolean): string {
-  if (!hasData)              return '#94A3B8'  // 거래 데이터 없음 → 회색
-  if (badge === 'pre_sale')  return '#EF4444'  // 분양 → 빨강
-  if (badge === 'new_build') return '#14B8A6'  // 신축 → teal
-  return '#F97316'                             // 일반·거래상위 → 오렌지
+  if (!hasData)              return '#94A3B8'
+  if (badge === 'pre_sale')  return '#EF4444'
+  if (badge === 'new_build') return '#14B8A6'
+  return '#F97316'
 }
 
+/**
+ * crown.png는 흰 배경 PNG이므로 SVG filter로 처리:
+ * luminanceToAlpha → 흰 배경(luminance=1)→alpha=1, 검정 왕관→alpha=0
+ * feFuncA invert   → 흰 배경 alpha=0(투명), 왕관 alpha=1(불투명)
+ * feFlood + feComposite → 왕관 부분만 accent 색으로 채움
+ */
 function Crown({ color }: { color: string }) {
+  const id = `cr${color.replace('#', '')}`
   return (
-    <svg
-      viewBox="0 0 22 15"
-      width="20"
-      height="14"
-      style={{ display: 'block' }}
-      aria-hidden="true"
-    >
-      <path d="M0,15 L0,11 L3.5,3.5 L7,9.5 L11,0 L15,9.5 L18.5,3.5 L22,11 L22,15 Z" fill={color} />
-      <circle cx="3.5"  cy="3.5" r="2.1" fill={color} />
-      <circle cx="11"   cy="0"   r="2.4" fill={color} />
-      <circle cx="18.5" cy="3.5" r="2.1" fill={color} />
+    <svg width="22" height="16" style={{ display: 'block' }} aria-hidden="true">
+      <defs>
+        <filter id={id} x="0%" y="0%" width="100%" height="100%">
+          <feColorMatrix type="luminanceToAlpha" result="luma" />
+          <feComponentTransfer in="luma" result="mask">
+            <feFuncA type="linear" slope="-1" intercept="1" />
+          </feComponentTransfer>
+          <feFlood floodColor={color} floodOpacity="1" result="fill" />
+          <feComposite in="fill" in2="mask" operator="in" />
+        </filter>
+      </defs>
+      <image
+        href="/img/crown.png"
+        x="0" y="0"
+        width="22" height="16"
+        preserveAspectRatio="xMidYMid meet"
+        filter={`url(#${id})`}
+      />
     </svg>
   )
 }
@@ -51,31 +65,17 @@ export const HouseMarker = memo(function HouseMarker({
   return (
     <div
       style={{
-        display: 'inline-flex',
+        display:      'inline-flex',
         flexDirection: 'column',
-        alignItems: 'center',
-        filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.18))',
-        userSelect: 'none',
+        alignItems:   'center',
+        filter:       'drop-shadow(0 1px 4px rgba(0,0,0,0.18))',
+        userSelect:   'none',
       }}
       aria-label={name}
     >
-      {/* 왕관 — 박스 상단에 직접 이어지는 섹션 */}
+      {/* 왕관 — 박스 위에 투명하게 떠있음 */}
       {showCrown && (
-        <div
-          style={{
-            borderTop:    `1.5px solid ${accent}`,
-            borderLeft:   `1.5px solid ${accent}`,
-            borderRight:  `1.5px solid ${accent}`,
-            borderRadius: '4px 4px 0 0',
-            background:   'white',
-            paddingTop:    4,
-            paddingBottom: 2,
-            paddingLeft:   5,
-            paddingRight:  5,
-            display:      'flex',
-            justifyContent: 'center',
-          }}
-        >
+        <div style={{ marginBottom: 2 }}>
           <Crown color={accent} />
         </div>
       )}
@@ -83,11 +83,8 @@ export const HouseMarker = memo(function HouseMarker({
       {/* 가격 박스 */}
       <div
         style={{
-          borderLeft:   `1.5px solid ${accent}`,
-          borderRight:  `1.5px solid ${accent}`,
-          borderBottom: `1.5px solid ${accent}`,
-          borderTop:    showCrown ? 'none' : `1.5px solid ${accent}`,
-          borderRadius: showCrown ? '0 0 4px 4px' : 4,
+          border:       `1.5px solid ${accent}`,
+          borderRadius: 4,
           overflow:     'hidden',
         }}
       >
@@ -106,11 +103,11 @@ export const HouseMarker = memo(function HouseMarker({
           {/* 왼쪽 색상 강조 바 */}
           <div
             style={{
-              width:      3,
-              alignSelf:  'stretch',
-              background: accent,
+              width:       3,
+              alignSelf:   'stretch',
+              background:  accent,
               borderRadius: 1,
-              flexShrink: 0,
+              flexShrink:  0,
             }}
           />
 
