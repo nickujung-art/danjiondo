@@ -25,28 +25,23 @@ function getAccentColor(badge: BadgeType, hasData: boolean): string {
   return '#F97316'
 }
 
-/**
- * crown.png는 흰 배경 PNG이므로 SVG filter로 처리:
- * luminanceToAlpha → 흰 배경(luminance=1)→alpha=1, 검정 왕관→alpha=0
- * feFuncA invert   → 흰 배경 alpha=0(투명), 왕관 alpha=1(불투명)
- * feFlood + feComposite → 왕관 부분만 accent 색으로 채움
- */
+// crown.png: 19×19 RGBA, 투명배경 + 검정 왕관
+// base64 임베드로 URL 로딩 불안정 문제 제거
+// SVG filter: feFlood(accent) + feComposite(in) → 알파채널 그대로 사용, 색만 accent로 교체
+const CROWN_SRC = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAATCAYAAAByUDbMAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAKxJREFUeNpiYBgFAwqYobQBEGcAsQAQ30BT4wDECaTIvQfi/1BsgKYBWU4Bj5wAExGuFyBVLgCI7wPxehxy/6E0OpgPdV0ALgkBLLb/xyEOUt8PE0D25kGogvlYAhmZRrYcpP4iNq8aIAUmsoH7oWL70QzCFSlYY+c+FP9HwufRxN7ji7n9aJoJYWTXMqAnjYMkJvqD+Aw7QKJhB2iWNxmxiP0nVz8TNV0GEGAA5k8/u96MooAAAAAASUVORK5CYII='
+
 function Crown({ color }: { color: string }) {
   const id = `cr${color.replace('#', '')}`
   return (
     <svg width="22" height="16" style={{ display: 'block' }} aria-hidden="true">
       <defs>
         <filter id={id} x="0%" y="0%" width="100%" height="100%">
-          <feColorMatrix type="luminanceToAlpha" result="luma" />
-          <feComponentTransfer in="luma" result="mask">
-            <feFuncA type="linear" slope="-1" intercept="1" />
-          </feComponentTransfer>
           <feFlood floodColor={color} floodOpacity="1" result="fill" />
-          <feComposite in="fill" in2="mask" operator="in" />
+          <feComposite in="fill" in2="SourceGraphic" operator="in" />
         </filter>
       </defs>
       <image
-        href="/img/crown.png"
+        href={CROWN_SRC}
         x="0" y="0"
         width="22" height="16"
         preserveAspectRatio="xMidYMid meet"
