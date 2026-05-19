@@ -27,22 +27,18 @@ function getAccentColor(badge: BadgeType, hasData: boolean): string {
 
 function Crown({ color }: { color: string }) {
   return (
-    <div
-      style={{
-        width: 20,
-        height: 14,
-        flexShrink: 0,
-        backgroundColor: color,
-        WebkitMaskImage: 'url(/img/crown.png)',
-        maskImage: 'url(/img/crown.png)',
-        WebkitMaskSize: 'contain',
-        maskSize: 'contain',
-        WebkitMaskRepeat: 'no-repeat',
-        maskRepeat: 'no-repeat',
-        WebkitMaskPosition: 'center',
-        maskPosition: 'center',
-      }}
-    />
+    <svg
+      viewBox="0 0 22 15"
+      width="20"
+      height="14"
+      style={{ display: 'block' }}
+      aria-hidden="true"
+    >
+      <path d="M0,15 L0,11 L3.5,3.5 L7,9.5 L11,0 L15,9.5 L18.5,3.5 L22,11 L22,15 Z" fill={color} />
+      <circle cx="3.5"  cy="3.5" r="2.1" fill={color} />
+      <circle cx="11"   cy="0"   r="2.4" fill={color} />
+      <circle cx="18.5" cy="3.5" r="2.1" fill={color} />
+    </svg>
   )
 }
 
