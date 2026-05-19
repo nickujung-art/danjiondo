@@ -21,24 +21,28 @@ function formatPriceShort(price: number): string {
 function getAccentColor(badge: BadgeType, hasData: boolean): string {
   if (!hasData)              return '#94A3B8'  // 거래 데이터 없음 → 회색
   if (badge === 'pre_sale')  return '#EF4444'  // 분양 → 빨강
-  if (badge === 'new_build') return '#14B8A6'  // 신축 → 초록(teal)
+  if (badge === 'new_build') return '#14B8A6'  // 신축 → teal
   return '#F97316'                             // 일반·거래상위 → 오렌지
 }
 
-function CrownSvg({ color }: { color: string }) {
+function Crown({ color }: { color: string }) {
   return (
-    <svg
-      viewBox="0 0 24 16"
-      width="16"
-      height="11"
-      style={{ display: 'block' }}
-      aria-hidden="true"
-    >
-      <path d="M0 14 L0 16 L24 16 L24 14 L21 5 L17 11 L12 0 L7 11 L3 5 Z" fill={color} />
-      <circle cx="3"  cy="5" r="1.5" fill={color} />
-      <circle cx="12" cy="0" r="2"   fill={color} />
-      <circle cx="21" cy="5" r="1.5" fill={color} />
-    </svg>
+    <div
+      style={{
+        width: 20,
+        height: 14,
+        flexShrink: 0,
+        backgroundColor: color,
+        WebkitMaskImage: 'url(/img/crown.png)',
+        maskImage: 'url(/img/crown.png)',
+        WebkitMaskSize: 'contain',
+        maskSize: 'contain',
+        WebkitMaskRepeat: 'no-repeat',
+        maskRepeat: 'no-repeat',
+        WebkitMaskPosition: 'center',
+        maskPosition: 'center',
+      }}
+    />
   )
 }
 
@@ -59,38 +63,55 @@ export const HouseMarker = memo(function HouseMarker({
       }}
       aria-label={name}
     >
-      {/* 왕관 — 박스 외부 상단 중앙, accent 색상 */}
+      {/* 왕관 — 박스 상단에 직접 이어지는 섹션 */}
       {showCrown && (
-        <div style={{ marginBottom: 2 }}>
-          <CrownSvg color={accent} />
+        <div
+          style={{
+            borderTop:    `1.5px solid ${accent}`,
+            borderLeft:   `1.5px solid ${accent}`,
+            borderRight:  `1.5px solid ${accent}`,
+            borderRadius: '4px 4px 0 0',
+            background:   'white',
+            paddingTop:    4,
+            paddingBottom: 2,
+            paddingLeft:   5,
+            paddingRight:  5,
+            display:      'flex',
+            justifyContent: 'center',
+          }}
+        >
+          <Crown color={accent} />
         </div>
       )}
 
       {/* 가격 박스 */}
       <div
         style={{
-          border: `1.5px solid ${accent}`,
-          borderRadius: 4,
-          overflow: 'hidden',
+          borderLeft:   `1.5px solid ${accent}`,
+          borderRight:  `1.5px solid ${accent}`,
+          borderBottom: `1.5px solid ${accent}`,
+          borderTop:    showCrown ? 'none' : `1.5px solid ${accent}`,
+          borderRadius: showCrown ? '0 0 4px 4px' : 4,
+          overflow:     'hidden',
         }}
       >
         <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-            background: 'white',
-            paddingTop: 5,
+            display:       'flex',
+            alignItems:    'center',
+            gap:           5,
+            background:    'white',
+            paddingTop:    5,
             paddingBottom: 5,
-            paddingLeft: 4,
-            paddingRight: 8,
+            paddingLeft:   4,
+            paddingRight:  8,
           }}
         >
           {/* 왼쪽 색상 강조 바 */}
           <div
             style={{
-              width: 3,
-              alignSelf: 'stretch',
+              width:      3,
+              alignSelf:  'stretch',
               background: accent,
               borderRadius: 1,
               flexShrink: 0,
@@ -103,13 +124,13 @@ export const HouseMarker = memo(function HouseMarker({
               <>
                 <span
                   style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: '#111827',
-                    lineHeight: 1,
+                    fontSize:      12,
+                    fontWeight:    700,
+                    color:         '#111827',
+                    lineHeight:    1,
                     letterSpacing: '-0.4px',
-                    fontFamily: 'system-ui, -apple-system, sans-serif',
-                    whiteSpace: 'nowrap',
+                    fontFamily:    'system-ui, -apple-system, sans-serif',
+                    whiteSpace:    'nowrap',
                   }}
                 >
                   {formatPriceShort(recentPrice)}
@@ -117,9 +138,9 @@ export const HouseMarker = memo(function HouseMarker({
                 {pyeong != null && (
                   <span
                     style={{
-                      fontSize: 9,
+                      fontSize:   9,
                       fontWeight: 400,
-                      color: '#9CA3AF',
+                      color:      '#9CA3AF',
                       lineHeight: 1,
                       fontFamily: 'system-ui, -apple-system, sans-serif',
                     }}
@@ -131,9 +152,9 @@ export const HouseMarker = memo(function HouseMarker({
             ) : (
               <span
                 style={{
-                  fontSize: 10,
+                  fontSize:   10,
                   fontWeight: 400,
-                  color: '#CBD5E1',
+                  color:      '#CBD5E1',
                   lineHeight: 1,
                   fontFamily: 'system-ui, -apple-system, sans-serif',
                 }}
