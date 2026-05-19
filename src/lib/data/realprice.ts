@@ -40,6 +40,7 @@ interface TransactionInsert {
   sgg_code:         string
   raw_complex_name: string
   raw_region_code?: string
+  umd_nm?:          string | null
   cancel_date?:     string | null
   source_run_id?:   string
   dedupe_key:       string
@@ -53,7 +54,7 @@ export async function upsertTransaction(
 ): Promise<'inserted' | 'skipped'> {
   const { data, error } = await supabase
     .from('transactions')
-    .upsert(row, { onConflict: 'dedupe_key', ignoreDuplicates: true })
+    .upsert(row, { onConflict: 'dedupe_key', ignoreDuplicates: false })
     .select('id')
     .maybeSingle()
 
@@ -105,13 +106,15 @@ export async function ingestMonth(
   async function lookupComplexIdCached(
     itemSggCode: string,
     nameNormalized: string,
+    umdNm?: string,
   ): Promise<string | null> {
-    const key = `${itemSggCode}:${nameNormalized}`
+    const key = `${itemSggCode}:${nameNormalized}:${umdNm ?? ''}`
     if (complexIdCache.has(key)) return complexIdCache.get(key)!
     const { data, error } = await supabase.rpc('match_complex_by_admin', {
       p_sgg_code:        itemSggCode,
       p_name_normalized: nameNormalized,
       p_min_similarity:  0.9,  // 자동 연결은 고신뢰만 (DATA-10, T-07-03-02)
+      p_umd_nm:          umdNm ?? null,
     })
     if (error || !data || (data as unknown[]).length === 0) {
       complexIdCache.set(key, null)
@@ -136,9 +139,9 @@ export async function ingestMonth(
       const isCancelled = item.cdealType != null && item.cdealType.trim() !== ''
       const cancelDate = isCancelled ? dealDate : null
 
-      // DATA-10: complex_id 자동 연결
+      // DATA-10: complex_id 자동 연결 (umdNm 동 필터로 정밀 매칭)
       const nameNorm = nameNormalize(item.aptNm)
-      const complexId = await lookupComplexIdCached(String(item.sggCd), nameNorm)
+      const complexId = await lookupComplexIdCached(String(item.sggCd), nameNorm, item.umdNm)
 
       // molit_complex_code 저장: aptSeq 있고 매칭 성공 시 1회만 (T-07-03-01)
       if (item.aptSeq && complexId) {
@@ -158,6 +161,7 @@ export async function ingestMonth(
         sgg_code:         String(item.sggCd),
         raw_complex_name: item.aptNm,
         raw_region_code:  sggCode,
+        umd_nm:           item.umdNm ?? null,
         cancel_date:      cancelDate,
         source_run_id:    runId,
         complex_id:       complexId ?? null,  // DATA-10 추가
@@ -192,7 +196,7 @@ export async function ingestMonth(
 
       // DATA-10: complex_id 자동 연결 (전월세 — aptSeq 없으므로 molit_complex_code 업데이트 불필요)
       const nameNorm = nameNormalize(item.aptNm)
-      const complexId = await lookupComplexIdCached(String(item.sggCd), nameNorm)
+      const complexId = await lookupComplexIdCached(String(item.sggCd), nameNorm, item.umdNm)
 
       const outcome = await upsertTransaction({
         deal_type:        dealType,
@@ -204,6 +208,7 @@ export async function ingestMonth(
         sgg_code:         String(item.sggCd),
         raw_complex_name: item.aptNm,
         raw_region_code:  sggCode,
+        umd_nm:           item.umdNm ?? null,
         source_run_id:    runId,
         complex_id:       complexId ?? null,  // DATA-10 추가
         dedupe_key:       makeDedupeKey({
