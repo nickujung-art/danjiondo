@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { createReadonlyClient } from '@/lib/supabase/readonly'
 import { getRecentHighRecords } from '@/lib/data/homepage'
 import { getRankingsByType } from '@/lib/data/rankings'
+import { getActiveListingCount } from '@/lib/data/presale'
 import { HighRecordCard } from '@/components/home/HighRecordCard'
 import { RankingTabs } from '@/components/home/RankingTabs'
 import { UserMenu } from '@/components/auth/UserMenu'
@@ -63,13 +64,14 @@ function BellIcon() {
 export default async function HomePage() {
   const supabase = createReadonlyClient()
 
-  const [highRecords, rankHighPrice, rankVolume, rankPricePerPyeong, rankInterest] =
+  const [highRecords, rankHighPrice, rankVolume, rankPricePerPyeong, rankInterest, activeListingCount] =
     await Promise.all([
       getRecentHighRecords(supabase, 4).catch(() => []),
       getRankingsByType(supabase, 'high_price', 10).catch(() => []),
       getRankingsByType(supabase, 'volume', 10).catch(() => []),
       getRankingsByType(supabase, 'price_per_pyeong', 10).catch(() => []),
       getRankingsByType(supabase, 'interest', 10).catch(() => []),
+      getActiveListingCount(supabase).catch(() => 0),
     ])
 
   const rankingData = {
@@ -230,7 +232,7 @@ export default async function HomePage() {
         {/* Rankings */}
         <RankingTabs initialData={rankingData} />
 
-        {/* 신축·분양 섹션 */}
+        {/* 신축·분양 섹션 — Phase 13 강화 (활성 건수 배지) */}
         <section style={{ marginTop: 48 }}>
           <h2
             style={{
@@ -240,7 +242,15 @@ export default async function HomePage() {
               color: 'var(--fg-pri)',
             }}
           >
-            신축·분양
+            신축·분양·재건축
+            {activeListingCount > 0 && (
+              <span
+                className="badge pos"
+                style={{ marginLeft: 12, font: '500 11px/1 var(--font-sans)' }}
+              >
+                {activeListingCount}건 분양 진행 중
+              </span>
+            )}
           </h2>
           <Link
             href="/presale"
@@ -248,12 +258,14 @@ export default async function HomePage() {
             style={{ display: 'block', padding: 20, textDecoration: 'none' }}
           >
             <div style={{ font: '600 14px/1.4 var(--font-sans)', color: 'var(--fg-pri)' }}>
-              분양 정보 보기 →
+              분양·재건축·신축 보기 →
             </div>
             <div
               style={{ font: '500 12px/1.4 var(--font-sans)', color: 'var(--fg-sec)', marginTop: 4 }}
             >
-              창원·김해 신축 분양권 전매 실거래가
+              {activeListingCount > 0
+                ? `현재 진행 중인 ${activeListingCount}건 + 재건축 예정 단지 + 2021년 이후 신축 단지`
+                : '재건축 예정 단지 + 2021년 이후 신축 단지'}
             </div>
           </Link>
         </section>

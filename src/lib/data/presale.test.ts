@@ -112,9 +112,7 @@ describe('getNewBuiltComplexes (PRESALE-03 Tier 3)', () => {
 
 describe('getActiveListingCount (PRESALE-03 landing badge)', () => {
   it('returns count of active cheongyak listings', async () => {
-    const chain = createMockChain({ count: 5, error: null })
-    // For head:true queries, limit is not called — Promise resolves after select chain
-    // Override: select returns the final promise directly when called with { count, head }
+    // For head:true queries, limit is not called — Promise resolves after .not chain
     const countChain = {
       select: vi.fn(() => countChain),
       eq: vi.fn(() => countChain),
