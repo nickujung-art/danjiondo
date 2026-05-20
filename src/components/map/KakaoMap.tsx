@@ -44,10 +44,13 @@ export function KakaoMap({
     return txCounts[p95Idx] ?? 0
   }, [complexes])
 
-  // 줌 레벨 2단계 정책
-  // level ≥ 8: 구 단위 칩만 (개별 마커 없음)
-  // level ≤ 7: HouseMarker + 가격
-  const showOnlyCluster = mapLevel >= 8
+  // 줌 레벨 3단계 정책
+  // level ≥ 10: 구 단위 칩만 (개별 마커 없음)
+  // level 7–9 : 가격 라벨 표시
+  // level ≤ 6 : 가격 라벨 + 단지명 표시
+  const showOnlyCluster = mapLevel >= 10
+  const showLabel       = mapLevel <= 9   // level 7–9 및 ≤6에서 가격 라벨 표시
+  const showName        = mapLevel <= 6   // level ≤6에서 단지명 추가 표시
 
   // 구 단위 칩: level ≥ 10일 때만 계산 (complexes를 구별로 1개씩)
   const guChips = useMemo<GuChip[]>(() => {
@@ -159,12 +162,12 @@ export function KakaoMap({
         onIdle={computeClusters}
         onTileLoaded={computeClusters}
       >
-        {/* level ≥ 10: 구 단위 칩 1개씩 */}
+        {/* level ≥ 10: 구 단위 칩 1개씩 (DongClusterChip) */}
         {showOnlyCluster && guChips.map((chip) => (
           <DongClusterChip key={chip.gu} {...chip} />
         ))}
 
-        {/* level ≤ 9: 개별 단지 마커 */}
+        {/* level ≤ 9: 개별 단지 마커 (showLabel=true, level ≤6에서 showName=true) */}
         {!showOnlyCluster && clusters.map((feature, i) => {
           // supercluster 클러스터 피처는 건너뜀 (개별 마커만 렌더)
           if (feature.properties.cluster) return null
@@ -198,6 +201,14 @@ export function KakaoMap({
             p95_tx_count: p95TxCount,
           })
 
+          // showLabel: 가격 라벨 표시 (level ≤ 9) → 숨길 때 price/avg를 null로 전달
+          // showName:  단지명 추가 표시  (level ≤ 6) → 현재는 hover tooltip 제어용
+          const displayPrice = showLabel ? (props.recent_price ?? null)       : null
+          const displayAvg   = showLabel ? (props.avg_sale_per_pyeong ?? null) : null
+          // level > 6에서는 hover tooltip의 세부 정보(세대수·준공연도) 숨김
+          const detailHousehold = showName ? (props.household_count ?? null) : null
+          const detailBuiltYear = showName ? (props.built_year ?? null)       : null
+
           return (
             <ComplexMarker
               key={props.id ?? i}
@@ -207,14 +218,14 @@ export function KakaoMap({
               lng={lng}
               badge={badge}
               onSelect={setSelectedComplexId}
-              householdCount={props.household_count ?? null}
+              householdCount={detailHousehold}
               si={props.si ?? null}
               gu={props.gu ?? null}
-              recentPrice={props.recent_price ?? null}
+              recentPrice={displayPrice}
               recentDate={props.recent_date ?? null}
               recentAreaM2={props.recent_area_m2 ?? null}
-              builtYear={props.built_year ?? null}
-              avgSalePerPyeong={props.avg_sale_per_pyeong ?? null}
+              builtYear={detailBuiltYear}
+              avgSalePerPyeong={displayAvg}
             />
           )
         })}
