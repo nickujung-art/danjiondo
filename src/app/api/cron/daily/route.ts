@@ -6,6 +6,8 @@ import {
   currentYearMonth,
   LAWD_CODES,
 } from '@/services/molit-presale'
+import { fetchCheongyakList, fetchCompetitionRate, CHEONGYAK_SGG_CODES } from '@/services/cheongyak/client'
+import { normalizeCheongyakItem } from '@/services/cheongyak/normalize'
 
 export const runtime = 'nodejs'
 
@@ -17,6 +19,9 @@ export async function GET(request: Request): Promise<Response> {
 
   const errors: string[] = []
   let totalUpserted = 0
+  let cheongyakUpserted = 0
+  let competitionUpdated = 0
+  let expiredDeactivated = 0
 
   // ── K-apt 부대시설 UPSERT (DATA-01) ──────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -101,6 +106,82 @@ export async function GET(request: Request): Promise<Response> {
   }
   totalUpserted += presaleUpserted
 
+  // ── 청약홈 분양 공고 수집 (PRESALE-01, per T-13-06) ──────────────────────────
+  const cheongyakPblancNos: string[] = []
+  for (const sggCode of CHEONGYAK_SGG_CODES) {
+    try {
+      const items = await fetchCheongyakList(sggCode)
+      for (const item of items) {
+        const row = normalizeCheongyakItem(item)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
+          .from('new_listings')
+          .upsert(
+            {
+              name:                row.name,
+              region:              row.region,
+              pblanc_no:           row.pblanc_no,
+              pblanc_nm:           row.pblanc_nm,
+              sgg_code:            row.sgg_code,
+              supply_region:       row.supply_region,
+              supply_count:        row.supply_count,
+              rcept_bgnde:         row.rcept_bgnde,
+              rcept_endde:         row.rcept_endde,
+              przwner_presnatn_de: row.przwner_presnatn_de,
+              mvn_prearnge_ym:     row.mvn_prearnge_ym,
+              hssply_adres:        row.hssply_adres,
+              is_active:           true,
+              fetched_at:          row.fetched_at,
+            },
+            { onConflict: 'pblanc_no' },
+          )
+        if (!error) {
+          cheongyakUpserted++
+          cheongyakPblancNos.push(row.pblanc_no)
+        } else {
+          errors.push(`cheongyak upsert pblanc_no=${row.pblanc_no}: ${error.message}`)
+        }
+      }
+    } catch (err) {
+      errors.push(`cheongyak sgg=${sggCode}: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+  totalUpserted += cheongyakUpserted
+
+  // ── 청약홈 경쟁률 병합 (PRESALE-02, per D-2) ─────────────────────────────────
+  for (const pblancNo of cheongyakPblancNos) {
+    try {
+      const rate = await fetchCompetitionRate(pblancNo)
+      if (rate == null) continue
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from('new_listings')
+        .update({ competition_rate: rate })
+        .eq('pblanc_no', pblancNo)
+      if (!error) competitionUpdated++
+      else errors.push(`competition update pblanc_no=${pblancNo}: ${error.message}`)
+    } catch (err) {
+      errors.push(`competition pblanc_no=${pblancNo}: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
+  // ── 청약홈 만료 공고 비활성화 (RESEARCH Pitfall 3, T-13-07) ──────────────────
+  try {
+    const today = new Date().toISOString().slice(0, 10)  // YYYY-MM-DD
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: expired, error } = await (supabase as any)
+      .from('new_listings')
+      .update({ is_active: false })
+      .lt('rcept_endde', today)
+      .not('pblanc_no', 'is', null)
+      .eq('is_active', true)
+      .select('id')
+    if (!error) expiredDeactivated = (expired as { id: string }[] | null)?.length ?? 0
+    else errors.push(`expired deactivation: ${error.message}`)
+  } catch (err) {
+    errors.push(`expired deactivation: ${err instanceof Error ? err.message : String(err)}`)
+  }
+
   // ── Phase 11: 평당가·30일 변동률·거래량 배치 집계 (MAP-02, MAP-05) ──────────
   try {
     await supabase.rpc('refresh_complex_price_stats')
@@ -108,5 +189,14 @@ export async function GET(request: Request): Promise<Response> {
     errors.push(`refresh_complex_price_stats: ${err instanceof Error ? err.message : String(err)}`)
   }
 
-  return Response.json({ ok: errors.length === 0, totalUpserted, kaptUpserted, presaleUpserted, errors })
+  return Response.json({
+    ok: errors.length === 0,
+    totalUpserted,
+    kaptUpserted,
+    presaleUpserted,
+    cheongyakUpserted,
+    competitionUpdated,
+    expiredDeactivated,
+    errors,
+  })
 }
