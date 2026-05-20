@@ -10,7 +10,7 @@ import { PresaleCard } from '@/components/presale/PresaleCard'
 import { RedevelopmentCard } from '@/components/presale/RedevelopmentCard'
 import { NewBuildCard } from '@/components/presale/NewBuildCard'
 
-export const revalidate = 3600 // 1시간 (일배치 cron 04:00 기준)
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: '신축·분양·재건축 | 단지온도',
