@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, vi, beforeEach, afterEach } from 'vitest'
 
 describe('fetchCheongyakList (PRESALE-01)', () => {
   const ORIGINAL_KEY = process.env.MOLIT_API_KEY
