@@ -3,7 +3,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
-import { upsertRedevelopmentProject } from '@/lib/actions/redevelopment-actions'
+import { upsertRedevelopmentProject, setComplexRedevelopmentStatus } from '@/lib/actions/redevelopment-actions'
 
 export const revalidate = 0
 export const metadata: Metadata = { title: '관리자 · 재건축 단계 관리' }
@@ -57,6 +57,20 @@ async function upsertRedevelopmentProjectFormAction(formData: FormData) {
   return upsertRedevelopmentProject(complexId, phase, notes || null)
 }
 
+async function setComplexRedevelopmentStatusFromForm(formData: FormData): Promise<void> {
+  'use server'
+  const complexId     = (formData.get('complexId') as string) ?? ''
+  const status        = (formData.get('status') as string) ?? ''
+  const predecessorId = (formData.get('predecessorId') as string) || null
+  const successorId   = (formData.get('successorId') as string) || null
+  await setComplexRedevelopmentStatus({
+    complexId,
+    status: status === 'in_redevelopment' ? 'in_redevelopment' : 'active',
+    predecessorId,
+    successorId,
+  })
+}
+
 export default async function AdminRedevelopmentPage({
   searchParams,
 }: {
@@ -86,7 +100,7 @@ export default async function AdminRedevelopmentPage({
     .select('id, complex_id, project_name, phase, notes, updated_at')
     .order('updated_at', { ascending: false })
 
-  // in_redevelopment 단지 목록 (폼 select용)
+  // in_redevelopment 단지 목록 (기존 단계 입력 폼 select용)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: complexes } = await (adminClient as any)
     .from('complexes')
@@ -94,8 +108,24 @@ export default async function AdminRedevelopmentPage({
     .eq('status', 'in_redevelopment')
     .order('canonical_name')
 
+  // active + in_redevelopment 전체 단지 (Phase 13 신규: 상태 변경 폼용)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: activeComplexes } = await (adminClient as any)
+    .from('complexes')
+    .select('id, canonical_name, si, gu, status')
+    .in('status', ['active', 'in_redevelopment'])
+    .order('canonical_name')
+    .limit(500)
+
   const rows = ((projects ?? []) as unknown) as RedevelopmentRow[]
   const complexList = ((complexes ?? []) as unknown) as ComplexRow[]
+  const allComplexes = ((activeComplexes ?? []) as unknown) as Array<{
+    id: string
+    canonical_name: string
+    si: string | null
+    gu: string | null
+    status: string
+  }>
 
   const { saved, error: formError } = await searchParams
 
@@ -134,6 +164,116 @@ export default async function AdminRedevelopmentPage({
         >
           재건축 단계 관리
         </h1>
+
+        {/* Phase 13 신규: 단지 status 변경 (REDV-01) */}
+        <div className="card" style={{ padding: 24, marginBottom: 20 }}>
+          <h2 style={{ font: '700 16px/1.4 var(--font-sans)', margin: '0 0 4px' }}>
+            단지 재건축 지정
+          </h2>
+          <p style={{ font: '500 12px/1.4 var(--font-sans)', color: 'var(--fg-sec)', margin: '0 0 16px' }}>
+            complexes.status 를 변경하여 /presale Tier 2 (재건축 지정) 섹션에 표출하거나 해제합니다.
+          </p>
+          <form action={setComplexRedevelopmentStatusFromForm} aria-label="단지 재건축 상태 변경">
+            {/* 단지 select */}
+            <div style={{ marginBottom: 16 }}>
+              <label
+                htmlFor="status-complex-select"
+                style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-sec)', marginBottom: 6, display: 'block' }}
+              >
+                대상 단지
+              </label>
+              <select
+                id="status-complex-select"
+                name="complexId"
+                className="input"
+                required
+                style={{ width: '100%' }}
+              >
+                <option value="">단지 선택</option>
+                {allComplexes.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.canonical_name}
+                    {(c.si || c.gu) ? ` (${[c.si, c.gu].filter(Boolean).join(' ')})` : ''}
+                    {' — '}
+                    {c.status === 'in_redevelopment' ? '재건축 지정' : '일반'}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* status dropdown */}
+            <div style={{ marginBottom: 16 }}>
+              <label
+                htmlFor="status-select"
+                style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-sec)', marginBottom: 6, display: 'block' }}
+              >
+                상태 변경
+              </label>
+              <select
+                id="status-select"
+                name="status"
+                className="input"
+                required
+                style={{ width: '100%' }}
+              >
+                <option value="in_redevelopment">재건축 지정 (in_redevelopment)</option>
+                <option value="active">일반으로 복원 (active)</option>
+              </select>
+            </div>
+
+            {/* predecessor (기존 단지) */}
+            <div style={{ marginBottom: 16 }}>
+              <label
+                htmlFor="predecessor-select"
+                style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-sec)', marginBottom: 6, display: 'block' }}
+              >
+                기존 단지 (predecessor, 선택)
+              </label>
+              <select
+                id="predecessor-select"
+                name="predecessorId"
+                className="input"
+                style={{ width: '100%' }}
+              >
+                <option value="">선택 안 함 (null)</option>
+                {allComplexes.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.canonical_name}
+                    {(c.si || c.gu) ? ` (${[c.si, c.gu].filter(Boolean).join(' ')})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* successor (신규 단지) */}
+            <div style={{ marginBottom: 20 }}>
+              <label
+                htmlFor="successor-select"
+                style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-sec)', marginBottom: 6, display: 'block' }}
+              >
+                신규 단지 (successor, 선택)
+              </label>
+              <select
+                id="successor-select"
+                name="successorId"
+                className="input"
+                style={{ width: '100%' }}
+              >
+                <option value="">선택 안 함 (null)</option>
+                {allComplexes.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.canonical_name}
+                    {(c.si || c.gu) ? ` (${[c.si, c.gu].filter(Boolean).join(' ')})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button type="submit" className="btn btn-sm btn-orange">
+              상태 변경
+            </button>
+          </form>
+        </div>
 
         {/* 입력 폼 */}
         <div className="card" style={{ padding: 24, marginBottom: 20 }}>
