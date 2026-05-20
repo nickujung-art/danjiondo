@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: milestone
 status: complete
-last_updated: "2026-05-20T10:40:00Z"
-last_activity: 2026-05-20 — Phase 13 Plan 01 COMPLETE (청약홈 API 기반 — DB 12컬럼 + Zod 스키마 + normalize.ts + RED 스캐폴드 21개)
+last_updated: "2026-05-20T02:17:00Z"
+last_activity: 2026-05-20 — Phase 13 Plan 02 COMPLETE (청약홈 API 어댑터 client.ts + 6개 unit test GREEN + daily cron 3블록 통합)
 progress:
   total_phases: 12
   completed_phases: 11
   total_plans: 53
-  completed_plans: 52
+  completed_plans: 53
   percent: 98
 ---
 
@@ -90,7 +90,7 @@ Waves:
 | 10 | 교육 환경 고도화 | ✅ Complete |
 | 11 | 지도 고도화 | ✅ Complete (5/5 plans) |
 | 12 | 지도 마커·클러스터 개편 | 🔄 In Progress (4/4 plans — 02 complete) |
-| 13 | 신축·분양·재건축 대시보드 | 🔄 In Progress (1/4 plans complete) |
+| 13 | 신축·분양·재건축 대시보드 | 🔄 In Progress (2/4 plans complete) |
 
 ---
 
@@ -158,6 +158,8 @@ Waves:
 | 2026-05-15 | DongClusterChip 구 이름 추출: 첫 번째 leave의 gu 우선 → dong → '기타' (다수결 불필요) | 12-02 |
 | 2026-05-20 | 청약홈 API 응답 필드명 camelCase 확정 (RESEARCH A1 폐기) — CONTEXT.md 명세 + data.go.kr 표준 패턴 | 13-01 |
 | 2026-05-20 | competition_rate는 normalizeCheongyakItem 미포함 — API 2 별도 호출로 Wave 1에서 UPDATE | 13-01 |
+| 2026-05-20 | 경쟁률 집계 MAX 확정 — 단일 numeric 컬럼, 카드 "최고 경쟁률 X:1" 표시 목적 | 13-02 |
+| 2026-05-20 | withRetry mock 패스스루 — res.ok=false throw 시 재시도 루프 방지를 위해 vi.mock 적용 | 13-02 |
 
 ---
 *Initialized: 2026-05-06*
