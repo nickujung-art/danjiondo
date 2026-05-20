@@ -58,7 +58,7 @@ describe('getActiveListings (PRESALE-03 Tier 1)', () => {
 
     await getActiveListings(supabase)
 
-    const selectCall = chain.select.mock.calls[0][0] as string
+    const selectCall = (chain.select.mock.calls[0] as unknown[])[0] as string
     const cols = ['id', 'pblanc_no', 'pblanc_nm', 'region', 'supply_region', 'supply_count',
       'rcept_bgnde', 'rcept_endde', 'mvn_prearnge_ym', 'competition_rate', 'hssply_adres', 'complex_id']
     for (const col of cols) {
@@ -83,7 +83,7 @@ describe('getRedevelopmentComplexes (PRESALE-03 Tier 2)', () => {
 
     await getRedevelopmentComplexes(supabase)
 
-    const selectCall = chain.select.mock.calls[0][0] as string
+    const selectCall = (chain.select.mock.calls[0] as unknown[])[0] as string
     expect(selectCall).toContain('predecessor_id')
     expect(selectCall).toContain('successor_id')
   })

@@ -1,20 +1,39 @@
-import type { NewListing } from '@/lib/data/presale'
+import type { CheongyakListing } from '@/lib/data/presale'
 import Link from 'next/link'
 
 interface Props {
-  listing: NewListing
+  listing: CheongyakListing
 }
 
-function formatPrice(price: number | null | undefined): string {
-  if (!price) return '미정'
-  const uk = price / 10000
-  return `${uk.toFixed(1)}억`
+function formatDateRange(start: string | null, end: string | null): string {
+  if (!start && !end) return '청약일정 미정'
+  const fmt = (iso: string) => {
+    const parts = iso.split('-')
+    const m = parts[1] ?? ''
+    const d = parts[2] ?? ''
+    return `${m}.${d}`
+  }
+  if (start && end) return `${fmt(start)}~${fmt(end)}`
+  if (start) return `${fmt(start)}~`
+  return `~${fmt(end!)}`
+}
+
+function formatMoveInYM(ym: string | null): string {
+  if (!ym || ym.length !== 6) return '입주예정 미정'
+  const year = ym.slice(0, 4)
+  const month = ym.slice(4, 6)
+  return `${year}년 ${month}월 입주예정`
+}
+
+function formatCompetitionRate(rate: number | null): string | null {
+  if (rate == null) return null
+  return `${rate.toFixed(1)}:1`
 }
 
 export function PresaleCard({ listing }: Props) {
   const inner = (
     <article
-      aria-label={`${listing.name} 분양 정보`}
+      aria-label={`${listing.pblanc_nm ?? '분양 공고'} 청약 정보`}
       className="card-flat"
       style={{
         padding: 20,
@@ -26,12 +45,7 @@ export function PresaleCard({ listing }: Props) {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
         <span className="chip sm outlined">{listing.region}</span>
         <span className="badge neutral" style={{ font: '500 11px/1 var(--font-sans)' }}>
-          {listing.move_in_date
-            ? new Date(listing.move_in_date)
-                .toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit' })
-                .replace('. ', '.')
-                .replace('.', '')
-            : '입주일 미정'}
+          {formatDateRange(listing.rcept_bgnde, listing.rcept_endde)}
         </span>
       </div>
 
@@ -43,30 +57,44 @@ export function PresaleCard({ listing }: Props) {
           marginBottom: 6,
         }}
       >
-        {listing.name}
+        {listing.pblanc_nm ?? '주택명 미정'}
       </div>
 
-      {/* 분양가 */}
+      {/* 세대수 (핵심 수치) */}
       <div
         className="tnum"
-        aria-label={`${formatPrice(listing.price_min)}에서 ${formatPrice(listing.price_max)}`}
         style={{
           font: '700 22px/1.2 var(--font-sans)',
           color: 'var(--dj-orange)',
           marginBottom: 8,
         }}
       >
-        {listing.price_min && listing.price_max && listing.price_min !== listing.price_max
-          ? `${formatPrice(listing.price_min)} ~ ${formatPrice(listing.price_max)}`
-          : formatPrice(listing.price_min ?? listing.price_max)}
+        {listing.supply_count != null ? `${listing.supply_count}세대` : '세대수 미정'}
       </div>
 
-      {/* 보조 정보 */}
-      <div style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
-        {listing.total_units != null && (
-          <span className="tnum">총 {listing.total_units}세대</span>
-        )}
+      {/* 경쟁률 (있을 때만) */}
+      {formatCompetitionRate(listing.competition_rate) != null && (
+        <div style={{ marginBottom: 6 }}>
+          <span
+            className="badge pos"
+            style={{ font: '500 11px/1 var(--font-sans)' }}
+          >
+            경쟁률 {formatCompetitionRate(listing.competition_rate)}
+          </span>
+        </div>
+      )}
+
+      {/* 입주예정 */}
+      <div style={{ font: '500 12px/1.4 var(--font-sans)', color: 'var(--fg-sec)', marginBottom: 4 }}>
+        {formatMoveInYM(listing.mvn_prearnge_ym)}
       </div>
+
+      {/* 공급위치 */}
+      {listing.hssply_adres && (
+        <div style={{ font: '500 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+          {listing.hssply_adres}
+        </div>
+      )}
     </article>
   )
 
