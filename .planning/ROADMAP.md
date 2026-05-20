@@ -18,7 +18,7 @@
 | 10 | 교육 환경 고도화 | V2.2 | 학구도 기반 배정학교 + 교육 카드 UX 전면 개선 | EDU-01~05 | 📋 Planned (4 plans) |
 | 11 | 지도 고도화 | V2.3 | 카카오맵 게임화 — 클러스터 줌인·평당가 라벨·사이드 패널·배지 마커 | MAP-01~05 | 📋 Planned (5 plans) |
 | 12 | 지도 마커·클러스터 개편 | V2.4 | 로고 기반 집 모양 SVG 마커 + 동 단위 최고가 클러스터 칩 + hover 툴팁으로 지도 UX 호갱노노 수준 고도화 | MAP-06~09 | 📋 Planned (4 plans) |
-| 13 | 신축·분양·재건축 대시보드 | V2.5 | 청약홈 API 연동 + 신축/분양/재건축 3-tier 우선순위 대시보드 구현 | PRESALE-01~03, REDV-01 | 🔄 In Progress (3/4 plans) |
+| 13 | 신축·분양·재건축 대시보드 | V2.5 | 청약홈 API 연동 + 신축/분양/재건축 3-tier 우선순위 대시보드 구현 | PRESALE-01~03, REDV-01 | ✅ Complete |
 
 ---
 
@@ -560,14 +560,14 @@
 **Plans:** 4 plans / 3 waves
 
 **Wave 0** *(BLOCKING — autonomous: false, supabase db push + 청약홈 API 키 검증)*
-- [ ] 13-01-PLAN.md — DB 마이그레이션 (new_listings 12컬럼 + partial unique index) + cheongyak types/normalize + RED 테스트 4종 + [BLOCKING] supabase db push + API 3 필드명 실호출 검증 (PRESALE-01, PRESALE-02)
+- [x] 13-01-PLAN.md — DB 마이그레이션 (new_listings 12컬럼 + partial unique index) + cheongyak types/normalize + RED 테스트 4종 + [BLOCKING] supabase db push + API 3 필드명 실호출 검증 (PRESALE-01, PRESALE-02) `completed 2026-05-20`
 
 **Wave 1** *(blocked on Wave 0; 13-02/13-03 병렬 실행 가능 — files_modified 무중복)*
-- [ ] 13-02-PLAN.md — cheongyak/client.ts (fetchCheongyakList + fetchCompetitionRate) + daily cron 통합 (수집 + 경쟁률 + is_active 만료) (PRESALE-01, PRESALE-02)
-- [ ] 13-03-PLAN.md — setComplexRedevelopmentStatus Server Action + /admin/redevelopment 단지 status 변경 폼 (REDV-01)
+- [x] 13-02-PLAN.md — cheongyak/client.ts (fetchCheongyakList + fetchCompetitionRate) + daily cron 통합 (수집 + 경쟁률 + is_active 만료) (PRESALE-01, PRESALE-02) `completed 2026-05-20`
+- [x] 13-03-PLAN.md — setComplexRedevelopmentStatus Server Action + /admin/redevelopment 단지 status 변경 폼 (REDV-01) `completed 2026-05-20`
 
 **Wave 2** *(blocked on Wave 1)*
-- [ ] 13-04-PLAN.md — presale.ts 3-tier 쿼리 + PresaleCard 리팩터 + RedevelopmentCard/NewBuildCard 신규 + /presale 페이지 재설계 + 랜딩 분양 건수 배지 (PRESALE-03)
+- [x] 13-04-PLAN.md — presale.ts 3-tier 쿼리 + PresaleCard 리팩터 + RedevelopmentCard/NewBuildCard 신규 + /presale 페이지 재설계 + 랜딩 분양 건수 배지 (PRESALE-03) `completed 2026-05-20`
 
 **Cross-cutting constraints:**
 - 외부 API 호출은 src/services/cheongyak/ 어댑터만 — 컴포넌트/라우트 직접 호출 금지 (CLAUDE.md)

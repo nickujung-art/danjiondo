@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.1
+milestone: v2.5
 milestone_name: milestone
 status: complete
-last_updated: "2026-05-20T11:30:00Z"
-last_activity: 2026-05-20 — Phase 13 Plan 03 COMPLETE (setComplexRedevelopmentStatus Server Action + 7개 test GREEN + admin 재건축 지정 카드)
+last_updated: "2026-05-20T15:00:00Z"
+last_activity: 2026-05-20 — Phase 13 COMPLETE (청약홈 API 어댑터 + 3-tier /presale 대시보드 + REDV-01 admin UI, 31개 test GREEN, human verification 3/3 통과)
 progress:
-  total_phases: 12
-  completed_phases: 11
-  total_plans: 53
-  completed_plans: 53
-  percent: 98
+  total_phases: 13
+  completed_phases: 13
+  total_plans: 57
+  completed_plans: 57
+  percent: 100
 ---
 
 # Project State — 단지온도
@@ -89,8 +89,8 @@ Waves:
 | 9 | 단지 상세 UX 고도화 | ✅ Complete (5/5 plans) |
 | 10 | 교육 환경 고도화 | ✅ Complete |
 | 11 | 지도 고도화 | ✅ Complete (5/5 plans) |
-| 12 | 지도 마커·클러스터 개편 | 🔄 In Progress (4/4 plans — 02 complete) |
-| 13 | 신축·분양·재건축 대시보드 | 🔄 In Progress (3/4 plans complete) |
+| 12 | 지도 마커·클러스터 개편 | 🔄 In Progress (3/4 plans complete) |
+| 13 | 신축·분양·재건축 대시보드 | ✅ Complete |
 
 ---
 
@@ -124,6 +124,23 @@ Waves:
 - Wave 1: 11-01 (ComplexMapItem 확장 + badge-logic.ts), 11-02 (map-panel API Route) ✅
 - Wave 2: 11-03 (BadgeMarker SVG + ComplexMarker CustomOverlayMap + ClusterMarker 줌인 + KakaoMap 통합) ✅
 - Wave 3: 11-04 (MapSidePanel 슬라이드인/바텀시트 + ViewCountTracker + daily cron 연결) ✅
+
+**Phase 13: 신축·분양·재건축 대시보드** ✅ Complete
+
+Goal: 청약홈 API 연동으로 분양 공고를 자동 수집하고, 3-tier 우선순위 대시보드 구현
+
+Requirements: PRESALE-01~03, REDV-01
+
+Plans: 4/4 complete (13-01 ~ 13-04) — verified 2026-05-20
+
+Waves:
+- Wave 0: 13-01 (DB 마이그레이션 12컬럼 + partial unique index + types/normalize + 9개 test) ✅
+- Wave 1: 13-02 (cheongyak/client.ts + daily cron 통합 + 6개 test), 13-03 (setComplexRedevelopmentStatus + admin UI + 7개 test) ✅
+- Wave 2: 13-04 (presale.ts 3-tier 쿼리 + PresaleCard 리팩터 + RedevelopmentCard/NewBuildCard + /presale 재설계 + 랜딩 배지 + 9개 test) ✅
+
+Key notes: MOLIT_API_KEY (기존 data.go.kr 키) 재사용. B552555 청약홈 서비스 활성화 후 실데이터 수집 시작. SUPABASE_SERVICE_ROLE_KEY JWT 키로 교체 완료.
+
+---
 
 ## Key Context for Agents
 
