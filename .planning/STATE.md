@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: milestone
 status: complete
-last_updated: "2026-05-20T02:17:00Z"
-last_activity: 2026-05-20 — Phase 13 Plan 02 COMPLETE (청약홈 API 어댑터 client.ts + 6개 unit test GREEN + daily cron 3블록 통합)
+last_updated: "2026-05-20T11:30:00Z"
+last_activity: 2026-05-20 — Phase 13 Plan 03 COMPLETE (setComplexRedevelopmentStatus Server Action + 7개 test GREEN + admin 재건축 지정 카드)
 progress:
   total_phases: 12
   completed_phases: 11
@@ -90,7 +90,7 @@ Waves:
 | 10 | 교육 환경 고도화 | ✅ Complete |
 | 11 | 지도 고도화 | ✅ Complete (5/5 plans) |
 | 12 | 지도 마커·클러스터 개편 | 🔄 In Progress (4/4 plans — 02 complete) |
-| 13 | 신축·분양·재건축 대시보드 | 🔄 In Progress (2/4 plans complete) |
+| 13 | 신축·분양·재건축 대시보드 | 🔄 In Progress (3/4 plans complete) |
 
 ---
 
@@ -160,6 +160,8 @@ Waves:
 | 2026-05-20 | competition_rate는 normalizeCheongyakItem 미포함 — API 2 별도 호출로 Wave 1에서 UPDATE | 13-01 |
 | 2026-05-20 | 경쟁률 집계 MAX 확정 — 단일 numeric 컬럼, 카드 "최고 경쟁률 X:1" 표시 목적 | 13-02 |
 | 2026-05-20 | withRetry mock 패스스루 — res.ok=false throw 시 재시도 루프 방지를 위해 vi.mock 적용 | 13-02 |
+| 2026-05-20 | setComplexRedevelopmentStatus와 upsertRedevelopmentProject 분리 — 각각 complexes vs redevelopment_projects 담당 | 13-03 |
+| 2026-05-20 | complexes.status enum 전환 범위를 active|in_redevelopment로 제한 — 다른 상태는 별도 마이그레이션·UI | 13-03 |
 
 ---
 *Initialized: 2026-05-06*
