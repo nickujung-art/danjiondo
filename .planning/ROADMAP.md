@@ -1,6 +1,6 @@
 # Roadmap — 단지온도
 
-**12 phases** | **55 requirements mapped** | v1~v7 requirements covered ✓
+**13 phases** | **58 requirements mapped** | v1~v7 requirements covered ✓
 
 ## Overview
 
@@ -18,6 +18,7 @@
 | 10 | 교육 환경 고도화 | V2.2 | 학구도 기반 배정학교 + 교육 카드 UX 전면 개선 | EDU-01~05 | 📋 Planned (4 plans) |
 | 11 | 지도 고도화 | V2.3 | 카카오맵 게임화 — 클러스터 줌인·평당가 라벨·사이드 패널·배지 마커 | MAP-01~05 | 📋 Planned (5 plans) |
 | 12 | 지도 마커·클러스터 개편 | V2.4 | 로고 기반 집 모양 SVG 마커 + 동 단위 최고가 클러스터 칩 + hover 툴팁으로 지도 UX 호갱노노 수준 고도화 | MAP-06~09 | 📋 Planned (4 plans) |
+| 13 | 신축·분양·재건축 대시보드 | V2.5 | 청약홈 API 연동 + 신축/분양/재건축 3-tier 우선순위 대시보드 구현 | PRESALE-01~03, REDV-01 | 🔄 In Progress (1/4 plans) |
 
 ---
 
@@ -539,6 +540,52 @@
 4. 분양 단지는 빨간 바디, 신축(2021+)은 민트 바디, hot 단지는 왕관 SVG 마커를 표시한다
 5. 줌 레벨 ≤6에서는 마커에 단지명이 함께 표시된다
 6. 이모지/backdrop-blur/gradient-text/glow/보라색 없이 순수 SVG path로만 구성된다
+
+**UI hint**: yes
+
+---
+
+### Phase 13: 신축·분양·재건축 대시보드
+
+**Goal:** 청약홈 API 연동으로 분양 공고를 자동 수집하고, 분양 공고 → 재건축 예정 → 신축 최신순 3-tier 우선순위 대시보드를 구현한다.
+
+**Version:** V2.5
+
+**Requirements:**
+- PRESALE-01: 청약홈 API 3 (data.go.kr #15098547) 어댑터 + 일배치 cron — 경남 지역 분양 공고 자동 수집, new_listings upsert
+- PRESALE-02: 청약홈 API 2 (data.go.kr #15098905) 경쟁률 병합 — new_listings.competition_rate 컬럼 추가
+- PRESALE-03: /presale 페이지 3-tier 재설계 — 분양 공고(1순위) → 재건축 예정(2순위) → 신축 최신순(3순위) 섹션, 랜딩 페이지 신축·분양 섹션 강화
+- REDV-01: 재건축 admin UI — complexes.status = 'in_redevelopment' 수동 지정 화면 (predecessor/successor 연결 포함)
+
+**Plans:** 4 plans / 3 waves
+
+**Wave 0** *(BLOCKING — autonomous: false, supabase db push + 청약홈 API 키 검증)*
+- [ ] 13-01-PLAN.md — DB 마이그레이션 (new_listings 12컬럼 + partial unique index) + cheongyak types/normalize + RED 테스트 4종 + [BLOCKING] supabase db push + API 3 필드명 실호출 검증 (PRESALE-01, PRESALE-02)
+
+**Wave 1** *(blocked on Wave 0; 13-02/13-03 병렬 실행 가능 — files_modified 무중복)*
+- [ ] 13-02-PLAN.md — cheongyak/client.ts (fetchCheongyakList + fetchCompetitionRate) + daily cron 통합 (수집 + 경쟁률 + is_active 만료) (PRESALE-01, PRESALE-02)
+- [ ] 13-03-PLAN.md — setComplexRedevelopmentStatus Server Action + /admin/redevelopment 단지 status 변경 폼 (REDV-01)
+
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 13-04-PLAN.md — presale.ts 3-tier 쿼리 + PresaleCard 리팩터 + RedevelopmentCard/NewBuildCard 신규 + /presale 페이지 재설계 + 랜딩 분양 건수 배지 (PRESALE-03)
+
+**Cross-cutting constraints:**
+- 외부 API 호출은 src/services/cheongyak/ 어댑터만 — 컴포넌트/라우트 직접 호출 금지 (CLAUDE.md)
+- 클라이언트 컴포넌트에서 Supabase 직접 쿼리 금지 — /presale 데이터는 모두 RSC + createReadonlyClient
+- new_listings 청약홈 upsert: onConflict: pblanc_no 만 사용 (기존 MOLIT name/region 제약과 partial unique index로 공존)
+- admin Server Action: requireAdmin guard FIRST (Zod 이전) + createSupabaseAdminClient + revalidatePath 필수
+- daily cron CRON_SECRET 헤더 검증 유지 (기존 패턴)
+- AI 슬롭 금지: backdrop-blur, gradient-text, glow, 보라/인디고 (PresaleCard, RedevelopmentCard, NewBuildCard 포함)
+- 만료 공고: rcept_endde < today AND pblanc_no IS NOT NULL → is_active=false 자동 갱신
+- Tier 1 필터: pblanc_no IS NOT NULL AND is_active=true (MOLIT 전매 행 자동 제외)
+
+**Success Criteria:**
+1. 경남 지역 청약홈 분양 공고가 일배치 cron으로 new_listings에 upsert된다
+2. /presale 페이지에 분양 공고 → 재건축 예정 → 신축 3단계 섹션이 렌더된다
+3. 분양 공고 카드에 경쟁률(competition_rate)이 표시된다
+4. 데이터가 없는 섹션은 자동으로 숨겨지고 하위 tier가 올라온다
+5. admin에서 단지 status를 in_redevelopment로 변경하면 재건축 섹션에 노출된다
+6. 신축 섹션은 built_year >= 2021 단지를 준공연도 최신순으로 표시한다
 
 **UI hint**: yes
 

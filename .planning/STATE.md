@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: milestone
 status: complete
-last_updated: "2026-05-15T17:20:00Z"
-last_activity: 2026-05-15 — Phase 12 Plan 02 COMPLETE (DongClusterChip 구/동 이름 + 최고 실거래가 사각형 클러스터 칩)
+last_updated: "2026-05-20T10:40:00Z"
+last_activity: 2026-05-20 — Phase 13 Plan 01 COMPLETE (청약홈 API 기반 — DB 12컬럼 + Zod 스키마 + normalize.ts + RED 스캐폴드 21개)
 progress:
   total_phases: 12
   completed_phases: 11
@@ -90,6 +90,7 @@ Waves:
 | 10 | 교육 환경 고도화 | ✅ Complete |
 | 11 | 지도 고도화 | ✅ Complete (5/5 plans) |
 | 12 | 지도 마커·클러스터 개편 | 🔄 In Progress (4/4 plans — 02 complete) |
+| 13 | 신축·분양·재건축 대시보드 | 🔄 In Progress (1/4 plans complete) |
 
 ---
 
@@ -155,6 +156,8 @@ Waves:
 | 2026-05-15 | avgSalePerPyeong 제거 — recentPrice(최근 실거래)로 대체, hover 툴팁에서 직접 사용 | 12-03 |
 | 2026-05-15 | KakaoMap 줌 레벨 3단계 정책: level≥10 마커 숨김 / level7-9 가격만 / level≤6 이름+가격 | 12-03 |
 | 2026-05-15 | DongClusterChip 구 이름 추출: 첫 번째 leave의 gu 우선 → dong → '기타' (다수결 불필요) | 12-02 |
+| 2026-05-20 | 청약홈 API 응답 필드명 camelCase 확정 (RESEARCH A1 폐기) — CONTEXT.md 명세 + data.go.kr 표준 패턴 | 13-01 |
+| 2026-05-20 | competition_rate는 normalizeCheongyakItem 미포함 — API 2 별도 호출로 Wave 1에서 UPDATE | 13-01 |
 
 ---
 *Initialized: 2026-05-06*
