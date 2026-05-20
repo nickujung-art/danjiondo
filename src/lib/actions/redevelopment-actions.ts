@@ -83,3 +83,53 @@ export async function upsertRedevelopmentProject(
   revalidatePath(`/complexes/${parsed.data.complexId}`)
   return { error: null }
 }
+
+// ── Phase 13: complexes status 직접 변경 (REDV-01) ──────────────────────────
+
+const complexStatusSchema = z.object({
+  complexId:     z.string().uuid('유효한 단지 ID가 아닙니다'),
+  status:        z.enum(['active', 'in_redevelopment'], { message: '유효한 상태가 아닙니다' }),
+  predecessorId: z.string().uuid('유효한 이전 단지 ID가 아닙니다').nullable(),
+  successorId:   z.string().uuid('유효한 신규 단지 ID가 아닙니다').nullable(),
+})
+
+/**
+ * REDV-01: complexes 테이블의 status / predecessor_id / successor_id 를 직접 변경.
+ * /presale Tier 2 (재건축 지정) 섹션의 데이터 입력 경로.
+ * complex_status enum 중 active ↔ in_redevelopment 전환만 허용 (다른 상태는 별도 영역).
+ */
+export async function setComplexRedevelopmentStatus(input: {
+  complexId:     string
+  status:        'active' | 'in_redevelopment'
+  predecessorId: string | null
+  successorId:   string | null
+}): Promise<{ error: string | null }> {
+  // 1. admin guard FIRST (per CLAUDE.md + listing-price-actions pattern)
+  const { error, admin } = await requireAdmin()
+  if (error || !admin) return { error: error! }
+
+  // 2. zod validation (after auth confirmed)
+  const parsed = complexStatusSchema.safeParse(input)
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? '입력값이 유효하지 않습니다' }
+  }
+
+  // 3. UPDATE complexes — admin client 필수 (RLS 우회)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: dbErr } = await (admin as any)
+    .from('complexes')
+    .update({
+      status:         parsed.data.status,
+      predecessor_id: parsed.data.predecessorId,
+      successor_id:   parsed.data.successorId,
+      updated_at:     new Date().toISOString(),
+    })
+    .eq('id', parsed.data.complexId)
+
+  if (dbErr) return { error: (dbErr as { message: string }).message }
+
+  revalidatePath('/admin/redevelopment')
+  revalidatePath('/presale')
+  revalidatePath(`/complexes/${parsed.data.complexId}`)
+  return { error: null }
+}
