@@ -71,51 +71,58 @@ async function kakaoKeywordSearch(query: string): Promise<KakaoPlace | null> {
   return json.documents?.[0] ?? null
 }
 
-// ── 카카오 주소 검색 (b_code + 지번 획득) ──────────────────────────
-interface KakaoAddressResult {
-  b_code:            string  // 10자리 법정동코드 (ex: '4812110400')
-  main_address_no:   string  // 본번 (ex: '158')
-  sub_address_no:    string  // 부번 (ex: '10', 없으면 '')
+// ── 좌표 → 법정동코드(b_code) + 지번 획득 ────────────────────────
+// coord2regioncode: 10자리 법정동코드
+// coord2address: 본번/부번
+interface KakaoAddrFromCoord {
+  b_code:          string  // 10자리 (ex: '4812513700')
+  main_address_no: string  // 본번 (ex: '17')
+  sub_address_no:  string  // 부번 (ex: '135', 없으면 '')
 }
 
-async function kakaoAddressSearch(address: string): Promise<KakaoAddressResult | null> {
+async function kakaoCoordToAddr(lat: number, lng: number): Promise<KakaoAddrFromCoord | null> {
   const key = process.env.KAKAO_REST_API_KEY!
-  const url = new URL('https://dapi.kakao.com/v2/local/geo/address.json')
-  url.searchParams.set('query', address)
-  url.searchParams.set('analyze_type', 'exact')
+  const headers = { Authorization: `KakaoAK ${key}` }
+  const signal  = AbortSignal.timeout(5_000)
 
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: `KakaoAK ${key}` },
-    signal: AbortSignal.timeout(5_000),
-  })
-  if (!res.ok) return null
+  // 병렬로 두 API 호출
+  const [regionRes, addrRes] = await Promise.all([
+    fetch(`https://dapi.kakao.com/v2/local/geo/coord2regioncode.json?x=${lng}&y=${lat}`, { headers, signal }),
+    fetch(`https://dapi.kakao.com/v2/local/geo/coord2address.json?x=${lng}&y=${lat}`, { headers, signal }),
+  ])
+  if (!regionRes.ok || !addrRes.ok) return null
 
-  const json = await res.json() as {
+  const regionJson = await regionRes.json() as {
+    documents?: Array<{ region_type: string; code: string }>
+  }
+  const addrJson = await addrRes.json() as {
     documents?: Array<{
-      address?: {
-        b_code?: string
-        main_address_no?: string
-        sub_address_no?: string
-      }
+      address?: { main_address_no?: string; sub_address_no?: string }
     }>
   }
-  const addr = json.documents?.[0]?.address
-  if (!addr?.b_code || !addr.main_address_no) return null
+
+  // 법정동(B타입) 코드
+  const bDoc = regionJson.documents?.find(d => d.region_type === 'B')
+  if (!bDoc?.code) return null
+
+  const addr = addrJson.documents?.[0]?.address
+  if (!addr?.main_address_no) return null
 
   return {
-    b_code:          addr.b_code,
+    b_code:          bDoc.code,
     main_address_no: addr.main_address_no,
     sub_address_no:  addr.sub_address_no ?? '',
   }
 }
 
 // ── 건축물대장 표제부 파라미터 파싱 ────────────────────────────────
-function parseBldParams(addrResult: KakaoAddressResult) {
+// bjdongCd는 5자리 (b_code[5:10]) — 건축물대장 API 요구사항
+function parseBldParams(r: KakaoAddrFromCoord) {
   return {
-    sigunguCd: addrResult.b_code.slice(0, 5),
-    bjdongCd:  addrResult.b_code.slice(5, 9),
-    bun:       addrResult.main_address_no.padStart(4, '0'),
-    ji:        (addrResult.sub_address_no || '0').padStart(4, '0'),
+    sigunguCd: r.b_code.slice(0, 5),
+    bjdongCd:  r.b_code.slice(5, 10),   // ← 5자리 (기존 slice(5,9)가 4자리라 오류였음)
+    bun:       r.main_address_no.padStart(4, '0'),
+    ji:        (r.sub_address_no || '0').padStart(4, '0'),
   }
 }
 
@@ -181,12 +188,12 @@ async function main() {
       const lat = parseFloat(place.y)
       const lng = parseFloat(place.x)
 
-      // ── Step 2: 카카오 주소 검색 → b_code 획득 ─────────────────
+      // ── Step 2: 좌표 → b_code + 지번 획득 ─────────────────────
       await new Promise(r => setTimeout(r, 100))
-      const addrResult = await kakaoAddressSearch(place.address_name)
+      const addrResult = await kakaoCoordToAddr(lat, lng)
 
       if (!addrResult) {
-        console.warn(`\n  ⚠️  "${c.canonical_name}" — 주소 → b_code 변환 실패 (${place.address_name})`)
+        console.warn(`\n  ⚠️  "${c.canonical_name}" — 좌표 → b_code 변환 실패 (lat=${lat}, lng=${lng})`)
         // 좌표만 업데이트
         if (!DRY_RUN && !isNaN(lat) && !c.lat) {
           await supabase.from('complexes').update({ lat, lng }).eq('id', c.id)
