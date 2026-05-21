@@ -2,7 +2,14 @@ import type { Metadata } from 'next'
 import { createReadonlyClient } from '@/lib/supabase/readonly'
 import { getRecentHighRecords } from '@/lib/data/homepage'
 import { getRankingsByType } from '@/lib/data/rankings'
-import { getActiveListingCount } from '@/lib/data/presale'
+import {
+  getActiveListingCount,
+  getActiveListings,
+  getRecentlyExpiredListings,
+  getRedevelopmentComplexes,
+} from '@/lib/data/presale'
+import { PresaleCard } from '@/components/presale/PresaleCard'
+import { RedevelopmentCard } from '@/components/presale/RedevelopmentCard'
 import { HighRecordCard } from '@/components/home/HighRecordCard'
 import { RankingTabs } from '@/components/home/RankingTabs'
 import { UserMenu } from '@/components/auth/UserMenu'
@@ -64,7 +71,7 @@ function BellIcon() {
 export default async function HomePage() {
   const supabase = createReadonlyClient()
 
-  const [highRecords, rankHighPrice, rankVolume, rankPricePerPyeong, rankInterest, activeListingCount] =
+  const [highRecords, rankHighPrice, rankVolume, rankPricePerPyeong, rankInterest, activeListingCount, activeListings, recentlyExpired, redevelopments] =
     await Promise.all([
       getRecentHighRecords(supabase, 4).catch(() => []),
       getRankingsByType(supabase, 'high_price', 10).catch(() => []),
@@ -72,6 +79,9 @@ export default async function HomePage() {
       getRankingsByType(supabase, 'price_per_pyeong', 10).catch(() => []),
       getRankingsByType(supabase, 'interest', 10).catch(() => []),
       getActiveListingCount(supabase).catch(() => 0),
+      getActiveListings(supabase, 3).catch(() => []),
+      getRecentlyExpiredListings(supabase, 3).catch(() => []),
+      getRedevelopmentComplexes(supabase, 3).catch(() => []),
     ])
 
   const rankingData = {
@@ -232,7 +242,7 @@ export default async function HomePage() {
         {/* Rankings */}
         <RankingTabs initialData={rankingData} />
 
-        {/* 신축·분양 섹션 — Phase 13 강화 (활성 건수 배지) */}
+        {/* 분양 섹션 */}
         <section style={{ marginTop: 48 }}>
           <h2
             style={{
@@ -242,31 +252,46 @@ export default async function HomePage() {
               color: 'var(--fg-pri)',
             }}
           >
-            신축·분양·재건축
+            분양
             {activeListingCount > 0 && (
               <span
                 className="badge pos"
                 style={{ marginLeft: 12, font: '500 11px/1 var(--font-sans)' }}
               >
-                {activeListingCount}건 분양 진행 중
+                {activeListingCount}건 진행 중
               </span>
             )}
           </h2>
+
+          {/* 카드 리스트: 활성 → 만료 → 재건축 우선순위 */}
+          {activeListings.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" style={{ marginBottom: 16 }}>
+              {activeListings.map(l => (
+                <PresaleCard key={l.id} listing={l} />
+              ))}
+            </div>
+          )}
+          {activeListings.length === 0 && recentlyExpired.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" style={{ marginBottom: 16 }}>
+              {recentlyExpired.map(l => (
+                <PresaleCard key={l.id} listing={l} expired />
+              ))}
+            </div>
+          )}
+          {activeListings.length === 0 && recentlyExpired.length === 0 && redevelopments.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" style={{ marginBottom: 16 }}>
+              {redevelopments.map(c => (
+                <RedevelopmentCard key={c.id} complex={c} />
+              ))}
+            </div>
+          )}
+
           <Link
             href="/presale"
-            className="card"
-            style={{ display: 'block', padding: 20, textDecoration: 'none' }}
+            className="btn btn-md btn-ghost"
+            style={{ display: 'inline-flex', textDecoration: 'none', marginTop: 4 }}
           >
-            <div style={{ font: '600 14px/1.4 var(--font-sans)', color: 'var(--fg-pri)' }}>
-              분양·재건축·신축 보기 →
-            </div>
-            <div
-              style={{ font: '500 12px/1.4 var(--font-sans)', color: 'var(--fg-sec)', marginTop: 4 }}
-            >
-              {activeListingCount > 0
-                ? `현재 진행 중인 ${activeListingCount}건 + 재건축 예정 단지 + 2021년 이후 신축 단지`
-                : '재건축 예정 단지 + 2021년 이후 신축 단지'}
-            </div>
+            분양·재건축·신축 전체 보기 →
           </Link>
         </section>
       </main>

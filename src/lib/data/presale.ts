@@ -88,7 +88,7 @@ export async function getRecentlyExpiredListings(
   limit = 20,
 ): Promise<CheongyakListing[]> {
   const cutoff = new Date()
-  cutoff.setDate(cutoff.getDate() - 30)
+  cutoff.setDate(cutoff.getDate() - 90)
   const { data } = await supabase
     .from('new_listings')
     .select('id, pblanc_no, pblanc_nm, region, supply_region, supply_count, rcept_bgnde, rcept_endde, mvn_prearnge_ym, hssply_adres, competition_rate, complex_id')
