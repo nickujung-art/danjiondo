@@ -8,6 +8,7 @@ import {
 } from '@/services/molit-presale'
 import { fetchCheongyakList, fetchRemndrList, fetchCompetitionRate } from '@/services/cheongyak/client'
 import { normalizeCheongyakItem, normalizeRemndrItem } from '@/services/cheongyak/normalize'
+import { ingestOffiMonth } from '@/lib/data/realprice-officetel'
 
 export const runtime = 'nodejs'
 
@@ -23,6 +24,7 @@ export async function GET(request: Request): Promise<Response> {
   let remndrUpserted = 0
   let competitionUpdated = 0
   let expiredDeactivated = 0
+  let offiUpserted = 0
 
   // ── K-apt 부대시설 UPSERT (DATA-01) ──────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -221,6 +223,22 @@ export async function GET(request: Request): Promise<Response> {
     errors.push(`expired deactivation: ${err instanceof Error ? err.message : String(err)}`)
   }
 
+  // ── 오피스텔 실거래 당월 수집 (OFFI-01) ──────────────────────────────────
+  const offiSggCodes = ['48121', '48123', '48125', '48127', '48129', '48250']
+  const offiYm = currentYearMonth()
+  for (const sggCode of offiSggCodes) {
+    try {
+      const result = await ingestOffiMonth(sggCode, offiYm, supabase)
+      offiUpserted += result.rowsUpserted
+      if (result.status === 'failed') {
+        errors.push(`offi ${sggCode} ${offiYm}: ${result.rowsFailed}건 실패`)
+      }
+    } catch (err) {
+      errors.push(`offi ${sggCode}: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+  totalUpserted += offiUpserted
+
   // ── Phase 11: 평당가·30일 변동률·거래량 배치 집계 (MAP-02, MAP-05) ──────────
   try {
     await supabase.rpc('refresh_complex_price_stats')
@@ -237,6 +255,7 @@ export async function GET(request: Request): Promise<Response> {
     remndrUpserted,
     competitionUpdated,
     expiredDeactivated,
+    offiUpserted,
     errors,
   })
 }
