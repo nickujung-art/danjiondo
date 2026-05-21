@@ -63,6 +63,8 @@ export async function getComplexesForMap(
     // 창원·김해 유효 좌표 범위 — 잘못된 지오코딩 결과 제외
     .gte('lat', 34.8).lte('lat', 35.6)
     .gte('lng', 128.3).lte('lng', 129.1)
+    // 소규모 오피스텔 제외: 거래 없고 세대수 100 미만인 오피스텔 숨김
+    .or('building_type.neq.officetel,tx_count_30d.gt.0,household_count.gte.100')
     .range(0, 9999)
 
   if (error) throw new Error(`getComplexesForMap failed: ${error.message}`)

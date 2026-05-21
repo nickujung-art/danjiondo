@@ -18,8 +18,6 @@ interface Props {
 const DEFAULT_CENTER = { lat: 35.2278, lng: 128.6817 }
 const DEFAULT_LEVEL  = 8
 
-// level별 최대 마커 수 — 뷰포트 내 단지가 너무 많으면 tx_count 순으로 상위 N개만 표시
-const MARKER_CAP: Partial<Record<number, number>> = { 9: 80, 8: 150 }
 
 export function KakaoMap({
   complexes,
@@ -48,12 +46,12 @@ export function KakaoMap({
   }, [complexes])
 
   // 줌 레벨 정책
-  // level ≥ 10: 구/시 단위 칩만 (뷰포트 단지 800개+)
-  // level 8–9 : 개별 마커, tx_count 상위 N개로 캡 (level 8 → 150, level 9 → 80)
-  // level 7   : 개별 마커 전체 (~160개, 가격 라벨)
-  // level ≤ 6 : 개별 마커 전체 + 단지명 (~80개)
-  const showOnlyCluster = mapLevel >= 10
-  const showLabel       = mapLevel <= 9
+  // level ≥ 9: 구/시 단위 칩만
+  // level 8  : 개별 마커, tx_count > 0 필터 + 상위 100개 캡 (가격 라벨)
+  // level 7  : 개별 마커 전체 (~160개, 가격 라벨)
+  // level ≤ 6: 개별 마커 전체 + 단지명 (~80개)
+  const showOnlyCluster = mapLevel >= 9
+  const showLabel       = mapLevel <= 8
   const showName        = mapLevel <= 6
 
   // 구/시 단위 칩: level ≥ 10일 때만 계산
@@ -112,16 +110,17 @@ export function KakaoMap({
     }))
   }, [showOnlyCluster, complexes])
 
-  // level 8–9에서 뷰포트 마커를 tx_count 상위 N개로 캡핑 — 겹침 방지
+  // ASC 정렬로 고점수 단지가 DOM 마지막에 렌더링 → 겹칠 때 위에 보임
+  // level 8: tx_count > 0 필터 후 상위 100개만 (거래 없는 단지 숨김)
   const displayComplexes = useMemo(() => {
     if (showOnlyCluster) return []
-    const cap = MARKER_CAP[mapLevel]
-    if (cap === undefined || visibleComplexes.length <= cap) return visibleComplexes
-    return [...visibleComplexes]
-      .sort((a, b) =>
-        (b.tx_count_30d * 10 + b.view_count) - (a.tx_count_30d * 10 + a.view_count),
-      )
-      .slice(0, cap)
+    const candidates = mapLevel === 8
+      ? visibleComplexes.filter(c => c.tx_count_30d > 0)
+      : visibleComplexes
+    const sorted = [...candidates].sort((a, b) =>
+      (a.tx_count_30d * 10 + a.view_count) - (b.tx_count_30d * 10 + b.view_count),
+    )
+    return mapLevel === 8 && sorted.length > 100 ? sorted.slice(-100) : sorted
   }, [showOnlyCluster, visibleComplexes, mapLevel])
 
   // 뷰포트 내 단지 id 변경 시 가격 이력 프리페치

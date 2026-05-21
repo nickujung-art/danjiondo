@@ -21,20 +21,13 @@ function formatPrice(price: number): string {
 }
 
 export const DongClusterChip = memo(function DongClusterChip({
-  gu, lat, lng, maxPrice, memberLats, memberLngs,
+  gu, lat, lng, maxPrice,
 }: GuChip) {
   const map = useMap('DongClusterChip')
 
   const handleClick = () => {
-    const bounds = new window.kakao.maps.LatLngBounds()
-    for (let i = 0; i < memberLats.length; i++) {
-      bounds.extend(new window.kakao.maps.LatLng(memberLats[i] ?? 0, memberLngs[i] ?? 0))
-    }
-    map.setBounds(bounds)
-    // 구 단위가 넓어 setBounds 결과가 level ≥ 8이면 개별 마커가 안 보이므로 강제 zoom
-    setTimeout(() => {
-      if (map.getLevel() >= 8) map.setLevel(7)
-    }, 300)
+    map.setCenter(new window.kakao.maps.LatLng(lat, lng))
+    map.setLevel(7)
   }
 
   return (
