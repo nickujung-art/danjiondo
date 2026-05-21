@@ -241,6 +241,16 @@ export const ComplexMarker = memo(function ComplexMarker({
                 조회수 상위 인기 단지
               </div>
             )}
+            {badge === 'new_build' && (
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                marginBottom: 6, padding: '3px 7px',
+                background: '#F0FDFA', border: '1px solid #99F6E4',
+                borderRadius: 4, fontSize: 10, color: '#0F766E', fontWeight: 600,
+              }}>
+                준공 5년 이내 신축 단지
+              </div>
+            )}
 
             {/* 최근 실거래 */}
             {(recentPrice !== null || recentDate !== null || pyeong !== null) && (
