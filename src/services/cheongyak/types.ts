@@ -1,51 +1,51 @@
 /**
- * 청약홈 API (data.go.kr B552555) 응답 타입 정의
- * API 3: /getAPTLttotPblancList (분양정보 조회)
- * API 2: /getAPTRcritPblancList (청약경쟁률 조회)
- * 응답 필드명: camelCase (공공데이터포털 표준 — CONTEXT.md 확인)
+ * 청약홈 API (api.odcloud.kr) 응답 타입 정의
+ * 필드명: UPPER_SNAKE_CASE (odcloud.kr 표준)
+ * 분양정보: ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail
+ * 경쟁률:   ApplyhomeInfoCmpetRtSvc/v1/getAPTLttotPblancCmpet
  */
 import { z } from 'zod/v4'
 
-// ── API 3: 분양정보 조회 응답 스키마 ────────────────────────────
+// ── 분양정보 응답 스키마 ─────────────────────────────────────────
 
 export const CheongyakItemSchema = z.object({
-  pblancNo:             z.string(),                        // 공고번호 (upsert key)
-  pblancNm:             z.string().optional(),             // 주택명
-  subscrptAreaCodeNm:   z.string().optional(),             // 공급지역명 (예: "경상남도 창원시")
-  hssplyAdres:          z.string().optional(),             // 공급위치 주소
-  gnrlSuplyHshldco:     z.coerce.number().optional(),      // 일반공급 세대수
-  rcptbgnde:            z.string().optional(),             // 청약접수시작일 (YYYYMMDD)
-  rcptendde:            z.string().optional(),             // 청약접수종료일 (YYYYMMDD)
-  przwnerPresnatnDe:    z.string().optional(),             // 당첨자발표일 (YYYYMMDD)
-  mvnPrearngeMntdy:     z.string().optional(),             // 입주예정월 (YYYYMM)
-  houseSecd:            z.string().optional(),             // 주택구분 (01=아파트)
-  subscrptAreaCode:     z.string().optional(),             // 지역코드 (법정동코드 10자리 — 앞 5자리가 sgg_code)
+  PBLANC_NO:              z.string(),                        // 공고번호 (upsert key)
+  HOUSE_NM:               z.string().optional(),             // 주택명
+  SUBSCRPT_AREA_CODE_NM:  z.string().optional(),             // 공급지역명 (예: "경남")
+  HSSPLY_ADRES:           z.string().optional(),             // 공급위치 주소
+  TOT_SUPLY_HSHLDCO:      z.coerce.number().optional(),      // 총 공급 세대수
+  RCEPT_BGNDE:            z.string().optional(),             // 청약접수시작일 (YYYY-MM-DD)
+  RCEPT_ENDDE:            z.string().optional(),             // 청약접수종료일 (YYYY-MM-DD)
+  PRZWNER_PRESNATN_DE:    z.string().optional(),             // 당첨자발표일 (YYYY-MM-DD)
+  MVN_PREARNGE_YM:        z.string().optional(),             // 입주예정월 (YYYYMM)
+  HOUSE_SECD:             z.string().optional(),             // 주택구분 (01=아파트)
+  SUBSCRPT_AREA_CODE:     z.string().optional(),             // 지역코드 (예: '621' = 경남)
 })
 
 export type CheongyakItem = z.infer<typeof CheongyakItemSchema>
 
-// ── API 2: 청약경쟁률 조회 응답 스키마 ──────────────────────────
+// ── 경쟁률 응답 스키마 ───────────────────────────────────────────
 
 export const CompetitionRateItemSchema = z.object({
-  pblancNo:               z.string(),                      // 공고번호 (join key)
-  gnrlRnk1CrsplApplCnt:   z.coerce.number().optional(),    // 1순위 경쟁률
-  houseTy:                z.string().optional(),           // 주택형 (예: "84A")
-  suplyHshldco:           z.coerce.number().optional(),    // 공급세대수
-  subscrptRankCode:       z.string().optional(),           // 청약순위코드
+  PBLANC_NO:              z.string(),                        // 공고번호 (join key)
+  CMPET_RATE:             z.coerce.number().optional(),      // 경쟁률 (예: "5.27" → 5.27)
+  HOUSE_TY:               z.string().optional(),             // 주택형 (예: "84A")
+  SUPLY_HSHLDCO:          z.coerce.number().optional(),      // 공급세대수
+  SUBSCRPT_RANK_CODE:     z.coerce.number().optional(),      // 청약순위코드 (1=1순위)
 })
 
 export type CompetitionRateItem = z.infer<typeof CompetitionRateItemSchema>
 
-// ── new_listings 테이블 행 인터페이스 (Wave 1·2 contract) ────────
+// ── new_listings 테이블 행 인터페이스 ────────────────────────────
 
 export interface NewListingCheongyakRow {
   name:                string        // 주택명 (표시용)
   region:              string        // 공급지역명 (표시용)
   pblanc_no:           string        // 공고번호 (upsert key)
   pblanc_nm:           string | null // 주택명
-  sgg_code:            string | null // 법정동코드 5자리 (subscrptAreaCode 앞 5자리)
+  sgg_code:            string | null // 지역코드 (예: '621')
   supply_region:       string | null // 공급지역명
-  supply_count:        number | null // 일반공급 세대수
+  supply_count:        number | null // 총 공급 세대수
   rcept_bgnde:         string | null // 청약접수시작일 (ISO YYYY-MM-DD)
   rcept_endde:         string | null // 청약접수종료일 (ISO YYYY-MM-DD)
   przwner_presnatn_de: string | null // 당첨자발표일 (ISO YYYY-MM-DD)
