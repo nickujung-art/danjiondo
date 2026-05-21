@@ -6,7 +6,7 @@
  *   npx tsx scripts/enrich-officetel-bldrgst.ts --dry-run   # DB 쓰기 없이 확인만
  *   npx tsx scripts/enrich-officetel-bldrgst.ts --id=<uuid> # 단일 단지 테스트
  *
- * 필요 환경변수: BLD_RGST_API_KEY, KAKAO_REST_API_KEY,
+ * 필요 환경변수: MOLIT_API_KEY (data.go.kr 공통키), KAKAO_REST_API_KEY,
  *               NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
  *
  * 처리 흐름 (단지당):
@@ -26,7 +26,7 @@ const args = process.argv.slice(2)
 const DRY_RUN   = args.includes('--dry-run')
 const TARGET_ID = args.find(a => a.startsWith('--id='))?.split('=')[1]
 
-if (!process.env.BLD_RGST_API_KEY)       { console.error('❌ BLD_RGST_API_KEY 없음');                process.exit(1) }
+if (!process.env.MOLIT_API_KEY)          { console.error('❌ MOLIT_API_KEY 없음');                   process.exit(1) }
 if (!process.env.KAKAO_REST_API_KEY)     { console.error('❌ KAKAO_REST_API_KEY 없음');              process.exit(1) }
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL)    { console.error('❌ NEXT_PUBLIC_SUPABASE_URL 없음');   process.exit(1) }
 if (!process.env.SUPABASE_SERVICE_ROLE_KEY)   { console.error('❌ SUPABASE_SERVICE_ROLE_KEY 없음');  process.exit(1) }

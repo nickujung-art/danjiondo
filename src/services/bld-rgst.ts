@@ -2,7 +2,7 @@
  * 국토부 건축물대장 API 어댑터
  * Base URL: https://apis.data.go.kr/1613000/BldRgstHubService
  * 엔드포인트: getBrTitleInfo (표제부 조회)
- * 환경변수: BLD_RGST_API_KEY
+ * 환경변수: MOLIT_API_KEY (data.go.kr 공통키)
  */
 import { z } from 'zod/v4'
 import { withRetry } from '@/lib/api/retry'
@@ -42,8 +42,8 @@ function normalizeItems(raw: unknown): unknown[] {
 }
 
 export async function fetchBldTitleInfo(params: BldFetchParams): Promise<BldTitleItem[]> {
-  const apiKey = process.env.BLD_RGST_API_KEY
-  if (!apiKey) throw new Error('BLD_RGST_API_KEY is not set')
+  const apiKey = process.env.MOLIT_API_KEY
+  if (!apiKey) throw new Error('MOLIT_API_KEY is not set')
 
   const url = new URL(BASE)
   url.searchParams.set('ServiceKey', apiKey)
