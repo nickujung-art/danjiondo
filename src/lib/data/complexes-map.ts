@@ -133,7 +133,7 @@ export async function getComplexesForMap(
     })
   }
 
-  return rows.map((r) => {
+  const mapped = rows.map((r) => {
     const tx = recentTxMap.get(r.id)
     return {
       id:                  r.id,
@@ -158,6 +158,21 @@ export async function getComplexesForMap(
       recent_area_m2:      tx ? Number(tx.area_m2) : null,
     } satisfies ComplexMapItem
   })
+
+  // 동일 좌표 중복 단지 제거 — tx_count > view_count > household_count 순 우선
+  const coordMap = new Map<string, ComplexMapItem>()
+  for (const c of mapped) {
+    const key = `${c.lat.toFixed(6)},${c.lng.toFixed(6)}`
+    const existing = coordMap.get(key)
+    if (!existing) {
+      coordMap.set(key, c)
+    } else {
+      const scoreNew = c.tx_count_30d * 1000 + c.view_count * 10 + (c.household_count ?? 0)
+      const scoreOld = existing.tx_count_30d * 1000 + existing.view_count * 10 + (existing.household_count ?? 0)
+      if (scoreNew > scoreOld) coordMap.set(key, c)
+    }
+  }
+  return Array.from(coordMap.values())
 }
 
 // ── supercluster 래퍼 ──────────────────────────────────────
