@@ -18,6 +18,9 @@ interface Props {
 const DEFAULT_CENTER = { lat: 35.2278, lng: 128.6817 }
 const DEFAULT_LEVEL  = 8
 
+// level별 최대 마커 수 — 뷰포트 내 단지가 너무 많으면 tx_count 순으로 상위 N개만 표시
+const MARKER_CAP: Partial<Record<number, number>> = { 9: 80, 8: 150 }
+
 export function KakaoMap({
   complexes,
   initialCenter = DEFAULT_CENTER,
@@ -44,15 +47,16 @@ export function KakaoMap({
     return Math.max(1, Math.round(highCount / complexes.length * 100))
   }, [complexes])
 
-  // 줌 레벨 3단계 정책
-  // level ≥ 8: 구 단위 칩만 — 뷰포트에 단지 400개 이상으로 마커 겹침
-  // level 7  : 가격 라벨 표시 (~160 단지)
-  // level ≤ 6: 가격 라벨 + 단지명 표시 (~80 단지)
-  const showOnlyCluster = mapLevel >= 8
-  const showLabel       = !showOnlyCluster
+  // 줌 레벨 정책
+  // level ≥ 10: 구/시 단위 칩만 (뷰포트 단지 800개+)
+  // level 8–9 : 개별 마커, tx_count 상위 N개로 캡 (level 8 → 150, level 9 → 80)
+  // level 7   : 개별 마커 전체 (~160개, 가격 라벨)
+  // level ≤ 6 : 개별 마커 전체 + 단지명 (~80개)
+  const showOnlyCluster = mapLevel >= 10
+  const showLabel       = mapLevel <= 9
   const showName        = mapLevel <= 6
 
-  // 구 단위 칩: level ≥ 8일 때만 계산
+  // 구/시 단위 칩: level ≥ 10일 때만 계산
   const guChips = useMemo<GuChip[]>(() => {
     if (!showOnlyCluster) return []
 
@@ -67,7 +71,8 @@ export function KakaoMap({
     const guMap = new Map<string, AccEntry>()
 
     for (const c of complexes) {
-      const key = c.gu ?? '기타'
+      // 김해시는 gu=null이므로 si 폴백 사용
+      const key = c.gu ?? c.si ?? '기타'
       const priceEst = c.recent_price ?? (
         c.avg_sale_per_pyeong !== null && c.avg_sale_per_pyeong > 0
           ? Math.round(c.avg_sale_per_pyeong * 25)
@@ -107,13 +112,25 @@ export function KakaoMap({
     }))
   }, [showOnlyCluster, complexes])
 
+  // level 8–9에서 뷰포트 마커를 tx_count 상위 N개로 캡핑 — 겹침 방지
+  const displayComplexes = useMemo(() => {
+    if (showOnlyCluster) return []
+    const cap = MARKER_CAP[mapLevel]
+    if (cap === undefined || visibleComplexes.length <= cap) return visibleComplexes
+    return [...visibleComplexes]
+      .sort((a, b) =>
+        (b.tx_count_30d * 10 + b.view_count) - (a.tx_count_30d * 10 + a.view_count),
+      )
+      .slice(0, cap)
+  }, [showOnlyCluster, visibleComplexes, mapLevel])
+
   // 뷰포트 내 단지 id 변경 시 가격 이력 프리페치
   useEffect(() => {
-    if (showOnlyCluster || visibleComplexes.length === 0) return
-    const ids = visibleComplexes.map(c => c.id)
+    if (showOnlyCluster || displayComplexes.length === 0) return
+    const ids = displayComplexes.map(c => c.id)
     const timer = setTimeout(() => prefetchPriceHistory(ids), 400)
     return () => clearTimeout(timer)
-  }, [visibleComplexes, showOnlyCluster])
+  }, [displayComplexes, showOnlyCluster])
 
   // 지도 이동/줌 시 뷰포트 내 단지 필터링 (supercluster 없이 단순 bounds 체크)
   const updateVisible = useCallback(
@@ -159,13 +176,13 @@ export function KakaoMap({
         onCreate={updateVisible}
         onIdle={updateVisible}
       >
-        {/* level ≥ 10: 구 단위 칩 1개씩 */}
+        {/* level ≥ 10: 구/시 단위 칩 */}
         {showOnlyCluster && guChips.map((chip) => (
           <DongClusterChip key={chip.gu} {...chip} />
         ))}
 
-        {/* level ≤ 9: 뷰포트 내 개별 단지 마커 */}
-        {!showOnlyCluster && visibleComplexes.map((c) => {
+        {/* level ≤ 9: 개별 단지 마커 (level 8-9는 tx_count 상위 N개로 캡) */}
+        {!showOnlyCluster && displayComplexes.map((c) => {
           const badge = determineBadge({
             status:            c.status,
             built_year:        c.built_year,
