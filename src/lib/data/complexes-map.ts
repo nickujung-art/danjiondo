@@ -60,6 +60,7 @@ export async function getComplexesForMap(
     .not('lat', 'is', null)
     .not('lng', 'is', null)
     .not('status', 'in', '(demolished,merged,rental)')
+    .range(0, 9999)
 
   if (error) throw new Error(`getComplexesForMap failed: ${error.message}`)
 
