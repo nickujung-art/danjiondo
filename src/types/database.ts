@@ -872,8 +872,14 @@ export type Database = {
           households: number | null
           data_year: number
           data_quarter: number
-          created_at: string
-          updated_at: string
+          population_change: number | null
+          pop_under20: number | null
+          pop_20s: number | null
+          pop_30s: number | null
+          pop_40s: number | null
+          pop_50s: number | null
+          pop_60plus: number | null
+          fetched_at: string
         }
         Insert: {
           id?: string
@@ -885,8 +891,14 @@ export type Database = {
           households?: number | null
           data_year: number
           data_quarter: number
-          created_at?: string
-          updated_at?: string
+          population_change?: number | null
+          pop_under20?: number | null
+          pop_20s?: number | null
+          pop_30s?: number | null
+          pop_40s?: number | null
+          pop_50s?: number | null
+          pop_60plus?: number | null
+          fetched_at?: string
         }
         Update: {
           id?: string
@@ -898,8 +910,14 @@ export type Database = {
           households?: number | null
           data_year?: number
           data_quarter?: number
-          created_at?: string
-          updated_at?: string
+          population_change?: number | null
+          pop_under20?: number | null
+          pop_20s?: number | null
+          pop_30s?: number | null
+          pop_40s?: number | null
+          pop_50s?: number | null
+          pop_60plus?: number | null
+          fetched_at?: string
         }
         Relationships: []
       }

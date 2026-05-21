@@ -168,7 +168,7 @@ export default async function ComplexDetailPage({ params }: Props) {
           try {
             const r = await supabase
               .from('district_stats')
-              .select('adm_nm, population, households, data_year, data_quarter')
+              .select('adm_nm, population, households, data_year, data_quarter, population_change, pop_under20, pop_20s, pop_30s, pop_40s, pop_50s, pop_60plus')
               .eq('si', complex.si!)
               .eq('gu', complex.gu!)
               .order('data_year', { ascending: false })

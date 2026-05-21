@@ -14,11 +14,18 @@ interface QuadrantData {
 }
 
 interface DistrictStats {
-  adm_nm: string | null
-  population: number | null
-  households: number | null
-  data_year: number | null
-  data_quarter: number | null
+  adm_nm:            string | null
+  population:        number | null
+  households:        number | null
+  data_year:         number | null
+  data_quarter:      number | null
+  population_change: number | null
+  pop_under20:       number | null
+  pop_20s:           number | null
+  pop_30s:           number | null
+  pop_40s:           number | null
+  pop_50s:           number | null
+  pop_60plus:        number | null
 }
 
 interface AnalysisSectionProps {
@@ -127,6 +134,13 @@ export function AnalysisSection({
           households={districtStats?.households ?? null}
           dataYear={districtStats?.data_year ?? null}
           dataQuarter={districtStats?.data_quarter ?? null}
+          populationChange={districtStats?.population_change ?? null}
+          popUnder20={districtStats?.pop_under20 ?? null}
+          pop20s={districtStats?.pop_20s ?? null}
+          pop30s={districtStats?.pop_30s ?? null}
+          pop40s={districtStats?.pop_40s ?? null}
+          pop50s={districtStats?.pop_50s ?? null}
+          pop60plus={districtStats?.pop_60plus ?? null}
         />
       </div>
     </div>
