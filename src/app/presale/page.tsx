@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createReadonlyClient } from '@/lib/supabase/readonly'
 import {
   getActiveListings,
+  getRecentlyExpiredListings,
   getRedevelopmentComplexes,
   getNewBuiltComplexes,
 } from '@/lib/data/presale'
@@ -19,9 +20,9 @@ export const metadata: Metadata = {
 
 export default async function PresalePage() {
   const supabase = createReadonlyClient()
-  // 3-tier 병렬 fetch
-  const [listings, redevelopments, newBuilds] = await Promise.all([
+  const [listings, recentlyExpired, redevelopments, newBuilds] = await Promise.all([
     getActiveListings(supabase, 20),
+    getRecentlyExpiredListings(supabase, 20),
     getRedevelopmentComplexes(supabase, 20),
     getNewBuiltComplexes(supabase, 30),
   ])
@@ -91,6 +92,31 @@ export default async function PresalePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {listings.map(l => (
                 <PresaleCard key={l.id} listing={l} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Tier 1-B: 최근 30일 마감 공고 (활성 공고 없을 때 또는 항상 하단 표시) */}
+        {recentlyExpired.length > 0 && (
+          <section style={{ marginBottom: 40 }} aria-labelledby="section-expired">
+            <h2
+              id="section-expired"
+              style={{
+                font: '700 18px/1.3 var(--font-sans)',
+                letterSpacing: '-0.02em',
+                margin: '0 0 4px',
+                color: 'var(--fg-pri)',
+              }}
+            >
+              최근 마감
+            </h2>
+            <p style={{ font: '500 12px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '0 0 16px' }}>
+              30일 이내 청약 마감된 공고입니다.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {recentlyExpired.map(l => (
+                <PresaleCard key={l.id} listing={l} expired />
               ))}
             </div>
           </section>

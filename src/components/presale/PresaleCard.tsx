@@ -3,6 +3,7 @@ import Link from 'next/link'
 
 interface Props {
   listing: CheongyakListing
+  expired?: boolean
 }
 
 function formatDateRange(start: string | null, end: string | null): string {
@@ -30,7 +31,7 @@ function formatCompetitionRate(rate: number | null): string | null {
   return `${rate.toFixed(1)}:1`
 }
 
-export function PresaleCard({ listing }: Props) {
+export function PresaleCard({ listing, expired = false }: Props) {
   const inner = (
     <article
       aria-label={`${listing.pblanc_nm ?? '분양 공고'} 청약 정보`}
@@ -39,11 +40,19 @@ export function PresaleCard({ listing }: Props) {
         padding: 20,
         cursor: listing.complex_id ? 'pointer' : 'default',
         transition: 'border-color 120ms ease, box-shadow 120ms ease',
+        opacity: expired ? 0.65 : 1,
       }}
     >
       {/* 상단 메타 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-        <span className="chip sm outlined">{listing.region}</span>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <span className="chip sm outlined">{listing.region}</span>
+          {expired && (
+            <span className="badge neg" style={{ font: '500 11px/1 var(--font-sans)' }}>
+              마감
+            </span>
+          )}
+        </div>
         <span className="badge neutral" style={{ font: '500 11px/1 var(--font-sans)' }}>
           {formatDateRange(listing.rcept_bgnde, listing.rcept_endde)}
         </span>

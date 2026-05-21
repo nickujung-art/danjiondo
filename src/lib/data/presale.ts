@@ -82,6 +82,24 @@ export async function getActiveListings(
   return (data as CheongyakListing[] | null) ?? []
 }
 
+// 30일 이내 마감된 청약홈 분양 공고 (만료 표시용)
+export async function getRecentlyExpiredListings(
+  supabase: AnySupabaseClient,
+  limit = 20,
+): Promise<CheongyakListing[]> {
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - 30)
+  const { data } = await supabase
+    .from('new_listings')
+    .select('id, pblanc_no, pblanc_nm, region, supply_region, supply_count, rcept_bgnde, rcept_endde, mvn_prearnge_ym, hssply_adres, competition_rate, complex_id')
+    .eq('is_active', false)
+    .not('pblanc_no', 'is', null)
+    .gte('rcept_endde', cutoff.toISOString().slice(0, 10))
+    .order('rcept_endde', { ascending: false })
+    .limit(limit)
+  return (data as CheongyakListing[] | null) ?? []
+}
+
 // 활성 청약홈 분양 공고 건수 (랜딩 배지용)
 export async function getActiveListingCount(
   supabase: AnySupabaseClient,
