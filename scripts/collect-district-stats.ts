@@ -1,117 +1,86 @@
 /**
- * 행정안전부 주민등록인구통계 수집 스크립트
+ * 행정안전부 주민등록 인구·세대현황 수집 스크립트
  *
  * 사용: npx tsx --env-file=.env.local scripts/collect-district-stats.ts
  *
- * API: data.go.kr 행안부 주민등록인구및세대현황정보
- *   - endpoint: 1741000/주민등록인구및세대현황정보/getPeopleAndHouseInfo
- *   - ⚠ MOLIT_API_KEY로 이 서비스를 이용하려면 data.go.kr 포털에서
- *     "주민등록인구및세대현황정보" 활용신청이 별도로 필요합니다.
- *   - 미구독 시 HTTP 500 "Unexpected errors" 반환 → 직접 SQL 삽입 사용
+ * API: https://apis.data.go.kr/1741000/admmPpltnHhStus/selectAdmmPpltnHhStus
+ *   행정동별(통반단위) 주민등록 인구 및 세대현황 목록 조회
+ *   ⚠ data.go.kr 포털에서 "admmPpltnHhStus" 활용신청 승인 필요 (MOLIT_API_KEY 공용)
  *
- * 수집 대상: 경남 창원시 5개 구
- * 스케줄: 분기 1회 수동 실행 (분기 종료 후 익월 초 데이터 공개)
+ * 수집 대상: 경남 창원시 5개 구 (행정동 집계 → 시군구 합산)
+ * 스케줄: 분기 1회 수동 실행
  */
 import { createClient } from '@supabase/supabase-js'
 
 // ── 설정 ──────────────────────────────────────────────────────────────
-const POP_URL = 'https://apis.data.go.kr/1741000/주민등록인구및세대현황정보/getPeopleAndHouseInfo'
-const AGE_URL = 'https://apis.data.go.kr/1741000/연령별인구현황/getAgeingInfo'
+const API_URL = 'https://apis.data.go.kr/1741000/admmPpltnHhStus/selectAdmmPpltnHhStus'
 
-// 현재 수집 대상 연도/분기 (분기 완료 후 수동 조정)
 const DATA_YEAR    = 2026
 const DATA_QUARTER = 1   // 1분기 = 1~3월, 기준월 3월
 
-// 기준월 (YYYYMM) — 해당 분기의 마지막 월
-const STATS_YM = `${DATA_YEAR}0${DATA_QUARTER * 3}`.padEnd(6, '0')
-// Q1→"202603", Q2→"202606", Q3→"202609", Q4→"202612"
+// 기준년월 YYYYMM (분기 마지막 월)
 const makeStatsYm = (year: number, quarter: number) =>
   `${year}${String(quarter * 3).padStart(2, '0')}`
 
-// 수집 대상 지역
+// 수집 대상 (창원시 5개 구, signguCd = 시군구코드 5자리)
 const TARGETS = [
-  { si: '창원시', gu: '의창구', admCd: '48121', keyword: '의창구' },
-  { si: '창원시', gu: '성산구', admCd: '48123', keyword: '성산구' },
-  { si: '창원시', gu: '마산합포구', admCd: '48125', keyword: '마산합포구' },
-  { si: '창원시', gu: '마산회원구', admCd: '48127', keyword: '마산회원구' },
-  { si: '창원시', gu: '진해구', admCd: '48129', keyword: '진해구' },
+  { si: '창원시', gu: '의창구',   admCd: '48121', signguCd: '48121' },
+  { si: '창원시', gu: '성산구',   admCd: '48123', signguCd: '48123' },
+  { si: '창원시', gu: '마산합포구', admCd: '48125', signguCd: '48125' },
+  { si: '창원시', gu: '마산회원구', admCd: '48127', signguCd: '48127' },
+  { si: '창원시', gu: '진해구',   admCd: '48129', signguCd: '48129' },
 ]
 
 // ── 유틸 ──────────────────────────────────────────────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function num(v: unknown): number | null {
   if (v === null || v === undefined || v === '') return null
   const n = typeof v === 'string' ? parseInt(v.replace(/,/g, ''), 10) : Number(v)
   return isNaN(n) ? null : n
 }
 
-// 5년 단위 연령 코드 배열을 특정 구간합으로 집계
-function sumAgeGroups(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  item: Record<string, any>,
-  fields: string[],
-): number | null {
-  let total = 0
-  let hasAny = false
-  for (const f of fields) {
-    const v = num(item[f])
-    if (v !== null) { total += v; hasAny = true }
-  }
-  return hasAny ? total : null
-}
-
 // ── API 호출 ──────────────────────────────────────────────────────────
-// data.go.kr API 공통 fetch — ServiceKey + _type 패턴
-function makeGovUrl(base: string, extra: Record<string, string>): string {
-  const url = new URL(base)
-  url.searchParams.set('ServiceKey', process.env.MOLIT_API_KEY!)
-  url.searchParams.set('pageNo',     '1')
-  url.searchParams.set('numOfRows',  '100')
-  url.searchParams.set('_type',      'json')
-  for (const [k, v] of Object.entries(extra)) url.searchParams.set(k, v)
-  return url.toString()
-}
+// 특정 signguCd의 모든 행정동 레코드를 페이지네이션으로 전부 가져옴
+async function fetchAllRows(stdrYm: string, signguCd: string) {
+  const rows: Record<string, unknown>[] = []
+  let pageNo = 1
 
-async function fetchPopulation(statsYm: string) {
-  const url = makeGovUrl(POP_URL, { searchYn: 'Y', ctprvnNm: '경상남도', statsYm })
-  const res = await fetch(url, {
-    headers: { Accept: 'application/json' },
-    signal: AbortSignal.timeout(20_000),
-  })
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new Error(`인구 API HTTP ${res.status}: ${body.slice(0, 200)}`)
-  }
-  const json = await res.json()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const raw: unknown = (json as any)?.response?.body?.items?.item
-  if (!raw) return []
-  return (Array.isArray(raw) ? raw : [raw]) as Record<string, unknown>[]
-}
+  while (true) {
+    const url = new URL(API_URL)
+    url.searchParams.set('ServiceKey', process.env.MOLIT_API_KEY!)
+    url.searchParams.set('pageNo',    String(pageNo))
+    url.searchParams.set('numOfRows', '100')
+    url.searchParams.set('_type',     'json')
+    url.searchParams.set('stdrYm',    stdrYm)
+    url.searchParams.set('signguCd',  signguCd)
 
-async function fetchAgeBreakdown(statsYm: string, signguNm: string) {
-  const url = makeGovUrl(AGE_URL, { searchYn: 'Y', ctprvnNm: '경상남도', signguNm, statsYm })
-  try {
-    const res = await fetch(url, {
+    const res = await fetch(url.toString(), {
       headers: { Accept: 'application/json' },
       signal: AbortSignal.timeout(20_000),
     })
-    if (!res.ok) return null
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      throw new Error(`API HTTP ${res.status}: ${body.slice(0, 200)}`)
+    }
+
     const json = await res.json()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const raw: unknown = (json as any)?.response?.body?.items?.item
-    if (!raw) return null
-    const items = Array.isArray(raw) ? raw : [raw]
-    return items.length > 0 ? (items[0] as Record<string, unknown>) : null
-  } catch {
-    return null
+    const body = (json as any)?.response?.body
+    const raw: unknown = body?.items?.item
+    const items = raw == null ? [] : (Array.isArray(raw) ? raw : [raw]) as Record<string, unknown>[]
+
+    rows.push(...items)
+
+    const totalCount = num(body?.totalCount) ?? 0
+    if (rows.length >= totalCount || items.length === 0) break
+    pageNo++
   }
+
+  return rows
 }
 
 // ── 메인 ──────────────────────────────────────────────────────────────
 async function main() {
-  const apiKey = process.env.MOLIT_API_KEY
-  if (!apiKey) throw new Error('MOLIT_API_KEY가 설정되지 않았습니다')
+  if (!process.env.MOLIT_API_KEY) throw new Error('MOLIT_API_KEY가 설정되지 않았습니다')
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase: any = createClient(
@@ -121,108 +90,75 @@ async function main() {
 
   const statsYm     = makeStatsYm(DATA_YEAR, DATA_QUARTER)
   const prevStatsYm = makeStatsYm(DATA_YEAR - 1, DATA_QUARTER)
-  console.log(`\n수집 기간: ${DATA_YEAR}년 ${DATA_QUARTER}분기 (기준월 ${statsYm})`)
-  console.log(`전년 기준월: ${prevStatsYm}`)
+  console.log(`\n수집 기간: ${DATA_YEAR}년 ${DATA_QUARTER}분기 (기준월 ${statsYm}, 전년 ${prevStatsYm})`)
 
-  // ── 현재 + 전년 인구 데이터 fetch ──
-  console.log('\n[1/3] 현재 분기 인구·세대 데이터 fetch...')
-  let currentItems: Awaited<ReturnType<typeof fetchPopulation>> = []
-  try {
-    currentItems = await fetchPopulation(statsYm)
-    console.log(`  → ${currentItems.length}개 행정구역 수신`)
-  } catch (e) {
-    console.error('  ✗ 현재 분기 인구 API 오류:', e)
-    process.exit(1)
-  }
-
-  console.log('[2/3] 전년 동기 인구 데이터 fetch (증감 계산용)...')
-  let prevItems: Awaited<ReturnType<typeof fetchPopulation>> = []
-  try {
-    prevItems = await fetchPopulation(prevStatsYm)
-    console.log(`  → ${prevItems.length}개 행정구역 수신`)
-  } catch {
-    console.warn('  ⚠ 전년 데이터 fetch 실패 — 증감 없이 진행')
-  }
-
-  // 전년 인구 맵 (keyword → population)
-  const prevPopMap = new Map<string, number>()
-  for (const item of prevItems) {
-    const nm = String(item['signguNm'] ?? '')
-    for (const t of TARGETS) {
-      if (nm.includes(t.keyword)) {
-        const p = num(item['ppltnCnt'] ?? item['총인구수'])
-        if (p !== null) prevPopMap.set(t.admCd, p)
-      }
-    }
-  }
-
-  // ── 대상 구별 처리 ──
-  console.log('\n[3/3] 구별 데이터 처리 및 upsert...')
   let upserted = 0
   const errors: string[] = []
 
   for (const target of TARGETS) {
-    // 현재 인구·세대 매칭
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const popItem: any = currentItems.find((it) =>
-      String(it['signguNm'] ?? '').includes(target.keyword),
-    )
+    console.log(`\n[${target.gu}] 처리 중...`)
 
-    if (!popItem) {
-      console.warn(`  ⚠ ${target.gu}: 인구 데이터 없음 — skip`)
+    // ── 현재 분기 ──
+    let currentRows: Record<string, unknown>[] = []
+    try {
+      currentRows = await fetchAllRows(statsYm, target.signguCd)
+      console.log(`  현재: 행정동 ${currentRows.length}건 수신`)
+    } catch (e) {
+      errors.push(`${target.gu} 현재: ${e}`)
+      console.error(`  ✗ 현재 분기 fetch 오류:`, e)
       continue
     }
 
-    const population  = num(popItem.ppltnCnt ?? popItem.총인구수)
-    const households  = num(popItem.hhdCnt ?? popItem.세대수)
-    const adm_nm: string = popItem.signguNm ?? `창원시${target.gu}`
-
-    // 인구 증감 계산
-    const prevPop = prevPopMap.get(target.admCd) ?? null
-    const populationChange =
-      population !== null && prevPop !== null ? population - prevPop : null
-
-    // 연령분포 fetch
-    const ageItem = await fetchAgeBreakdown(statsYm, adm_nm)
-
-    // 5년 단위 → 6개 구간 합산
-    // 행안부 API 연령별 필드명: ageGroup0004, ageGroup0509, ... ageGroup9599, ageGroup100
-    const AGE_FIELDS: Record<string, string[]> = {
-      popUnder20: ['ageGroup0004', 'ageGroup0509', 'ageGroup1014', 'ageGroup1519'],
-      pop20s:     ['ageGroup2024', 'ageGroup2529'],
-      pop30s:     ['ageGroup3034', 'ageGroup3539'],
-      pop40s:     ['ageGroup4044', 'ageGroup4549'],
-      pop50s:     ['ageGroup5054', 'ageGroup5559'],
-      pop60plus:  [
-        'ageGroup6064', 'ageGroup6569', 'ageGroup7074', 'ageGroup7579',
-        'ageGroup8084', 'ageGroup8589', 'ageGroup9094', 'ageGroup9599', 'ageGroup100',
-      ],
+    // ── 전년 동기 ──
+    let prevRows: Record<string, unknown>[] = []
+    try {
+      prevRows = await fetchAllRows(prevStatsYm, target.signguCd)
+      console.log(`  전년: 행정동 ${prevRows.length}건 수신`)
+    } catch {
+      console.warn(`  ⚠ 전년 fetch 실패 — 증감 없이 진행`)
     }
 
-    const popUnder20 = ageItem ? sumAgeGroups(ageItem, AGE_FIELDS.popUnder20!) : null
-    const pop20s     = ageItem ? sumAgeGroups(ageItem, AGE_FIELDS.pop20s!)     : null
-    const pop30s     = ageItem ? sumAgeGroups(ageItem, AGE_FIELDS.pop30s!)     : null
-    const pop40s     = ageItem ? sumAgeGroups(ageItem, AGE_FIELDS.pop40s!)     : null
-    const pop50s     = ageItem ? sumAgeGroups(ageItem, AGE_FIELDS.pop50s!)     : null
-    const pop60plus  = ageItem ? sumAgeGroups(ageItem, AGE_FIELDS.pop60plus!)  : null
+    // ── 시군구 집계 (행정동 합산) ──
+    const sumField = (rows: Record<string, unknown>[], ...keys: string[]) => {
+      let total = 0
+      for (const row of rows) {
+        for (const k of keys) {
+          const v = num(row[k])
+          if (v !== null) { total += v; break }
+        }
+      }
+      return total
+    }
+
+    // 인구·세대 합산: 행안부 API 필드명 후보들
+    const population  = sumField(currentRows, 'totPpltnCnt', 'ppltnCnt', 'totPpln')
+    const households  = sumField(currentRows, 'totHhdCnt',   'hhdCnt',   'totHhd')
+    const prevPop     = prevRows.length > 0
+      ? sumField(prevRows, 'totPpltnCnt', 'ppltnCnt', 'totPpln')
+      : 0
+    const populationChange = population > 0 && prevPop > 0 ? population - prevPop : null
+
+    const adm_nm = (String(currentRows[0]?.['ctprvnNm'] ?? '') + ' ' +
+      String(currentRows[0]?.['signguNm'] ?? target.gu)).trim()
 
     const row = {
       adm_cd:            target.admCd,
-      adm_nm,
+      adm_nm:            adm_nm || `창원시${target.gu}`,
       si:                target.si,
       gu:                target.gu,
       data_year:         DATA_YEAR,
       data_quarter:      DATA_QUARTER,
-      population,
-      households,
+      population:        population || null,
+      households:        households || null,
       population_change: populationChange,
-      pop_under20:       popUnder20,
-      pop_20s:           pop20s,
-      pop_30s:           pop30s,
-      pop_40s:           pop40s,
-      pop_50s:           pop50s,
-      pop_60plus:        pop60plus,
-      fetched_at:        new Date().toISOString(),
+      // 연령분포는 이 API에서 미제공 — 별도 API 필요 시 추가
+      pop_under20: null,
+      pop_20s:     null,
+      pop_30s:     null,
+      pop_40s:     null,
+      pop_50s:     null,
+      pop_60plus:  null,
+      fetched_at:  new Date().toISOString(),
     }
 
     const { error } = await supabase
@@ -231,22 +167,20 @@ async function main() {
 
     if (error) {
       errors.push(`${target.gu}: ${error.message}`)
-      console.error(`  ✗ ${target.gu}:`, error.message)
+      console.error(`  ✗ upsert 오류:`, error.message)
     } else {
       upserted++
-      const ageStatus = ageItem ? '연령분포O' : '연령분포X'
       const changeStr = populationChange !== null
         ? (populationChange >= 0 ? `+${populationChange.toLocaleString()}` : populationChange.toLocaleString())
-        : '증감없음'
+        : '전년없음'
       console.log(
-        `  ✓ ${target.gu}: 인구${population?.toLocaleString() ?? '?'}명 / ` +
-        `세대${households?.toLocaleString() ?? '?'}세대 / ` +
-        `전년비${changeStr}명 / ${ageStatus}`,
+        `  ✓ 인구 ${population.toLocaleString()}명 / ` +
+        `세대 ${households.toLocaleString()}세대 / ` +
+        `전년비 ${changeStr}명`,
       )
     }
 
-    // API 레이트 리밋 대응
-    await new Promise((r) => setTimeout(r, 300))
+    await new Promise((r) => setTimeout(r, 200))
   }
 
   console.log(`\n완료: ${upserted}/${TARGETS.length}개 구 upsert`)
