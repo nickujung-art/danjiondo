@@ -31,6 +31,10 @@ export const DongClusterChip = memo(function DongClusterChip({
       bounds.extend(new window.kakao.maps.LatLng(memberLats[i] ?? 0, memberLngs[i] ?? 0))
     }
     map.setBounds(bounds)
+    // 구 단위가 넓어 setBounds 결과가 level ≥ 8이면 개별 마커가 안 보이므로 강제 zoom
+    setTimeout(() => {
+      if (map.getLevel() >= 8) map.setLevel(7)
+    }, 300)
   }
 
   return (

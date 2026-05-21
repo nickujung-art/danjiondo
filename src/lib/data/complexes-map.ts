@@ -60,6 +60,9 @@ export async function getComplexesForMap(
     .not('lat', 'is', null)
     .not('lng', 'is', null)
     .not('status', 'in', '(demolished,merged,rental)')
+    // 창원·김해 유효 좌표 범위 — 잘못된 지오코딩 결과 제외
+    .gte('lat', 34.8).lte('lat', 35.6)
+    .gte('lng', 128.3).lte('lng', 129.1)
     .range(0, 9999)
 
   if (error) throw new Error(`getComplexesForMap failed: ${error.message}`)

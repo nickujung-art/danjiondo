@@ -329,7 +329,7 @@ export const ComplexMarker = memo(function ComplexMarker({
         >
           <HouseMarker
             badge={badge}
-            recentPrice={recentPrice ?? (avgSalePerPyeong !== null ? Math.round(avgSalePerPyeong * 25) : null)}
+            recentPrice={recentPrice ?? (avgSalePerPyeong !== null && avgSalePerPyeong > 0 ? Math.round(avgSalePerPyeong * 25) : null)}
             pyeong={pyeong}
             name={name}
           />

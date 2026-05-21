@@ -45,14 +45,14 @@ export function KakaoMap({
   }, [complexes])
 
   // 줌 레벨 3단계 정책
-  // level ≥ 10: 구 단위 칩만 (개별 마커 없음)
-  // level 7–9 : 가격 라벨 표시
-  // level ≤ 6 : 가격 라벨 + 단지명 표시
-  const showOnlyCluster = mapLevel >= 10
-  const showLabel       = mapLevel <= 9
+  // level ≥ 8: 구 단위 칩만 — 뷰포트에 단지 400개 이상으로 마커 겹침
+  // level 7  : 가격 라벨 표시 (~160 단지)
+  // level ≤ 6: 가격 라벨 + 단지명 표시 (~80 단지)
+  const showOnlyCluster = mapLevel >= 8
+  const showLabel       = !showOnlyCluster
   const showName        = mapLevel <= 6
 
-  // 구 단위 칩: level ≥ 10일 때만 계산
+  // 구 단위 칩: level ≥ 8일 때만 계산
   const guChips = useMemo<GuChip[]>(() => {
     if (!showOnlyCluster) return []
 
@@ -69,7 +69,9 @@ export function KakaoMap({
     for (const c of complexes) {
       const key = c.gu ?? '기타'
       const priceEst = c.recent_price ?? (
-        c.avg_sale_per_pyeong !== null ? Math.round(c.avg_sale_per_pyeong * 25) : null
+        c.avg_sale_per_pyeong !== null && c.avg_sale_per_pyeong > 0
+          ? Math.round(c.avg_sale_per_pyeong * 25)
+          : null
       )
       const entry = guMap.get(key)
       if (!entry) {
@@ -156,7 +158,6 @@ export function KakaoMap({
         className="h-full w-full"
         onCreate={updateVisible}
         onIdle={updateVisible}
-        onTileLoaded={updateVisible}
       >
         {/* level ≥ 10: 구 단위 칩 1개씩 */}
         {showOnlyCluster && guChips.map((chip) => (
@@ -191,7 +192,7 @@ export function KakaoMap({
               householdCount={detailHousehold}
               si={c.si}
               gu={c.gu}
-              recentPrice={displayPrice ?? (displayAvg !== null ? Math.round(displayAvg * 25) : null)}
+              recentPrice={displayPrice ?? (displayAvg !== null && displayAvg > 0 ? Math.round(displayAvg * 25) : null)}
               recentDate={c.recent_date}
               recentAreaM2={c.recent_area_m2}
               builtYear={detailBuiltYear}
