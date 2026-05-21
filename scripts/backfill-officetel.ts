@@ -13,7 +13,7 @@ import { loadEnvConfig } from '@next/env'
 import { createClient } from '@supabase/supabase-js'
 import { ingestOffiMonth } from '../src/lib/data/realprice-officetel'
 
-loadEnvConfig(process.cwd())
+loadEnvConfig(process.cwd(), true)   // true = dev mode → .env.local 로드
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
