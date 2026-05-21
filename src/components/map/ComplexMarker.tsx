@@ -124,12 +124,14 @@ interface Props {
   recentAreaM2:        number | null
   builtYear:           number | null
   avgSalePerPyeong:    number | null
+  highVolumeTopPct:    number
 }
 
 export const ComplexMarker = memo(function ComplexMarker({
   id, name, lat, lng,
   badge, onSelect, householdCount,
   si, gu, recentPrice, recentDate, recentAreaM2, builtYear, avgSalePerPyeong,
+  highVolumeTopPct,
 }: Props) {
   const [hover, setHover] = useState(false)
   // 프리페치 캐시에서 즉시 초기화 — hover 전에 데이터 있으면 로딩 없음
@@ -228,7 +230,7 @@ export const ComplexMarker = memo(function ComplexMarker({
                 background: '#FFF7ED', border: '1px solid #FED7AA',
                 borderRadius: 4, fontSize: 10, color: '#C2410C', fontWeight: 600,
               }}>
-                최근 30일 거래량 5건 이상 단지
+                최근 30일 거래량 상위 {highVolumeTopPct}% 단지
               </div>
             )}
             {badge === 'popular' && (

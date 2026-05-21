@@ -44,6 +44,13 @@ export function KakaoMap({
     return viewCounts[p95Idx] ?? 0
   }, [complexes])
 
+  // 거래량 상위 N% — 로드된 단지 중 high_volume 임계값(5건) 이상의 비율
+  const highVolumeTopPct = useMemo(() => {
+    if (complexes.length === 0) return 5
+    const highCount = complexes.filter(c => c.tx_count_30d >= 5).length
+    return Math.max(1, Math.round(highCount / complexes.length * 100))
+  }, [complexes])
+
   // 줌 레벨 3단계 정책
   // level ≥ 10: 구 단위 칩만 (개별 마커 없음)
   // level 7–9 : 가격 라벨 표시
@@ -229,6 +236,7 @@ export function KakaoMap({
               recentAreaM2={props.recent_area_m2 ?? null}
               builtYear={detailBuiltYear}
               avgSalePerPyeong={displayAvg}
+              highVolumeTopPct={highVolumeTopPct}
             />
           )
         })}

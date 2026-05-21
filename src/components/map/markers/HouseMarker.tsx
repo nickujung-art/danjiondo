@@ -58,7 +58,7 @@ export const HouseMarker = memo(function HouseMarker({
   badge, recentPrice, pyeong, name,
 }: HouseMarkerProps) {
   const accent    = getAccentColor(badge, recentPrice !== null)
-  const showCrown = badge === 'new_build' || badge === 'new_record' || badge === 'high_volume' || badge === 'popular'
+  const showCrown = badge === 'new_record' || badge === 'high_volume' || badge === 'popular'
 
   return (
     <div
