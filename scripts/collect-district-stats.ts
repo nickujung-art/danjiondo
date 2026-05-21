@@ -44,7 +44,7 @@ function num(v: unknown): number | null {
 // XML 응답 파싱 (행안부 API는 _type=json 설정에도 XML 반환)
 function parseXml(xml: string): { totalCount: number; items: Record<string, string>[] } {
   const totalCountMatch = xml.match(/<totalCount>(\d+)<\/totalCount>/)
-  const totalCount = totalCountMatch ? parseInt(totalCountMatch[1]) : 0
+  const totalCount = totalCountMatch?.[1] !== undefined ? parseInt(totalCountMatch[1]) : 0
 
   const items: Record<string, string>[] = []
   const blocks = xml.match(/<item>([\s\S]*?)<\/item>/g) ?? []
@@ -53,7 +53,8 @@ function parseXml(xml: string): { totalCount: number; items: Record<string, stri
     const fields = block.match(/<(\w+)>([^<]*)<\/\1>/g) ?? []
     for (const field of fields) {
       const m = field.match(/<(\w+)>([^<]*)<\/\1>/)
-      if (m) obj[m[1]] = m[2].trim()
+      const key = m?.[1]; const val = m?.[2]
+      if (key !== undefined && val !== undefined) obj[key] = val.trim()
     }
     items.push(obj)
   }
@@ -105,9 +106,10 @@ async function fetchDistricts(ym: string): Promise<Record<string, unknown>[]> {
     } else {
       // XML 응답 (행안부 API의 실제 동작)
       const resultCodeMatch = text.match(/<resultCode>(\d+)<\/resultCode>/)
-      if (resultCodeMatch && resultCodeMatch[1] !== '00' && resultCodeMatch[1] !== '0') {
+      const rcCode = resultCodeMatch?.[1]
+      if (rcCode !== undefined && rcCode !== '00' && rcCode !== '0') {
         const msgMatch = text.match(/<resultMsg>([^<]*)<\/resultMsg>/)
-        throw new Error(`API 오류: ${resultCodeMatch[1]} ${msgMatch?.[1] ?? ''}`)
+        throw new Error(`API 오류: ${rcCode} ${msgMatch?.[1] ?? ''}`)
       }
       const parsed = parseXml(text)
       totalCount = parsed.totalCount
