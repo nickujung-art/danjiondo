@@ -26,10 +26,10 @@ test('badge new_build일 때 민트 색상(#14B8A6) 요소가 렌더된다', () 
   expect(container.innerHTML).toContain('14B8A6')
 })
 
-// ── Test 4: badge='hot' → 왕관 SVG <image> 렌더됨 (PNG + SVG filter 방식)
-test('badge hot일 때 왕관 SVG image가 렌더된다', () => {
+// ── Test 4: badge='high_volume' → 왕관 SVG <image> 렌더됨 (PNG + SVG filter 방식)
+test('badge high_volume일 때 왕관 SVG image가 렌더된다', () => {
   const { container } = render(
-    <HouseMarker badge="hot" recentPrice={null} name="핫 단지" />
+    <HouseMarker badge="high_volume" recentPrice={null} name="거래량 단지" />
   )
   // 왕관은 base64 PNG를 <image> 태그로 렌더 + feFlood filter로 색상 교체
   expect(container.querySelector('image')).not.toBeNull()

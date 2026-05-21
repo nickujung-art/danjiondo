@@ -82,6 +82,7 @@ describe('clusterComplexes', () => {
     view_count:          0,
     price_change_30d:    null,
     tx_count_30d:        0,
+    is_new_record_30d:   false,
     status:              'active',
     built_year:          null,
     household_count:     null,

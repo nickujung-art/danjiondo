@@ -65,7 +65,9 @@ function BadgePin({ badge, color }: { badge: BadgeType; color: string }) {
   switch (badge) {
     case 'pre_sale':  return <PreSalePin />
     case 'new_build': return <NewBuildPin />
-    case 'hot':       return <HotPin />
+    case 'new_record':
+    case 'high_volume':
+    case 'popular':   return <HotPin />
     default:          return <DefaultPin color={color} />
   }
 }

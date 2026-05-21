@@ -16,6 +16,7 @@ export interface ComplexMapItem {
   built_year:          number | null
   household_count:     number | null
   hagwon_grade:        string | null
+  is_new_record_30d: boolean
   // Phase 12 추가 — hover 툴팁 + DongClusterChip
   si:              string | null
   gu:              string | null
@@ -52,7 +53,7 @@ export async function getComplexesForMap(
     .select(
       `id, canonical_name, lat, lng, sgg_code,
        avg_sale_per_pyeong, view_count, price_change_30d, tx_count_30d,
-       status, built_year, household_count, hagwon_score,
+       is_new_record_30d, status, built_year, household_count, hagwon_score,
        si, gu, dong`,
     )
     .in('sgg_code', sggCodes)
@@ -72,6 +73,7 @@ export async function getComplexesForMap(
     view_count:          number
     price_change_30d:    number | null
     tx_count_30d:        number
+    is_new_record_30d:   boolean
     status:              string
     built_year:          number | null
     household_count:     number | null
@@ -137,6 +139,7 @@ export async function getComplexesForMap(
       view_count:          r.view_count ?? 0,
       price_change_30d:    r.price_change_30d ?? null,
       tx_count_30d:        r.tx_count_30d ?? 0,
+      is_new_record_30d:   r.is_new_record_30d ?? false,
       status:              r.status ?? 'active',
       built_year:          r.built_year ?? null,
       household_count:     r.household_count ?? null,
@@ -169,6 +172,7 @@ export function buildClusterIndex(complexes: ComplexMapItem[]) {
         view_count:          c.view_count,
         price_change_30d:    c.price_change_30d,
         tx_count_30d:        c.tx_count_30d,
+        is_new_record_30d:   c.is_new_record_30d,
         status:              c.status,
         built_year:          c.built_year,
         household_count:     c.household_count,

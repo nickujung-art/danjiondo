@@ -205,27 +205,40 @@ export const ComplexMarker = memo(function ComplexMarker({
               {name}
             </div>
             {sigu && (
-              <div style={{ fontSize: 11, color: '#6B7280', marginBottom: badge === 'hot' ? 4 : 6 }}>
+              <div style={{ fontSize: 11, color: '#6B7280', marginBottom: badge === 'none' || badge === 'pre_sale' ? 6 : 4 }}>
                 {sigu}
               </div>
             )}
 
             {/* 왕관 단지 설명 */}
-            {badge === 'hot' && (
+            {badge === 'new_record' && (
               <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-                marginBottom: 6,
-                padding: '3px 7px',
-                background: '#FFF7ED',
-                border: '1px solid #FED7AA',
-                borderRadius: 4,
-                fontSize: 10,
-                color: '#C2410C',
-                fontWeight: 600,
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                marginBottom: 6, padding: '3px 7px',
+                background: '#FFFBEB', border: '1px solid #FDE68A',
+                borderRadius: 4, fontSize: 10, color: '#B45309', fontWeight: 600,
               }}>
-                최근 30일 거래량 상위 5% 단지
+                최근 30일 신고가 경신 단지
+              </div>
+            )}
+            {badge === 'high_volume' && (
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                marginBottom: 6, padding: '3px 7px',
+                background: '#FFF7ED', border: '1px solid #FED7AA',
+                borderRadius: 4, fontSize: 10, color: '#C2410C', fontWeight: 600,
+              }}>
+                최근 30일 거래량 5건 이상 단지
+              </div>
+            )}
+            {badge === 'popular' && (
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                marginBottom: 6, padding: '3px 7px',
+                background: '#F0F9FF', border: '1px solid #BAE6FD',
+                borderRadius: 4, fontSize: 10, color: '#0369A1', fontWeight: 600,
+              }}>
+                조회수 상위 인기 단지
               </div>
             )}
 

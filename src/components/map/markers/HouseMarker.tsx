@@ -19,9 +19,12 @@ function formatPriceShort(price: number): string {
 }
 
 function getAccentColor(badge: BadgeType, hasData: boolean): string {
-  if (!hasData)              return '#94A3B8'
-  if (badge === 'pre_sale')  return '#EF4444'
-  if (badge === 'new_build') return '#14B8A6'
+  if (!hasData)                return '#94A3B8'
+  if (badge === 'pre_sale')    return '#EF4444'
+  if (badge === 'new_build')   return '#14B8A6'
+  if (badge === 'new_record')  return '#F59E0B'
+  if (badge === 'high_volume') return '#F97316'
+  if (badge === 'popular')     return '#0EA5E9'
   return '#F97316'
 }
 
@@ -55,7 +58,7 @@ export const HouseMarker = memo(function HouseMarker({
   badge, recentPrice, pyeong, name,
 }: HouseMarkerProps) {
   const accent    = getAccentColor(badge, recentPrice !== null)
-  const showCrown = badge === 'hot' || badge === 'new_build'
+  const showCrown = badge === 'new_build' || badge === 'new_record' || badge === 'high_volume' || badge === 'popular'
 
   return (
     <div

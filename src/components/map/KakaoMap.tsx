@@ -37,11 +37,11 @@ export function KakaoMap({
 
   const clusterIndex = useMemo(() => buildClusterIndex(complexes), [complexes])
 
-  const p95TxCount = useMemo(() => {
+  const p95ViewCount = useMemo(() => {
     if (complexes.length === 0) return 0
-    const txCounts = [...complexes].map((c) => c.tx_count_30d).sort((a, b) => a - b)
-    const p95Idx   = Math.floor(complexes.length * 0.95)
-    return txCounts[p95Idx] ?? 0
+    const viewCounts = [...complexes].map((c) => c.view_count).sort((a, b) => a - b)
+    const p95Idx     = Math.floor(complexes.length * 0.95)
+    return viewCounts[p95Idx] ?? 0
   }, [complexes])
 
   // 줌 레벨 3단계 정책
@@ -182,6 +182,7 @@ export function KakaoMap({
             view_count:          number
             price_change_30d:    number | null
             tx_count_30d:        number
+            is_new_record_30d:   boolean
             status:              string
             built_year:          number | null
             household_count:     number | null
@@ -195,10 +196,12 @@ export function KakaoMap({
           }
 
           const badge = determineBadge({
-            status:       props.status       ?? 'active',
-            built_year:   props.built_year   ?? null,
-            tx_count_30d: props.tx_count_30d ?? 0,
-            p95_tx_count: p95TxCount,
+            status:            props.status            ?? 'active',
+            built_year:        props.built_year        ?? null,
+            is_new_record_30d: props.is_new_record_30d ?? false,
+            tx_count_30d:      props.tx_count_30d      ?? 0,
+            view_count:        props.view_count         ?? 0,
+            p95_view_count:    p95ViewCount,
           })
 
           // showLabel: 가격 라벨 표시 (level ≤ 9) → 숨길 때 price/avg를 null로 전달
