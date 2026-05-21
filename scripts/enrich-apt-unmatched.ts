@@ -25,11 +25,12 @@ import { fetchBldTitleInfo } from '../src/services/bld-rgst'
 
 loadEnvConfig(process.cwd(), true)
 
-const args        = process.argv.slice(2)
-const DRY_RUN     = args.includes('--dry-run')
-const SKIP_BLD    = args.includes('--skip-bldrgst')
+const args         = process.argv.slice(2)
+const DRY_RUN      = args.includes('--dry-run')
+const SKIP_BLD     = args.includes('--skip-bldrgst')
 const BLDRGST_ONLY = args.includes('--bldrgst-only')  // 좌표 있는 단지에 건축물대장만
-const TARGET_ID   = args.find(a => a.startsWith('--id='))?.split('=')[1]
+const RETRY_MODE   = args.includes('--retry')          // 좌표 없는 단지 재시도: 거래 umd_nm(동명) 활용
+const TARGET_ID    = args.find(a => a.startsWith('--id='))?.split('=')[1]
 
 if (!process.env.KAKAO_REST_API_KEY)          { console.error('❌ KAKAO_REST_API_KEY 없음');           process.exit(1) }
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL)    { console.error('❌ NEXT_PUBLIC_SUPABASE_URL 없음');     process.exit(1) }
@@ -135,9 +136,41 @@ function parseBldParams(r: KakaoAddrFromCoord) {
   }
 }
 
+// ── 거래 데이터에서 단지별 대표 동명(umd_nm) 조회 ─────────────────
+async function fetchUmdNmMap(ids: string[]): Promise<Map<string, string>> {
+  if (ids.length === 0) return new Map()
+  // 각 단지에서 가장 빈번한 umd_nm 선택
+  const { data, error } = await supabase.rpc('get_umd_nm_for_complexes', { complex_ids: ids })
+  if (error || !data) {
+    // RPC 없으면 직접 쿼리 (simple fallback)
+    const { data: rows } = await supabase
+      .from('transactions')
+      .select('complex_id, umd_nm')
+      .in('complex_id', ids)
+      .not('umd_nm', 'is', null)
+    const map = new Map<string, string>()
+    if (rows) {
+      const counts = new Map<string, Map<string, number>>()
+      for (const r of rows as Array<{ complex_id: string; umd_nm: string }>) {
+        if (!counts.has(r.complex_id)) counts.set(r.complex_id, new Map())
+        const m = counts.get(r.complex_id)!
+        m.set(r.umd_nm, (m.get(r.umd_nm) ?? 0) + 1)
+      }
+      for (const [cid, m] of counts) {
+        const top = [...m.entries()].sort((a, b) => b[1] - a[1])[0]
+        if (top) map.set(cid, top[0])
+      }
+    }
+    return map
+  }
+  return new Map(
+    (data as Array<{ complex_id: string; umd_nm: string }>).map(r => [r.complex_id, r.umd_nm])
+  )
+}
+
 // ── main ──────────────────────────────────────────────────────────
 async function main() {
-  const modeLabel = BLDRGST_ONLY ? ' [건축물대장-only]' : SKIP_BLD ? ' [건축물대장 생략]' : ''
+  const modeLabel = BLDRGST_ONLY ? ' [건축물대장-only]' : RETRY_MODE ? ' [retry+동명]' : SKIP_BLD ? ' [건축물대장 생략]' : ''
   console.log(`🏠 아파트 단지 보강 시작${DRY_RUN ? ' [DRY-RUN]' : ''}${modeLabel}`)
 
   let query = supabase
@@ -151,7 +184,7 @@ async function main() {
     // 좌표 있고 층수 없는 단지 → 건축물대장만
     query = query.not('lat', 'is', null).is('floors_above', null)
   } else {
-    // 기본: 좌표 없는 단지 전체
+    // 기본 + retry 공통: 좌표 없는 단지
     query = query.is('lat', null)
   }
 
@@ -164,6 +197,12 @@ async function main() {
   if (rows.length === 0) { console.log('✅ 보강할 단지 없음'); return }
 
   console.log(`📋 대상: ${rows.length}개 단지`)
+
+  // retry 모드: 거래 데이터에서 동명 미리 수집
+  const umdNmMap = RETRY_MODE
+    ? await fetchUmdNmMap(rows.map((r: { id: string }) => r.id))
+    : new Map<string, string>()
+  if (RETRY_MODE) console.log(`  동명 확보: ${umdNmMap.size}개`)
 
   let success = 0, bldSuccess = 0, skipped = 0, failed = 0
 
@@ -183,11 +222,17 @@ async function main() {
       } else {
         // ── Step 1: 카카오 키워드 검색 ──────────────────────────────
         const region = SGG_LABEL[c.sgg_code] ?? ''
-        let place    = await kakaoKeywordSearch(`${c.canonical_name} ${region}`.trim())
+        const dong   = umdNmMap.get(c.id) ?? ''
+        let place: KakaoPlace | null = null
 
-        if (!place) {
-          // 지역명 없이 재시도
-          place = await kakaoKeywordSearch(c.canonical_name)
+        if (RETRY_MODE && dong) {
+          // retry: 동명으로 더 정확한 검색 (3단계 폴백)
+          place = await kakaoKeywordSearch(`${c.canonical_name} ${dong}`)
+          if (!place) place = await kakaoKeywordSearch(`${c.canonical_name} ${region} ${dong}`)
+          if (!place) place = await kakaoKeywordSearch(`${c.canonical_name} ${region}`)
+        } else {
+          place = await kakaoKeywordSearch(`${c.canonical_name} ${region}`.trim())
+          if (!place) place = await kakaoKeywordSearch(c.canonical_name)
         }
 
         if (!place) {
