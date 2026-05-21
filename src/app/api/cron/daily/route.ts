@@ -6,8 +6,8 @@ import {
   currentYearMonth,
   LAWD_CODES,
 } from '@/services/molit-presale'
-import { fetchCheongyakList, fetchCompetitionRate } from '@/services/cheongyak/client'
-import { normalizeCheongyakItem } from '@/services/cheongyak/normalize'
+import { fetchCheongyakList, fetchRemndrList, fetchCompetitionRate } from '@/services/cheongyak/client'
+import { normalizeCheongyakItem, normalizeRemndrItem } from '@/services/cheongyak/normalize'
 
 export const runtime = 'nodejs'
 
@@ -20,6 +20,7 @@ export async function GET(request: Request): Promise<Response> {
   const errors: string[] = []
   let totalUpserted = 0
   let cheongyakUpserted = 0
+  let remndrUpserted = 0
   let competitionUpdated = 0
   let expiredDeactivated = 0
 
@@ -147,6 +148,45 @@ export async function GET(request: Request): Promise<Response> {
   }
   totalUpserted += cheongyakUpserted
 
+  // ── 청약홈 잔여세대·무순위 수집 (PRESALE-01-B) ────────────────────────────────
+  try {
+    const remndrItems = await fetchRemndrList()
+    for (const item of remndrItems) {
+      const row = normalizeRemndrItem(item)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from('new_listings')
+        .upsert(
+          {
+            name:                row.name,
+            region:              row.region,
+            pblanc_no:           row.pblanc_no,
+            pblanc_nm:           row.pblanc_nm,
+            sgg_code:            row.sgg_code,
+            supply_region:       row.supply_region,
+            supply_count:        row.supply_count,
+            rcept_bgnde:         row.rcept_bgnde,
+            rcept_endde:         row.rcept_endde,
+            przwner_presnatn_de: row.przwner_presnatn_de,
+            mvn_prearnge_ym:     row.mvn_prearnge_ym,
+            hssply_adres:        row.hssply_adres,
+            is_active:           true,
+            fetched_at:          row.fetched_at,
+          },
+          { onConflict: 'pblanc_no' },
+        )
+      if (!error) {
+        remndrUpserted++
+        cheongyakPblancNos.push(row.pblanc_no)
+      } else {
+        errors.push(`remndr upsert pblanc_no=${row.pblanc_no}: ${error.message}`)
+      }
+    }
+  } catch (err) {
+    errors.push(`remndr: ${err instanceof Error ? err.message : String(err)}`)
+  }
+  totalUpserted += remndrUpserted
+
   // ── 청약홈 경쟁률 병합 (PRESALE-02, per D-2) ─────────────────────────────────
   for (const pblancNo of cheongyakPblancNos) {
     try {
@@ -194,6 +234,7 @@ export async function GET(request: Request): Promise<Response> {
     kaptUpserted,
     presaleUpserted,
     cheongyakUpserted,
+    remndrUpserted,
     competitionUpdated,
     expiredDeactivated,
     errors,

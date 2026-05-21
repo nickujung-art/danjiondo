@@ -24,6 +24,29 @@ export const CheongyakItemSchema = z.object({
 
 export type CheongyakItem = z.infer<typeof CheongyakItemSchema>
 
+// ── 잔여세대·무순위 응답 스키마 ──────────────────────────────────
+// getRemndrLttotPblancDetail — 청약 접수 끝난 후 잔여/무순위 분양 공고
+
+export const CheongyakRemndrItemSchema = z.object({
+  PBLANC_NO:              z.string(),                        // 공고번호 (upsert key)
+  HOUSE_NM:               z.string().optional(),             // 주택명
+  SUBSCRPT_AREA_CODE_NM:  z.string().optional(),             // 공급지역명
+  SUBSCRPT_AREA_CODE:     z.string().optional(),             // 지역코드
+  HSSPLY_ADRES:           z.string().optional(),             // 공급위치 주소
+  TOT_SUPLY_HSHLDCO:      z.coerce.number().optional(),      // 총 공급 세대수
+  SUBSCRPT_RCEPT_BGNDE:   z.string().optional(),             // 청약접수시작일
+  SUBSCRPT_RCEPT_ENDDE:   z.string().optional(),             // 청약접수종료일
+  GNRL_RCEPT_BGNDE:       z.string().optional(),             // 일반청약시작일 (무순위 등)
+  GNRL_RCEPT_ENDDE:       z.string().optional(),             // 일반청약종료일
+  CNTRCT_CNCLS_BGNDE:     z.string().optional(),             // 계약시작일
+  CNTRCT_CNCLS_ENDDE:     z.string().optional(),             // 계약종료일 (is_active 기준)
+  PRZWNER_PRESNATN_DE:    z.string().optional(),             // 당첨자발표일
+  MVN_PREARNGE_YM:        z.string().optional(),             // 입주예정월
+  HOUSE_SECD_NM:          z.string().optional(),             // 주택구분명 (무순위/잔여세대 등)
+})
+
+export type CheongyakRemndrItem = z.infer<typeof CheongyakRemndrItemSchema>
+
 // ── 경쟁률 응답 스키마 ───────────────────────────────────────────
 
 export const CompetitionRateItemSchema = z.object({

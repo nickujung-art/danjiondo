@@ -1,25 +1,30 @@
 /**
  * 청약홈 API (api.odcloud.kr ApplyhomeInfoDetailSvc) 어댑터
- * APT 분양정보: /ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail
- * 청약경쟁률: /ApplyhomeRcritPblancSvc/v1/getAPTRcritPblancDetail
+ * APT 분양정보:   /ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail
+ * APT 잔여세대:   /ApplyhomeInfoDetailSvc/v1/getRemndrLttotPblancDetail
+ * 청약경쟁률:     /ApplyhomeInfoCmpetRtSvc/v1/getAPTLttotPblancCmpet
  * 환경변수: MOLIT_API_KEY (odcloud.kr 발급 일반 인증키)
  */
 import { withRetry } from '@/lib/api/retry'
 import {
   CheongyakItemSchema,
+  CheongyakRemndrItemSchema,
   CompetitionRateItemSchema,
   type CheongyakItem,
+  type CheongyakRemndrItem,
   type CompetitionRateItem,
 } from './types'
 
 const BASE_LIST_URL =
   'https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail'
+const BASE_REMNDR_URL =
+  'https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getRemndrLttotPblancDetail'
 const BASE_RATE_URL =
   'https://api.odcloud.kr/api/ApplyhomeInfoCmpetRtSvc/v1/getAPTLttotPblancCmpet'
 
 const ROWS_PER_PAGE = 100
-// 전체 조회 후 클라이언트 필터링 — 최대 10페이지 (DoS 보호 — T-13-06)
-const MAX_PAGES = 10
+const MAX_PAGES = 10        // 분양정보 — 경남 3페이지 수준, 여유 확보
+const MAX_PAGES_REMNDR = 20 // 잔여세대 — 경남 ~16페이지 수준
 
 /** 경남 지역코드 (odcloud.kr 기준 — 창원·김해 포함) */
 const GYEONGNAM_CODE = '621'
@@ -87,6 +92,64 @@ export async function fetchCheongyakList(_sggCode?: string): Promise<CheongyakIt
   )
   for (let page = 2; page <= totalPages; page++) {
     const result = await fetchListPage(page)
+    all.push(...result.items)
+  }
+  return all.filter(item =>
+    CHEONGYAK_CITIES.some(city => item.HSSPLY_ADRES?.includes(city)),
+  )
+}
+
+async function fetchRemndrPage(
+  page: number,
+): Promise<{ items: CheongyakRemndrItem[]; totalCount: number }> {
+  const apiKey = process.env.MOLIT_API_KEY
+  if (!apiKey) throw new Error('MOLIT_API_KEY not set')
+
+  const url = new URL(BASE_REMNDR_URL)
+  url.searchParams.set('serviceKey', apiKey)
+  url.searchParams.set('page', String(page))
+  url.searchParams.set('perPage', String(ROWS_PER_PAGE))
+  url.searchParams.set('returnType', 'json')
+  url.searchParams.set('cond[SUBSCRPT_AREA_CODE::EQ]', GYEONGNAM_CODE)
+
+  return withRetry(async () => {
+    const res = await fetch(url.toString(), {
+      headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0' },
+      signal: AbortSignal.timeout(15_000),
+    })
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      throw Object.assign(
+        new Error(`Cheongyak Remndr API ${res.status}: ${body.slice(0, 200)}`),
+        { status: res.status },
+      )
+    }
+    const json: unknown = await res.json()
+    const totalCount = (json as { totalCount?: number })?.totalCount ?? 0
+    const rawItems = normalizeData(json)
+    const items: CheongyakRemndrItem[] = []
+    for (const raw of rawItems) {
+      const parsed = CheongyakRemndrItemSchema.safeParse(raw)
+      if (parsed.success) items.push(parsed.data)
+    }
+    return { items, totalCount }
+  })
+}
+
+/**
+ * 잔여세대·무순위 공고 조회 후 창원·김해 주소 필터링.
+ * rcept_endde 기준: CNTRCT_CNCLS_ENDDE(계약종료) — 가장 늦은 활동 시점.
+ */
+export async function fetchRemndrList(): Promise<CheongyakRemndrItem[]> {
+  const all: CheongyakRemndrItem[] = []
+  const first = await fetchRemndrPage(1)
+  all.push(...first.items)
+  const totalPages = Math.min(
+    MAX_PAGES_REMNDR,
+    Math.ceil(first.totalCount / ROWS_PER_PAGE),
+  )
+  for (let page = 2; page <= totalPages; page++) {
+    const result = await fetchRemndrPage(page)
     all.push(...result.items)
   }
   return all.filter(item =>
