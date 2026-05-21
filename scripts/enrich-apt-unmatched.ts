@@ -6,12 +6,14 @@
  *   npx tsx --env-file=.env.local scripts/enrich-apt-unmatched.ts --dry-run
  *   npx tsx --env-file=.env.local scripts/enrich-apt-unmatched.ts --id=<uuid>
  *   npx tsx --env-file=.env.local scripts/enrich-apt-unmatched.ts --skip-bldrgst
+ *   npx tsx --env-file=.env.local scripts/enrich-apt-unmatched.ts --bldrgst-only
+ *     → 좌표 있는 단지(lat IS NOT NULL, floors_above IS NULL)에 건축물대장만 적용
  *
  * 필요 환경변수: MOLIT_API_KEY, KAKAO_REST_API_KEY,
  *               NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
  *
  * 처리 흐름 (단지당):
- *   1. 카카오 키워드 검색 → lat/lng + 도로명주소
+ *   1. 카카오 키워드 검색 → lat/lng + 도로명주소  (--bldrgst-only 시 생략)
  *   2. coord2regioncode + coord2address → dong명 + b_code + 지번
  *   3. complexes 업데이트 (lat/lng, si/gu/dong, road_address, jibun_address)
  *   4. 건축물대장 표제부 → household_count, floors_above/below, built_year
@@ -23,10 +25,11 @@ import { fetchBldTitleInfo } from '../src/services/bld-rgst'
 
 loadEnvConfig(process.cwd(), true)
 
-const args       = process.argv.slice(2)
-const DRY_RUN    = args.includes('--dry-run')
-const SKIP_BLD   = args.includes('--skip-bldrgst')
-const TARGET_ID  = args.find(a => a.startsWith('--id='))?.split('=')[1]
+const args        = process.argv.slice(2)
+const DRY_RUN     = args.includes('--dry-run')
+const SKIP_BLD    = args.includes('--skip-bldrgst')
+const BLDRGST_ONLY = args.includes('--bldrgst-only')  // 좌표 있는 단지에 건축물대장만
+const TARGET_ID   = args.find(a => a.startsWith('--id='))?.split('=')[1]
 
 if (!process.env.KAKAO_REST_API_KEY)          { console.error('❌ KAKAO_REST_API_KEY 없음');           process.exit(1) }
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL)    { console.error('❌ NEXT_PUBLIC_SUPABASE_URL 없음');     process.exit(1) }
@@ -134,16 +137,22 @@ function parseBldParams(r: KakaoAddrFromCoord) {
 
 // ── main ──────────────────────────────────────────────────────────
 async function main() {
-  console.log(`🏠 아파트 미매칭 단지 보강 시작${DRY_RUN ? ' [DRY-RUN]' : ''}${SKIP_BLD ? ' [건축물대장 생략]' : ''}`)
+  const modeLabel = BLDRGST_ONLY ? ' [건축물대장-only]' : SKIP_BLD ? ' [건축물대장 생략]' : ''
+  console.log(`🏠 아파트 단지 보강 시작${DRY_RUN ? ' [DRY-RUN]' : ''}${modeLabel}`)
 
   let query = supabase
     .from('complexes')
-    .select('id, canonical_name, sgg_code')
+    .select('id, canonical_name, sgg_code, lat, lng')
     .eq('building_type', 'apt')
-    .is('lat', null)
 
   if (TARGET_ID) {
     query = query.eq('id', TARGET_ID)
+  } else if (BLDRGST_ONLY) {
+    // 좌표 있고 층수 없는 단지 → 건축물대장만
+    query = query.not('lat', 'is', null).is('floors_above', null)
+  } else {
+    // 기본: 좌표 없는 단지 전체
+    query = query.is('lat', null)
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -163,42 +172,49 @@ async function main() {
     process.stdout.write(`\r[${i + 1}/${rows.length}] ${c.canonical_name} ...`)
 
     try {
-      // ── Step 1: 카카오 키워드 검색 ──────────────────────────────
-      const region = SGG_LABEL[c.sgg_code] ?? ''
-      const place  = await kakaoKeywordSearch(`${c.canonical_name} ${region}`.trim())
+      let lat: number
+      let lng: number
+      const complexUpdate: Record<string, unknown> = {}
 
-      if (!place) {
-        // 지역명 없이 재시도
-        const place2 = await kakaoKeywordSearch(c.canonical_name)
-        if (!place2) {
+      if (BLDRGST_ONLY) {
+        // ── 기존 좌표 사용 ────────────────────────────────────────
+        lat = c.lat as number
+        lng = c.lng as number
+      } else {
+        // ── Step 1: 카카오 키워드 검색 ──────────────────────────────
+        const region = SGG_LABEL[c.sgg_code] ?? ''
+        let place    = await kakaoKeywordSearch(`${c.canonical_name} ${region}`.trim())
+
+        if (!place) {
+          // 지역명 없이 재시도
+          place = await kakaoKeywordSearch(c.canonical_name)
+        }
+
+        if (!place) {
           skipped++
           await new Promise(r => setTimeout(r, 100))
           continue
         }
-        // fallback 결과 사용
-        Object.assign(place ?? {}, place2)
+
+        lat = parseFloat(place.y)
+        lng = parseFloat(place.x)
+        if (isNaN(lat) || isNaN(lng)) { skipped++; continue }
+
+        const sigu = SGG_MAP[c.sgg_code]
+        complexUpdate.lat           = lat
+        complexUpdate.lng           = lng
+        complexUpdate.si            = sigu?.si ?? null
+        complexUpdate.gu            = sigu?.gu ?? null
+        complexUpdate.road_address  = place.road_address_name || null
+        complexUpdate.jibun_address = place.address_name || null
       }
-
-      if (!place) { skipped++; continue }
-
-      const lat = parseFloat(place.y)
-      const lng = parseFloat(place.x)
-      if (isNaN(lat) || isNaN(lng)) { skipped++; continue }
 
       // ── Step 2: 좌표 → dong + b_code + 지번 ─────────────────────
       await new Promise(r => setTimeout(r, 100))
       const addrResult = await kakaoCoordToAddr(lat, lng)
 
-      const sigu   = SGG_MAP[c.sgg_code]
-      const si     = sigu?.si ?? null
-      const gu     = sigu?.gu ?? null
-      const dong   = addrResult?.dong ?? null
-
-      const complexUpdate: Record<string, unknown> = {
-        lat, lng,
-        si, gu, dong,
-        road_address:  place.road_address_name || null,
-        jibun_address: place.address_name || null,
+      if (!BLDRGST_ONLY && addrResult) {
+        complexUpdate.dong = addrResult.dong
       }
 
       // ── Step 3: 건축물대장 표제부 ────────────────────────────────
