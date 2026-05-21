@@ -3,7 +3,7 @@
  * 사용: npx tsx --env-file=.env.local scripts/fetch-cheongyak.ts
  */
 import { createClient } from '@supabase/supabase-js'
-import { fetchCheongyakList, fetchCompetitionRate, CHEONGYAK_SGG_CODES } from '../src/services/cheongyak/client'
+import { fetchCheongyakList, fetchCompetitionRate } from '../src/services/cheongyak/client'
 import { normalizeCheongyakItem } from '../src/services/cheongyak/normalize'
 
 async function main() {

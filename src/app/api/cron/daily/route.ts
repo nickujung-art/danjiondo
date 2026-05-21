@@ -6,7 +6,7 @@ import {
   currentYearMonth,
   LAWD_CODES,
 } from '@/services/molit-presale'
-import { fetchCheongyakList, fetchCompetitionRate, CHEONGYAK_SGG_CODES } from '@/services/cheongyak/client'
+import { fetchCheongyakList, fetchCompetitionRate } from '@/services/cheongyak/client'
 import { normalizeCheongyakItem } from '@/services/cheongyak/normalize'
 
 export const runtime = 'nodejs'
@@ -107,44 +107,43 @@ export async function GET(request: Request): Promise<Response> {
   totalUpserted += presaleUpserted
 
   // ── 청약홈 분양 공고 수집 (PRESALE-01, per T-13-06) ──────────────────────────
+  // fetchCheongyakList 내부에서 경남 전체 조회 후 창원·김해 필터링
   const cheongyakPblancNos: string[] = []
-  for (const sggCode of CHEONGYAK_SGG_CODES) {
-    try {
-      const items = await fetchCheongyakList(sggCode)
-      for (const item of items) {
-        const row = normalizeCheongyakItem(item)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase as any)
-          .from('new_listings')
-          .upsert(
-            {
-              name:                row.name,
-              region:              row.region,
-              pblanc_no:           row.pblanc_no,
-              pblanc_nm:           row.pblanc_nm,
-              sgg_code:            row.sgg_code,
-              supply_region:       row.supply_region,
-              supply_count:        row.supply_count,
-              rcept_bgnde:         row.rcept_bgnde,
-              rcept_endde:         row.rcept_endde,
-              przwner_presnatn_de: row.przwner_presnatn_de,
-              mvn_prearnge_ym:     row.mvn_prearnge_ym,
-              hssply_adres:        row.hssply_adres,
-              is_active:           true,
-              fetched_at:          row.fetched_at,
-            },
-            { onConflict: 'pblanc_no' },
-          )
-        if (!error) {
-          cheongyakUpserted++
-          cheongyakPblancNos.push(row.pblanc_no)
-        } else {
-          errors.push(`cheongyak upsert pblanc_no=${row.pblanc_no}: ${error.message}`)
-        }
+  try {
+    const items = await fetchCheongyakList()
+    for (const item of items) {
+      const row = normalizeCheongyakItem(item)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from('new_listings')
+        .upsert(
+          {
+            name:                row.name,
+            region:              row.region,
+            pblanc_no:           row.pblanc_no,
+            pblanc_nm:           row.pblanc_nm,
+            sgg_code:            row.sgg_code,
+            supply_region:       row.supply_region,
+            supply_count:        row.supply_count,
+            rcept_bgnde:         row.rcept_bgnde,
+            rcept_endde:         row.rcept_endde,
+            przwner_presnatn_de: row.przwner_presnatn_de,
+            mvn_prearnge_ym:     row.mvn_prearnge_ym,
+            hssply_adres:        row.hssply_adres,
+            is_active:           true,
+            fetched_at:          row.fetched_at,
+          },
+          { onConflict: 'pblanc_no' },
+        )
+      if (!error) {
+        cheongyakUpserted++
+        cheongyakPblancNos.push(row.pblanc_no)
+      } else {
+        errors.push(`cheongyak upsert pblanc_no=${row.pblanc_no}: ${error.message}`)
       }
-    } catch (err) {
-      errors.push(`cheongyak sgg=${sggCode}: ${err instanceof Error ? err.message : String(err)}`)
     }
+  } catch (err) {
+    errors.push(`cheongyak: ${err instanceof Error ? err.message : String(err)}`)
   }
   totalUpserted += cheongyakUpserted
 
