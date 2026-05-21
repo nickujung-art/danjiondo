@@ -175,70 +175,76 @@ export function KakaoMap({
         ))}
 
         {/* level ≤ 9: 개별 단지 마커 (showLabel=true, level ≤6에서 showName=true) */}
-        {!showOnlyCluster && clusters.map((feature, i) => {
-          // supercluster 클러스터 피처는 건너뜀 (개별 마커만 렌더)
-          if (feature.properties.cluster) return null
+        {!showOnlyCluster && clusters.flatMap((feature) => {
+          // cluster 피처 → getLeaves()로 개별 단지 분해 (클러스터에 묶여도 마커 표시)
+          const leaves = feature.properties.cluster
+            ? clusterIndex.getLeaves(
+                (feature.properties as { cluster_id: number }).cluster_id,
+                Infinity,
+              )
+            : [feature]
 
-          const lng = feature.geometry.coordinates[0] ?? 0
-          const lat = feature.geometry.coordinates[1] ?? 0
+          return leaves.map((f) => {
+            if (f.properties.cluster) return null
 
-          const props = feature.properties as {
-            id:                  string
-            name:                string
-            avg_sale_per_pyeong: number | null
-            view_count:          number
-            price_change_30d:    number | null
-            tx_count_30d:        number
-            is_new_record_30d:   boolean
-            status:              string
-            built_year:          number | null
-            household_count:     number | null
-            hagwon_grade:        string | null
-            si:                  string | null
-            gu:                  string | null
-            dong:                string | null
-            recent_price:        number | null
-            recent_date:         string | null
-            recent_area_m2:      number | null
-          }
+            const lng = f.geometry.coordinates[0] ?? 0
+            const lat = f.geometry.coordinates[1] ?? 0
 
-          const badge = determineBadge({
-            status:            props.status            ?? 'active',
-            built_year:        props.built_year        ?? null,
-            is_new_record_30d: props.is_new_record_30d ?? false,
-            tx_count_30d:      props.tx_count_30d      ?? 0,
-            view_count:        props.view_count         ?? 0,
-            p95_view_count:    p95ViewCount,
+            const props = f.properties as {
+              id:                  string
+              name:                string
+              avg_sale_per_pyeong: number | null
+              view_count:          number
+              price_change_30d:    number | null
+              tx_count_30d:        number
+              is_new_record_30d:   boolean
+              status:              string
+              built_year:          number | null
+              household_count:     number | null
+              hagwon_grade:        string | null
+              si:                  string | null
+              gu:                  string | null
+              dong:                string | null
+              recent_price:        number | null
+              recent_date:         string | null
+              recent_area_m2:      number | null
+            }
+
+            const badge = determineBadge({
+              status:            props.status            ?? 'active',
+              built_year:        props.built_year        ?? null,
+              is_new_record_30d: props.is_new_record_30d ?? false,
+              tx_count_30d:      props.tx_count_30d      ?? 0,
+              view_count:        props.view_count         ?? 0,
+              p95_view_count:    p95ViewCount,
+            })
+
+            const displayPrice    = showLabel ? (props.recent_price ?? null)        : null
+            const displayAvg      = showLabel ? (props.avg_sale_per_pyeong ?? null)  : null
+            const detailHousehold = showName  ? (props.household_count ?? null)      : null
+            const detailBuiltYear = showName  ? (props.built_year ?? null)           : null
+
+            return (
+              <ComplexMarker
+                key={props.id}
+                id={props.id}
+                name={props.name}
+                lat={lat}
+                lng={lng}
+                badge={badge}
+                onSelect={setSelectedComplexId}
+                householdCount={detailHousehold}
+                si={props.si ?? null}
+                gu={props.gu ?? null}
+                recentPrice={displayPrice}
+                recentDate={props.recent_date ?? null}
+                recentAreaM2={props.recent_area_m2 ?? null}
+                builtYear={detailBuiltYear}
+                avgSalePerPyeong={displayAvg}
+                highVolumeTopPct={highVolumeTopPct}
+              />
+            )
           })
-
-          // showLabel: 가격 라벨 표시 (level ≤ 9) → 숨길 때 price/avg를 null로 전달
-          // showName:  단지명 추가 표시  (level ≤ 6) → 현재는 hover tooltip 제어용
-          const displayPrice = showLabel ? (props.recent_price ?? null)       : null
-          const displayAvg   = showLabel ? (props.avg_sale_per_pyeong ?? null) : null
-          // level > 6에서는 hover tooltip의 세부 정보(세대수·준공연도) 숨김
-          const detailHousehold = showName ? (props.household_count ?? null) : null
-          const detailBuiltYear = showName ? (props.built_year ?? null)       : null
-
-          return (
-            <ComplexMarker
-              key={props.id ?? i}
-              id={props.id}
-              name={props.name}
-              lat={lat}
-              lng={lng}
-              badge={badge}
-              onSelect={setSelectedComplexId}
-              householdCount={detailHousehold}
-              si={props.si ?? null}
-              gu={props.gu ?? null}
-              recentPrice={displayPrice}
-              recentDate={props.recent_date ?? null}
-              recentAreaM2={props.recent_area_m2 ?? null}
-              builtYear={detailBuiltYear}
-              avgSalePerPyeong={displayAvg}
-              highVolumeTopPct={highVolumeTopPct}
-            />
-          )
         })}
       </KakaoMapView>
       <MapSidePanel
