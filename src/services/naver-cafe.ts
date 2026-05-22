@@ -123,7 +123,7 @@ export async function extractComplexNames(text: string): Promise<string[]> {
 
   const genAI = new GoogleGenerativeAI(apiKey)
   const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-flash-lite-latest',
     systemInstruction:
       '한국 부동산 텍스트에서 아파트 단지명과 지역명(구/동)을 추출하세요. 응답은 반드시 JSON: {"complexes": ["단지명1"], "region": "창원 성산구"}. 없으면 빈 문자열/배열.',
   })

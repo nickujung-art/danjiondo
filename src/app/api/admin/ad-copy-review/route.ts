@@ -38,7 +38,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? '')
   const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-flash-lite-latest',
     systemInstruction: `당신은 한국 표시광고법 전문가입니다. 부동산 광고 카피를 검토하여 다음을 찾아냅니다:\n1. 표시광고법 위반 가능 표현 (최저가 보장, 100% 확실, 투자 원금 보장 등 과장·허위 표현)\n2. 과장 표현, 근거 없는 수익률 주장\n응답은 반드시 JSON 형식: {"violations": [...], "suggestions": [...]}\n위반·제안이 없으면 빈 배열 반환. 절대 JSON 외의 텍스트 포함 금지.`,
   })
 

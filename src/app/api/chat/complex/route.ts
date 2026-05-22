@@ -86,7 +86,7 @@ export async function POST(request: Request): Promise<Response> {
     // Gemini 스트리밍 (T-06-02-01: 시스템 프롬프트로 역할 고정)
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? '')
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-flash-lite-latest',
       systemInstruction: `당신은 부동산 단지 정보 안내 도우미입니다. 반드시 아래 단지 데이터만 참조하여 답변하세요. 데이터에 없는 내용은 "해당 정보는 단지 데이터에 없습니다."라고 답하세요. 추측하거나 일반 지식으로 답하지 마세요.\n\n[단지 데이터]\n${context || '(데이터 없음)'}`,
     })
 
