@@ -18,6 +18,44 @@ export interface ComplexSummary {
   schoolScore:          number | null
   redevelopmentPhase:   string | null
   heatType:             string | null
+  managementCostAvg:    number | null  // 만원/세대, 최근 12개월 평균
+  priceHistory:         Array<{ yearMonth: string; avgPrice: number }>
+}
+
+type ManagementCostRaw = {
+  common_cost_total:        number | null
+  individual_cost_total:    number | null
+  long_term_repair_monthly: number | null
+}
+
+export function computeManagementCostAvg(
+  rows: ManagementCostRaw[],
+  householdCount: number | null,
+): number | null {
+  if (rows.length === 0 || householdCount == null || householdCount <= 0) return null
+  const totalPerMonth = rows.map(r =>
+    (r.common_cost_total ?? 0) + (r.individual_cost_total ?? 0) + (r.long_term_repair_monthly ?? 0)
+  )
+  const avgRaw = totalPerMonth.reduce((s, v) => s + v, 0) / totalPerMonth.length
+  return Math.round(avgRaw / householdCount / 10_000)
+}
+
+export function computePriceHistory(
+  txRows: Array<{ deal_date: string; price: number }>
+): Array<{ yearMonth: string; avgPrice: number }> {
+  const buckets = new Map<string, number[]>()
+  for (const r of txRows) {
+    const ym = r.deal_date.slice(0, 7)
+    const arr = buckets.get(ym) ?? []
+    arr.push(r.price)
+    buckets.set(ym, arr)
+  }
+  return [...buckets.entries()]
+    .map(([yearMonth, prices]) => ({
+      yearMonth,
+      avgPrice: Math.round(prices.reduce((s, v) => s + v, 0) / prices.length),
+    }))
+    .sort((a, b) => a.yearMonth.localeCompare(b.yearMonth))
 }
 
 /**
@@ -113,12 +151,33 @@ export async function getCompareData(
   const validIds = buildCompareIds(ids)
   if (validIds.length === 0) return []
 
+  const cutoffDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+
   const results = await Promise.all(
     validIds.map(async id => {
       const detail = await getComplexById(id, supabase)
       if (!detail) return null
 
-      const txData = await getLatestTransactionData(id, supabase)
+      const [txData, { data: managementData }, { data: priceData }] = await Promise.all([
+        getLatestTransactionData(id, supabase),
+        // 관리비 (최근 12개월)
+        supabase
+          .from('management_cost_monthly')
+          .select('common_cost_total, individual_cost_total, long_term_repair_monthly')
+          .eq('complex_id', id)
+          .order('year_month', { ascending: false })
+          .limit(12),
+        // 실거래가 1년 추이 (취소/정정 제외 — CLAUDE.md CRITICAL)
+        supabase
+          .from('transactions')
+          .select('deal_date, price')
+          .eq('complex_id', id)
+          .eq('deal_type', 'sale')
+          .is('cancel_date', null)
+          .is('superseded_by', null)
+          .gte('deal_date', cutoffDate)
+          .order('deal_date', { ascending: true }),
+      ])
 
       return {
         id:                   detail.id,
@@ -136,6 +195,13 @@ export async function getCompareData(
         schoolScore:          null,  // Phase 6 데이터 (미수집 시 null)
         redevelopmentPhase:   null,  // redevelopment_timelines 연동 optional
         heatType:             null,  // facility_kapt 연동 optional
+        managementCostAvg: computeManagementCostAvg(
+          (managementData ?? []) as ManagementCostRaw[],
+          detail.household_count ?? null,
+        ),
+        priceHistory: computePriceHistory(
+          (priceData ?? []) as Array<{ deal_date: string; price: number }>
+        ),
       } satisfies ComplexSummary
     }),
   )

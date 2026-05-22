@@ -4,6 +4,7 @@ import { createSearchParamsCache, parseAsArrayOf, parseAsString } from 'nuqs/ser
 import { createReadonlyClient } from '@/lib/supabase/readonly'
 import { buildCompareIds, getCompareData } from '@/lib/data/compare'
 import { CompareTable } from '@/components/complex/CompareTable'
+import { CompareChartWrapper } from './CompareChartWrapper'
 
 export const revalidate = 0
 
@@ -74,6 +75,7 @@ export default async function ComparePage({ searchParams }: Props) {
           margin: '0 auto',
         }}
       >
+        {complexes.length >= 2 && <CompareChartWrapper complexes={complexes} />}
         <CompareTable complexes={complexes} />
       </div>
     </div>
