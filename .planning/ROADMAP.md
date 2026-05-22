@@ -1,6 +1,6 @@
 # Roadmap — 단지온도
 
-**13 phases** | **58 requirements mapped** | v1~v7 requirements covered ✓
+**14 phases** | **61 requirements mapped** | v1~v7 requirements covered ✓
 
 ## Overview
 
@@ -19,6 +19,7 @@
 | 11 | 지도 고도화 | V2.3 | 카카오맵 게임화 — 클러스터 줌인·평당가 라벨·사이드 패널·배지 마커 | MAP-01~05 | 📋 Planned (5 plans) |
 | 12 | 지도 마커·클러스터 개편 | V2.4 | 로고 기반 집 모양 SVG 마커 + 동 단위 최고가 클러스터 칩 + hover 툴팁으로 지도 UX 호갱노노 수준 고도화 | MAP-06~09 | 📋 Planned (4 plans) |
 | 13 | 신축·분양·재건축 대시보드 | V2.5 | 청약홈 API 연동 + 신축/분양/재건축 3-tier 우선순위 대시보드 구현 | PRESALE-01~03, REDV-01 | ✅ Complete |
+| 14 | 지도 줌 중간 레벨 — 동 클러스터 | V2.5 | 구 클러스터→개별 마커 사이 동 단위 칩 중간 레벨 추가로 줌인 UX 개선 | MAP-10~12 | ⬜ Not Started |
 
 ---
 
@@ -588,6 +589,42 @@
 6. 신축 섹션은 built_year >= 2021 단지를 준공연도 최신순으로 표시한다
 
 **UI hint**: yes
+
+---
+
+### Phase 14: 지도 줌 중간 레벨 — 동 클러스터
+
+**Goal:** 구 클러스터(level ≥9)에서 개별 마커(level ≤6)로 전환될 때 핀 폭발 문제 해결. level 7~8 구간에 동(dong) 단위 칩 + pre_sale 단지 마커만 표시하는 중간 레벨 삽입, 클릭 시 level 6 드릴다운.
+
+**Version:** V2.5
+
+**Depends on:** Phase 12 (DongClusterChip 컴포넌트, GuChip 타입 존재)
+
+**Requirements:**
+- MAP-10: 동 단위 중간 줌 레벨 — complexes.dong 필드 기반 groupBy, key=`${gu}_${dong}`, 칩 표시(동이름+단지수+최고가), null='기타'
+- MAP-11: 동 칩 클릭 드릴다운 — setLevel(6) + setCenter(동 중심)
+- MAP-12: pre_sale 마커 level 7~8 노출 — 동 클러스터 레벨에서 pre_sale 단지는 개별 마커로 항상 표시
+
+**Plans:** 2 plans / 1 wave
+
+**Wave 1** *(독립 실행 가능 — 병렬 실행)*
+- [ ] 14-01-PLAN.md — DongChip 타입 + computeDongChips 함수 + DongClusterChip mode='dong' 확장 (MAP-10, MAP-11)
+- [ ] 14-02-PLAN.md — KakaoMap.tsx 4단계 줌 레벨 정책 재편 + dongChips/preSaleComplexes useMemo + Vitest 테스트 (MAP-10, MAP-11, MAP-12)
+
+**Cross-cutting constraints:**
+- AI 슬롭 금지: backdrop-blur, gradient, glow (DongClusterChip 동 모드 포함)
+- 이모지 금지 — 텍스트만 사용
+- GuChip 하위 호환 필수 — mode 미전달 시 기존 구 칩 동작 유지
+- pre_sale 필터: `c.status === 'pre_sale'` (DB 쿼리 없음, 클라이언트 필터)
+
+**Success Criteria:**
+1. level 9 이상에서 구 칩만 표시되고 동 칩·개별 마커가 없다
+2. level 7~8에서 동 칩이 표시되고 pre_sale 단지의 개별 마커만 추가로 보인다
+3. level 6 이하에서 개별 마커 전체 + 단지명이 표시된다
+4. 동 칩 클릭 시 level 6으로 줌인되며 해당 동 중심으로 지도가 이동한다
+5. complexes.dong=null 단지는 '기타' 동 칩으로 묶인다
+
+**UI hint**: no
 
 ---
 

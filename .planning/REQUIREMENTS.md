@@ -112,6 +112,9 @@
 - [ ] **MAP-07**: hover 툴팁 — ComplexMarker hover 시 단지명·시/구·최근 실거래 1건(가격·날짜·평수)·세대수·준공 표시하는 카드형 툴팁. 클릭 전 표시, 클릭 후 MapSidePanel 유지
 - [ ] **MAP-08**: 동/구 단위 클러스터 칩 — supercluster 숫자 원형 클러스터를 사각형 칩으로 교체. 구/동 이름 + 최근 3개월 최고 실거래가(cancel_date IS NULL AND superseded_by IS NULL 필수) 표시. 클릭 시 줌인 동작 유지
 - [ ] **MAP-09**: 줌 레벨 정책 재정의 + 배지 단순화 — level≥10 클러스터 칩만 표시(단지 마커 숨김), level 7~9 집 마커+실거래가(단지명 없음), level≤6 집 마커+단지명+실거래가. 배지 3종만 유지(pre_sale 빨강·new_build 민트·hot 왕관), 기존 surge/drop/school/large_complex/redevelop/none 제거
+- [ ] **MAP-10**: 동 단위 중간 줌 레벨 — level 7~8 구간에 구 칩 대신 동(dong) 단위 클러스터 칩 표시. complexes.dong 필드 기반 groupBy, key = `${gu}_${dong}` (동 이름 중복 방지), 칩 표시: 동 이름 + 단지 수 + 최고 recent_price. dong=null 단지는 '기타'로 그룹화
+- [ ] **MAP-11**: 동 칩 클릭 드릴다운 — 동 칩 클릭 시 map.setLevel(6) + 해당 동 중심좌표로 setCenter. 개별 마커 전환 트리거
+- [ ] **MAP-12**: pre_sale 마커 level 7~8 노출 — 동 클러스터 레벨에서 pre_sale(status='pre_sale') 단지는 개별 마커로 항상 표시 (광고성 핀, 수익 연계). 나머지 단지는 동 칩으로만 표현
 
 ---
 

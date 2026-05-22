@@ -6,7 +6,7 @@ import { prefetchPriceHistory } from '@/lib/price-history-cache'
 import { type ComplexMapItem } from '@/lib/data/complexes-map'
 import { determineBadge } from '@/components/map/markers/badge-logic'
 import { ComplexMarker } from './ComplexMarker'
-import { DongClusterChip, type GuChip } from './DongClusterChip'
+import { DongClusterChip, type GuChip, type DongChip, computeDongChips } from './DongClusterChip'
 import { MapSidePanel } from './MapSidePanel'
 
 interface Props {
@@ -45,18 +45,19 @@ export function KakaoMap({
     return Math.max(1, Math.round(highCount / complexes.length * 100))
   }, [complexes])
 
-  // 줌 레벨 정책
-  // level ≥ 9: 구/시 단위 칩만
-  // level 8  : 개별 마커, tx_count > 0 필터 (가격 라벨)
-  // level 7  : 개별 마커 전체 (가격 라벨, tx=0 포함 — 거래없는 단지도 보임)
-  // level ≤ 6: 개별 마커 전체 + 단지명
-  const showOnlyCluster = mapLevel >= 9
-  const showLabel       = mapLevel <= 8
-  const showName        = mapLevel <= 6
+  // 줌 레벨 정책 (4단계)
+  // level ≥ 9 : 구/시 단위 칩만
+  // level 7~8 : 동 단위 칩 + pre_sale 개별 마커
+  // level ≤ 6 : 개별 마커 전체 + 단지명
+  const showOnlyGuCluster = mapLevel >= 9
+  const showDongCluster   = !showOnlyGuCluster && mapLevel >= 7
+  const showAllMarkers    = mapLevel <= 6
+  const showLabel         = mapLevel <= 8
+  const showName          = mapLevel <= 6
 
   // 구/시 단위 칩: level ≥ 9일 때만 계산
   const guChips = useMemo<GuChip[]>(() => {
-    if (!showOnlyCluster) return []
+    if (!showOnlyGuCluster) return []
 
     type AccEntry = {
       totalLat: number
@@ -108,28 +109,35 @@ export function KakaoMap({
       memberLats: e.lats,
       memberLngs: e.lngs,
     }))
-  }, [showOnlyCluster, complexes])
+  }, [showOnlyGuCluster, complexes])
 
-  // ASC 정렬로 고점수 단지가 DOM 마지막에 렌더링 → 겹칠 때 위에 보임
-  // level 8: tx_count > 0 필터 (거래 없는 단지 숨김), 상위 캡 제거
-  // — 좌표 중복 dedup(complexes-map.ts)으로 정확 겹침 이미 처리됨
+  // 동 단위 칩: level 7~8일 때만 계산
+  const dongChips = useMemo<DongChip[]>(() => {
+    if (!showDongCluster) return []
+    return computeDongChips(visibleComplexes)
+  }, [showDongCluster, visibleComplexes])
+
+  // pre_sale 개별 마커: level 7~8에서 분양 단지만 표시
+  const preSaleComplexes = useMemo(() => {
+    if (!showDongCluster) return []
+    return visibleComplexes.filter(c => c.status === 'pre_sale')
+  }, [showDongCluster, visibleComplexes])
+
+  // 개별 마커 전체: level ≤ 6
   const displayComplexes = useMemo(() => {
-    if (showOnlyCluster) return []
-    const candidates = mapLevel === 8
-      ? visibleComplexes.filter(c => c.tx_count_30d > 0)
-      : visibleComplexes
-    return [...candidates].sort((a, b) =>
+    if (!showAllMarkers) return []
+    return [...visibleComplexes].sort((a, b) =>
       (a.tx_count_30d * 10 + a.view_count) - (b.tx_count_30d * 10 + b.view_count),
     )
-  }, [showOnlyCluster, visibleComplexes, mapLevel])
+  }, [showAllMarkers, visibleComplexes])
 
   // 뷰포트 내 단지 id 변경 시 가격 이력 프리페치
   useEffect(() => {
-    if (showOnlyCluster || displayComplexes.length === 0) return
+    if (!showAllMarkers || displayComplexes.length === 0) return
     const ids = displayComplexes.map(c => c.id)
     const timer = setTimeout(() => prefetchPriceHistory(ids), 400)
     return () => clearTimeout(timer)
-  }, [displayComplexes, showOnlyCluster])
+  }, [displayComplexes, showAllMarkers])
 
   // 지도 이동/줌 시 뷰포트 내 단지 필터링 (supercluster 없이 단순 bounds 체크)
   const updateVisible = useCallback(
@@ -176,12 +184,57 @@ export function KakaoMap({
         onIdle={updateVisible}
       >
         {/* level ≥ 9: 구/시 단위 칩 */}
-        {showOnlyCluster && guChips.map((chip) => (
+        {showOnlyGuCluster && guChips.map((chip) => (
           <DongClusterChip key={chip.gu} {...chip} />
         ))}
 
-        {/* level ≤ 8: 개별 단지 마커 */}
-        {!showOnlyCluster && displayComplexes.map((c) => {
+        {/* level 7~8: 동 단위 칩 */}
+        {showDongCluster && dongChips.map((chip) => (
+          <DongClusterChip
+            key={`${chip.gu ?? '기타'}_${chip.dong}`}
+            mode="dong"
+            {...chip}
+          />
+        ))}
+
+        {/* level 7~8: pre_sale 개별 마커 (분양 단지는 동 레벨에서도 항상 표시) */}
+        {showDongCluster && preSaleComplexes.map((c) => {
+          const badge = determineBadge({
+            status:            c.status,
+            built_year:        c.built_year,
+            is_new_record_30d: c.is_new_record_30d,
+            tx_count_30d:      c.tx_count_30d,
+            view_count:        c.view_count,
+            p95_view_count:    p95ViewCount,
+          })
+
+          const displayPrice = showLabel ? c.recent_price : null
+          const displayAvg   = showLabel ? c.avg_sale_per_pyeong : null
+
+          return (
+            <ComplexMarker
+              key={c.id}
+              id={c.id}
+              name={c.canonical_name}
+              lat={c.lat}
+              lng={c.lng}
+              badge={badge}
+              onSelect={setSelectedComplexId}
+              householdCount={null}
+              si={c.si}
+              gu={c.gu}
+              recentPrice={displayPrice ?? (displayAvg !== null && displayAvg > 0 ? Math.round(displayAvg * 25) : null)}
+              recentDate={c.recent_date}
+              recentAreaM2={c.recent_area_m2}
+              builtYear={null}
+              avgSalePerPyeong={displayAvg}
+              highVolumeTopPct={highVolumeTopPct}
+            />
+          )
+        })}
+
+        {/* level ≤ 6: 개별 단지 마커 전체 */}
+        {showAllMarkers && displayComplexes.map((c) => {
           const badge = determineBadge({
             status:            c.status,
             built_year:        c.built_year,
