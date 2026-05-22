@@ -16,6 +16,15 @@ function stripHtml(text: string): string {
   return text.replace(/<[^>]*>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"')
 }
 
+function toIso(pubDate: string): string | null {
+  try {
+    const d = new Date(pubDate)
+    return isNaN(d.getTime()) ? null : d.toISOString()
+  } catch {
+    return null
+  }
+}
+
 export async function searchCafePosts(
   query: string,
   size = 10,
@@ -49,7 +58,7 @@ export async function searchCafePosts(
     title:    stripHtml(d.title),
     contents: stripHtml(d.description),
     url:      d.link,
-    datetime: new Date(d.pubDate).toISOString(),
+    datetime: toIso(d.pubDate) ?? new Date().toISOString(),
     cafeName: d.cafename,
   }))
 }
@@ -98,7 +107,7 @@ export async function searchCafeArticles(
     description: stripHtml(d.description),
     cafeName:    d.cafename,
     articleUrl:  d.link,
-    publishedAt: new Date(d.pubDate).toISOString(),
+    publishedAt: toIso(d.pubDate) ?? new Date().toISOString(),
   }))
 }
 
