@@ -6,7 +6,7 @@ import { prefetchPriceHistory } from '@/lib/price-history-cache'
 import { type ComplexMapItem } from '@/lib/data/complexes-map'
 import { determineBadge } from '@/components/map/markers/badge-logic'
 import { ComplexMarker } from './ComplexMarker'
-import { DongClusterChip, type GuChip, type DongChip, computeDongChips } from './DongClusterChip'
+import { DongClusterChip, type GuChip, type DongChip, computeDongChips, deduplicateDongChips } from './DongClusterChip'
 import { MapSidePanel } from './MapSidePanel'
 
 interface Props {
@@ -46,16 +46,16 @@ export function KakaoMap({
   }, [complexes])
 
   // 줌 레벨 정책 (4단계)
-  // level ≥ 9 : 구/시 단위 칩만
-  // level 7~8 : 동 단위 칩 + pre_sale 개별 마커
-  // level ≤ 6 : 개별 마커 전체 + 단지명
-  const showOnlyGuCluster = mapLevel >= 9
-  const showDongCluster   = !showOnlyGuCluster && mapLevel >= 7
-  const showAllMarkers    = mapLevel <= 6
-  const showLabel         = mapLevel <= 8
-  const showName          = mapLevel <= 6
+  // level ≥ 8 : 구/시 단위 칩만
+  // level 6~7 : 동 단위 칩 + pre_sale 개별 마커
+  // level ≤ 5 : 개별 마커 전체 + 단지명
+  const showOnlyGuCluster = mapLevel >= 8
+  const showDongCluster   = !showOnlyGuCluster && mapLevel >= 6
+  const showAllMarkers    = mapLevel <= 5
+  const showLabel         = mapLevel <= 7
+  const showName          = mapLevel <= 5
 
-  // 구/시 단위 칩: level ≥ 9일 때만 계산
+  // 구/시 단위 칩: level ≥ 8일 때만 계산
   const guChips = useMemo<GuChip[]>(() => {
     if (!showOnlyGuCluster) return []
 
@@ -111,11 +111,14 @@ export function KakaoMap({
     }))
   }, [showOnlyGuCluster, complexes])
 
-  // 동 단위 칩: level 7~8일 때만 계산
+  // 동 단위 칩: level 6~7일 때만 계산, greedy 거리 필터로 겹침 방지
   const dongChips = useMemo<DongChip[]>(() => {
     if (!showDongCluster) return []
-    return computeDongChips(visibleComplexes)
-  }, [showDongCluster, visibleComplexes])
+    const all = computeDongChips(visibleComplexes)
+    // level 7(광역) → 1km, level 6(근접) → 550m 임계값으로 겹침 제거
+    const thresholdDeg = mapLevel === 7 ? 0.009 : 0.005
+    return deduplicateDongChips(all, thresholdDeg)
+  }, [showDongCluster, visibleComplexes, mapLevel])
 
   // pre_sale 개별 마커: level 7~8에서 분양 단지만 표시
   const preSaleComplexes = useMemo(() => {
@@ -183,12 +186,12 @@ export function KakaoMap({
         onCreate={updateVisible}
         onIdle={updateVisible}
       >
-        {/* level ≥ 9: 구/시 단위 칩 */}
+        {/* level ≥ 8: 구/시 단위 칩 */}
         {showOnlyGuCluster && guChips.map((chip) => (
           <DongClusterChip key={chip.gu} {...chip} />
         ))}
 
-        {/* level 7~8: 동 단위 칩 */}
+        {/* level 6~7: 동 단위 칩 */}
         {showDongCluster && dongChips.map((chip) => (
           <DongClusterChip
             key={`${chip.gu ?? '기타'}_${chip.dong}`}
@@ -197,7 +200,7 @@ export function KakaoMap({
           />
         ))}
 
-        {/* level 7~8: pre_sale 개별 마커 (분양 단지는 동 레벨에서도 항상 표시) */}
+        {/* level 6~7: pre_sale 개별 마커 (분양 단지는 동 레벨에서도 항상 표시) */}
         {showDongCluster && preSaleComplexes.map((c) => {
           const badge = determineBadge({
             status:            c.status,
@@ -233,7 +236,7 @@ export function KakaoMap({
           )
         })}
 
-        {/* level ≤ 6: 개별 단지 마커 전체 */}
+        {/* level ≤ 5: 개별 단지 마커 전체 */}
         {showAllMarkers && displayComplexes.map((c) => {
           const badge = determineBadge({
             status:            c.status,

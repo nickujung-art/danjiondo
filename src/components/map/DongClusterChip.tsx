@@ -42,7 +42,7 @@ export const DongClusterChip = memo(function DongClusterChip(props: Props) {
   const handleClick = () => {
     if (props.mode === 'dong') {
       map.setCenter(new window.kakao.maps.LatLng(props.lat, props.lng))
-      map.setLevel(6)
+      map.setLevel(5)
     } else {
       map.setCenter(new window.kakao.maps.LatLng(props.lat, props.lng))
       map.setLevel(7)
@@ -156,4 +156,27 @@ export function computeDongChips(complexes: ComplexMapItem[]): DongChip[] {
     memberLats: e.lats,
     memberLngs: e.lngs,
   }))
+}
+
+/**
+ * 동 칩 greedy 중복 제거.
+ * count 내림차순(단지 수 많은 동 우선) 후, 이미 선택된 칩과의 거리가
+ * thresholdDeg 이내인 칩을 제거.
+ * thresholdDeg: 위도/경도 단위 (1도 ≈ 111km)
+ *   level 7 → 0.009 (~1km), level 6 → 0.005 (~550m) 권장
+ */
+export function deduplicateDongChips(chips: DongChip[], thresholdDeg: number): DongChip[] {
+  const sorted = [...chips].sort((a, b) => b.count - a.count)
+  const accepted: DongChip[] = []
+
+  for (const chip of sorted) {
+    const tooClose = accepted.some(a => {
+      const dlat = chip.lat - a.lat
+      const dlng = chip.lng - a.lng
+      return Math.sqrt(dlat * dlat + dlng * dlng) < thresholdDeg
+    })
+    if (!tooClose) accepted.push(chip)
+  }
+
+  return accepted
 }

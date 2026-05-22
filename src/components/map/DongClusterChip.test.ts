@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { computeDongChips } from './DongClusterChip'
+import { computeDongChips, deduplicateDongChips } from './DongClusterChip'
+import type { DongChip } from './DongClusterChip'
 import type { ComplexMapItem } from '@/lib/data/complexes-map'
 
 function makeComplex(overrides: Partial<ComplexMapItem>): ComplexMapItem {
@@ -91,5 +92,38 @@ describe('computeDongChips', () => {
 
   it('빈 배열을 전달하면 빈 배열을 반환한다', () => {
     expect(computeDongChips([])).toHaveLength(0)
+  })
+})
+
+function makeDongChip(lat: number, lng: number, count = 1): DongChip {
+  return { gu: '성산구', dong: '테스트동', lat, lng, count, maxPrice: null, memberLats: [lat], memberLngs: [lng] }
+}
+
+describe('deduplicateDongChips', () => {
+  it('거리가 임계값 이상인 칩은 모두 유지된다', () => {
+    const chips = [
+      makeDongChip(35.0, 128.0),
+      makeDongChip(35.1, 128.1),  // ~14km 이상 거리
+    ]
+    expect(deduplicateDongChips(chips, 0.009)).toHaveLength(2)
+  })
+
+  it('임계값 이내 두 칩 중 count 많은 칩만 남는다', () => {
+    const chips = [
+      makeDongChip(35.2000, 128.6000, 5),
+      makeDongChip(35.2001, 128.6001, 2),  // 매우 가까움 (~0.0001)
+    ]
+    const result = deduplicateDongChips(chips, 0.009)
+    expect(result).toHaveLength(1)
+    expect(result[0]!.count).toBe(5)
+  })
+
+  it('빈 배열을 전달하면 빈 배열을 반환한다', () => {
+    expect(deduplicateDongChips([], 0.009)).toHaveLength(0)
+  })
+
+  it('칩이 1개면 그대로 반환한다', () => {
+    const chips = [makeDongChip(35.2, 128.6, 3)]
+    expect(deduplicateDongChips(chips, 0.009)).toHaveLength(1)
   })
 })
