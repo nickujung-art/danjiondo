@@ -75,6 +75,12 @@ const ROWS: RowDef[] = [
     label:  '난방방식',
     format: c => c.heatType ?? null,
   },
+  {
+    id:      'management_cost',
+    label:   '관리비 (세대당)',
+    format:  (c: ComplexSummary) => c.managementCostAvg != null ? `월 ${c.managementCostAvg.toLocaleString()}만원` : null,
+    numeric: true,
+  },
 ]
 
 const labelCellStyle: React.CSSProperties = {
