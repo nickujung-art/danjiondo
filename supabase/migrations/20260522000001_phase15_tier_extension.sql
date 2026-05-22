@@ -100,9 +100,9 @@ $$;
 
 COMMENT ON FUNCTION public.award_favorite_points IS 'Phase 15 (DIFF-02): 즐겨찾기 추가 +5점.';
 
-DROP TRIGGER IF EXISTS favorites_award_points ON public.user_favorites;
+DROP TRIGGER IF EXISTS favorites_award_points ON public.favorites;
 CREATE TRIGGER favorites_award_points
-  AFTER INSERT ON public.user_favorites
+  AFTER INSERT ON public.favorites
   FOR EACH ROW
   WHEN (NEW.user_id IS NOT NULL)
   EXECUTE FUNCTION public.award_favorite_points();
