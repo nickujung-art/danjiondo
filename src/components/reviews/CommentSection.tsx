@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { submitComment, reportComment } from '@/lib/auth/comment-actions'
 import type { CommentWithUserInfo } from '@/lib/data/comments'
-import { getTierBadge } from '@/lib/data/member-tier'
+import { getTierBadgeText } from '@/lib/data/member-tier'
 import type { MemberTier } from '@/lib/data/member-tier'
 
 interface Props {
@@ -80,11 +80,8 @@ export function CommentSection({ reviewId, complexId, initialComments, currentUs
                   }}
                 >
                   {formatNick(c.user_id)}
-                  {/* TierBadge: 등급 배지 (getTierBadge 문자열 렌더) */}
-                  {getTierBadge({
-                    tier: (c.member_tier as MemberTier | null | undefined) ?? 'bronze',
-                    cafeVerified: c.cafe_nickname != null,
-                  }) && (
+                  {/* TierBadge: 등급 배지 (텍스트 약자 렌더, D-06 AI 슬롭 금지) */}
+                  {(c.member_tier as MemberTier | null | undefined) && (c.member_tier as MemberTier) !== 'bronze' && (
                     <span
                       style={{
                         font: '600 10px/1 var(--font-sans)',
@@ -93,10 +90,7 @@ export function CommentSection({ reviewId, complexId, initialComments, currentUs
                       }}
                       aria-label="등급 배지"
                     >
-                      {getTierBadge({
-                        tier: (c.member_tier as MemberTier | null | undefined) ?? 'bronze',
-                        cafeVerified: c.cafe_nickname != null,
-                      })}
+                      {getTierBadgeText((c.member_tier as MemberTier | null | undefined) ?? 'bronze')}
                     </span>
                   )}
                   {' · '}

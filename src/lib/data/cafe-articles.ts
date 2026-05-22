@@ -48,11 +48,12 @@ export async function ingestCafeArticles(
     published_at:     a.publishedAt,
   }))
 
-  const { error, count } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error, data } = await (supabase as any)
     .from('cafe_articles')
     .upsert(rows, { onConflict: 'naver_article_id', ignoreDuplicates: true })
-    .select('id', { count: 'exact', head: true })
+    .select('id')
 
-  if (error) throw new Error(`cafe_articles upsert: ${error.message}`)
-  return count ?? 0
+  if (error) throw new Error(`cafe_articles upsert: ${(error as { message: string }).message}`)
+  return (data as unknown[] | null)?.length ?? 0
 }
