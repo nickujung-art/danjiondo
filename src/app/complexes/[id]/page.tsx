@@ -13,6 +13,7 @@ import { DealTypeTabs } from '@/components/complex/DealTypeTabs'
 import { FavoriteButton } from '@/components/complex/FavoriteButton'
 import { ShareButton } from '@/components/complex/ShareButton'
 import { CompareAddButton } from '@/components/complex/CompareAddButton'
+import { CompareFloatingBar } from '@/components/complex/CompareFloatingBar'
 import { AdBanner } from '@/components/ads/AdBanner'
 import { NeighborhoodOpinion } from '@/components/reviews/NeighborhoodOpinion'
 import { RedevelopmentTimeline } from '@/components/complex/RedevelopmentTimeline'
@@ -759,6 +760,8 @@ export default async function ComplexDetailPage({ params }: Props) {
 
       {/* AI 상담 패널 — position:fixed, stacking context 밖에 렌더 */}
       <AiChatPanel complexId={id} complexName={complex.canonical_name} />
+      {/* 비교 플로팅 바 — 2개 이상 선택 시 표시 */}
+      <CompareFloatingBar />
     </div>
   )
 }
