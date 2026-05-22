@@ -54,6 +54,54 @@ export async function searchCafePosts(
   }))
 }
 
+export interface CafeArticleItem {
+  articleId:   string   // item.link (naver_article_id)
+  title:       string
+  description: string
+  cafeName:    string
+  articleUrl:  string
+  publishedAt: string   // ISO 8601
+}
+
+export async function searchCafeArticles(
+  query: string,
+  size = 100,
+): Promise<CafeArticleItem[]> {
+  const url = new URL(CAFE_SEARCH_URL)
+  url.searchParams.set('query', query)
+  url.searchParams.set('sort', 'date')
+  url.searchParams.set('display', String(Math.min(size, 100)))
+
+  const res = await fetch(url.toString(), {
+    headers: {
+      'X-Naver-Client-Id':     process.env.NAVER_CLIENT_ID     ?? '',
+      'X-Naver-Client-Secret': process.env.NAVER_CLIENT_SECRET ?? '',
+    },
+    signal: AbortSignal.timeout(10_000),
+  })
+
+  if (!res.ok) throw new Error(`Naver cafe articles HTTP ${res.status}`)
+
+  const json = (await res.json()) as {
+    items: Array<{
+      title:       string
+      link:        string
+      description: string
+      cafename:    string
+      pubDate:     string
+    }>
+  }
+
+  return (json.items ?? []).map(d => ({
+    articleId:   d.link,
+    title:       stripHtml(d.title),
+    description: stripHtml(d.description),
+    cafeName:    d.cafename,
+    articleUrl:  d.link,
+    publishedAt: new Date(d.pubDate).toISOString(),
+  }))
+}
+
 /**
  * T-8-03: Gemini 프롬프트 인젝션 방지
  * 카페 글 내용을 [텍스트]...[텍스트 끝] 구분자로 반드시 감싼다.

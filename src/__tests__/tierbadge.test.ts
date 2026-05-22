@@ -1,40 +1,34 @@
 /**
- * DIFF-01 — TierBadge 컴포넌트: cafeVerified 💬 마크
- * RED: 구현 없음 → 실패 예상
+ * DIFF-01 — TierBadge: 5단계 텍스트 배지 테스트
+ * D-06 AI 슬롭 금지: 이모지 없이 텍스트 약자만 사용
  */
 import { describe, it, expect, vi } from 'vitest'
 
 vi.mock('server-only', () => ({}))
 
-describe('TierBadge', () => {
-  it('cafeVerified=true → 💬 마크 렌더', async () => {
-    const { getTierBadge } = await import('@/lib/data/member-tier')
-    const result = getTierBadge({ tier: 'bronze', cafeVerified: true })
-    expect(result).toContain('💬')
+describe('TierBadge (getTierBadgeText)', () => {
+  it('bronze → B', async () => {
+    const { getTierBadgeText } = await import('@/lib/data/member-tier')
+    expect(getTierBadgeText('bronze')).toBe('B')
   })
 
-  it('cafeVerified=false, tier=bronze → 마크 없음', async () => {
-    const { getTierBadge } = await import('@/lib/data/member-tier')
-    const result = getTierBadge({ tier: 'bronze', cafeVerified: false })
-    expect(result).toBe('')
+  it('silver → S', async () => {
+    const { getTierBadgeText } = await import('@/lib/data/member-tier')
+    expect(getTierBadgeText('silver')).toBe('S')
   })
 
-  it('tier=silver, cafeVerified=false → 🔥 마크', async () => {
-    const { getTierBadge } = await import('@/lib/data/member-tier')
-    const result = getTierBadge({ tier: 'silver', cafeVerified: false })
-    expect(result).toContain('🔥')
+  it('gold → G', async () => {
+    const { getTierBadgeText } = await import('@/lib/data/member-tier')
+    expect(getTierBadgeText('gold')).toBe('G')
   })
 
-  it('tier=gold, cafeVerified=false → 👑 마크', async () => {
-    const { getTierBadge } = await import('@/lib/data/member-tier')
-    const result = getTierBadge({ tier: 'gold', cafeVerified: false })
-    expect(result).toContain('👑')
+  it('platinum → P', async () => {
+    const { getTierBadgeText } = await import('@/lib/data/member-tier')
+    expect(getTierBadgeText('platinum')).toBe('P')
   })
 
-  it('tier=gold, cafeVerified=true → 👑 + 💬 둘 다 포함', async () => {
-    const { getTierBadge } = await import('@/lib/data/member-tier')
-    const result = getTierBadge({ tier: 'gold', cafeVerified: true })
-    expect(result).toContain('👑')
-    expect(result).toContain('💬')
+  it('diamond → D', async () => {
+    const { getTierBadgeText } = await import('@/lib/data/member-tier')
+    expect(getTierBadgeText('diamond')).toBe('D')
   })
 })
