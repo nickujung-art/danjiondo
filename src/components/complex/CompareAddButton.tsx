@@ -55,9 +55,9 @@ export function CompareAddButton({ complexId, complexName }: CompareAddButtonPro
           className="btn btn-md btn-orange"
           style={{
             position:  'fixed',
-            bottom:    24,
+            bottom:    80,
             right:     24,
-            zIndex:    40,
+            zIndex:    50,
             minHeight: 44,
             textDecoration: 'none',
           }}
