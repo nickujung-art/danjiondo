@@ -47,14 +47,14 @@ export function KakaoMap({
 
   // 줌 레벨 정책
   // level ≥ 9: 구/시 단위 칩만
-  // level 8  : 개별 마커, tx_count > 0 필터 + 상위 100개 캡 (가격 라벨)
-  // level 7  : 개별 마커 전체 (~160개, 가격 라벨)
-  // level ≤ 6: 개별 마커 전체 + 단지명 (~80개)
+  // level 8  : 개별 마커, tx_count > 0 필터 (가격 라벨)
+  // level 7  : 개별 마커 전체 (가격 라벨, tx=0 포함 — 거래없는 단지도 보임)
+  // level ≤ 6: 개별 마커 전체 + 단지명
   const showOnlyCluster = mapLevel >= 9
   const showLabel       = mapLevel <= 8
   const showName        = mapLevel <= 6
 
-  // 구/시 단위 칩: level ≥ 10일 때만 계산
+  // 구/시 단위 칩: level ≥ 9일 때만 계산
   const guChips = useMemo<GuChip[]>(() => {
     if (!showOnlyCluster) return []
 
@@ -111,16 +111,16 @@ export function KakaoMap({
   }, [showOnlyCluster, complexes])
 
   // ASC 정렬로 고점수 단지가 DOM 마지막에 렌더링 → 겹칠 때 위에 보임
-  // level 8: tx_count > 0 필터 후 상위 100개만 (거래 없는 단지 숨김)
+  // level 8: tx_count > 0 필터 (거래 없는 단지 숨김), 상위 캡 제거
+  // — 좌표 중복 dedup(complexes-map.ts)으로 정확 겹침 이미 처리됨
   const displayComplexes = useMemo(() => {
     if (showOnlyCluster) return []
     const candidates = mapLevel === 8
       ? visibleComplexes.filter(c => c.tx_count_30d > 0)
       : visibleComplexes
-    const sorted = [...candidates].sort((a, b) =>
+    return [...candidates].sort((a, b) =>
       (a.tx_count_30d * 10 + a.view_count) - (b.tx_count_30d * 10 + b.view_count),
     )
-    return mapLevel === 8 && sorted.length > 100 ? sorted.slice(-100) : sorted
   }, [showOnlyCluster, visibleComplexes, mapLevel])
 
   // 뷰포트 내 단지 id 변경 시 가격 이력 프리페치
@@ -175,12 +175,12 @@ export function KakaoMap({
         onCreate={updateVisible}
         onIdle={updateVisible}
       >
-        {/* level ≥ 10: 구/시 단위 칩 */}
+        {/* level ≥ 9: 구/시 단위 칩 */}
         {showOnlyCluster && guChips.map((chip) => (
           <DongClusterChip key={chip.gu} {...chip} />
         ))}
 
-        {/* level ≤ 9: 개별 단지 마커 (level 8-9는 tx_count 상위 N개로 캡) */}
+        {/* level ≤ 8: 개별 단지 마커 */}
         {!showOnlyCluster && displayComplexes.map((c) => {
           const badge = determineBadge({
             status:            c.status,

@@ -41,53 +41,71 @@ function percentileToGrade(percentile: number | null): string | null {
   return 'D'
 }
 
+type ComplexRow = {
+  id:                  string
+  canonical_name:      string
+  lat:                 number
+  lng:                 number
+  sgg_code:            string
+  avg_sale_per_pyeong: number | null
+  view_count:          number
+  price_change_30d:    number | null
+  tx_count_30d:        number
+  is_new_record_30d:   boolean
+  status:              string
+  built_year:          number | null
+  household_count:     number | null
+  hagwon_score:        number | null
+  si:                  string | null
+  gu:                  string | null
+  dong:                string | null
+}
+
+// PostgREST caps responses at 1,000 rows — paginate until exhausted
+async function fetchAllComplexRows(
+  sggCodes: string[],
+  supabase: SupabaseClient,
+): Promise<ComplexRow[]> {
+  const PAGE = 1000
+  const all: ComplexRow[] = []
+  let offset = 0
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('complexes')
+      .select(
+        `id, canonical_name, lat, lng, sgg_code,
+         avg_sale_per_pyeong, view_count, price_change_30d, tx_count_30d,
+         is_new_record_30d, status, built_year, household_count, hagwon_score,
+         si, gu, dong`,
+      )
+      .in('sgg_code', sggCodes)
+      .not('lat', 'is', null)
+      .not('lng', 'is', null)
+      .not('status', 'in', '(demolished,merged,rental)')
+      .gte('lat', 34.8).lte('lat', 35.6)
+      .gte('lng', 128.3).lte('lng', 129.1)
+      .or('building_type.neq.officetel,tx_count_30d.gt.0,household_count.gte.100')
+      .range(offset, offset + PAGE - 1)
+
+    if (error) throw new Error(`getComplexesForMap failed: ${error.message}`)
+    if (!data || data.length === 0) break
+    all.push(...(data as ComplexRow[]))
+    if (data.length < PAGE) break
+    offset += PAGE
+  }
+
+  return all
+}
+
 export async function getComplexesForMap(
   sggCodes: string[],
   supabase: SupabaseClient,
 ): Promise<ComplexMapItem[]> {
   if (sggCodes.length === 0) return []
 
-  // 스텝 1: complexes 기본 정보 조회 (Phase 12: si/gu/dong 추가)
-  const { data, error } = await supabase
-    .from('complexes')
-    .select(
-      `id, canonical_name, lat, lng, sgg_code,
-       avg_sale_per_pyeong, view_count, price_change_30d, tx_count_30d,
-       is_new_record_30d, status, built_year, household_count, hagwon_score,
-       si, gu, dong`,
-    )
-    .in('sgg_code', sggCodes)
-    .not('lat', 'is', null)
-    .not('lng', 'is', null)
-    .not('status', 'in', '(demolished,merged,rental)')
-    // 창원·김해 유효 좌표 범위 — 잘못된 지오코딩 결과 제외
-    .gte('lat', 34.8).lte('lat', 35.6)
-    .gte('lng', 128.3).lte('lng', 129.1)
-    // 소규모 오피스텔 제외: 거래 없고 세대수 100 미만인 오피스텔 숨김
-    .or('building_type.neq.officetel,tx_count_30d.gt.0,household_count.gte.100')
-    .range(0, 9999)
-
-  if (error) throw new Error(`getComplexesForMap failed: ${error.message}`)
-
-  const rows = (data ?? []) as Array<{
-    id:                  string
-    canonical_name:      string
-    lat:                 number
-    lng:                 number
-    sgg_code:            string
-    avg_sale_per_pyeong: number | null
-    view_count:          number
-    price_change_30d:    number | null
-    tx_count_30d:        number
-    is_new_record_30d:   boolean
-    status:              string
-    built_year:          number | null
-    household_count:     number | null
-    hagwon_score:        number | null
-    si:                  string | null
-    gu:                  string | null
-    dong:                string | null
-  }>
+  // 스텝 1: complexes 기본 정보 조회 — 1,000행 서버 캡 우회를 위해 페이지 단위 조회
+  const rows = await fetchAllComplexRows(sggCodes, supabase)
 
   if (rows.length === 0) return []
 
