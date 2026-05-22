@@ -36,6 +36,10 @@ describe('CompareTable', () => {
       from: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
+      is: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({ data: [], error: null }),
       maybeSingle: vi.fn()
         .mockResolvedValueOnce({ data: { id: 'id1', canonical_name: '래미안A', sgg_code: '48121' }, error: null })
         .mockResolvedValueOnce({ data: { id: 'id2', canonical_name: '래미안B', sgg_code: '48121' }, error: null }),

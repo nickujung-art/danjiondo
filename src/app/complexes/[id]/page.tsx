@@ -19,8 +19,8 @@ import { RedevelopmentTimeline } from '@/components/complex/RedevelopmentTimelin
 import { GapLabel } from '@/components/complex/GapLabel'
 import { AnalysisSection } from '@/components/complex/AnalysisSection'
 import { AiChatPanel } from '@/components/complex/AiChatPanel'
-import { CafePostsList } from '@/components/complex/CafePostsList'
-import { getCafePostsByComplex } from '@/lib/data/cafe-posts'
+import { getCafeArticlesByComplex } from '@/lib/data/cafe-articles'
+import type { CafeArticleRecord } from '@/lib/data/cafe-articles'
 import { getManagementCostMonthly } from '@/lib/data/management-cost'
 import { ManagementCostCard } from '@/components/complex/ManagementCostCard'
 import { getComplexFacilityEdu } from '@/lib/data/facility-edu'
@@ -58,6 +58,31 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       canonical: `${SITE}/complexes/${id}`,
     },
   }
+}
+
+function CafeArticlesSection({ articles }: { articles: CafeArticleRecord[] }) {
+  if (articles.length === 0) return null
+  return (
+    <div className="card" style={{ padding: 20 }}>
+      <h3 style={{ font: '700 15px/1.4 var(--font-sans)', margin: '0 0 12px' }}>
+        관련 카페 글 {articles.length}개
+      </h3>
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+        {articles.map((a, i) => (
+          <li key={a.id} style={{ borderBottom: i < articles.length - 1 ? '1px solid var(--line-subtle)' : 'none', padding: '10px 0' }}>
+            <a href={a.article_url} target="_blank" rel="noopener noreferrer"
+               style={{ font: '500 13px/1.5 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', display: 'block', marginBottom: 2 }}>
+              {a.title}
+            </a>
+            <div style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', display: 'flex', gap: 8 }}>
+              {a.cafe_name && <span>{a.cafe_name}</span>}
+              {a.published_at && <span>{a.published_at.slice(0, 10).replace(/-/g, '.')}</span>}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 }
 
 function FireIcon() {
@@ -136,7 +161,7 @@ export default async function ComplexDetailPage({ params }: Props) {
     quadrantData,
     gapLabelData,
     districtStats,
-    cafePosts,
+    cafeArticles,
     managementCostRows,
     facilityEdu,
     rawSaleData,
@@ -181,8 +206,8 @@ export default async function ComplexDetailPage({ params }: Props) {
           }
         })()
       : Promise.resolve(null),
-    // 카페 이야기 — matchComplex() 경유 매칭된 글만 (오류 시 빈 배열 fallback)
-    getCafePostsByComplex(id, supabase).catch(() => []),
+    // 카페 이야기 — cafe_articles 테이블에서 조회 (오류 시 빈 배열 fallback)
+    getCafeArticlesByComplex(id, supabase).catch(() => [] as CafeArticleRecord[]),
     // 관리비 (오류 시 빈 배열 fallback)
     getManagementCostMonthly(id, supabase).catch(() => []),
     // 교육 환경 (오류 시 빈 데이터 fallback)
@@ -649,8 +674,8 @@ export default async function ComplexDetailPage({ params }: Props) {
             />
           </div>
 
-          {/* 카페 이야기 — matchComplex() 경유 매칭된 글만 표시 */}
-          <CafePostsList posts={cafePosts} />
+          {/* 카페 이야기 — cafe_articles 테이블 */}
+          <CafeArticlesSection articles={cafeArticles} />
         </div>
 
         {/* Right rail */}
