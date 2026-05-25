@@ -46,3 +46,9 @@ e2e/.auth/user.json
 data/management-cost/*.xlsx
 data/management-cost/*.sql
 data/management-cost/*.json
+
+# 학구도 원본 SHP/CSV (109MB, 재다운로드 가능)
+data/school-assignment/
+
+# 시설 교육 적재용 SQL 덤프 (재생성 가능)
+data/facility_edu.sql
