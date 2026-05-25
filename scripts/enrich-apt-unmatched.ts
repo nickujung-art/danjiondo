@@ -175,7 +175,7 @@ async function main() {
 
   let query = supabase
     .from('complexes')
-    .select('id, canonical_name, sgg_code, lat, lng')
+    .select('id, canonical_name, sgg_code, lat, lng, kapt_code, household_count')
     .eq('building_type', 'apt')
 
   if (TARGET_ID) {
@@ -275,7 +275,9 @@ async function main() {
 
           const builtYear = item.useAprDay ? parseInt(item.useAprDay.slice(0, 4), 10) : null
 
-          if (item.hhldCnt != null)   complexUpdate.household_count = item.hhldCnt
+          // 건축물대장 hhldCnt = 동당 세대수. K-apt kaptdaCnt(총세대수)가 있으면 쓰지 않음
+          if (item.hhldCnt != null && !c.household_count)
+            complexUpdate.household_count = item.hhldCnt
           if (item.grndFlrCnt != null) complexUpdate.floors_above   = item.grndFlrCnt
           if (item.ugrndFlrCnt != null) complexUpdate.floors_below  = item.ugrndFlrCnt
           if (builtYear && !isNaN(builtYear)) complexUpdate.built_year = builtYear
