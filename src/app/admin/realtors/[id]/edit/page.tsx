@@ -37,12 +37,22 @@ export default async function AdminRealtorEditPage({
 
   if (!realtor) notFound()
 
-  const { data: complexes } = await adminClient
-    .from('complexes')
-    .select('id, canonical_name, si, gu')
-    .in('status', ['active', 'in_redevelopment'])
-    .order('canonical_name')
-    .limit(5000)
+  // PostgREST max_rows=1000 우회: 병렬 range 쿼리로 전체 단지 수집
+  const [{ data: cx1 }, { data: cx2 }] = await Promise.all([
+    adminClient
+      .from('complexes')
+      .select('id, canonical_name, si, gu')
+      .in('status', ['active', 'in_redevelopment'])
+      .order('canonical_name')
+      .range(0, 999),
+    adminClient
+      .from('complexes')
+      .select('id, canonical_name, si, gu')
+      .in('status', ['active', 'in_redevelopment'])
+      .order('canonical_name')
+      .range(1000, 1999),
+  ])
+  const complexes = [...(cx1 ?? []), ...(cx2 ?? [])]
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-canvas)', fontFamily: 'var(--font-sans)' }}>

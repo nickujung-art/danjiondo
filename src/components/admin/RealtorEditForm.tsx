@@ -321,10 +321,6 @@ export function RealtorEditForm({ realtor, assignments, complexes }: Props) {
           <p style={{ font: '600 13px/1 var(--font-sans)', color: 'var(--fg-pri)', margin: '0 0 10px' }}>
             새 배정 추가
           </p>
-          {/* 임시 디버그 — 확인 후 제거 */}
-          <p style={{ font: '400 11px/1.5 var(--font-sans)', color: 'var(--fg-sec)', margin: '0 0 8px', background: '#f5f5f5', padding: '4px 8px', borderRadius: 4 }}>
-            단지 {complexes.length}개 로드 · 검색결과: {filteredComplexes.length}개 · {showList ? '▼열림' : '▶닫힘'}
-          </p>
 
           {/* 검색 입력 + 드롭다운 리스트 */}
           <div style={{ position: 'relative', marginBottom: 8 }}>
