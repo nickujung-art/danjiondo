@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: milestone
-status: complete
-last_updated: "2026-05-20T15:00:00Z"
-last_activity: 2026-05-20 — Phase 13 COMPLETE (청약홈 API 어댑터 + 3-tier /presale 대시보드 + REDV-01 admin UI, 31개 test GREEN, human verification 3/3 통과)
+status: in_progress
+last_updated: "2026-05-26T06:29:00Z"
+last_activity: 2026-05-26 — Phase 18-01 COMPLETE (공인중개사 데이터 레이어 + Server Actions, auth guard 3건 GREEN)
 progress:
   total_phases: 13
   completed_phases: 13
@@ -179,6 +179,8 @@ Key notes: MOLIT_API_KEY (기존 data.go.kr 키) 재사용. B552555 청약홈 �
 | 2026-05-20 | withRetry mock 패스스루 — res.ok=false throw 시 재시도 루프 방지를 위해 vi.mock 적용 | 13-02 |
 | 2026-05-20 | setComplexRedevelopmentStatus와 upsertRedevelopmentProject 분리 — 각각 complexes vs redevelopment_projects 담당 | 13-03 |
 | 2026-05-20 | complexes.status enum 전환 범위를 active|in_redevelopment로 제한 — 다른 상태는 별도 마이그레이션·UI | 13-03 |
+| 2026-05-26 | app-level is_active filter over PostgREST foreign table filter — unreliable in current Supabase version | 18-01 |
+| 2026-05-26 | assignRealtorToComplex uses upsert onConflict to handle UNIQUE(complex_id, display_order) without error | 18-01 |
 
 ---
 *Initialized: 2026-05-06*
