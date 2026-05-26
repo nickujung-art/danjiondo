@@ -149,7 +149,7 @@ export function ComplexList({ complexes, query, inFeedAds = [] }: Props) {
                 </div>
               </div>
             </Link>
-            {index === 4 && firstAd && (
+            {index === Math.min(4, complexes.length - 1) && firstAd && (
               <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--line-subtle)' }}>
                 <AdBanner ad={firstAd} />
               </div>

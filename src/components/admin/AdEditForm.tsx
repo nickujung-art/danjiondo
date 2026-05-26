@@ -239,7 +239,11 @@ export function AdEditForm({ campaign }: { campaign: AdCampaign }) {
             >
               {displayImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={displayImage} alt="미리보기" style={{ maxHeight: 160, objectFit: 'contain', width: '100%' }} />
+                <img
+                  src={displayImage}
+                  alt="미리보기"
+                  style={{ width: '100%', height: 'auto', minHeight: 80, display: 'block', objectFit: 'contain' }}
+                />
               ) : (
                 <div style={{ textAlign: 'center', padding: 20 }}>
                   <div style={{ font: '600 13px/1.4 var(--font-sans)', color: 'var(--fg-pri)' }}>클릭하여 새 이미지 업로드</div>

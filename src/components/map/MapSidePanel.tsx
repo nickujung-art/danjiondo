@@ -224,7 +224,7 @@ function PanelBody({ panelData, sidebarAd }: { panelData: MapPanelData; sidebarA
       )}
 
       {/* 평당가 */}
-      {panelData.avg_sale_per_pyeong !== null && (
+      {panelData.avg_sale_per_pyeong !== null && panelData.avg_sale_per_pyeong > 0 && (
         <div
           style={{
             background:   '#F9FAFB',
