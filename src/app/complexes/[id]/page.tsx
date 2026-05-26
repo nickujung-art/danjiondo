@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { createReadonlyClient } from '@/lib/supabase/readonly'
 import { getComplexById, getComplexTransactionSummary, getComplexRawTransactions } from '@/lib/data/complex-detail'
 import { getActiveAds } from '@/lib/data/ads'
+import { getRealtorsByComplexId } from '@/lib/data/realtors'
+import { RealtorCard } from '@/components/realtors/RealtorCard'
 import { getComplexReviewStats } from '@/lib/data/reviews'
 import { getReviewsWithComments } from '@/lib/data/comments'
 import { getRedevelopmentProject } from '@/lib/data/redevelopment'
@@ -205,7 +207,7 @@ export default async function ComplexDetailPage({ params }: Props) {
   const [
     saleData,
     sidebarAds,
-    inFeedAds,
+    complexRealtors,
     reviews,
     reviewStats,
     facilityKaptResult,
@@ -221,7 +223,7 @@ export default async function ComplexDetailPage({ params }: Props) {
   ] = await Promise.all([
     getComplexTransactionSummary(id, 'sale', supabase),
     getActiveAds('sidebar', supabase),
-    getActiveAds('in_feed', supabase, complex.sgg_code ?? undefined),
+    getRealtorsByComplexId(id, supabase),
     getReviewsWithComments(id, supabase),
     getComplexReviewStats(id, supabase),
     supabase
@@ -808,24 +810,22 @@ export default async function ComplexDetailPage({ params }: Props) {
             <AdBanner key={ad.id} ad={ad} />
           ))}
 
-          {/* 이 지역 관련 광고 */}
-          {inFeedAds.length > 0 && (
+          {/* 이 단지 담당 공인중개사 (D-01, D-05) */}
+          {complexRealtors.length > 0 && (
             <section style={{ marginTop: 32, paddingBottom: 40 }}>
-              <h2 style={{
-                font: '600 14px/1 var(--font-sans)',
-                color: 'var(--fg-sec)',
-                margin: '0 0 12px',
-                letterSpacing: '-0.01em',
-              }}>
-                이 지역 관련 광고
+              <h2
+                style={{
+                  font: '600 14px/1 var(--font-sans)',
+                  color: 'var(--fg-sec)',
+                  margin: '0 0 12px',
+                  letterSpacing: '-0.01em',
+                }}
+              >
+                이 단지 담당 공인중개사
               </h2>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
-                gap: 12,
-              }}>
-                {inFeedAds.slice(0, 2).map(ad => (
-                  <AdBanner key={ad.id} ad={ad} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {complexRealtors.map(r => (
+                  <RealtorCard key={r.id} realtor={r} />
                 ))}
               </div>
             </section>
