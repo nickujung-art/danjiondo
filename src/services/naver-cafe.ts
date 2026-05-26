@@ -116,10 +116,10 @@ export async function searchCafeArticles(
     items = items.filter(a => a.articleUrl.includes(`cafe.naver.com/${cafeSlug}/`))
   }
   if (complexName) {
-    const norm = normalizeKo(complexName)
+    const norm = buildMatchKey(complexName)
     items = items.filter(a =>
       normalizeKo(a.title).includes(norm) ||
-      normalizeKo(a.description.slice(0, 100)).includes(norm)
+      normalizeKo(a.description.slice(0, 150)).includes(norm)
     )
   }
   return items
@@ -127,6 +127,14 @@ export async function searchCafeArticles(
 
 function normalizeKo(s: string): string {
   return s.replace(/[^가-힣a-zA-Z0-9]/g, '').toLowerCase()
+}
+
+// 카페 매칭용 단축 키: '아파트' 접미사 및 앞의 시명 제거
+function buildMatchKey(complexName: string): string {
+  const stripped = normalizeKo(complexName)
+    .replace(/아파트$/, '')
+    .replace(/^(창원|김해|마산|진해|진영|장유)/, '')
+  return stripped.length >= 4 ? stripped : normalizeKo(complexName).replace(/아파트$/, '')
 }
 
 /**
