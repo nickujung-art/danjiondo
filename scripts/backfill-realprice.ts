@@ -12,11 +12,12 @@
  * 필요 환경변수: MOLIT_API_KEY, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
  * API 한도: 일 10,000회 → 100건/페이지, 월 최대 수십 페이지 → 지역×월 단위 조절
  */
-import { loadEnvConfig } from '@next/env'
+import dotenv from 'dotenv'
+import path from 'path'
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
+
 import { createClient } from '@supabase/supabase-js'
 import { ingestMonth, ingestMonthVilla } from '../src/lib/data/realprice'
-
-loadEnvConfig(process.cwd())
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
