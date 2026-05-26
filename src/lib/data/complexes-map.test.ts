@@ -3,19 +3,26 @@ import { getComplexesForMap } from './complexes-map'
 
 vi.mock('server-only', () => ({}))
 
+function makeChain(resolvedValue: { data: unknown; error: unknown }) {
+  const resolved = Promise.resolve(resolvedValue)
+  const chainObj: Record<string, unknown> = {}
+  Object.assign(chainObj, {
+    not:   vi.fn().mockReturnValue(chainObj),
+    in:    vi.fn().mockReturnValue(chainObj),
+    gte:   vi.fn().mockReturnValue(chainObj),
+    lte:   vi.fn().mockReturnValue(chainObj),
+    or:    vi.fn().mockReturnValue(chainObj),
+    range: vi.fn().mockReturnValue(chainObj),
+    then:  resolved.then.bind(resolved),
+    catch: resolved.catch.bind(resolved),
+  })
+  return chainObj
+}
+
 describe('getComplexesForMap', () => {
   it('Test 1: 쿼리에 .not("status", "in", "(demolished,merged,rental)") 체인이 포함되어야 한다', async () => {
-    const notSpy = vi.fn()
-
-    // Supabase builder는 thenable — await 시 then()이 호출됨
-    const resolved = Promise.resolve({ data: [], error: null })
-    const chainObj: Record<string, unknown> = {}
-    Object.assign(chainObj, {
-      not: notSpy.mockReturnValue(chainObj),
-      in:  vi.fn().mockReturnValue(chainObj),
-      then: resolved.then.bind(resolved),
-      catch: resolved.catch.bind(resolved),
-    })
+    const chainObj = makeChain({ data: [], error: null })
+    const notSpy = chainObj.not as ReturnType<typeof vi.fn>
 
     const mockSupabase = {
       from: vi.fn().mockReturnValue({ select: vi.fn().mockReturnValue(chainObj) }),
@@ -27,16 +34,7 @@ describe('getComplexesForMap', () => {
   })
 
   it('Test 2: error 반환 시 Error를 throw한다', async () => {
-    const notSpy = vi.fn()
-
-    const resolved = Promise.resolve({ data: null, error: { message: 'DB error' } })
-    const chainObj: Record<string, unknown> = {}
-    Object.assign(chainObj, {
-      not: notSpy.mockReturnValue(chainObj),
-      in:  vi.fn().mockReturnValue(chainObj),
-      then: resolved.then.bind(resolved),
-      catch: resolved.catch.bind(resolved),
-    })
+    const chainObj = makeChain({ data: null, error: { message: 'DB error' } })
 
     const mockSupabase = {
       from: vi.fn().mockReturnValue({ select: vi.fn().mockReturnValue(chainObj) }),
