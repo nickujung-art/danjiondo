@@ -117,7 +117,10 @@ export async function searchCafeArticles(
   }
   if (complexName) {
     const norm = normalizeKo(complexName)
-    items = items.filter(a => normalizeKo(a.title).includes(norm))
+    items = items.filter(a =>
+      normalizeKo(a.title).includes(norm) ||
+      normalizeKo(a.description.slice(0, 100)).includes(norm)
+    )
   }
   return items
 }
