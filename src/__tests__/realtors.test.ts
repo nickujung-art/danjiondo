@@ -41,10 +41,8 @@ describe('getRealtorsByComplexId', () => {
       // Will be tested with actual DB
     })
     it('returns empty array for complex with no assignments', async () => {
-      const { createClient } = await import('@supabase/supabase-js')
-      const supabase = createClient(URL_!, AKEY!)
       const { getRealtorsByComplexId } = await import('@/lib/data/realtors')
-      const result = await getRealtorsByComplexId('00000000-0000-0000-0000-000000000000', supabase)
+      const result = await getRealtorsByComplexId('00000000-0000-0000-0000-000000000000', admin)
       expect(result).toEqual([])
     })
   })
@@ -63,10 +61,8 @@ describe('getAllRealtors', () => {
 describe('getRealtorById', () => {
   describe.skipIf(!SKEY)('integration', () => {
     it('returns null for non-existent id', async () => {
-      const { createClient } = await import('@supabase/supabase-js')
-      const supabase = createClient(URL_!, AKEY!)
       const { getRealtorById } = await import('@/lib/data/realtors')
-      const result = await getRealtorById('00000000-0000-0000-0000-000000000000', supabase)
+      const result = await getRealtorById('00000000-0000-0000-0000-000000000000', admin)
       expect(result).toBeNull()
     })
   })
