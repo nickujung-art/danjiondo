@@ -78,6 +78,20 @@ export async function pauseAdCampaign(id: string): Promise<{ error: string | nul
   return updateStatus(id, 'paused')
 }
 
+export async function deleteAdCampaign(id: string): Promise<{ error: string | null }> {
+  const { error, admin } = await requireAdmin()
+  if (error || !admin) return { error: error! }
+
+  const { error: dbErr } = await admin
+    .from('ad_campaigns')
+    .delete()
+    .eq('id', id)
+
+  if (dbErr) return { error: dbErr.message }
+  revalidatePath('/admin/ads')
+  return { error: null }
+}
+
 export async function createAdCampaign(
   formData: FormData,
 ): Promise<{ error: string | null }> {

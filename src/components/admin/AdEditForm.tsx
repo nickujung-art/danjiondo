@@ -9,6 +9,15 @@ import type { Database } from '@/types/database'
 
 type AdStatus = Database['public']['Enums']['ad_status']
 
+const SGG_OPTIONS = [
+  { code: '48121', label: '창원시 의창구' },
+  { code: '48123', label: '창원시 성산구' },
+  { code: '48125', label: '창원시 마산합포구' },
+  { code: '48127', label: '창원시 마산회원구' },
+  { code: '48129', label: '창원시 진해구' },
+  { code: '48250', label: '김해시' },
+]
+
 const PLACEMENT_IMAGE_SPEC: Record<string, { label: string; w: number; h: number; ratio: string }> = {
   banner_top: { label: '상단 배너',  w: 1200, h: 200,  ratio: '6:1'  },
   sidebar:    { label: '사이드바',   w: 320,  h: 250,  ratio: '5:4'  },
@@ -186,14 +195,18 @@ export function AdEditForm({ campaign }: { campaign: AdCampaign }) {
               </button>
               {regionEnabled && (
                 <div style={{ marginTop: 10 }}>
-                  <Field label="지역 코드 (sgg_code)" hint="미입력 시 전체 지역 노출">
-                    <input
+                  <Field label="지역 선택">
+                    <select
                       name="target_sgg_code"
                       className="input"
                       style={inputStyle}
                       defaultValue={campaign.target_sgg_code ?? ''}
-                      placeholder="예: 48127 (창원시 성산구)"
-                    />
+                    >
+                      <option value="">전체 지역</option>
+                      {SGG_OPTIONS.map(o => (
+                        <option key={o.code} value={o.code}>{o.label} ({o.code})</option>
+                      ))}
+                    </select>
                   </Field>
                 </div>
               )}
