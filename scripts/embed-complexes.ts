@@ -6,10 +6,11 @@
  *
  * 참고: Voyage AI 무료 티어 10M tokens/월. 단지 3000개 × 3 chunk × 200 tokens ≈ 1.8M tokens/1회 실행.
  */
-import { loadEnvConfig } from '@next/env'
-import { createClient } from '@supabase/supabase-js'
+import dotenv from 'dotenv'
+import path from 'path'
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
 
-loadEnvConfig(process.cwd())
+import { createClient } from '@supabase/supabase-js'
 
 const VOYAGE_API_KEY = process.env.VOYAGE_API_KEY
 
