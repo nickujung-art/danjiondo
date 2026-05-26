@@ -11,7 +11,7 @@ function formatMoveInYm(ym: string): string {
 }
 
 export const PresalePin = memo(function PresalePin({
-  id, name, lat, lng, move_in_ym, supply_count, hssply_adres,
+  id: _id, name, lat, lng, move_in_ym, supply_count, hssply_adres,
 }: PresaleMapPin) {
   const [hover, setHover] = useState(false)
   const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
