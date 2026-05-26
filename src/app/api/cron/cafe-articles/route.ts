@@ -36,7 +36,7 @@ export async function GET(request: Request): Promise<Response> {
     const c = complex as { id: string; canonical_name: string; si: string }
     try {
       const query = `${c.canonical_name} ${c.si}`
-      const articles = await searchCafeArticles(query, 30, cafeSlug || undefined)
+      const articles = await searchCafeArticles(query, 30, cafeSlug || undefined, c.canonical_name)
       if (articles.length > 0) {
         const ingested = await ingestCafeArticles(c.id, articles, supabase)
         totalIngested += ingested

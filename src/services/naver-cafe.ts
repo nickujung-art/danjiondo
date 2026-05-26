@@ -76,6 +76,7 @@ export async function searchCafeArticles(
   query: string,
   size = 100,
   cafeSlug?: string,
+  complexName?: string,
 ): Promise<CafeArticleItem[]> {
   const url = new URL(CAFE_SEARCH_URL)
   url.searchParams.set('query', query)
@@ -102,7 +103,7 @@ export async function searchCafeArticles(
     }>
   }
 
-  const items = (json.items ?? []).map(d => ({
+  let items = (json.items ?? []).map(d => ({
     articleId:   d.link,
     title:       stripHtml(d.title),
     description: stripHtml(d.description),
@@ -112,9 +113,17 @@ export async function searchCafeArticles(
   }))
 
   if (cafeSlug) {
-    return items.filter(a => a.articleUrl.includes(`cafe.naver.com/${cafeSlug}/`))
+    items = items.filter(a => a.articleUrl.includes(`cafe.naver.com/${cafeSlug}/`))
+  }
+  if (complexName) {
+    const norm = normalizeKo(complexName)
+    items = items.filter(a => normalizeKo(a.title).includes(norm))
   }
   return items
+}
+
+function normalizeKo(s: string): string {
+  return s.replace(/[^가-힣a-zA-Z0-9]/g, '').toLowerCase()
 }
 
 /**
