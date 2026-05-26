@@ -5,6 +5,30 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import type { Database } from '@/types/database'
 
+export async function uploadAdImage(
+  formData: FormData,
+): Promise<{ url: string | null; error: string | null }> {
+  const { error, admin } = await requireAdmin()
+  if (error || !admin) return { url: null, error: error! }
+
+  const file = formData.get('file')
+  if (!(file instanceof File) || file.size === 0) return { url: null, error: '파일을 선택하세요.' }
+  if (file.size > 5 * 1024 * 1024) return { url: null, error: '파일 크기는 5MB 이하여야 합니다.' }
+
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+  const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+  const bytes = await file.arrayBuffer()
+
+  const { error: upErr } = await admin.storage
+    .from('ad-images')
+    .upload(path, bytes, { contentType: file.type, upsert: false })
+
+  if (upErr) return { url: null, error: upErr.message }
+
+  const { data } = admin.storage.from('ad-images').getPublicUrl(path)
+  return { url: data.publicUrl, error: null }
+}
+
 type AdminClient = ReturnType<typeof createSupabaseAdminClient>
 
 async function requireAdmin(): Promise<{ error: string | null; admin: AdminClient | null }> {

@@ -89,15 +89,34 @@ export default async function AdminAdsPage() {
       </header>
 
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 32px' }}>
-        <h1
-          style={{
-            font: '700 22px/1.3 var(--font-sans)',
-            letterSpacing: '-0.02em',
-            margin: '0 0 20px',
-          }}
-        >
-          광고 캠페인 관리
-        </h1>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <h1
+            style={{
+              font: '700 22px/1.3 var(--font-sans)',
+              letterSpacing: '-0.02em',
+              margin: 0,
+            }}
+          >
+            광고 캠페인 관리
+          </h1>
+          <Link
+            href="/admin/ads/new"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '8px 16px',
+              background: 'var(--dj-orange)',
+              color: '#fff',
+              borderRadius: 8,
+              font: '600 13px/1 var(--font-sans)',
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            + 새 광고 등록
+          </Link>
+        </div>
 
         {/* ROI 집계 테이블 (캠페인이 있을 때만 표시) */}
         {campaigns.length > 0 && <AdRoiTable rows={roiStats} />}
