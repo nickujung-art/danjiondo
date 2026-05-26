@@ -10,18 +10,22 @@ export async function GET(request: Request): Promise<Response> {
     return new Response('Unauthorized', { status: 401 })
   }
 
+  // NAVER_TARGET_CAFE 환경변수로 수집할 카페 슬러그 지정 (미설정 시 전체 카페)
+  const cafeSlug = process.env.NAVER_TARGET_CAFE ?? ''
+
   const errors: string[] = []
   let totalIngested = 0
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createSupabaseAdminClient() as any
 
-  // Naver API 한도: 25,000 calls/day. 100건/단지 * 250단지 = 25,000 (D-16)
+  // 세대수 기준 내림차순 — 큰 단지일수록 카페 언급 가능성 높음
   const { data: complexes, error: complexError } = await supabase
     .from('complexes')
     .select('id, canonical_name, si')
     .not('canonical_name', 'is', null)
     .not('si', 'is', null)
+    .order('household_count', { ascending: false, nullsFirst: false })
     .limit(250)
 
   if (complexError) {
@@ -31,15 +35,22 @@ export async function GET(request: Request): Promise<Response> {
   for (const complex of (complexes ?? [])) {
     const c = complex as { id: string; canonical_name: string; si: string }
     try {
-      // D-14: 검색 쿼리 = {canonical_name} {si}
       const query = `${c.canonical_name} ${c.si}`
-      const articles = await searchCafeArticles(query, 100)
-      const ingested = await ingestCafeArticles(c.id, articles, supabase)
-      totalIngested += ingested
+      const articles = await searchCafeArticles(query, 30, cafeSlug || undefined)
+      if (articles.length > 0) {
+        const ingested = await ingestCafeArticles(c.id, articles, supabase)
+        totalIngested += ingested
+      }
     } catch (err) {
       errors.push(`complex=${c.id}: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
 
-  return Response.json({ ok: errors.length === 0, totalIngested, complexCount: (complexes ?? []).length, errors })
+  return Response.json({
+    ok: errors.length === 0,
+    totalIngested,
+    complexCount: (complexes ?? []).length,
+    cafeSlug: cafeSlug || '(전체)',
+    errors,
+  })
 }

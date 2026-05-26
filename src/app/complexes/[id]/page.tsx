@@ -66,20 +66,69 @@ function CafeArticlesSection({ articles }: { articles: CafeArticleRecord[] }) {
   if (articles.length === 0) return null
   return (
     <div className="card" style={{ padding: 20 }}>
-      <h3 style={{ font: '700 15px/1.4 var(--font-sans)', margin: '0 0 12px' }}>
-        관련 카페 글 {articles.length}개
-      </h3>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+        <h3 style={{ font: '700 15px/1.4 var(--font-sans)', margin: 0 }}>카페 이야기</h3>
+        <span style={{
+          font: '600 11px/1 var(--font-sans)',
+          color: 'var(--fg-secondary)',
+          background: 'var(--bg-surface-2)',
+          border: '1px solid var(--line-subtle)',
+          borderRadius: 10,
+          padding: '2px 8px',
+        }}>
+          {articles.length}개
+        </span>
+      </div>
       <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
         {articles.map((a, i) => (
-          <li key={a.id} style={{ borderBottom: i < articles.length - 1 ? '1px solid var(--line-subtle)' : 'none', padding: '10px 0' }}>
-            <a href={a.article_url} target="_blank" rel="noopener noreferrer"
-               style={{ font: '500 13px/1.5 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', display: 'block', marginBottom: 2 }}>
-              {a.title}
+          <li key={a.id} style={{
+            borderBottom: i < articles.length - 1 ? '1px solid var(--line-subtle)' : 'none',
+            padding: '12px 0',
+          }}>
+            <a
+              href={a.article_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ textDecoration: 'none', display: 'block' }}
+            >
+              <div style={{
+                font: '600 13px/1.5 var(--font-sans)',
+                color: 'var(--fg-pri)',
+                marginBottom: 4,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}>
+                {a.title}
+              </div>
+              {a.description && (
+                <div style={{
+                  font: '400 12px/1.5 var(--font-sans)',
+                  color: 'var(--fg-secondary)',
+                  marginBottom: 6,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                }}>
+                  {a.description}
+                </div>
+              )}
+              <div style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', display: 'flex', gap: 8, alignItems: 'center' }}>
+                {a.cafe_name && (
+                  <span style={{
+                    background: 'var(--bg-surface-2)',
+                    border: '1px solid var(--line-subtle)',
+                    borderRadius: 4,
+                    padding: '1px 6px',
+                  }}>
+                    {a.cafe_name}
+                  </span>
+                )}
+                {a.published_at && <span>{a.published_at.slice(0, 10).replace(/-/g, '.')}</span>}
+              </div>
             </a>
-            <div style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', display: 'flex', gap: 8 }}>
-              {a.cafe_name && <span>{a.cafe_name}</span>}
-              {a.published_at && <span>{a.published_at.slice(0, 10).replace(/-/g, '.')}</span>}
-            </div>
           </li>
         ))}
       </ul>

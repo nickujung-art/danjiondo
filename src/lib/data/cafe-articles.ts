@@ -20,7 +20,7 @@ export interface CafeArticleRecord {
 export async function getCafeArticlesByComplex(
   complexId: string,
   supabase: AnySupabase,
-  limit = 5,
+  limit = 10,
 ): Promise<CafeArticleRecord[]> {
   const { data } = await supabase
     .from('cafe_articles')
