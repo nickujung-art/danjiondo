@@ -136,19 +136,23 @@ export function AiChatPanel({ complexId, complexName }: AiPanelProps) {
         throw new Error(errMsg)
       }
 
-      // SSE 스트리밍 처리
+      // SSE 스트리밍 처리 — 줄 경계가 read() 청크에 걸칠 수 있으므로 버퍼링
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
       let assistantText = ''
+      let buffer = ''
+      let done = false
 
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        const chunk = decoder.decode(value)
-        for (const line of chunk.split('\n')) {
+      while (!done) {
+        const result = await reader.read()
+        done = result.done
+        if (result.value) buffer += decoder.decode(result.value, { stream: !done })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
+        for (const line of lines) {
           if (!line.startsWith('data: ')) continue
-          const raw = line.slice(6)
-          if (raw === '[DONE]') break
+          const raw = line.slice(6).trim()
+          if (raw === '[DONE]') { done = true; break }
           try {
             const data = JSON.parse(raw) as { text?: string }
             if (data.text) {
@@ -201,9 +205,9 @@ export function AiChatPanel({ complexId, complexName }: AiPanelProps) {
 
   const SAMPLE_QUESTIONS = [
     '최근 실거래가 흐름이 어때?',
+    '학군은 어때?',
     '관리비가 어느 정도 돼?',
-    '주차 공간이 충분한가요?',
-    '주변 학교가 어디야?',
+    '주차 공간이 충분해?',
   ]
 
   const welcomeMessage: ChatMessage = {
@@ -373,40 +377,40 @@ export function AiChatPanel({ complexId, complexName }: AiPanelProps) {
             ))}
           </div>
 
-          {/* 샘플 질문 — 대화 시작 전에만 표시 */}
-          {messages.length === 0 && (
-            <div
-              style={{
-                padding: '0 16px 12px',
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '6px',
-                flexShrink: 0,
-              }}
-            >
-              {SAMPLE_QUESTIONS.map((q) => (
-                <button
-                  key={q}
-                  onClick={() => void sendMessage(q)}
-                  disabled={isPending}
-                  style={{
-                    padding: '5px 11px',
-                    borderRadius: 20,
-                    border: '1px solid var(--line-default)',
-                    background: 'var(--bg-surface)',
-                    color: 'var(--fg-secondary)',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    lineHeight: 1.4,
-                  }}
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
-          )}
+          {/* 샘플 질문 — 항상 표시 */}
+          <div
+            style={{
+              padding: '6px 16px 8px',
+              display: 'flex',
+              gap: '6px',
+              flexShrink: 0,
+              overflowX: 'auto',
+              scrollbarWidth: 'none',
+            }}
+          >
+            {SAMPLE_QUESTIONS.map((q) => (
+              <button
+                key={q}
+                onClick={() => void sendMessage(q)}
+                disabled={isPending}
+                style={{
+                  padding: '4px 11px',
+                  borderRadius: 20,
+                  border: '1px solid var(--line-default)',
+                  background: 'var(--bg-surface)',
+                  color: 'var(--fg-secondary)',
+                  fontSize: 12,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  lineHeight: 1.4,
+                }}
+              >
+                {q}
+              </button>
+            ))}
+          </div>
 
           {/* 입력 영역 */}
           <div

@@ -46,6 +46,8 @@ interface Complex {
   dong: string | null
   built_year: number | null
   household_count: number | null
+  lat: number | null
+  lng: number | null
 }
 
 async function buildSummaryChunk(complex: Complex): Promise<string> {
@@ -97,6 +99,23 @@ async function buildTransactionChunk(complexId: string): Promise<string> {
   return `최근 거래 ${txs.length}건. 최근 5건: ${summary}`
 }
 
+async function buildSchoolChunk(lat: number | null, lng: number | null): Promise<string> {
+  if (!lat || !lng) return '학구 정보 없음'
+  const { data: schools } = await supabase
+    .rpc('get_schools_for_point', { p_lat: lat, p_lng: lng }) as {
+      data: Array<{ school_level: string; school_name: string }> | null
+    }
+  if (!schools || schools.length === 0) return '학구 정보 없음'
+  const elem = schools.filter(s => s.school_level === 'elementary').map(s => s.school_name).join(', ')
+  const middle = schools.filter(s => s.school_level === 'middle').map(s => s.school_name).join(', ')
+  const high = schools.filter(s => s.school_level === 'high').map(s => s.school_name).join(', ')
+  const parts: string[] = []
+  if (elem) parts.push(`배정 초등학교: ${elem}`)
+  if (middle) parts.push(`배정 중학교: ${middle}`)
+  if (high) parts.push(`배정 고등학교: ${high}`)
+  return parts.length ? parts.join('. ') : '학구 정보 없음'
+}
+
 async function buildReviewChunk(complexId: string): Promise<string> {
   const { data: reviews } = await supabase
     .from('complex_reviews')
@@ -121,7 +140,7 @@ async function main() {
 
   const { data: complexes, error } = await supabase
     .from('complexes')
-    .select('id, canonical_name, si, gu, dong, built_year, household_count')
+    .select('id, canonical_name, si, gu, dong, built_year, household_count, lat, lng')
     .eq('status', 'active')
     .order('id')
 
@@ -141,16 +160,18 @@ async function main() {
     )
 
     for (const complex of batch) {
-      const [summaryText, txText, reviewText] = await Promise.all([
+      const [summaryText, txText, reviewText, schoolText] = await Promise.all([
         buildSummaryChunk(complex),
         buildTransactionChunk(complex.id),
         buildReviewChunk(complex.id),
+        buildSchoolChunk(complex.lat, complex.lng),
       ])
 
       const chunks = [
         { type: 'summary', text: summaryText },
         { type: 'transactions', text: txText },
         { type: 'reviews', text: reviewText },
+        { type: 'schools', text: schoolText },
       ]
 
       const embeddings = await embedTexts(chunks.map(c => c.text))
