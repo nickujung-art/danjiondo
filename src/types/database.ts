@@ -1527,6 +1527,84 @@ export type Database = {
           },
         ]
       }
+      realtors: {
+        Row: {
+          id: string
+          name: string
+          agency_name: string
+          phone: string
+          description: string | null
+          license_no: string | null
+          image_url: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          agency_name: string
+          phone: string
+          description?: string | null
+          license_no?: string | null
+          image_url?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          agency_name?: string
+          phone?: string
+          description?: string | null
+          license_no?: string | null
+          image_url?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      realtor_assignments: {
+        Row: {
+          id: string
+          realtor_id: string
+          complex_id: string
+          display_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          realtor_id: string
+          complex_id: string
+          display_order: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          realtor_id?: string
+          complex_id?: string
+          display_order?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "realtor_assignments_realtor_id_fkey"
+            columns: ["realtor_id"]
+            isOneToOne: false
+            referencedRelation: "realtors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "realtor_assignments_complex_id_fkey"
+            columns: ["complex_id"]
+            isOneToOne: false
+            referencedRelation: "complexes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       geography_columns: {
