@@ -86,6 +86,18 @@ export async function getActiveAds(
   return data ?? []
 }
 
+export async function getAdCampaignById(
+  id: string,
+  supabase: SupabaseClient<Database>,
+): Promise<AdCampaign | null> {
+  const { data } = await supabase
+    .from('ad_campaigns')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle()
+  return data ?? null
+}
+
 export async function getAllAdCampaigns(
   supabase: SupabaseClient<Database>,
 ): Promise<AdCampaign[]> {

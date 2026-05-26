@@ -138,3 +138,54 @@ export async function createAdCampaign(
   revalidatePath('/admin/ads')
   return { error: null }
 }
+
+export async function updateAdCampaign(
+  id: string,
+  formData: FormData,
+): Promise<{ error: string | null }> {
+  const { error, admin } = await requireAdmin()
+  if (error || !admin) return { error: error! }
+
+  const title = formData.get('title')
+  const advertiserName = formData.get('advertiser_name')
+  const placement = formData.get('placement')
+  const imageUrl = formData.get('image_url')
+  const linkUrl = formData.get('link_url')
+  const startsAt = formData.get('starts_at')
+  const endsAt = formData.get('ends_at')
+  const status = formData.get('status')
+  const targetSggCode = formData.get('target_sgg_code')
+  const targetLatRaw = formData.get('target_lat')
+  const targetLngRaw = formData.get('target_lng')
+
+  if (
+    typeof title !== 'string' || !title.trim() ||
+    typeof advertiserName !== 'string' || !advertiserName.trim() ||
+    typeof placement !== 'string' || !placement.trim() ||
+    typeof imageUrl !== 'string' || !imageUrl.trim() ||
+    typeof linkUrl !== 'string' || !linkUrl.trim() ||
+    typeof startsAt !== 'string' || !startsAt.trim() ||
+    typeof endsAt !== 'string' || !endsAt.trim()
+  ) {
+    return { error: '필수 항목을 모두 입력하세요.' }
+  }
+
+  const { error: dbErr } = await admin.from('ad_campaigns').update({
+    title: title.trim(),
+    advertiser_name: advertiserName.trim(),
+    placement: placement.trim(),
+    image_url: imageUrl.trim(),
+    link_url: linkUrl.trim(),
+    starts_at: startsAt.trim(),
+    ends_at: endsAt.trim(),
+    ...(typeof status === 'string' && status.trim() ? { status: status.trim() as Database['public']['Enums']['ad_status'] } : {}),
+    target_sgg_code: typeof targetSggCode === 'string' && targetSggCode.trim() ? targetSggCode.trim() : null,
+    target_lat: typeof targetLatRaw === 'string' && targetLatRaw.trim() ? parseFloat(targetLatRaw.trim()) || null : null,
+    target_lng: typeof targetLngRaw === 'string' && targetLngRaw.trim() ? parseFloat(targetLngRaw.trim()) || null : null,
+  }).eq('id', id)
+
+  if (dbErr) return { error: dbErr.message }
+  revalidatePath('/admin/ads')
+  revalidatePath(`/admin/ads/${id}/edit`)
+  return { error: null }
+}

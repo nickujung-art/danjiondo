@@ -1,9 +1,13 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { AdCopyReviewer } from '@/components/admin/AdCopyReviewer'
-import { createAdCampaign, uploadAdImage } from '@/lib/auth/ad-actions'
+import { updateAdCampaign, uploadAdImage } from '@/lib/auth/ad-actions'
+import type { AdCampaign } from '@/lib/data/ads'
+import type { Database } from '@/types/database'
+
+type AdStatus = Database['public']['Enums']['ad_status']
 
 const PLACEMENT_IMAGE_SPEC: Record<string, { label: string; w: number; h: number; ratio: string }> = {
   banner_top: { label: '상단 배너',  w: 1200, h: 200,  ratio: '6:1'  },
@@ -19,26 +23,37 @@ const DURATION_OPTIONS = [
   { label: '직접 입력', months: null },
 ]
 
+const STATUS_OPTIONS: { value: AdStatus; label: string }[] = [
+  { value: 'draft',    label: '초안' },
+  { value: 'pending',  label: '검토 중' },
+  { value: 'approved', label: '승인' },
+  { value: 'paused',   label: '일시중지' },
+  { value: 'rejected', label: '거절' },
+  { value: 'ended',    label: '종료' },
+]
+
 function addMonths(dateStr: string, months: number): string {
   const d = new Date(dateStr)
   d.setMonth(d.getMonth() + months)
   return d.toISOString().slice(0, 10)
 }
 
-export function AdCreateForm() {
-  const [copyText,        setCopyText]        = useState('')
-  const [placement,       setPlacement]       = useState('sidebar')
-  const [imageUrl,        setImageUrl]        = useState('')
-  const [imagePreview,    setImagePreview]    = useState('')
-  const [uploadError,     setUploadError]     = useState<string | null>(null)
-  const [isUploading,     setIsUploading]     = useState(false)
-  const [isSubmitting,    setIsSubmitting]    = useState(false)
-  const [submitError,     setSubmitError]     = useState<string | null>(null)
-  const [submitSuccess,   setSubmitSuccess]   = useState(false)
-  const [regionEnabled,   setRegionEnabled]   = useState(false)
-  const [startsAt,        setStartsAt]        = useState('')
-  const [endsAt,          setEndsAt]          = useState('')
-  const [durationOption,  setDurationOption]  = useState<number | null>(null)
+export function AdEditForm({ campaign }: { campaign: AdCampaign }) {
+  const router = useRouter()
+  const [copyText,       setCopyText]       = useState('')
+  const [placement,      setPlacement]      = useState(campaign.placement)
+  const [imageUrl,       setImageUrl]       = useState(campaign.image_url)
+  const [imagePreview,   setImagePreview]   = useState('')
+  const [uploadError,    setUploadError]    = useState<string | null>(null)
+  const [isUploading,    setIsUploading]    = useState(false)
+  const [isSubmitting,   setIsSubmitting]   = useState(false)
+  const [submitError,    setSubmitError]    = useState<string | null>(null)
+  const [submitSuccess,  setSubmitSuccess]  = useState(false)
+  const [regionEnabled,  setRegionEnabled]  = useState(!!campaign.target_sgg_code)
+  const [startsAt,       setStartsAt]       = useState(campaign.starts_at.slice(0, 10))
+  const [endsAt,         setEndsAt]         = useState(campaign.ends_at.slice(0, 10))
+  const [durationOption, setDurationOption] = useState<number | null>(null)
+  const [status,         setStatus]         = useState<AdStatus>(campaign.status)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const spec = PLACEMENT_IMAGE_SPEC[placement]
@@ -71,26 +86,23 @@ export function AdCreateForm() {
     if (result.error) {
       setUploadError(result.error)
       setImagePreview('')
-      setImageUrl('')
     } else {
       setImageUrl(result.url ?? '')
     }
   }
 
   async function handleSubmit(formData: FormData) {
-    if (!imageUrl) {
-      setSubmitError('이미지를 업로드하세요.')
-      return
-    }
     formData.set('image_url', imageUrl)
+    formData.set('status', status)
+    formData.delete('copy')
     setIsSubmitting(true)
     setSubmitError(null)
     try {
-      const result = await createAdCampaign(formData)
+      const result = await updateAdCampaign(campaign.id, formData)
       if (result.error) setSubmitError(result.error)
-      else setSubmitSuccess(true)
+      else { setSubmitSuccess(true); router.push('/admin/ads') }
     } catch {
-      setSubmitError('등록 중 오류가 발생했습니다.')
+      setSubmitError('수정 중 오류가 발생했습니다.')
     } finally {
       setIsSubmitting(false)
     }
@@ -100,15 +112,12 @@ export function AdCreateForm() {
     return (
       <div className="card" style={{ padding: 40, textAlign: 'center' }}>
         <div style={{ fontSize: 32, marginBottom: 12 }}>✓</div>
-        <p style={{ font: '600 15px/1.6 var(--font-sans)', color: 'var(--fg-positive)', margin: 0 }}>
-          광고 등록 완료
-        </p>
-        <p style={{ font: '500 13px/1.6 var(--font-sans)', color: 'var(--fg-sec)', margin: '8px 0 0' }}>
-          관리자 검토 후 승인됩니다.
-        </p>
+        <p style={{ font: '600 15px/1.6 var(--font-sans)', color: 'var(--fg-positive)', margin: 0 }}>수정 완료</p>
       </div>
     )
   }
+
+  const displayImage = imagePreview || imageUrl
 
   return (
     <div className="card" style={{ padding: '28px 32px' }}>
@@ -116,11 +125,11 @@ export function AdCreateForm() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
 
           <Field label="광고명" required>
-            <input name="title" className="input" required style={inputStyle} placeholder="광고 캠페인 이름" />
+            <input name="title" className="input" required style={inputStyle} defaultValue={campaign.title} />
           </Field>
 
           <Field label="광고주명" required>
-            <input name="advertiser_name" className="input" required style={inputStyle} placeholder="광고주 회사명" />
+            <input name="advertiser_name" className="input" required style={inputStyle} defaultValue={campaign.advertiser_name} />
           </Field>
 
           <Field label="지면" required>
@@ -139,24 +148,33 @@ export function AdCreateForm() {
             </select>
           </Field>
 
-          {/* 지역 타겟팅 — 토글 방식 */}
+          <Field label="상태">
+            <select
+              name="status"
+              className="input"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as AdStatus)}
+              style={inputStyle}
+            >
+              {STATUS_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </Field>
+
+          {/* 지역 타겟팅 — 토글 */}
           {showRegionToggle && (
             <div>
               <button
                 type="button"
                 onClick={() => setRegionEnabled(v => !v)}
                 style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '6px 12px',
-                  borderRadius: 6,
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '6px 12px', borderRadius: 6,
                   border: `1px solid ${regionEnabled ? 'var(--dj-orange)' : 'var(--line-default)'}`,
                   background: regionEnabled ? '#fff7ed' : 'var(--bg-surface-2)',
                   color: regionEnabled ? 'var(--dj-orange)' : 'var(--fg-sec)',
-                  font: '600 12px/1 var(--font-sans)',
-                  cursor: 'pointer',
-                  transition: 'all 150ms',
+                  font: '600 12px/1 var(--font-sans)', cursor: 'pointer', transition: 'all 150ms',
                 }}
               >
                 <span style={{
@@ -166,7 +184,6 @@ export function AdCreateForm() {
                 }} />
                 지역 타겟팅 {regionEnabled ? '활성' : '비활성 (전체 지역 노출)'}
               </button>
-
               {regionEnabled && (
                 <div style={{ marginTop: 10 }}>
                   <Field label="지역 코드 (sgg_code)" hint="미입력 시 전체 지역 노출">
@@ -174,6 +191,7 @@ export function AdCreateForm() {
                       name="target_sgg_code"
                       className="input"
                       style={inputStyle}
+                      defaultValue={campaign.target_sgg_code ?? ''}
                       placeholder="예: 48127 (창원시 성산구)"
                     />
                   </Field>
@@ -182,19 +200,20 @@ export function AdCreateForm() {
             </div>
           )}
 
-          {/* 지도 위치 */}
           {placement === 'map_popup' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <Field label="위도 (lat)" required>
-                <input name="target_lat" type="number" step="0.0001" className="input" required style={inputStyle} placeholder="35.2278" />
+                <input name="target_lat" type="number" step="0.0001" className="input" required style={inputStyle}
+                  defaultValue={campaign.target_lat ?? ''} placeholder="35.2278" />
               </Field>
               <Field label="경도 (lng)" required>
-                <input name="target_lng" type="number" step="0.0001" className="input" required style={inputStyle} placeholder="128.6817" />
+                <input name="target_lng" type="number" step="0.0001" className="input" required style={inputStyle}
+                  defaultValue={campaign.target_lng ?? ''} placeholder="128.6817" />
               </Field>
             </div>
           )}
 
-          {/* 이미지 업로드 */}
+          {/* 이미지 */}
           <div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
               <label style={labelStyle}>
@@ -202,36 +221,28 @@ export function AdCreateForm() {
               </label>
               {spec && (
                 <span style={{
-                  font: '500 11px/1 var(--font-sans)',
-                  color: 'var(--fg-sec)',
-                  background: 'var(--bg-surface-2)',
-                  border: '1px solid var(--line-subtle)',
-                  borderRadius: 4,
-                  padding: '2px 7px',
-                }}>
-                  권장: {spec.w} × {spec.h}px ({spec.ratio})
-                </span>
+                  font: '500 11px/1 var(--font-sans)', color: 'var(--fg-sec)',
+                  background: 'var(--bg-surface-2)', border: '1px solid var(--line-subtle)',
+                  borderRadius: 4, padding: '2px 7px',
+                }}>권장: {spec.w} × {spec.h}px ({spec.ratio})</span>
               )}
             </div>
             <div
               onClick={() => fileRef.current?.click()}
               style={{
                 border: `2px dashed ${imageUrl ? 'var(--dj-orange)' : 'var(--line-default)'}`,
-                borderRadius: 10,
-                minHeight: 120,
+                borderRadius: 10, minHeight: 120,
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer', overflow: 'hidden',
-                background: imageUrl ? 'transparent' : 'var(--bg-surface-2)',
-                transition: 'border-color 150ms', position: 'relative',
+                background: 'transparent', transition: 'border-color 150ms', position: 'relative',
               }}
             >
-              {imagePreview ? (
-                <Image src={imagePreview} alt="미리보기" fill style={{ objectFit: 'contain' }} unoptimized />
+              {displayImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={displayImage} alt="미리보기" style={{ maxHeight: 160, objectFit: 'contain', width: '100%' }} />
               ) : (
                 <div style={{ textAlign: 'center', padding: 20 }}>
-                  <div style={{ fontSize: 28, marginBottom: 8 }}>🖼️</div>
-                  <div style={{ font: '600 13px/1.4 var(--font-sans)', color: 'var(--fg-pri)' }}>클릭하여 이미지 업로드</div>
-                  <div style={{ font: '500 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', marginTop: 4 }}>JPG · PNG · WEBP · GIF · 최대 5MB</div>
+                  <div style={{ font: '600 13px/1.4 var(--font-sans)', color: 'var(--fg-pri)' }}>클릭하여 새 이미지 업로드</div>
                 </div>
               )}
               {isUploading && (
@@ -244,23 +255,11 @@ export function AdCreateForm() {
               )}
             </div>
             <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" style={{ display: 'none' }} onChange={handleFileChange} />
-            {uploadError && (
-              <p style={{ font: '500 12px/1.4 var(--font-sans)', color: 'var(--fg-negative)', margin: '6px 0 0' }}>{uploadError}</p>
-            )}
-            {imageUrl && !uploadError && !isUploading && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
-                <span style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-positive)' }}>✓ 업로드 완료</span>
-                <button
-                  type="button"
-                  onClick={() => { setImageUrl(''); setImagePreview(''); if (fileRef.current) fileRef.current.value = '' }}
-                  style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                >다시 선택</button>
-              </div>
-            )}
+            {uploadError && <p style={{ font: '500 12px/1.4 var(--font-sans)', color: 'var(--fg-negative)', margin: '6px 0 0' }}>{uploadError}</p>}
           </div>
 
           <Field label="광고 링크 URL" required hint="클릭 시 이동할 페이지 주소">
-            <input name="link_url" type="url" className="input" required style={inputStyle} placeholder="https://example.com" />
+            <input name="link_url" type="url" className="input" required style={inputStyle} defaultValue={campaign.link_url} />
           </Field>
 
           <div>
@@ -272,7 +271,7 @@ export function AdCreateForm() {
               onChange={(e) => setCopyText(e.target.value)}
               className="input"
               style={{ width: '100%', fontSize: 14, resize: 'vertical', padding: '10px 12px', height: 'auto' }}
-              placeholder="광고 카피 텍스트 (표시광고법 검토용)"
+              placeholder="광고 카피 텍스트"
             />
             <AdCopyReviewer copyText={copyText} />
           </div>
@@ -285,28 +284,19 @@ export function AdCreateForm() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 10 }}>
               <Field label="시작일" required>
                 <input
-                  name="starts_at"
-                  type="date"
-                  className="input"
-                  required
-                  style={inputStyle}
+                  name="starts_at" type="date" className="input" required style={inputStyle}
                   value={startsAt}
                   onChange={(e) => handleStartsAtChange(e.target.value)}
                 />
               </Field>
               <Field label="종료일" required>
                 <input
-                  name="ends_at"
-                  type="date"
-                  className="input"
-                  required
-                  style={inputStyle}
+                  name="ends_at" type="date" className="input" required style={inputStyle}
                   value={endsAt}
                   onChange={(e) => { setEndsAt(e.target.value); setDurationOption(null) }}
                 />
               </Field>
             </div>
-            {/* 기간 빠른 선택 */}
             {startsAt && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {DURATION_OPTIONS.map((opt) => (
@@ -315,18 +305,13 @@ export function AdCreateForm() {
                     type="button"
                     onClick={() => handleDurationSelect(opt.months)}
                     style={{
-                      padding: '5px 12px',
-                      borderRadius: 6,
+                      padding: '5px 12px', borderRadius: 6,
                       border: `1px solid ${durationOption === opt.months && opt.months !== null ? 'var(--dj-orange)' : 'var(--line-default)'}`,
                       background: durationOption === opt.months && opt.months !== null ? '#fff7ed' : 'var(--bg-surface-2)',
                       color: durationOption === opt.months && opt.months !== null ? 'var(--dj-orange)' : 'var(--fg-sec)',
-                      font: '600 11px/1 var(--font-sans)',
-                      cursor: 'pointer',
-                      transition: 'all 150ms',
+                      font: '600 11px/1 var(--font-sans)', cursor: 'pointer', transition: 'all 150ms',
                     }}
-                  >
-                    {opt.label}
-                  </button>
+                  >{opt.label}</button>
                 ))}
               </div>
             )}
@@ -336,15 +321,19 @@ export function AdCreateForm() {
             <p style={{ font: '500 13px/1.4 var(--font-sans)', color: 'var(--fg-negative)', margin: 0 }}>{submitError}</p>
           )}
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+            <button
+              type="button"
+              className="btn btn-md"
+              onClick={() => router.push('/admin/ads')}
+              style={{ background: 'var(--bg-surface-2)', color: 'var(--fg-sec)', border: '1px solid var(--line-default)' }}
+            >취소</button>
             <button
               type="submit"
               className="btn btn-md btn-orange"
               disabled={isSubmitting || isUploading}
               style={{ opacity: (isSubmitting || isUploading) ? 0.5 : 1 }}
-            >
-              {isSubmitting ? '등록 중…' : '광고 등록 요청'}
-            </button>
+            >{isSubmitting ? '저장 중…' : '저장'}</button>
           </div>
 
         </div>
@@ -371,9 +360,7 @@ function Field({
           {label}
           {required && <span style={{ color: 'var(--fg-negative)', marginLeft: 2 }}>*</span>}
         </label>
-        {hint && (
-          <span style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-sec)' }}>{hint}</span>
-        )}
+        {hint && <span style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-sec)' }}>{hint}</span>}
       </div>
       {children}
     </div>

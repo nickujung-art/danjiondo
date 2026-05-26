@@ -201,7 +201,24 @@ export default async function AdminAdsPage() {
                       </span>
                     </td>
                     <td style={{ padding: '12px 16px' }}>
-                      <AdminCampaignActions id={c.id} status={c.status} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <AdminCampaignActions id={c.id} status={c.status} />
+                        <Link
+                          href={`/admin/ads/${c.id}/edit`}
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: 5,
+                            font: '600 11px/1 var(--font-sans)',
+                            color: 'var(--fg-sec)',
+                            border: '1px solid var(--line-default)',
+                            background: 'var(--bg-surface-2)',
+                            textDecoration: 'none',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          수정
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}
