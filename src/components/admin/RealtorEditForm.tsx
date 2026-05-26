@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateRealtor, assignRealtorToComplex, removeRealtorAssignment } from '@/lib/auth/realtor-actions'
 import type { Realtor } from '@/lib/data/realtors'
@@ -52,6 +52,16 @@ export function RealtorEditForm({ realtor, assignments, complexes }: Props) {
         )
         .slice(0, 50)
     : complexes.slice(0, 50)
+
+  // 검색 결과 1개면 자동 선택
+  useEffect(() => {
+    if (filteredComplexes.length === 1 && filteredComplexes[0]) {
+      setSelectedComplexId(filteredComplexes[0].id)
+    } else if (!complexSearch.trim()) {
+      setSelectedComplexId('')
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [complexSearch])
 
   async function handleSubmit(formData: FormData) {
     setIsSubmitting(true)
@@ -280,7 +290,13 @@ export function RealtorEditForm({ realtor, assignments, complexes }: Props) {
               type="text"
               value={complexSearch}
               onChange={e => setComplexSearch(e.target.value)}
-              placeholder="단지명 검색..."
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  if (selectedComplexId) void handleAddAssignment()
+                }
+              }}
+              placeholder="단지명 검색 후 Enter…"
               className="input"
               style={{ width: '100%', height: 36, fontSize: 13 }}
             />
