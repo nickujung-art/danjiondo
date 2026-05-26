@@ -13,6 +13,8 @@ import { RedevelopmentCard } from '@/components/presale/RedevelopmentCard'
 import { HighRecordCard } from '@/components/home/HighRecordCard'
 import { RankingTabs } from '@/components/home/RankingTabs'
 import { UserMenu } from '@/components/auth/UserMenu'
+import { AdBannerCarousel } from '@/components/ads/AdBannerCarousel'
+import { getActiveAds } from '@/lib/data/ads'
 import Link from 'next/link'
 import { Suspense } from 'react'
 
@@ -71,7 +73,7 @@ function BellIcon() {
 export default async function HomePage() {
   const supabase = createReadonlyClient()
 
-  const [highRecords, rankHighPrice, rankVolume, rankPricePerPyeong, rankInterest, activeListingCount, activeListings, recentlyExpired, redevelopments] =
+  const [highRecords, rankHighPrice, rankVolume, rankPricePerPyeong, rankInterest, activeListingCount, activeListings, recentlyExpired, redevelopments, bannerAds] =
     await Promise.all([
       getRecentHighRecords(supabase, 4).catch(() => []),
       getRankingsByType(supabase, 'high_price', 10).catch(() => []),
@@ -82,6 +84,7 @@ export default async function HomePage() {
       getActiveListings(supabase, 3).catch(() => []),
       getRecentlyExpiredListings(supabase, 3).catch(() => []),
       getRedevelopmentComplexes(supabase, 3).catch(() => []),
+      getActiveAds('banner_top', supabase).catch(() => []),
     ])
 
   const rankingData = {
@@ -187,6 +190,7 @@ export default async function HomePage() {
 
       {/* Body */}
       <main style={{ flex: 1, padding: '32px 48px', maxWidth: 1280, margin: '0 auto', width: '100%' }}>
+        {bannerAds.length > 0 && <AdBannerCarousel ads={bannerAds} />}
         {/* Section title */}
         <h1
           style={{
