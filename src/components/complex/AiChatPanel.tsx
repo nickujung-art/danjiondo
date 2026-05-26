@@ -206,10 +206,10 @@ export function AiChatPanel({ complexId, complexName, contextData }: AiPanelProp
   }
 
   const SAMPLE_QUESTIONS = [
-    '최근 실거래가 흐름이 어때?',
-    '학군은 어때?',
-    '관리비가 어느 정도 돼?',
-    '주차 공간이 충분해?',
+    '최근 가격 흐름 분석해줘',
+    '이 단지 가성비 어때?',
+    '학군 평가해줘',
+    '관리비 적정한 수준이야?',
   ]
 
   const welcomeMessage: ChatMessage = {
