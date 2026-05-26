@@ -4,13 +4,16 @@ import { Map as KakaoMapView, useKakaoLoader } from 'react-kakao-maps-sdk'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { prefetchPriceHistory } from '@/lib/price-history-cache'
 import { type ComplexMapItem } from '@/lib/data/complexes-map'
+import { type PresaleMapPin } from '@/lib/data/presale-pins'
 import { determineBadge } from '@/components/map/markers/badge-logic'
 import { ComplexMarker } from './ComplexMarker'
+import { PresalePin } from './PresalePin'
 import { DongClusterChip, type GuChip, type DongChip, computeDongChips, deduplicateDongChips } from './DongClusterChip'
 import { MapSidePanel } from './MapSidePanel'
 
 interface Props {
   complexes:      ComplexMapItem[]
+  presalePins?:   PresaleMapPin[]
   initialCenter?: { lat: number; lng: number }
   initialLevel?:  number
 }
@@ -21,6 +24,7 @@ const DEFAULT_LEVEL  = 8
 
 export function KakaoMap({
   complexes,
+  presalePins   = [],
   initialCenter = DEFAULT_CENTER,
   initialLevel  = DEFAULT_LEVEL,
 }: Props) {
@@ -29,6 +33,7 @@ export function KakaoMap({
     libraries: ['services'],
   })
   const [visibleComplexes,  setVisibleComplexes]  = useState<ComplexMapItem[]>([])
+  const [visiblePresalePins, setVisiblePresalePins] = useState<PresaleMapPin[]>([])
   const [mapLevel,          setMapLevel]           = useState<number>(DEFAULT_LEVEL)
   const [selectedComplexId, setSelectedComplexId]  = useState<string | null>(null)
 
@@ -156,8 +161,14 @@ export function KakaoMap({
           c.lng >= sw.getLng() && c.lng <= ne.getLng(),
         ),
       )
+      setVisiblePresalePins(
+        presalePins.filter(p =>
+          p.lat >= sw.getLat() && p.lat <= ne.getLat() &&
+          p.lng >= sw.getLng() && p.lng <= ne.getLng(),
+        ),
+      )
     },
-    [complexes],
+    [complexes, presalePins],
   )
 
   if (loading) {
@@ -235,6 +246,11 @@ export function KakaoMap({
             />
           )
         })}
+
+        {/* level ≤ 7: 입주예정 핀 (분양완료·공사중 단지) */}
+        {mapLevel <= 7 && visiblePresalePins.map((p) => (
+          <PresalePin key={p.id} {...p} />
+        ))}
 
         {/* level ≤ 5: 개별 단지 마커 전체 */}
         {showAllMarkers && displayComplexes.map((c) => {

@@ -1,5 +1,6 @@
 import { createReadonlyClient } from '@/lib/supabase/readonly'
 import { getComplexesForMap } from '@/lib/data/complexes-map'
+import { getPresalePinsForMap } from '@/lib/data/presale-pins'
 import { searchComplexes } from '@/lib/data/complex-search'
 import { MapView } from '@/components/map/MapView'
 import { SidePanel } from '@/components/search/SidePanel'
@@ -19,12 +20,13 @@ export default async function MapPage({ searchParams }: Props) {
   const { q = '' } = await searchParams
   const supabase = createReadonlyClient()
 
-  const [complexes, searchResults] = await Promise.all([
+  const [complexes, searchResults, presalePins] = await Promise.all([
     getComplexesForMap(TARGET_SGG, supabase).catch((err: unknown) => {
       console.error('[map] getComplexesForMap failed:', err)
       return []
     }),
     searchComplexes(q, TARGET_SGG, supabase).catch(() => []),
+    getPresalePinsForMap(supabase).catch(() => []),
   ])
   return (
     <main className="flex h-screen flex-col">
@@ -77,7 +79,7 @@ export default async function MapPage({ searchParams }: Props) {
       <div className="flex flex-1 overflow-hidden">
         <SidePanel query={q} complexes={searchResults} />
         <div className="flex-1">
-          <MapView complexes={complexes} />
+          <MapView complexes={complexes} presalePins={presalePins} />
         </div>
       </div>
     </main>

@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import type { ComplexMapItem } from '@/lib/data/complexes-map'
+import type { PresaleMapPin } from '@/lib/data/presale-pins'
 
 // SSR 비활성화 — kakao 글로벌 객체는 브라우저에서만 존재
 const KakaoMap = dynamic(
@@ -17,10 +18,11 @@ const KakaoMap = dynamic(
 )
 
 interface Props {
-  complexes: ComplexMapItem[]
+  complexes:    ComplexMapItem[]
+  presalePins?: PresaleMapPin[]
 }
 
-export function MapView({ complexes }: Props) {
+export function MapView({ complexes, presalePins = [] }: Props) {
   if (!process.env.NEXT_PUBLIC_KAKAO_JS_KEY) {
     return (
       <div className="flex h-full items-center justify-center bg-gray-50 text-sm text-red-500 flex-col gap-1">
@@ -32,7 +34,7 @@ export function MapView({ complexes }: Props) {
 
   return (
     <div className="relative h-full w-full">
-      <KakaoMap complexes={complexes} />
+      <KakaoMap complexes={complexes} presalePins={presalePins} />
     </div>
   )
 }
