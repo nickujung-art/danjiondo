@@ -6,6 +6,7 @@ import { createAdCampaign } from '@/lib/auth/ad-actions'
 
 export function AdCreateForm() {
   const [copyText, setCopyText] = useState('')
+  const [placement, setPlacement] = useState('sidebar')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] = useState(false)
@@ -149,14 +150,95 @@ export function AdCreateForm() {
               name="placement"
               className="input"
               required
-              defaultValue="sidebar"
+              value={placement}
+              onChange={(e) => setPlacement(e.target.value)}
               style={{ width: '100%', height: '40px', fontSize: '14px' }}
             >
-              <option value="banner_top">상단 배너</option>
-              <option value="sidebar">사이드바</option>
-              <option value="in_feed">피드 내</option>
+              <option value="banner_top">상단 배너 (banner_top)</option>
+              <option value="sidebar">사이드바 (sidebar)</option>
+              <option value="in_feed">피드 내 (in_feed)</option>
+              <option value="map_popup">지도 팝업 (map_popup)</option>
             </select>
           </div>
+
+          {/* 지역 타겟팅 — sidebar / in_feed 지면에서만 표시 */}
+          {(placement === 'sidebar' || placement === 'in_feed') && (
+            <div>
+              <label
+                htmlFor="ad-sgg-code"
+                style={{
+                  display: 'block',
+                  font: '600 13px/1 var(--font-sans)',
+                  color: 'var(--fg-pri)',
+                  marginBottom: '6px',
+                }}
+              >
+                지역 코드 (sgg_code)
+                <span style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-sec)', marginLeft: 6 }}>
+                  미입력 시 전체 지역 노출
+                </span>
+              </label>
+              <input
+                id="ad-sgg-code"
+                name="target_sgg_code"
+                className="input"
+                style={{ width: '100%', height: '40px', fontSize: '14px' }}
+                placeholder="예: 48127 (창원시 성산구)"
+              />
+            </div>
+          )}
+
+          {/* 지도 위치 — map_popup 지면에서만 표시 */}
+          {placement === 'map_popup' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div>
+                <label
+                  htmlFor="ad-lat"
+                  style={{
+                    display: 'block',
+                    font: '600 13px/1 var(--font-sans)',
+                    color: 'var(--fg-pri)',
+                    marginBottom: '6px',
+                  }}
+                >
+                  위도 (lat) <span style={{ color: 'var(--fg-negative)' }}>*</span>
+                </label>
+                <input
+                  id="ad-lat"
+                  name="target_lat"
+                  type="number"
+                  step="0.0001"
+                  className="input"
+                  required
+                  style={{ width: '100%', height: '40px', fontSize: '14px' }}
+                  placeholder="예: 35.2278"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="ad-lng"
+                  style={{
+                    display: 'block',
+                    font: '600 13px/1 var(--font-sans)',
+                    color: 'var(--fg-pri)',
+                    marginBottom: '6px',
+                  }}
+                >
+                  경도 (lng) <span style={{ color: 'var(--fg-negative)' }}>*</span>
+                </label>
+                <input
+                  id="ad-lng"
+                  name="target_lng"
+                  type="number"
+                  step="0.0001"
+                  className="input"
+                  required
+                  style={{ width: '100%', height: '40px', fontSize: '14px' }}
+                  placeholder="예: 128.6817"
+                />
+              </div>
+            </div>
+          )}
 
           {/* 이미지 URL */}
           <div>

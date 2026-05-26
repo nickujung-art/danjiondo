@@ -5,15 +5,18 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { prefetchPriceHistory } from '@/lib/price-history-cache'
 import { type ComplexMapItem } from '@/lib/data/complexes-map'
 import { type PresaleMapPin } from '@/lib/data/presale-pins'
+import { type AdCampaign } from '@/lib/data/ads'
 import { determineBadge } from '@/components/map/markers/badge-logic'
 import { ComplexMarker } from './ComplexMarker'
 import { PresalePin } from './PresalePin'
+import { AdMapPopup } from './AdMapPopup'
 import { DongClusterChip, type GuChip, type DongChip, computeDongChips, deduplicateDongChips } from './DongClusterChip'
 import { MapSidePanel } from './MapSidePanel'
 
 interface Props {
   complexes:      ComplexMapItem[]
   presalePins?:   PresaleMapPin[]
+  mapPopupAds?:   AdCampaign[]
   initialCenter?: { lat: number; lng: number }
   initialLevel?:  number
 }
@@ -25,6 +28,7 @@ const DEFAULT_LEVEL  = 8
 export function KakaoMap({
   complexes,
   presalePins   = [],
+  mapPopupAds   = [],
   initialCenter = DEFAULT_CENTER,
   initialLevel  = DEFAULT_LEVEL,
 }: Props) {
@@ -289,6 +293,16 @@ export function KakaoMap({
             />
           )
         })}
+        {/* 지도 팝업 광고 — 모든 줌 레벨에서 표시 */}
+        {mapPopupAds
+          .filter(ad => ad.target_lat !== null && ad.target_lng !== null)
+          .map(ad => (
+            <AdMapPopup
+              key={ad.id}
+              ad={ad as AdCampaign & { target_lat: number; target_lng: number }}
+            />
+          ))
+        }
       </KakaoMapView>
       <MapSidePanel
         selectedComplexId={selectedComplexId}

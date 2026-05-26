@@ -47,6 +47,9 @@ export type Database = {
           placement: string
           starts_at: string
           status: Database["public"]["Enums"]["ad_status"]
+          target_lat: number | null
+          target_lng: number | null
+          target_sgg_code: string | null
           title: string
           updated_at: string
         }
@@ -62,6 +65,9 @@ export type Database = {
           placement: string
           starts_at: string
           status?: Database["public"]["Enums"]["ad_status"]
+          target_lat?: number | null
+          target_lng?: number | null
+          target_sgg_code?: string | null
           title: string
           updated_at?: string
         }
@@ -77,6 +83,9 @@ export type Database = {
           placement?: string
           starts_at?: string
           status?: Database["public"]["Enums"]["ad_status"]
+          target_lat?: number | null
+          target_lng?: number | null
+          target_sgg_code?: string | null
           title?: string
           updated_at?: string
         }

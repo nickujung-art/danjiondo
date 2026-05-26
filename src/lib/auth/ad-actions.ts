@@ -67,6 +67,9 @@ export async function createAdCampaign(
   const linkUrl = formData.get('link_url')
   const startsAt = formData.get('starts_at')
   const endsAt = formData.get('ends_at')
+  const targetSggCode = formData.get('target_sgg_code')
+  const targetLatRaw = formData.get('target_lat')
+  const targetLngRaw = formData.get('target_lng')
 
   if (
     typeof title !== 'string' ||
@@ -96,6 +99,15 @@ export async function createAdCampaign(
     starts_at: startsAt.trim(),
     ends_at: endsAt.trim(),
     status: 'pending',
+    target_sgg_code: typeof targetSggCode === 'string' && targetSggCode.trim()
+      ? targetSggCode.trim()
+      : null,
+    target_lat: typeof targetLatRaw === 'string' && targetLatRaw.trim()
+      ? parseFloat(targetLatRaw.trim()) || null
+      : null,
+    target_lng: typeof targetLngRaw === 'string' && targetLngRaw.trim()
+      ? parseFloat(targetLngRaw.trim()) || null
+      : null,
   })
 
   if (dbErr) return { error: dbErr.message }

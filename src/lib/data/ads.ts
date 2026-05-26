@@ -58,11 +58,12 @@ export async function getAdRoiStats(
 
 // CRITICAL: 반드시 now() BETWEEN starts_at AND ends_at AND status='approved' 포함 (CLAUDE.md)
 export async function getActiveAds(
-  placement: 'banner_top' | 'sidebar' | 'in_feed',
+  placement: 'banner_top' | 'sidebar' | 'in_feed' | 'map_popup',
   supabase: SupabaseClient<Database>,
+  sggCode?: string,
 ): Promise<AdCampaign[]> {
   const now = new Date().toISOString()
-  const { data } = await supabase
+  let query = supabase
     .from('ad_campaigns')
     .select('*')
     .eq('placement', placement)
@@ -70,6 +71,18 @@ export async function getActiveAds(
     .lte('starts_at', now)
     .gte('ends_at', now)
     .order('created_at')
+
+  if (sggCode) {
+    // 해당 지역 광고 + 전체 지역 광고(null) 모두 반환
+    query = query.or(`target_sgg_code.is.null,target_sgg_code.eq.${sggCode}`)
+  }
+
+  if (placement === 'map_popup') {
+    // 위치 정보가 있는 캠페인만 반환
+    query = query.not('target_lat', 'is', null).not('target_lng', 'is', null)
+  }
+
+  const { data } = await query
   return data ?? []
 }
 

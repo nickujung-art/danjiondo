@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import type { MapPanelData } from '@/lib/data/map-panel'
+import { AdBanner } from '@/components/ads/AdBanner'
+import type { AdCampaign } from '@/lib/data/ads'
 
 interface Props {
   selectedComplexId: string | null
@@ -30,6 +32,7 @@ export function MapSidePanel({ selectedComplexId, onClose }: Props) {
   const [panelData, setPanelData] = useState<MapPanelData | null>(null)
   const [loading,   setLoading]   = useState(false)
   const [error,     setError]     = useState<string | null>(null)
+  const [sidebarAd, setSidebarAd] = useState<AdCampaign | null>(null)
 
   const isOpen = selectedComplexId !== null
 
@@ -53,6 +56,19 @@ export function MapSidePanel({ selectedComplexId, onClose }: Props) {
         setLoading(false)
       })
   }, [selectedComplexId])
+
+  // 단지 선택 시 지역 매칭 사이드바 광고 fetch
+  useEffect(() => {
+    if (!panelData) {
+      setSidebarAd(null)
+      return
+    }
+    const sggParam = panelData.sgg_code ? `?sgg_code=${panelData.sgg_code}` : ''
+    fetch(`/api/ads/sidebar${sggParam}`)
+      .then(r => r.ok ? r.json() : { ads: [] })
+      .then((body: { ads: AdCampaign[] }) => { setSidebarAd(body.ads[0] ?? null) })
+      .catch(() => { setSidebarAd(null) })
+  }, [panelData])
 
   // PC: 우측 슬라이드인 (w-[360px], h-full, right-0)
   // 모바일: 바텀 시트 (w-full, h-[60vh], bottom-0, rounded-t-xl)
@@ -100,6 +116,7 @@ export function MapSidePanel({ selectedComplexId, onClose }: Props) {
           loading={loading}
           error={error}
           onClose={onClose}
+          sidebarAd={sidebarAd}
         />
       </div>
 
@@ -126,6 +143,7 @@ export function MapSidePanel({ selectedComplexId, onClose }: Props) {
           loading={loading}
           error={error}
           onClose={onClose}
+          sidebarAd={sidebarAd}
         />
       </div>
     </>
@@ -137,9 +155,10 @@ interface PanelContentProps {
   loading:   boolean
   error:     string | null
   onClose:   () => void
+  sidebarAd: AdCampaign | null
 }
 
-function PanelContent({ panelData, loading, error, onClose }: PanelContentProps) {
+function PanelContent({ panelData, loading, error, onClose, sidebarAd }: PanelContentProps) {
   return (
     <>
       {/* 헤더 */}
@@ -187,14 +206,14 @@ function PanelContent({ panelData, loading, error, onClose }: PanelContentProps)
           </div>
         )}
         {!loading && !error && panelData && (
-          <PanelBody panelData={panelData} />
+          <PanelBody panelData={panelData} sidebarAd={sidebarAd} />
         )}
       </div>
     </>
   )
 }
 
-function PanelBody({ panelData }: { panelData: MapPanelData }) {
+function PanelBody({ panelData, sidebarAd }: { panelData: MapPanelData; sidebarAd: AdCampaign | null }) {
   const location = [panelData.si, panelData.gu].filter(Boolean).join(' ')
 
   return (
@@ -299,6 +318,13 @@ function PanelBody({ panelData }: { panelData: MapPanelData }) {
       >
         단지 상세 보기
       </Link>
+
+      {/* 사이드바 광고 */}
+      {sidebarAd && (
+        <div>
+          <AdBanner ad={sidebarAd} />
+        </div>
+      )}
     </div>
   )
 }

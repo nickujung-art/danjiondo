@@ -205,6 +205,7 @@ export default async function ComplexDetailPage({ params }: Props) {
   const [
     saleData,
     sidebarAds,
+    inFeedAds,
     reviews,
     reviewStats,
     facilityKaptResult,
@@ -220,6 +221,7 @@ export default async function ComplexDetailPage({ params }: Props) {
   ] = await Promise.all([
     getComplexTransactionSummary(id, 'sale', supabase),
     getActiveAds('sidebar', supabase),
+    getActiveAds('in_feed', supabase, complex.sgg_code ?? undefined),
     getReviewsWithComments(id, supabase),
     getComplexReviewStats(id, supabase),
     supabase
@@ -805,6 +807,29 @@ export default async function ComplexDetailPage({ params }: Props) {
           {sidebarAds.map(ad => (
             <AdBanner key={ad.id} ad={ad} />
           ))}
+
+          {/* 이 지역 관련 광고 */}
+          {inFeedAds.length > 0 && (
+            <section style={{ marginTop: 32, paddingBottom: 40 }}>
+              <h2 style={{
+                font: '600 14px/1 var(--font-sans)',
+                color: 'var(--fg-sec)',
+                margin: '0 0 12px',
+                letterSpacing: '-0.01em',
+              }}>
+                이 지역 관련 광고
+              </h2>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: 12,
+              }}>
+                {inFeedAds.slice(0, 2).map(ad => (
+                  <AdBanner key={ad.id} ad={ad} />
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </main>
 

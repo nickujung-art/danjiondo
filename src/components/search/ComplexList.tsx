@@ -1,9 +1,13 @@
+import React from 'react'
 import Link from 'next/link'
 import type { ComplexSearchResult } from '@/lib/data/complex-search'
+import { AdBanner } from '@/components/ads/AdBanner'
+import type { AdCampaign } from '@/lib/data/ads'
 
 interface Props {
-  complexes: ComplexSearchResult[]
-  query:     string
+  complexes:  ComplexSearchResult[]
+  query:      string
+  inFeedAds?: AdCampaign[]
 }
 
 function PinIcon() {
@@ -38,7 +42,7 @@ function highlightText(text: string, query: string): React.ReactNode {
   )
 }
 
-export function ComplexList({ complexes, query }: Props) {
+export function ComplexList({ complexes, query, inFeedAds = [] }: Props) {
   if (!query.trim()) {
     return (
       <div
@@ -71,6 +75,8 @@ export function ComplexList({ complexes, query }: Props) {
     )
   }
 
+  const firstAd = inFeedAds[0] ?? null
+
   return (
     <div>
       <div
@@ -84,65 +90,71 @@ export function ComplexList({ complexes, query }: Props) {
       >
         단지 ({complexes.length})
       </div>
-      {complexes.map((c) => {
+      {complexes.map((c, index) => {
         const addressParts = [c.si, c.gu, c.dong].filter(Boolean)
         const address = c.road_address ?? addressParts.join(' ') ?? ''
         return (
-          <Link
-            key={c.id}
-            href={`/complexes/${c.id}`}
-            className="complex-list-item"
-            style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: '12px 16px',
-                borderBottom: '1px solid var(--line-subtle)',
-                cursor: 'pointer',
-              }}
+          <React.Fragment key={c.id}>
+            <Link
+              href={`/complexes/${c.id}`}
+              className="complex-list-item"
+              style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
             >
               <div
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 8,
-                  background: 'var(--bg-surface-2)',
-                  display: 'grid',
-                  placeItems: 'center',
-                  flexShrink: 0,
-                  color: 'var(--fg-sec)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '12px 16px',
+                  borderBottom: '1px solid var(--line-subtle)',
+                  cursor: 'pointer',
                 }}
               >
-                <PinIcon />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{
-                    font: '600 14px/1.4 var(--font-sans)',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
+                    width: 36,
+                    height: 36,
+                    borderRadius: 8,
+                    background: 'var(--bg-surface-2)',
+                    display: 'grid',
+                    placeItems: 'center',
+                    flexShrink: 0,
+                    color: 'var(--fg-sec)',
                   }}
                 >
-                  {highlightText(c.canonical_name, query)}
+                  <PinIcon />
                 </div>
-                {address && (
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div
                     style={{
-                      font: '500 12px/1.4 var(--font-sans)',
-                      color: 'var(--fg-sec)',
-                      marginTop: 2,
+                      font: '600 14px/1.4 var(--font-sans)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
                     }}
                   >
-                    {address}
+                    {highlightText(c.canonical_name, query)}
                   </div>
-                )}
+                  {address && (
+                    <div
+                      style={{
+                        font: '500 12px/1.4 var(--font-sans)',
+                        color: 'var(--fg-sec)',
+                        marginTop: 2,
+                      }}
+                    >
+                      {address}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          </Link>
+            </Link>
+            {index === 4 && firstAd && (
+              <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--line-subtle)' }}>
+                <AdBanner ad={firstAd} />
+              </div>
+            )}
+          </React.Fragment>
         )
       })}
     </div>

@@ -2,6 +2,7 @@ import { createReadonlyClient } from '@/lib/supabase/readonly'
 import { getComplexesForMap } from '@/lib/data/complexes-map'
 import { getPresalePinsForMap } from '@/lib/data/presale-pins'
 import { searchComplexes } from '@/lib/data/complex-search'
+import { getActiveAds } from '@/lib/data/ads'
 import { MapView } from '@/components/map/MapView'
 import { SidePanel } from '@/components/search/SidePanel'
 import Link from 'next/link'
@@ -20,13 +21,15 @@ export default async function MapPage({ searchParams }: Props) {
   const { q = '' } = await searchParams
   const supabase = createReadonlyClient()
 
-  const [complexes, searchResults, presalePins] = await Promise.all([
+  const [complexes, searchResults, presalePins, mapPopupAds, inFeedAds] = await Promise.all([
     getComplexesForMap(TARGET_SGG, supabase).catch((err: unknown) => {
       console.error('[map] getComplexesForMap failed:', err)
       return []
     }),
     searchComplexes(q, TARGET_SGG, supabase).catch(() => []),
     getPresalePinsForMap(supabase).catch(() => []),
+    getActiveAds('map_popup', supabase).catch(() => []),
+    getActiveAds('in_feed', supabase).catch(() => []),
   ])
   return (
     <main className="flex h-screen flex-col">
@@ -77,9 +80,9 @@ export default async function MapPage({ searchParams }: Props) {
         </div>
       </header>
       <div className="flex flex-1 overflow-hidden">
-        <SidePanel query={q} complexes={searchResults} />
+        <SidePanel query={q} complexes={searchResults} inFeedAds={inFeedAds} />
         <div className="flex-1">
-          <MapView complexes={complexes} presalePins={presalePins} />
+          <MapView complexes={complexes} presalePins={presalePins} mapPopupAds={mapPopupAds} />
         </div>
       </div>
     </main>

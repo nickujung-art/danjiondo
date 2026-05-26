@@ -5,6 +5,7 @@ export interface MapPanelData {
   canonical_name:      string
   si:                  string | null
   gu:                  string | null
+  sgg_code:            string | null
   avg_sale_per_pyeong: number | null
   household_count:     number | null
   built_year:          number | null
@@ -25,7 +26,7 @@ export async function getMapPanelData(
   // 단지 기본정보 조회
   const { data: complex, error: complexError } = await supabase
     .from('complexes')
-    .select('id, canonical_name, si, gu, avg_sale_per_pyeong, household_count, built_year, hagwon_score')
+    .select('id, canonical_name, si, gu, sgg_code, avg_sale_per_pyeong, household_count, built_year, hagwon_score')
     .eq('id', complexId)
     .maybeSingle()
 
@@ -50,6 +51,7 @@ export async function getMapPanelData(
     canonical_name:      string
     si:                  string | null
     gu:                  string | null
+    sgg_code:            string | null
     avg_sale_per_pyeong: number | null
     household_count:     number | null
     built_year:          number | null
@@ -61,6 +63,7 @@ export async function getMapPanelData(
     canonical_name:      r.canonical_name,
     si:                  r.si ?? null,
     gu:                  r.gu ?? null,
+    sgg_code:            r.sgg_code ?? null,
     avg_sale_per_pyeong: r.avg_sale_per_pyeong ?? null,
     household_count:     r.household_count ?? null,
     built_year:          r.built_year ?? null,

@@ -2,13 +2,15 @@ import { Suspense } from 'react'
 import { SearchInput } from './SearchInput'
 import { ComplexList } from './ComplexList'
 import type { ComplexSearchResult } from '@/lib/data/complex-search'
+import type { AdCampaign } from '@/lib/data/ads'
 
 interface Props {
-  query:     string
-  complexes: ComplexSearchResult[]
+  query:      string
+  complexes:  ComplexSearchResult[]
+  inFeedAds?: AdCampaign[]
 }
 
-export function SidePanel({ query, complexes }: Props) {
+export function SidePanel({ query, complexes, inFeedAds = [] }: Props) {
   return (
     <aside
       style={{
@@ -42,7 +44,7 @@ export function SidePanel({ query, complexes }: Props) {
         </Suspense>
       </div>
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        <ComplexList complexes={complexes} query={query} />
+        <ComplexList complexes={complexes} query={query} inFeedAds={inFeedAds} />
       </div>
     </aside>
   )
