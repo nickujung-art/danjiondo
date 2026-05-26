@@ -41,6 +41,7 @@ export async function POST(request: Request): Promise<Response> {
 
   const b = body as Record<string, unknown>
   const complexId = typeof b.complexId === 'string' ? b.complexId : null
+  const contextData = typeof b.contextData === 'string' ? b.contextData : null
   const messages = Array.isArray(b.messages)
     ? (b.messages as Array<{ role: string; content: string }>)
     : null
@@ -55,39 +56,33 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'no user message' }, { status: 400 })
   }
 
-  let context = ''
-  try {
-    // Voyage AI 임베딩 (T-06-02-01: 사용자 입력은 context 외부에 배치)
-    const queryEmbedding = await embedQuery(lastUserMsg)
-
-    if (queryEmbedding.length > 0) {
-      // pgvector 유사도 검색
-      // match_complex_embeddings는 migration 06-00-03에서 추가된 RPC.
-      // DB 타입 재생성 전까지 unknown cast 사용.
-      const adminClient = createSupabaseAdminClient()
-      const { data: chunks } = await (adminClient as unknown as {
-        rpc: (
-          fn: string,
-          args: { query_embedding: number[]; target_complex_id: string; match_count: number },
-        ) => Promise<{ data: Array<{ chunk_type: string; content: string; similarity: number }> | null }>
-      }).rpc('match_complex_embeddings', {
-        query_embedding: queryEmbedding,
-        target_complex_id: complexId,
-        match_count: 3,
-      })
-
-      context = (chunks ?? []).map(c => c.content).join('\n\n')
+  // contextData(페이지 데이터 직접 전달)가 있으면 Voyage AI + pgvector 스킵
+  let context = contextData ?? ''
+  if (!context) {
+    try {
+      const queryEmbedding = await embedQuery(lastUserMsg)
+      if (queryEmbedding.length > 0) {
+        const adminClient = createSupabaseAdminClient()
+        const { data: chunks } = await (adminClient as unknown as {
+          rpc: (fn: string, args: { query_embedding: number[]; target_complex_id: string; match_count: number }) =>
+            Promise<{ data: Array<{ chunk_type: string; content: string; similarity: number }> | null }>
+        }).rpc('match_complex_embeddings', {
+          query_embedding: queryEmbedding,
+          target_complex_id: complexId,
+          match_count: 3,
+        })
+        context = (chunks ?? []).map(c => c.content).join('\n\n')
+      }
+    } catch {
+      // 임베딩/검색 실패 시 context 없이 진행
     }
-  } catch {
-    // 임베딩/검색 실패 시 context 없이 진행
   }
 
   try {
-    // Gemini 스트리밍 (T-06-02-01: 시스템 프롬프트로 역할 고정)
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? '')
     const model = genAI.getGenerativeModel({
       model: 'gemini-flash-lite-latest',
-      systemInstruction: `당신은 부동산 단지 정보 안내 도우미입니다. 반드시 아래 단지 데이터만 참조하여 답변하세요. 데이터에 없는 내용은 "해당 정보는 단지 데이터에 없습니다."라고 답하세요. 추측하거나 일반 지식으로 답하지 마세요.\n\n[단지 데이터]\n${context || '(데이터 없음)'}`,
+      systemInstruction: `당신은 부동산 단지 정보 안내 도우미입니다. 아래 단지 데이터를 바탕으로 질문에 답하세요. 데이터에 없는 내용은 솔직하게 "해당 정보는 데이터에 없습니다"라고 답하세요. 투자 조언은 하지 마세요.\n\n[단지 데이터]\n${context || '(데이터 없음)'}`,
     })
 
     const history = messages.slice(0, -1).map(m => ({

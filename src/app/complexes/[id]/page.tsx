@@ -20,6 +20,7 @@ import { RedevelopmentTimeline } from '@/components/complex/RedevelopmentTimelin
 import { GapLabel } from '@/components/complex/GapLabel'
 import { AnalysisSection } from '@/components/complex/AnalysisSection'
 import { AiChatPanel } from '@/components/complex/AiChatPanel'
+import { buildComplexContext } from '@/lib/ai/context-builder'
 import { getCafeArticlesByComplex } from '@/lib/data/cafe-articles'
 import type { CafeArticleRecord } from '@/lib/data/cafe-articles'
 import { getManagementCostMonthly } from '@/lib/data/management-cost'
@@ -759,7 +760,22 @@ export default async function ComplexDetailPage({ params }: Props) {
       </main>
 
       {/* AI 상담 패널 — position:fixed, stacking context 밖에 렌더 */}
-      <AiChatPanel complexId={id} complexName={complex.canonical_name} />
+      <AiChatPanel
+        complexId={id}
+        complexName={complex.canonical_name}
+        contextData={buildComplexContext({
+          complex,
+          rawSaleData,
+          rawJeonseData,
+          facilityKapt: facilityKapt as Parameters<typeof buildComplexContext>[0]['facilityKapt'],
+          managementCostRows,
+          facilityEdu,
+          quadrantData,
+          districtStats,
+          reviewStats,
+          reviews,
+        })}
+      />
       {/* 비교 플로팅 바 — 2개 이상 선택 시 표시 */}
       <CompareFloatingBar />
     </div>

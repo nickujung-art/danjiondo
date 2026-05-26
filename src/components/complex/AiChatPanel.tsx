@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from 'react'
 interface AiPanelProps {
   complexId: string
   complexName: string
+  contextData?: string
 }
 
 interface ChatMessage {
@@ -62,7 +63,7 @@ function SendIcon() {
   )
 }
 
-export function AiChatPanel({ complexId, complexName }: AiPanelProps) {
+export function AiChatPanel({ complexId, complexName, contextData }: AiPanelProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputValue, setInputValue] = useState('')
@@ -125,6 +126,7 @@ export function AiChatPanel({ complexId, complexName }: AiPanelProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           complexId,
+          contextData,
           messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
         }),
       })
