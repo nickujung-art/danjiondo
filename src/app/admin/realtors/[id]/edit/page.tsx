@@ -37,22 +37,25 @@ export default async function AdminRealtorEditPage({
 
   if (!realtor) notFound()
 
-  // PostgREST max_rows=1000 우회: 병렬 range 쿼리로 전체 단지 수집
-  const [{ data: cx1 }, { data: cx2 }] = await Promise.all([
-    adminClient
-      .from('complexes')
-      .select('id, canonical_name, si, gu')
-      .in('status', ['active', 'in_redevelopment'])
-      .order('canonical_name')
-      .range(0, 999),
-    adminClient
-      .from('complexes')
-      .select('id, canonical_name, si, gu')
-      .in('status', ['active', 'in_redevelopment'])
-      .order('canonical_name')
-      .range(1000, 1999),
-  ])
-  const complexes = [...(cx1 ?? []), ...(cx2 ?? [])]
+  // PostgREST max_rows=1000 우회: count 확인 후 동적 병렬 range 쿼리
+  const { count: complexCount } = await adminClient
+    .from('complexes')
+    .select('*', { count: 'exact', head: true })
+    .in('status', ['active', 'in_redevelopment'])
+
+  const PAGE = 1000
+  const pages = Math.ceil((complexCount ?? 0) / PAGE)
+  const pageResults = await Promise.all(
+    Array.from({ length: pages }, (_, i) =>
+      adminClient
+        .from('complexes')
+        .select('id, canonical_name, si, gu')
+        .in('status', ['active', 'in_redevelopment'])
+        .order('canonical_name')
+        .range(i * PAGE, (i + 1) * PAGE - 1),
+    ),
+  )
+  const complexes = pageResults.flatMap(r => r.data ?? [])
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-canvas)', fontFamily: 'var(--font-sans)' }}>

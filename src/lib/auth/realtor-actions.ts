@@ -106,6 +106,16 @@ export async function updateRealtor(
   if (dbErr) return { error: '저장 중 오류가 발생했습니다.' }
   revalidatePath('/admin/realtors')
   revalidatePath(`/admin/realtors/${id}/edit`)
+
+  // 이름·전화번호 변경이 단지 상세 캐시에 반영되도록 배정된 단지 경로 갱신
+  const { data: assignments } = await admin
+    .from('realtor_assignments')
+    .select('complex_id')
+    .eq('realtor_id', id)
+  for (const a of assignments ?? []) {
+    revalidatePath(`/complexes/${a.complex_id}`)
+  }
+
   return { error: null }
 }
 
