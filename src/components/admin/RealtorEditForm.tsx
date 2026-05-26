@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateRealtor, assignRealtorToComplex, removeRealtorAssignment } from '@/lib/auth/realtor-actions'
 import type { Realtor } from '@/lib/data/realtors'
@@ -38,9 +38,12 @@ export function RealtorEditForm({ realtor, assignments, complexes }: Props) {
   // 단지 배정 상태
   const [localAssignments, setLocalAssignments] = useState<AssignmentWithComplex[]>(assignments)
   const [complexSearch, setComplexSearch] = useState('')
-  const [selectedComplexId, setSelectedComplexId] = useState('')
+  const [selectedComplex, setSelectedComplex] = useState<ComplexOption | null>(null)
   const [displayOrder, setDisplayOrder] = useState<1 | 2>(1)
   const [assignError, setAssignError] = useState<string | null>(null)
+  const [showList, setShowList] = useState(false)
+  const [highlightIndex, setHighlightIndex] = useState(-1)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const filteredComplexes = complexSearch.trim()
     ? complexes
@@ -51,17 +54,52 @@ export function RealtorEditForm({ realtor, assignments, complexes }: Props) {
             (c.si ?? '').includes(complexSearch),
         )
         .slice(0, 50)
-    : complexes.slice(0, 50)
+    : []
 
-  // 검색 결과 1개면 자동 선택
-  useEffect(() => {
-    if (filteredComplexes.length === 1 && filteredComplexes[0]) {
-      setSelectedComplexId(filteredComplexes[0].id)
-    } else if (!complexSearch.trim()) {
-      setSelectedComplexId('')
+  function selectComplex(c: ComplexOption) {
+    setSelectedComplex(c)
+    setComplexSearch(c.canonical_name)
+    setShowList(false)
+    setHighlightIndex(-1)
+    setAssignError(null)
+  }
+
+  function handleSearchChange(val: string) {
+    setComplexSearch(val)
+    setSelectedComplex(null)
+    setShowList(true)
+    setHighlightIndex(-1)
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (showList && filteredComplexes.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setHighlightIndex(i => Math.min(i + 1, filteredComplexes.length - 1))
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setHighlightIndex(i => Math.max(i - 1, 0))
+        return
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        const idx = highlightIndex >= 0 ? highlightIndex : 0
+        const item = filteredComplexes[idx]
+        if (item) selectComplex(item)
+        return
+      }
+      if (e.key === 'Escape') {
+        setShowList(false)
+        return
+      }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [complexSearch])
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (selectedComplex) void handleAddAssignment()
+    }
+  }
 
   async function handleSubmit(formData: FormData) {
     setIsSubmitting(true)
@@ -82,33 +120,31 @@ export function RealtorEditForm({ realtor, assignments, complexes }: Props) {
   }
 
   async function handleAddAssignment() {
-    if (!selectedComplexId) {
-      setAssignError('단지를 선택하세요.')
+    if (!selectedComplex) {
+      setAssignError('단지를 검색하여 선택하세요.')
       return
     }
     setAssignError(null)
-    const result = await assignRealtorToComplex(realtor.id, selectedComplexId, displayOrder)
+    const result = await assignRealtorToComplex(realtor.id, selectedComplex.id, displayOrder)
     if (result.error) {
       setAssignError(result.error)
       return
     }
-    const found = complexes.find(c => c.id === selectedComplexId)
-    if (found) {
-      setLocalAssignments(prev => [
-        ...prev.filter(
-          a => !(a.complex_id === selectedComplexId && a.display_order === displayOrder),
-        ),
-        {
-          id: `temp-${Date.now()}`,
-          realtor_id: realtor.id,
-          complex_id: selectedComplexId,
-          display_order: displayOrder,
-          created_at: new Date().toISOString(),
-          complexes: { id: found.id, canonical_name: found.canonical_name },
-        },
-      ])
-    }
-    setSelectedComplexId('')
+    setLocalAssignments(prev => [
+      ...prev.filter(
+        a => !(a.complex_id === selectedComplex.id && a.display_order === displayOrder),
+      ),
+      {
+        id: `temp-${Date.now()}`,
+        realtor_id: realtor.id,
+        complex_id: selectedComplex.id,
+        display_order: displayOrder,
+        created_at: new Date().toISOString(),
+        complexes: { id: selectedComplex.id, canonical_name: selectedComplex.canonical_name },
+      },
+    ])
+    setSelectedComplex(null)
+    setComplexSearch('')
   }
 
   async function handleRemoveAssignment(assignmentId: string, complexId: string) {
@@ -280,41 +316,93 @@ export function RealtorEditForm({ realtor, assignments, complexes }: Props) {
           </div>
         )}
 
-        {/* 새 배정 추가 */}
+        {/* 새 배정 추가 — Combobox */}
         <div>
           <p style={{ font: '600 13px/1 var(--font-sans)', color: 'var(--fg-pri)', margin: '0 0 10px' }}>
             새 배정 추가
           </p>
-          <div style={{ marginBottom: 8 }}>
+
+          {/* 검색 입력 + 드롭다운 리스트 */}
+          <div style={{ position: 'relative', marginBottom: 8 }}>
             <input
+              ref={inputRef}
               type="text"
               value={complexSearch}
-              onChange={e => setComplexSearch(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  if (selectedComplexId) void handleAddAssignment()
-                }
-              }}
-              placeholder="단지명 검색 후 Enter…"
+              onChange={e => handleSearchChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onFocus={() => { if (complexSearch.trim() && !selectedComplex) setShowList(true) }}
+              onBlur={() => setTimeout(() => setShowList(false), 150)}
+              placeholder="단지명 또는 구 검색 후 ↓Enter로 선택…"
               className="input"
               style={{ width: '100%', height: 36, fontSize: 13 }}
             />
+            {showList && filteredComplexes.length > 0 && (
+              <ul
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  zIndex: 100,
+                  background: '#fff',
+                  border: '1px solid var(--line-default)',
+                  borderRadius: 6,
+                  marginTop: 2,
+                  maxHeight: 220,
+                  overflowY: 'auto',
+                  padding: 0,
+                  listStyle: 'none',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.10)',
+                }}
+              >
+                {filteredComplexes.map((c, i) => (
+                  <li
+                    key={c.id}
+                    onMouseDown={() => selectComplex(c)}
+                    style={{
+                      padding: '8px 12px',
+                      cursor: 'pointer',
+                      font: '500 13px/1.3 var(--font-sans)',
+                      background: i === highlightIndex ? 'var(--bg-surface-2)' : 'transparent',
+                      color: 'var(--fg-pri)',
+                      borderBottom: i < filteredComplexes.length - 1 ? '1px solid var(--line-subtle)' : 'none',
+                    }}
+                  >
+                    {c.canonical_name}
+                    <span style={{ color: 'var(--fg-sec)', marginLeft: 8, fontSize: 12 }}>
+                      {c.gu ?? c.si ?? ''}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
+
+          {/* 선택된 단지 표시 + display_order + 배정 버튼 */}
           <div style={{ display: 'flex', gap: 8 }}>
-            <select
-              value={selectedComplexId}
-              onChange={e => setSelectedComplexId(e.target.value)}
-              className="input"
-              style={{ flex: 1, height: 36, fontSize: 13 }}
+            <div
+              style={{
+                flex: 1,
+                height: 36,
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0 10px',
+                borderRadius: 6,
+                border: selectedComplex
+                  ? '1px solid var(--dj-orange)'
+                  : '1px dashed var(--line-subtle)',
+                background: selectedComplex ? 'oklch(97% 0.01 60)' : 'transparent',
+                font: selectedComplex
+                  ? '600 13px/1 var(--font-sans)'
+                  : '400 13px/1 var(--font-sans)',
+                color: selectedComplex ? 'var(--fg-pri)' : 'var(--fg-tertiary)',
+                transition: 'all 0.15s',
+              }}
             >
-              <option value="">단지 선택</option>
-              {filteredComplexes.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.canonical_name} ({c.gu ?? c.si ?? ''})
-                </option>
-              ))}
-            </select>
+              {selectedComplex
+                ? `${selectedComplex.canonical_name} (${selectedComplex.gu ?? selectedComplex.si ?? ''})`
+                : '단지를 검색하여 선택하세요'}
+            </div>
             <select
               value={displayOrder}
               onChange={e => setDisplayOrder(Number(e.target.value) as 1 | 2)}
@@ -327,12 +415,14 @@ export function RealtorEditForm({ realtor, assignments, complexes }: Props) {
             <button
               type="button"
               className="btn btn-md btn-orange"
-              style={{ height: 36, whiteSpace: 'nowrap', fontSize: 13 }}
+              style={{ height: 36, whiteSpace: 'nowrap', fontSize: 13, opacity: selectedComplex ? 1 : 0.4 }}
+              disabled={!selectedComplex}
               onClick={handleAddAssignment}
             >
               배정
             </button>
           </div>
+
           {assignError && (
             <p style={{ font: '500 12px/1.4 var(--font-sans)', color: 'var(--fg-negative)', margin: '6px 0 0' }}>
               {assignError}
