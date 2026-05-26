@@ -6,6 +6,9 @@ import { revalidatePath } from 'next/cache'
 
 type AdminClient = ReturnType<typeof createSupabaseAdminClient>
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const PHONE_RE = /^[0-9\-+() ]{7,20}$/
+
 async function requireAdmin(): Promise<{ error: string | null; admin: AdminClient | null }> {
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -44,6 +47,9 @@ export async function createRealtor(
   ) {
     return { error: '이름, 사무소명, 전화번호는 필수 항목입니다.' }
   }
+  if (!PHONE_RE.test(phone.trim())) {
+    return { error: '전화번호 형식이 올바르지 않습니다.' }
+  }
 
   const { error: dbErr } = await admin.from('realtors').insert({
     name: name.trim(),
@@ -54,7 +60,7 @@ export async function createRealtor(
     image_url: typeof imageUrl === 'string' && imageUrl.trim() ? imageUrl.trim() : null,
   })
 
-  if (dbErr) return { error: dbErr.message }
+  if (dbErr) return { error: '등록 중 오류가 발생했습니다.' }
   revalidatePath('/admin/realtors')
   return { error: null }
 }
@@ -63,6 +69,8 @@ export async function updateRealtor(
   id: string,
   formData: FormData,
 ): Promise<{ error: string | null }> {
+  if (!UUID_RE.test(id)) return { error: '잘못된 요청입니다.' }
+
   const { error, admin } = await requireAdmin()
   if (error || !admin) return { error: error! }
 
@@ -81,6 +89,9 @@ export async function updateRealtor(
   ) {
     return { error: '이름, 사무소명, 전화번호는 필수 항목입니다.' }
   }
+  if (!PHONE_RE.test(phone.trim())) {
+    return { error: '전화번호 형식이 올바르지 않습니다.' }
+  }
 
   const { error: dbErr } = await admin.from('realtors').update({
     name: name.trim(),
@@ -92,22 +103,20 @@ export async function updateRealtor(
     is_active: isActiveRaw === 'true',
   }).eq('id', id)
 
-  if (dbErr) return { error: dbErr.message }
+  if (dbErr) return { error: '저장 중 오류가 발생했습니다.' }
   revalidatePath('/admin/realtors')
   revalidatePath(`/admin/realtors/${id}/edit`)
   return { error: null }
 }
 
 export async function deleteRealtor(id: string): Promise<{ error: string | null }> {
+  if (!UUID_RE.test(id)) return { error: '잘못된 요청입니다.' }
+
   const { error, admin } = await requireAdmin()
   if (error || !admin) return { error: error! }
 
-  const { error: dbErr } = await admin
-    .from('realtors')
-    .delete()
-    .eq('id', id)
-
-  if (dbErr) return { error: dbErr.message }
+  const { error: dbErr } = await admin.from('realtors').delete().eq('id', id)
+  if (dbErr) return { error: '삭제 중 오류가 발생했습니다.' }
   revalidatePath('/admin/realtors')
   return { error: null }
 }
@@ -116,29 +125,47 @@ export async function assignRealtorToComplex(
   realtorId: string,
   complexId: string,
   displayOrder: 1 | 2,
-): Promise<{ error: string | null }> {
-  const { error, admin } = await requireAdmin()
-  if (error || !admin) return { error: error! }
+): Promise<{ error: string | null; id: string | null }> {
+  if (!UUID_RE.test(realtorId) || !UUID_RE.test(complexId)) {
+    return { error: '잘못된 요청입니다.', id: null }
+  }
 
-  // UNIQUE(complex_id, display_order) 충돌 시 upsert로 교체 (Pitfall 3 방지)
-  const { error: dbErr } = await admin
+  const { error, admin } = await requireAdmin()
+  if (error || !admin) return { error: error!, id: null }
+
+  // 비활성 공인중개사 배정 차단
+  const { data: realtor } = await admin
+    .from('realtors')
+    .select('is_active')
+    .eq('id', realtorId)
+    .single()
+  if (!realtor?.is_active) {
+    return { error: '비활성 공인중개사는 배정할 수 없습니다.', id: null }
+  }
+
+  const { data, error: dbErr } = await admin
     .from('realtor_assignments')
     .upsert(
       { realtor_id: realtorId, complex_id: complexId, display_order: displayOrder },
       { onConflict: 'complex_id,display_order' },
     )
+    .select('id')
+    .single()
 
-  if (dbErr) return { error: dbErr.message }
+  if (dbErr) return { error: '배정 중 오류가 발생했습니다.', id: null }
   revalidatePath('/admin/realtors')
-  // 단지 상세 페이지 캐시 무효화 (revalidate=86400 ISR 우회, Pitfall 4 방지)
   revalidatePath(`/complexes/${complexId}`)
-  return { error: null }
+  return { error: null, id: data.id }
 }
 
 export async function removeRealtorAssignment(
   assignmentId: string,
   complexId: string,
 ): Promise<{ error: string | null }> {
+  if (!UUID_RE.test(assignmentId) || !UUID_RE.test(complexId)) {
+    return { error: '잘못된 요청입니다.' }
+  }
+
   const { error, admin } = await requireAdmin()
   if (error || !admin) return { error: error! }
 
@@ -147,7 +174,7 @@ export async function removeRealtorAssignment(
     .delete()
     .eq('id', assignmentId)
 
-  if (dbErr) return { error: dbErr.message }
+  if (dbErr) return { error: '해제 중 오류가 발생했습니다.' }
   revalidatePath('/admin/realtors')
   revalidatePath(`/complexes/${complexId}`)
   return { error: null }

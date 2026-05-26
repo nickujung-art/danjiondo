@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateRealtor, assignRealtorToComplex, removeRealtorAssignment } from '@/lib/auth/realtor-actions'
 import type { Realtor } from '@/lib/data/realtors'
+import { RealtorImageUpload } from './RealtorImageUpload'
 
 type AssignmentWithComplex = {
   id: string
@@ -34,6 +35,8 @@ export function RealtorEditForm({ realtor, assignments, complexes }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] = useState(false)
+  const [imageUrl, setImageUrl] = useState(realtor.image_url ?? '')
+  const [uploadError, setUploadError] = useState('')
 
   // 단지 배정 상태
   const [localAssignments, setLocalAssignments] = useState<AssignmentWithComplex[]>(assignments)
@@ -105,6 +108,8 @@ export function RealtorEditForm({ realtor, assignments, complexes }: Props) {
     setIsSubmitting(true)
     setSubmitError(null)
     setSubmitSuccess(false)
+    // 업로드된 이미지 URL을 formData에 주입 (hidden input 대신)
+    formData.set('image_url', imageUrl)
     try {
       const result = await updateRealtor(realtor.id, formData)
       if (result.error) {
@@ -135,7 +140,7 @@ export function RealtorEditForm({ realtor, assignments, complexes }: Props) {
         a => !(a.complex_id === selectedComplex.id && a.display_order === displayOrder),
       ),
       {
-        id: `temp-${Date.now()}`,
+        id: result.id!, // 실제 DB uuid — temp ID 삭제 버그 방지
         realtor_id: realtor.id,
         complex_id: selectedComplex.id,
         display_order: displayOrder,
@@ -218,14 +223,18 @@ export function RealtorEditForm({ realtor, assignments, complexes }: Props) {
               />
             </Field>
 
-            <Field label="프로필 이미지 URL">
-              <input
-                name="image_url"
-                type="url"
-                className="input"
-                style={inputStyle}
-                defaultValue={realtor.image_url ?? ''}
+            <Field label="프로필 사진">
+              <RealtorImageUpload
+                currentUrl={realtor.image_url ?? null}
+                name={realtor.name}
+                onUploaded={url => setImageUrl(url)}
+                onError={msg => setUploadError(msg)}
               />
+              {uploadError && (
+                <p style={{ font: '500 12px/1.4 var(--font-sans)', color: 'var(--fg-negative)', margin: '6px 0 0' }}>
+                  {uploadError}
+                </p>
+              )}
             </Field>
 
             <Field label="활성 상태">

@@ -6,7 +6,7 @@ interface RealtorCardProps {
 }
 
 export function RealtorCard({ realtor }: RealtorCardProps) {
-  const initials = realtor.name.slice(0, 2)
+  const initial = realtor.name.slice(0, 1) || '?'
 
   return (
     <div className="card" style={{ padding: 16 }}>
@@ -38,7 +38,7 @@ export function RealtorCard({ realtor }: RealtorCardProps) {
                 color: 'var(--fg-sec)',
               }}
             >
-              {initials}
+              {initial}
             </span>
           )}
         </div>

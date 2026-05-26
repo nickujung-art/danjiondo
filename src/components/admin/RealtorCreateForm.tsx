@@ -3,15 +3,20 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createRealtor } from '@/lib/auth/realtor-actions'
+import { RealtorImageUpload } from './RealtorImageUpload'
 
 export function RealtorCreateForm() {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [uploadError, setUploadError] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
+  const [nameValue, setNameValue] = useState('')
 
   async function handleSubmit(formData: FormData) {
     setIsSubmitting(true)
     setSubmitError(null)
+    if (imageUrl) formData.set('image_url', imageUrl)
     try {
       const result = await createRealtor(formData)
       if (result.error) setSubmitError(result.error)
@@ -28,6 +33,20 @@ export function RealtorCreateForm() {
       <form action={handleSubmit}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
 
+          <Field label="프로필 사진">
+            <RealtorImageUpload
+              currentUrl={null}
+              name={nameValue || '?'}
+              onUploaded={url => setImageUrl(url)}
+              onError={msg => setUploadError(msg)}
+            />
+            {uploadError && (
+              <p style={{ font: '500 12px/1.4 var(--font-sans)', color: 'var(--fg-negative)', margin: '6px 0 0' }}>
+                {uploadError}
+              </p>
+            )}
+          </Field>
+
           <Field label="중개사 이름" required>
             <input
               name="name"
@@ -35,6 +54,8 @@ export function RealtorCreateForm() {
               required
               style={inputStyle}
               placeholder="홍길동"
+              value={nameValue}
+              onChange={e => setNameValue(e.target.value)}
             />
           </Field>
 
@@ -75,16 +96,6 @@ export function RealtorCreateForm() {
               className="input"
               style={inputStyle}
               placeholder="12345678901 (선택)"
-            />
-          </Field>
-
-          <Field label="프로필 이미지 URL">
-            <input
-              name="image_url"
-              type="url"
-              className="input"
-              style={inputStyle}
-              placeholder="https://example.com/photo.jpg (선택)"
             />
           </Field>
 
