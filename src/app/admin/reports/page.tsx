@@ -54,7 +54,11 @@ const STATUS_COLOR: Record<ReportRow['status'], string> = {
   rejected: '#6b7280',
 }
 
-export default async function AdminReportsPage() {
+export default async function AdminReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string; target_type?: string }>
+}) {
   // 관리자 권한 확인
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -70,12 +74,23 @@ export default async function AdminReportsPage() {
     redirect('/')
   }
 
+  const { status = '', target_type = '' } = await searchParams
+
   const adminClient = createSupabaseAdminClient()
   // reports 테이블은 Phase 3 마이그레이션으로 추가됨 — database.ts 재생성 전까지 any 캐스트
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: reports } = await (adminClient as any)
+  let query = (adminClient as any)
     .from('reports')
     .select('id, target_type, target_id, reason, status, created_at')
+
+  if (status) {
+    query = query.eq('status', status)
+  }
+  if (target_type) {
+    query = query.eq('target_type', target_type)
+  }
+
+  const { data: reports } = await query
     .order('status', { ascending: true })
     .order('created_at', { ascending: false })
 
@@ -87,11 +102,31 @@ export default async function AdminReportsPage() {
           style={{
             font: '700 22px/1.3 var(--font-sans)',
             letterSpacing: '-0.02em',
-            margin: '0 0 20px',
+            margin: '0 0 16px',
           }}
         >
           신고 큐
         </h1>
+
+        <form method="get" style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+          <select name="status" defaultValue={status} className="input" style={{ minWidth: 120 }}>
+            <option value="">상태 전체</option>
+            <option value="pending">대기</option>
+            <option value="accepted">처리 완료</option>
+            <option value="rejected">기각</option>
+          </select>
+          <select name="target_type" defaultValue={target_type} className="input" style={{ minWidth: 130 }}>
+            <option value="">유형 전체</option>
+            <option value="review">후기</option>
+            <option value="user">회원</option>
+            <option value="ad">광고</option>
+            <option value="comment">댓글</option>
+          </select>
+          <button type="submit" className="btn btn-sm btn-orange">필터</button>
+          {(status || target_type) && (
+            <a href="/admin/reports" className="btn btn-sm btn-secondary">초기화</a>
+          )}
+        </form>
 
         {rows.length === 0 ? (
           <div
@@ -103,7 +138,7 @@ export default async function AdminReportsPage() {
               color: 'var(--fg-tertiary)',
             }}
           >
-            접수된 신고가 없습니다.
+            {(status || target_type) ? '필터 조건에 맞는 신고가 없습니다.' : '접수된 신고가 없습니다.'}
           </div>
         ) : (
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
