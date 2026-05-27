@@ -218,12 +218,22 @@ export default async function ProfilePage() {
 
         {/* Admin link */}
         {isAdmin && (
-          <div className="card" style={{ padding: 16, marginBottom: 16 }}>
+          <div className="card" style={{ padding: 16, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <Link
+              href="/admin"
+              style={{
+                font:           '600 13px/1 var(--font-sans)',
+                color:          'var(--dj-orange)',
+                textDecoration: 'none',
+              }}
+            >
+              어드민 대시보드 →
+            </Link>
             <Link
               href="/admin/ads"
               style={{
                 font:           '600 13px/1 var(--font-sans)',
-                color:          'var(--dj-orange)',
+                color:          'var(--fg-secondary)',
                 textDecoration: 'none',
               }}
             >
