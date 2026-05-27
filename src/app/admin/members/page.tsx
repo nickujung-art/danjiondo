@@ -22,7 +22,11 @@ interface MemberRow {
   terms_agreed_at: string | null
 }
 
-export default async function AdminMembersPage() {
+export default async function AdminMembersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; role?: string; status?: string }>
+}) {
   // 관리자 권한 확인
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -38,11 +42,29 @@ export default async function AdminMembersPage() {
     redirect('/')
   }
 
+  const { q: rawQ = '', role = '', status = '' } = await searchParams
+  const q = rawQ.trim().slice(0, 50)  // 최대 50자 제한 (ilike injection 방어)
+
   const adminClient = createSupabaseAdminClient()
-  const { data: members } = await adminClient
+  let query = adminClient
     .from('profiles')
     .select('id, nickname, cafe_nickname, role, created_at, suspended_at, deleted_at, terms_agreed_at')
-    .order('created_at', { ascending: false })
+
+  if (q) {
+    query = query.or(`nickname.ilike.%${q}%,cafe_nickname.ilike.%${q}%`)
+  }
+  if (role) {
+    query = query.eq('role', role)
+  }
+  if (status === 'active') {
+    query = query.is('suspended_at', null).is('deleted_at', null)
+  } else if (status === 'suspended') {
+    query = query.not('suspended_at', 'is', null)
+  } else if (status === 'deleted') {
+    query = query.not('deleted_at', 'is', null)
+  }
+
+  const { data: members } = await query.order('created_at', { ascending: false })
 
   const rows = (members ?? []) as MemberRow[]
 
@@ -52,11 +74,38 @@ export default async function AdminMembersPage() {
           style={{
             font: '700 22px/1.3 var(--font-sans)',
             letterSpacing: '-0.02em',
-            margin: '0 0 20px',
+            margin: '0 0 16px',
           }}
         >
           회원 관리
         </h1>
+
+        <form method="get" style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input
+            type="search"
+            name="q"
+            defaultValue={q}
+            placeholder="닉네임 / 카페닉네임"
+            className="input"
+            style={{ minWidth: 180 }}
+            maxLength={50}
+          />
+          <select name="role" defaultValue={role} className="input" style={{ minWidth: 100 }}>
+            <option value="">역할 전체</option>
+            <option value="admin">admin</option>
+            <option value="member">member</option>
+          </select>
+          <select name="status" defaultValue={status} className="input" style={{ minWidth: 100 }}>
+            <option value="">상태 전체</option>
+            <option value="active">활성</option>
+            <option value="suspended">정지</option>
+            <option value="deleted">탈퇴</option>
+          </select>
+          <button type="submit" className="btn btn-sm btn-orange">검색</button>
+          {(q || role || status) && (
+            <a href="/admin/members" className="btn btn-sm btn-secondary">초기화</a>
+          )}
+        </form>
 
         {rows.length === 0 ? (
           <div
@@ -68,7 +117,7 @@ export default async function AdminMembersPage() {
               color: 'var(--fg-tertiary)',
             }}
           >
-            등록된 회원이 없습니다.
+            {(q || role || status) ? '검색 조건에 맞는 회원이 없습니다.' : '등록된 회원이 없습니다.'}
           </div>
         ) : (
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
