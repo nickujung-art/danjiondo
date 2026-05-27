@@ -3,7 +3,6 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createReadonlyClient } from '@/lib/supabase/readonly'
 import { getComplexById, getComplexTransactionSummary, getComplexRawTransactions } from '@/lib/data/complex-detail'
-import { getActiveAds } from '@/lib/data/ads'
 import { getRealtorsByComplexId } from '@/lib/data/realtors'
 import { RealtorCard } from '@/components/realtors/RealtorCard'
 import { getComplexReviewStats } from '@/lib/data/reviews'
@@ -16,7 +15,7 @@ import { FavoriteButton } from '@/components/complex/FavoriteButton'
 import { ShareButton } from '@/components/complex/ShareButton'
 import { CompareAddButton } from '@/components/complex/CompareAddButton'
 import { CompareFloatingBar } from '@/components/complex/CompareFloatingBar'
-import { AdBanner } from '@/components/ads/AdBanner'
+import { SidebarAdsSection } from '@/components/ads/SidebarAdsSection'
 import { NeighborhoodOpinion } from '@/components/reviews/NeighborhoodOpinion'
 import { RedevelopmentTimeline } from '@/components/complex/RedevelopmentTimeline'
 import { GapLabel } from '@/components/complex/GapLabel'
@@ -206,7 +205,6 @@ export default async function ComplexDetailPage({ params }: Props) {
 
   const [
     saleData,
-    sidebarAds,
     complexRealtors,
     reviews,
     reviewStats,
@@ -222,7 +220,6 @@ export default async function ComplexDetailPage({ params }: Props) {
     rawJeonseData,
   ] = await Promise.all([
     getComplexTransactionSummary(id, 'sale', supabase),
-    getActiveAds('sidebar', supabase),
     getRealtorsByComplexId(id, supabase),
     getReviewsWithComments(id, supabase),
     getComplexReviewStats(id, supabase),
@@ -805,10 +802,8 @@ export default async function ComplexDetailPage({ params }: Props) {
             )}
           </div>
 
-          {/* Sidebar ads */}
-          {sidebarAds.map(ad => (
-            <AdBanner key={ad.id} ad={ad} />
-          ))}
+          {/* Sidebar ads — 클라이언트 fetch로 ISR 우회 + sggCode 지역 필터 */}
+          <SidebarAdsSection sggCode={complex.sgg_code} />
 
           {/* 이 단지 담당 공인중개사 (D-01, D-05) */}
           {complexRealtors.length > 0 && (

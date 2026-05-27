@@ -19,6 +19,7 @@ const MOCK_DATA = {
   canonical_name:      '창원 e편한세상',
   si:                  '경남',
   gu:                  '창원시',
+  sgg_code:            '48123',
   avg_sale_per_pyeong: 1200,
   household_count:     500,
   built_year:          2015,

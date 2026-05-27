@@ -8,11 +8,11 @@ interface Props {
 }
 
 export function AdBanner({ ad }: Props) {
-  const reported = useRef(false)
+  const lastReportedId = useRef<string | null>(null)
 
   useEffect(() => {
-    if (reported.current) return
-    reported.current = true
+    if (lastReportedId.current === ad.id) return
+    lastReportedId.current = ad.id
     void fetch('/api/ads/events', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },

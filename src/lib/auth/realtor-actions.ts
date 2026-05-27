@@ -125,9 +125,18 @@ export async function deleteRealtor(id: string): Promise<{ error: string | null 
   const { error, admin } = await requireAdmin()
   if (error || !admin) return { error: error! }
 
+  const { data: assignments } = await admin
+    .from('realtor_assignments')
+    .select('complex_id')
+    .eq('realtor_id', id)
+
   const { error: dbErr } = await admin.from('realtors').delete().eq('id', id)
   if (dbErr) return { error: '삭제 중 오류가 발생했습니다.' }
+
   revalidatePath('/admin/realtors')
+  for (const a of assignments ?? []) {
+    revalidatePath(`/complexes/${a.complex_id}`)
+  }
   return { error: null }
 }
 

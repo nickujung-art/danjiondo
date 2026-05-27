@@ -57,7 +57,7 @@ export async function deliverPendingNotifications(
 
   const { data: pending } = await supabase
     .from('notifications')
-    .select('id, user_id, title, body, type')
+    .select('id, user_id, title, body, type, created_at')
     .eq('status', 'pending')
     .order('created_at')
     .limit(BATCH_SIZE)
@@ -71,6 +71,12 @@ export async function deliverPendingNotifications(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const notif = n as any
     try {
+      const canSend = await shouldDeliverNow(
+        notif.user_id as string,
+        supabase,
+        new Date(notif.created_at as string),
+      )
+      if (!canSend) continue
       // 이메일 주소: auth.admin API로 조회
       // service role 클라이언트는 auth.admin을 지원하지만 타입에 없어서 캐스팅
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

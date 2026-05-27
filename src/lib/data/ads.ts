@@ -29,31 +29,29 @@ export async function getAdRoiStats(
 
   if (!campaigns || campaigns.length === 0) return []
 
-  const roiRows: AdRoiRow[] = []
-  for (const c of campaigns) {
-    const { data: events } = await adminClient
-      .from('ad_events')
-      .select('event_type, is_anomaly')
-      .eq('campaign_id', c.id)
+  const campaignIds = campaigns.map(c => c.id)
+  const { data: allEvents } = await adminClient
+    .from('ad_events')
+    .select('campaign_id, event_type, is_anomaly')
+    .in('campaign_id', campaignIds)
 
-    const ev = events ?? []
-    const impressions = ev.filter(e => e.event_type === 'impression').length
-    const clicks = ev.filter(e => e.event_type === 'click').length
-    const conversions = ev.filter(e => e.event_type === 'conversion').length
-    const anomaly = ev.some(e => e.is_anomaly)
-    const ctr = clicks > 0 ? (conversions / clicks) * 100 : null
-
-    roiRows.push({
-      campaignId: c.id,
-      title: c.title,
-      impressions,
-      clicks,
-      conversions,
-      ctr,
-      anomaly,
-    })
+  type EventRow = { campaign_id: string; event_type: string; is_anomaly: boolean }
+  const byId = new Map<string, EventRow[]>()
+  for (const ev of (allEvents ?? []) as EventRow[]) {
+    const list = byId.get(ev.campaign_id) ?? []
+    list.push(ev)
+    byId.set(ev.campaign_id, list)
   }
-  return roiRows
+
+  return campaigns.map(c => {
+    const ev = byId.get(c.id) ?? []
+    const impressions = ev.filter(e => e.event_type === 'impression').length
+    const clicks      = ev.filter(e => e.event_type === 'click').length
+    const conversions = ev.filter(e => e.event_type === 'conversion').length
+    const anomaly     = ev.some(e => e.is_anomaly)
+    const ctr         = clicks > 0 ? (conversions / clicks) * 100 : null
+    return { campaignId: c.id, title: c.title, impressions, clicks, conversions, ctr, anomaly }
+  })
 }
 
 // CRITICAL: 반드시 now() BETWEEN starts_at AND ends_at AND status='approved' 포함 (CLAUDE.md)

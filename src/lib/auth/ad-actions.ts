@@ -5,6 +5,10 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import type { Database } from '@/types/database'
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+const ALLOWED_PLACEMENTS = new Set(['banner_top', 'sidebar', 'in_feed', 'map_popup'])
+
 export async function uploadAdImage(
   formData: FormData,
 ): Promise<{ url: string | null; error: string | null }> {
@@ -14,6 +18,9 @@ export async function uploadAdImage(
   const file = formData.get('file')
   if (!(file instanceof File) || file.size === 0) return { url: null, error: '파일을 선택하세요.' }
   if (file.size > 5 * 1024 * 1024) return { url: null, error: '파일 크기는 5MB 이하여야 합니다.' }
+  if (!ALLOWED_MIME.has(file.type)) {
+    return { url: null, error: '이미지 파일만 업로드 가능합니다 (JPG, PNG, WEBP, GIF).' }
+  }
 
   const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
   const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
@@ -53,6 +60,7 @@ async function updateStatus(
   id: string,
   status: Database['public']['Enums']['ad_status'],
 ): Promise<{ error: string | null }> {
+  if (!UUID_RE.test(id)) return { error: '잘못된 요청입니다.' }
   const { error, admin } = await requireAdmin()
   if (error || !admin) return { error: error! }
 
@@ -79,6 +87,7 @@ export async function pauseAdCampaign(id: string): Promise<{ error: string | nul
 }
 
 export async function deleteAdCampaign(id: string): Promise<{ error: string | null }> {
+  if (!UUID_RE.test(id)) return { error: '잘못된 요청입니다.' }
   const { error, admin } = await requireAdmin()
   if (error || !admin) return { error: error! }
 
@@ -128,6 +137,23 @@ export async function createAdCampaign(
     return { error: '필수 항목을 모두 입력하세요.' }
   }
 
+  if (!ALLOWED_PLACEMENTS.has(placement.trim())) {
+    return { error: '유효하지 않은 광고 지면입니다.' }
+  }
+
+  try {
+    const url = new URL(linkUrl.trim())
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      return { error: '링크 URL은 http 또는 https여야 합니다.' }
+    }
+  } catch {
+    return { error: '링크 URL 형식이 올바르지 않습니다.' }
+  }
+
+  if (new Date(endsAt.trim()) <= new Date(startsAt.trim())) {
+    return { error: '종료일은 시작일보다 이후여야 합니다.' }
+  }
+
   const { error: dbErr } = await admin.from('ad_campaigns').insert({
     title: title.trim(),
     advertiser_name: advertiserName.trim(),
@@ -157,6 +183,7 @@ export async function updateAdCampaign(
   id: string,
   formData: FormData,
 ): Promise<{ error: string | null }> {
+  if (!UUID_RE.test(id)) return { error: '잘못된 요청입니다.' }
   const { error, admin } = await requireAdmin()
   if (error || !admin) return { error: error! }
 
@@ -182,6 +209,23 @@ export async function updateAdCampaign(
     typeof endsAt !== 'string' || !endsAt.trim()
   ) {
     return { error: '필수 항목을 모두 입력하세요.' }
+  }
+
+  if (!ALLOWED_PLACEMENTS.has(placement.trim())) {
+    return { error: '유효하지 않은 광고 지면입니다.' }
+  }
+
+  try {
+    const url = new URL(linkUrl.trim())
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      return { error: '링크 URL은 http 또는 https여야 합니다.' }
+    }
+  } catch {
+    return { error: '링크 URL 형식이 올바르지 않습니다.' }
+  }
+
+  if (new Date(endsAt.trim()) <= new Date(startsAt.trim())) {
+    return { error: '종료일은 시작일보다 이후여야 합니다.' }
   }
 
   const { error: dbErr } = await admin.from('ad_campaigns').update({
