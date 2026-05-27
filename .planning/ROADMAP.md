@@ -1,6 +1,6 @@
 # Roadmap — 단지온도
 
-**14 phases** | **61 requirements mapped** | v1~v7 requirements covered ✓
+**15 phases** | **65 requirements mapped** | v1~v7 requirements covered ✓
 
 ## Overview
 
@@ -8,7 +8,7 @@
 |---|-------|---------|------|--------------|--------|
 | 1 | 보안·인프라·배포 | V1.0 | 프로덕션 배포 가능 상태 + 보안 기반 확립 | INFRA-01~03, SEC-01~04 | ✅ Complete |
 | 2 | 랭킹·랜딩·공유 | V1.0 | 핵심 UX 완성 — 사용자가 처음 봐야 할 화면 | RANK-01~03, SHARE-01~02 | ✅ Complete |
-| 3 | 카드뉴스·법적·운영 | V1.0 | V1.0 정식 출시 가능 상태 | SHARE-03~04, LEGAL-01~05, ADMIN-01~04, A11Y-01~03 | ✅ Complete |
+| 3 | 카드뉴스·법적·운영 | V1.0 | V1.0 정식 출시 가능 상태 | SHARE-03~04, LEGAL-01~05, ADMIN-01~04, A11Y-01~03 | ✅ Complete (5/5 plans) |
 | 4 | 커뮤니티 기초 | V1.5 | 참여·소통 기능 + 데이터 확장 | COMM-01~05, DATA-01~02, NOTIF-01~02 | ✅ Complete |
 | 5 | 데이터 확장·운영 | V1.5 | V1.5 완성 — 데이터 깊이 + 운영 안정성 | DATA-03~05, OPS-01 | ✅ Complete |
 | 6 | AI·차별화 기술 | V2.0 | 기술 차별화 — AI 봇 + 고도화 분석 | DIFF-03, DATA-06~07, AD-01~02, AUTH-01 | 📋 Planned (5 plans) |
@@ -21,6 +21,7 @@
 | 13 | 신축·분양·재건축 대시보드 | V2.5 | 청약홈 API 연동 + 신축/분양/재건축 3-tier 우선순위 대시보드 구현 | PRESALE-01~03, REDV-01 | ✅ Complete |
 | 14 | 지도 줌 중간 레벨 — 동 클러스터 | V2.5 | 구 클러스터→개별 마커 사이 동 단위 칩 중간 레벨 추가로 줌인 UX 개선 | MAP-10~12 | ✅ Complete |
 | 15 | 커뮤니티 & 게이미피케이션 | V3.0 | 회원 등급 5단계 + 단지 비교 표 + Naver 카페 글 단지 연결 | DIFF-01, DIFF-02, DIFF-06 | ✅ Completed 2026-05-22 |
+| 19 | 어드민 UI/UX 전면 개선 | V3.1 | 공유 레이아웃 + 사이드바 네비게이션으로 13개 어드민 기능 통합, 운영자 접근성 전면 개선 | ADMIN-10~13 | ⬜ Not Started |
 
 ---
 
@@ -133,7 +134,7 @@
 - A11Y-02: 키보드 탐색 검증
 - A11Y-03: 스크린리더 라벨 검증
 
-**Plans:** 3/5 plans executed
+**Plans:** 5/5 plans executed
 
 **Wave 0** *(독립 실행)*
 - [x] 03-01-PLAN.md — 마이그레이션 + RED 테스트 + @axe-core/playwright 설치 + [BLOCKING] supabase db push (SHARE-03/04, LEGAL-01/04/05, ADMIN-01/03/04, A11Y-01/02/03 기반)
@@ -143,10 +144,10 @@
 
 **Wave 2** *(blocked on Wave 0; 03-03/04 병렬 실행 가능 — files_modified 무중복)*
 - [x] 03-03-PLAN.md — 카드뉴스 Route Handler + /admin/cardnews UI (SHARE-03, SHARE-04)
-- [ ] 03-04-PLAN.md — admin-actions.ts + 회원/신고/시스템 상태 페이지 (ADMIN-01, ADMIN-02 회귀, ADMIN-03, ADMIN-04)
+- [x] 03-04-PLAN.md — admin-actions.ts + 회원/신고/시스템 상태 페이지 (ADMIN-01, ADMIN-02 회귀, ADMIN-03, ADMIN-04) `completed 2026-05-07`
 
 **Wave 2** *(blocked on Wave 1)*
-- [ ] 03-05-PLAN.md — accessibility E2E GREEN + CI 게이트 (A11Y-01/02/03)
+- [x] 03-05-PLAN.md — accessibility E2E GREEN + CI 게이트 (A11Y-01/02/03) `completed 2026-05-07`
 
 **Success Criteria:**
 1. 이용약관·개인정보·광고 정책 페이지가 존재하고 가입 흐름에 동의 체크가 포함된다
@@ -624,6 +625,57 @@
 3. level 6 이하에서 개별 마커 전체 + 단지명이 표시된다
 4. 동 칩 클릭 시 level 6으로 줌인되며 해당 동 중심으로 지도가 이동한다
 5. complexes.dong=null 단지는 '기타' 동 칩으로 묶인다
+
+**UI hint**: no
+
+### Phase 18: 공인중개사 추천 섹션
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 17
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 18 to break down)
+
+---
+
+
+### Phase 19: 어드민 UI/UX 전면 개선
+
+**Goal:** 공유 레이아웃 + 사이드바 네비게이션으로 13개 어드민 기능 통합, 운영자 접근성 전면 개선.
+
+**Version:** V3.1
+
+**Requirements:**
+- ADMIN-10: 공유 어드민 레이아웃 — 사이드바 네비게이션 + /admin 진입점 + 공통 권한 검증
+- ADMIN-11: 회원·신고·광고·중개사 목록 검색·필터 — 텍스트 검색 + 상태 드롭다운 필터
+- ADMIN-12: 사이드바 미처리 항목 뱃지 — pending 신고·광고·GPS 요청 카운트 표시
+- ADMIN-13: 어드민 페이지 공통 UX 개선 — 모바일 햄버거 메뉴 + 현재 페이지 active 표시
+
+**Plans:** 3 plans / 2 waves
+
+**Wave 0** *(BLOCKING — 공유 레이아웃 + 기존 header 제거)*
+- [ ] 19-00-PLAN.md — 공유 어드민 레이아웃 (layout.tsx + AdminSidebar/Links/Drawer) + /admin 리다이렉트 + 기존 9개 페이지 header 제거 + 테스트 (ADMIN-10, ADMIN-13)
+
+**Wave 1** *(blocked on Wave 0; 19-01/19-02 병렬 실행 가능 — files_modified 무중복)*
+- [ ] 19-01-PLAN.md — 회원 + 신고 목록 검색·필터 (ADMIN-11, ADMIN-12)
+- [ ] 19-02-PLAN.md — 광고 + 중개사 목록 검색·필터 (ADMIN-11)
+
+**Cross-cutting constraints:**
+- RSC-first: layout.tsx RSC, AdminSidebarLinks + AdminSidebarDrawer만 'use client'
+- Supabase 쿼리는 서버 컴포넌트에서만 (AdminSidebarLinks/Drawer에서 Supabase 직접 쿼리 금지)
+- AI 슬롭 금지: backdrop-blur, gradient, glow, 보라/인디고 없음
+- 기존 각 페이지 auth guard 유지 (defense in depth — CONTEXT.md D-05)
+- 필터 폼: method="get" (Server Action 아님 — GET은 조회 전용)
+
+**Success Criteria:**
+1. /admin 접속 시 /admin/status로 리다이렉트된다
+2. 모든 어드민 페이지 왼쪽에 240px 사이드바가 표시되고 현재 페이지가 active 강조된다
+3. 사이드바 신고/광고/GPS 메뉴에 pending 카운트 뱃지가 표시된다
+4. 768px 이하 모바일에서 햄버거 버튼 → overlay drawer로 사이드바가 제공된다
+5. /admin/members, /admin/reports, /admin/ads, /admin/realtors 에서 검색·필터가 URL searchParams로 동작한다
+6. npm run lint && npm run build && npm run test 모두 PASS
 
 **UI hint**: no
 
