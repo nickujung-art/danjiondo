@@ -779,17 +779,19 @@ Step 2.6: 이 Phase는 신규 npm 패키지 설치 없이 기존 Next.js 15 + Su
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **globals.css @media query 추가 가능 여부**
    - What we know: 현재 admin 페이지는 inline style 사용. globals.css 존재함 (root layout에서 import)
    - What's unclear: globals.css에 admin-specific @media query를 추가하는 게 프로젝트 컨벤션에 맞는지
    - Recommendation: Tailwind `hidden md:block` 클래스가 있으므로 className 방식 사용 가능. 또는 globals.css에 `.admin-sidebar` 클래스 추가
+   - **RESOLUTION:** globals.css에 `.admin-sidebar { display: flex }` + `.admin-mobile-header { display: none }` 클래스 추가 후 `@media (max-width: 768px)` 블록에서 반전. 플랜 Action에 이미 반영됨.
 
 2. **reports 타입 캐스트 해결**
    - What we know: reports 페이지에서 `(adminClient as any)` 캐스트 사용 중
    - What's unclear: layout에서 reports COUNT 쿼리 시 동일 패턴 필요한지 또는 타입이 업데이트됐는지
    - Recommendation: layout에서도 동일하게 `(adminClient as any).from('reports')` 사용
+   - **RESOLUTION:** `(adminClient as any).from('reports')` 캐스트 패턴 layout에서도 동일하게 적용. 기존 reports/page.tsx 패턴 그대로 준용.
 
 ---
 

@@ -7,7 +7,14 @@ import { RealtorActions } from '@/components/admin/RealtorActions'
 
 export const revalidate = 0
 
-export default async function AdminRealtorsPage() {
+export default async function AdminRealtorsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; active?: string }>
+}) {
+  const { q: rawQ = '', active = '' } = await searchParams
+  const q = rawQ.trim().slice(0, 50)
+
   // 관리자 권한 확인
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -25,7 +32,18 @@ export default async function AdminRealtorsPage() {
 
   // 서비스 롤로 전체 공인중개사 조회 (RLS 우회)
   const adminClient = createSupabaseAdminClient()
-  const realtors = await getAllRealtors(adminClient)
+  const allRealtors = await getAllRealtors(adminClient)
+
+  const realtors = allRealtors.filter(r => {
+    if (q) {
+      const nameMatch = r.name.toLowerCase().includes(q.toLowerCase())
+      const agencyMatch = (r.agency_name ?? '').toLowerCase().includes(q.toLowerCase())
+      if (!nameMatch && !agencyMatch) return false
+    }
+    if (active === 'true' && !r.is_active) return false
+    if (active === 'false' && r.is_active) return false
+    return true
+  })
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 32px' }}>
@@ -58,6 +76,28 @@ export default async function AdminRealtorsPage() {
           </Link>
         </div>
 
+        {/* 검색 + 활성상태 필터 폼 */}
+        <form method="get" style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input
+            type="search"
+            name="q"
+            defaultValue={q}
+            placeholder="이름 / 회사명"
+            className="input"
+            style={{ minWidth: 180 }}
+            maxLength={50}
+          />
+          <select name="active" defaultValue={active} className="input" style={{ minWidth: 110 }}>
+            <option value="">상태 전체</option>
+            <option value="true">활성</option>
+            <option value="false">비활성</option>
+          </select>
+          <button type="submit" className="btn btn-sm btn-orange">검색</button>
+          {(q || active) && (
+            <a href="/admin/realtors" className="btn btn-sm btn-secondary">초기화</a>
+          )}
+        </form>
+
         {realtors.length === 0 ? (
           <div
             className="card"
@@ -68,7 +108,7 @@ export default async function AdminRealtorsPage() {
               color: 'var(--fg-tertiary)',
             }}
           >
-            등록된 공인중개사가 없습니다.
+            {q || active ? '검색 결과가 없습니다.' : '등록된 공인중개사가 없습니다.'}
           </div>
         ) : (
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>

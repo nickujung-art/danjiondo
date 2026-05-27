@@ -34,7 +34,13 @@ function formatDate(s: string) {
   return new Date(s).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export default async function AdminAdsPage() {
+export default async function AdminAdsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>
+}) {
+  const { status = '' } = await searchParams
+
   // 관리자 권한 확인
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -52,10 +58,14 @@ export default async function AdminAdsPage() {
 
   // 서비스 롤로 전체 캠페인 조회 (RLS 우회)
   const adminClient = createSupabaseAdminClient()
-  const [campaigns, roiStats] = await Promise.all([
+  const [allCampaigns, roiStats] = await Promise.all([
     getAllAdCampaigns(adminClient),
     getAdRoiStats(adminClient),
   ])
+
+  const campaigns = status
+    ? allCampaigns.filter(c => c.status === status)
+    : allCampaigns
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 32px' }}>
@@ -88,6 +98,20 @@ export default async function AdminAdsPage() {
           </Link>
         </div>
 
+        {/* 상태 필터 폼 */}
+        <form method="get" style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+          <select name="status" defaultValue={status} className="input" style={{ minWidth: 130 }}>
+            <option value="">상태 전체</option>
+            {(Object.keys(STATUS_LABEL) as AdStatus[]).map(s => (
+              <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+            ))}
+          </select>
+          <button type="submit" className="btn btn-sm btn-orange">필터</button>
+          {status && (
+            <a href="/admin/ads" className="btn btn-sm btn-secondary">초기화</a>
+          )}
+        </form>
+
         {/* ROI 집계 테이블 (캠페인이 있을 때만 표시) */}
         {campaigns.length > 0 && <AdRoiTable rows={roiStats} />}
 
@@ -101,7 +125,7 @@ export default async function AdminAdsPage() {
               color: 'var(--fg-tertiary)',
             }}
           >
-            등록된 광고 캠페인이 없습니다.
+            {status ? '해당 상태의 광고 캠페인이 없습니다.' : '등록된 광고 캠페인이 없습니다.'}
           </div>
         ) : (
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>

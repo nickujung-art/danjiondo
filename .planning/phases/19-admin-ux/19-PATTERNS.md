@@ -156,12 +156,11 @@ No Supabase import needed — badges are passed as props from the layout.
 **Props interface:**
 ```typescript
 interface Props {
-  badges: { reports: number; ads: number; gps: number }
-  currentPath: string  // passed from layout via headers() or as prop
+  pendingCounts: { reports: number; ads: number; gps: number }
 }
 ```
 
-**Active link detection** — the layout passes the current pathname (from `headers()` or Next.js `cookies()` workaround). The sidebar receives it as a prop and uses `pathname.startsWith(href)` for active matching.
+**Active link detection** — `AdminSidebar` is a pure RSC that renders structure and badges. Active state is delegated to `AdminSidebarLinks` ('use client') which calls `usePathname()` directly. No `currentPath` prop is passed from the server — this is cleaner and avoids the `headers()` workaround.
 
 **Menu item render pattern** — copy link style from `src/app/admin/cardnews/page.tsx` lines 96-104:
 ```tsx
