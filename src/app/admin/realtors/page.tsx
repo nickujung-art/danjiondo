@@ -28,37 +28,7 @@ export default async function AdminRealtorsPage() {
   const realtors = await getAllRealtors(adminClient)
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: 'var(--bg-canvas)',
-        fontFamily: 'var(--font-sans)',
-      }}
-    >
-      <header
-        style={{
-          height: 60,
-          background: '#fff',
-          borderBottom: '1px solid var(--line-default)',
-          display: 'flex',
-          alignItems: 'center',
-          padding: '0 32px',
-          gap: 24,
-          position: 'sticky',
-          top: 0,
-          zIndex: 50,
-        }}
-      >
-        <Link href="/" className="dj-logo">
-          <span className="mark">단</span>
-          <span>단지온도</span>
-        </Link>
-        <span style={{ font: '600 14px/1 var(--font-sans)', color: 'var(--fg-sec)' }}>
-          관리자 · 공인중개사
-        </span>
-      </header>
-
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 32px' }}>
+    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 32px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <h1
             style={{
@@ -193,6 +163,5 @@ export default async function AdminRealtorsPage() {
           </div>
         )}
       </div>
-    </div>
   )
 }

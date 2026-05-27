@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { CardnewsDownloadButton } from '@/components/admin/CardnewsDownloadButton'
 import { AdminCardnewsCopyButton } from '@/components/admin/AdminCardnewsCopyButton'
@@ -66,45 +65,7 @@ export default async function AdminCardnewsPage() {
   ].join('\n').slice(0, 500)
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: 'var(--bg-canvas)',
-        fontFamily: 'var(--font-sans)',
-      }}
-    >
-      <header
-        style={{
-          height: 60,
-          background: '#fff',
-          borderBottom: '1px solid var(--line-default)',
-          display: 'flex',
-          alignItems: 'center',
-          padding: '0 32px',
-          gap: 24,
-          position: 'sticky',
-          top: 0,
-          zIndex: 50,
-        }}
-      >
-        <Link href="/" className="dj-logo">
-          <span className="mark">단</span>
-          <span>단지온도</span>
-        </Link>
-        <nav aria-label="관리자 메뉴" style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-          <Link
-            href="/admin/ads"
-            style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--fg-sec)', textDecoration: 'none' }}
-          >
-            광고 관리
-          </Link>
-          <span style={{ font: '600 14px/1 var(--font-sans)', color: 'var(--fg-sec)' }}>
-            카드뉴스
-          </span>
-        </nav>
-      </header>
-
-      <div style={{ maxWidth: 600, margin: '0 auto', padding: '40px 32px' }}>
+    <div style={{ maxWidth: 600, margin: '0 auto', padding: '40px 32px' }}>
         <h1
           style={{
             font: '700 22px/1.3 var(--font-sans)',
@@ -152,6 +113,5 @@ export default async function AdminCardnewsPage() {
           </div>
         </div>
       </div>
-    </div>
   )
 }

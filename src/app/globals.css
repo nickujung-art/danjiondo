@@ -345,3 +345,29 @@ body {
 .complex-list-item:hover > div {
   background: var(--bg-surface-2);
 }
+
+/* ─── Admin layout — sidebar responsive ─── */
+.admin-sidebar {
+  display: flex;
+  flex-direction: column;
+}
+.admin-mobile-header {
+  display: none;
+}
+@media (max-width: 768px) {
+  .admin-sidebar {
+    display: none;
+  }
+  .admin-mobile-header {
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    height: 60px;
+    background: #fff;
+    border-bottom: 1px solid var(--line-default);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+}
