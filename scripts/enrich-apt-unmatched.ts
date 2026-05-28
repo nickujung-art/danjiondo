@@ -8,6 +8,9 @@
  *   npx tsx --env-file=.env.local scripts/enrich-apt-unmatched.ts --skip-bldrgst
  *   npx tsx --env-file=.env.local scripts/enrich-apt-unmatched.ts --bldrgst-only
  *     → 좌표 있는 단지(lat IS NOT NULL, floors_above IS NULL)에 건축물대장만 적용
+ *   npx tsx --env-file=.env.local scripts/enrich-apt-unmatched.ts --household-zero
+ *     → household_count=0 또는 NULL이고 좌표 있는 단지에 건축물대장으로 세대수 보강
+ *     → 좌표 범위 필터(창원/김해 bbox) 자동 적용으로 오좌표 단지 제외
  *
  * 필요 환경변수: MOLIT_API_KEY, KAKAO_REST_API_KEY,
  *               NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
@@ -25,12 +28,16 @@ import { fetchBldTitleInfo } from '../src/services/bld-rgst'
 
 loadEnvConfig(process.cwd(), true)
 
-const args         = process.argv.slice(2)
-const DRY_RUN      = args.includes('--dry-run')
-const SKIP_BLD     = args.includes('--skip-bldrgst')
-const BLDRGST_ONLY = args.includes('--bldrgst-only')  // 좌표 있는 단지에 건축물대장만
-const RETRY_MODE   = args.includes('--retry')          // 좌표 없는 단지 재시도: 거래 umd_nm(동명) 활용
-const TARGET_ID    = args.find(a => a.startsWith('--id='))?.split('=')[1]
+const args           = process.argv.slice(2)
+const DRY_RUN        = args.includes('--dry-run')
+const SKIP_BLD       = args.includes('--skip-bldrgst')
+const BLDRGST_ONLY   = args.includes('--bldrgst-only')   // 좌표 있는 단지에 건축물대장만
+const RETRY_MODE     = args.includes('--retry')           // 좌표 없는 단지 재시도: 거래 umd_nm(동명) 활용
+const HOUSEHOLD_ZERO = args.includes('--household-zero')  // household_count=0|null 단지에 건축물대장으로 세대수 보강
+const TARGET_ID      = args.find(a => a.startsWith('--id='))?.split('=')[1]
+
+// 창원/김해 bbox (오좌표 단지 제외용)
+const BBOX = { minLat: 34.8, maxLat: 35.7, minLng: 128.2, maxLng: 129.1 }
 
 if (!process.env.KAKAO_REST_API_KEY)          { console.error('❌ KAKAO_REST_API_KEY 없음');           process.exit(1) }
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL)    { console.error('❌ NEXT_PUBLIC_SUPABASE_URL 없음');     process.exit(1) }
@@ -170,7 +177,7 @@ async function fetchUmdNmMap(ids: string[]): Promise<Map<string, string>> {
 
 // ── main ──────────────────────────────────────────────────────────
 async function main() {
-  const modeLabel = BLDRGST_ONLY ? ' [건축물대장-only]' : RETRY_MODE ? ' [retry+동명]' : SKIP_BLD ? ' [건축물대장 생략]' : ''
+  const modeLabel = HOUSEHOLD_ZERO ? ' [세대수-zero]' : BLDRGST_ONLY ? ' [건축물대장-only]' : RETRY_MODE ? ' [retry+동명]' : SKIP_BLD ? ' [건축물대장 생략]' : ''
   console.log(`🏠 아파트 단지 보강 시작${DRY_RUN ? ' [DRY-RUN]' : ''}${modeLabel}`)
 
   let query = supabase
@@ -180,6 +187,13 @@ async function main() {
 
   if (TARGET_ID) {
     query = query.eq('id', TARGET_ID)
+  } else if (HOUSEHOLD_ZERO) {
+    // household_count=0 또는 null + 좌표 있는 단지 (bbox로 오좌표 제외)
+    query = query
+      .not('lat', 'is', null)
+      .or('household_count.eq.0,household_count.is.null')
+      .gte('lat', BBOX.minLat).lte('lat', BBOX.maxLat)
+      .gte('lng', BBOX.minLng).lte('lng', BBOX.maxLng)
   } else if (BLDRGST_ONLY) {
     // 좌표 있고 층수 없는 단지 → 건축물대장만
     query = query.not('lat', 'is', null).is('floors_above', null)
@@ -215,7 +229,7 @@ async function main() {
       let lng: number
       const complexUpdate: Record<string, unknown> = {}
 
-      if (BLDRGST_ONLY) {
+      if (BLDRGST_ONLY || HOUSEHOLD_ZERO) {
         // ── 기존 좌표 사용 ────────────────────────────────────────
         lat = c.lat as number
         lng = c.lng as number
@@ -258,7 +272,7 @@ async function main() {
       await new Promise(r => setTimeout(r, 100))
       const addrResult = await kakaoCoordToAddr(lat, lng)
 
-      if (!BLDRGST_ONLY && addrResult) {
+      if (!BLDRGST_ONLY && !HOUSEHOLD_ZERO && addrResult) {
         complexUpdate.dong = addrResult.dong
       }
 
@@ -269,22 +283,25 @@ async function main() {
         const items = await fetchBldTitleInfo(bldParams)
 
         if (items.length > 0) {
-          const item = items.reduce((best, cur) =>
+          // 대표 동: grndFlrCnt/builtYear 기준 (hhldCnt 최대인 동)
+          const bestItem = items.reduce((best, cur) =>
             (cur.hhldCnt ?? 0) > (best.hhldCnt ?? 0) ? cur : best,
           items[0]!)
+          // 세대수는 모든 동의 합산 (다동 단지 대응)
+          const totalHhldCnt = items.reduce((sum, cur) => sum + (cur.hhldCnt ?? 0), 0)
 
-          const builtYear = item.useAprDay ? parseInt(item.useAprDay.slice(0, 4), 10) : null
+          const builtYear = bestItem.useAprDay ? parseInt(bestItem.useAprDay.slice(0, 4), 10) : null
 
-          // 건축물대장 hhldCnt = 동당 세대수. K-apt kaptdaCnt(총세대수)가 있으면 쓰지 않음
-          if (item.hhldCnt != null && !c.household_count)
-            complexUpdate.household_count = item.hhldCnt
-          if (item.grndFlrCnt != null) complexUpdate.floors_above   = item.grndFlrCnt
-          if (item.ugrndFlrCnt != null) complexUpdate.floors_below  = item.ugrndFlrCnt
+          // household_count: 건축물대장 합산값이 0보다 클 때만 업데이트
+          if (totalHhldCnt > 0 && !c.household_count)
+            complexUpdate.household_count = totalHhldCnt
+          if (bestItem.grndFlrCnt != null) complexUpdate.floors_above   = bestItem.grndFlrCnt
+          if (bestItem.ugrndFlrCnt != null) complexUpdate.floors_below  = bestItem.ugrndFlrCnt
           if (builtYear && !isNaN(builtYear)) complexUpdate.built_year = builtYear
 
           bldSuccess++
           console.log(
-            `\n  ✅ ${c.canonical_name} — 세대:${item.hhldCnt ?? '-'}, 지상:${item.grndFlrCnt ?? '-'}F, 준공:${builtYear ?? '-'}`,
+            `\n  ✅ ${c.canonical_name} — 세대:${totalHhldCnt > 0 ? totalHhldCnt : '-'}, 지상:${bestItem.grndFlrCnt ?? '-'}F, 준공:${builtYear ?? '-'}`,
           )
         } else {
           console.log(`\n  📍 ${c.canonical_name} — 좌표만 (건축물대장 없음)`)

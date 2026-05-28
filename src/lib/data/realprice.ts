@@ -47,6 +47,7 @@ interface TransactionInsert {
   raw_complex_name: string
   raw_region_code?: string
   umd_nm?:          string | null
+  jibun?:           string | null
   cancel_date?:     string | null
   source_run_id?:   string
   dedupe_key:       string
@@ -168,6 +169,7 @@ export async function ingestMonth(
         raw_complex_name: item.aptNm,
         raw_region_code:  sggCode,
         umd_nm:           item.umdNm ?? null,
+        jibun:            item.jibun?.trim() || null,
         cancel_date:      cancelDate,
         source_run_id:    runId,
         complex_id:       complexId ?? null,  // DATA-10 추가
@@ -215,6 +217,7 @@ export async function ingestMonth(
         raw_complex_name: item.aptNm,
         raw_region_code:  sggCode,
         umd_nm:           item.umdNm ?? null,
+        jibun:            item.jibun?.trim() || null,
         source_run_id:    runId,
         complex_id:       complexId ?? null,  // DATA-10 추가
         dedupe_key:       makeDedupeKey({
@@ -353,6 +356,7 @@ export async function ingestMonthVilla(
         raw_complex_name: item.mhouseNm,
         raw_region_code:  sggCode,
         umd_nm:           item.umdNm ?? null,
+        jibun:            item.jibun?.trim() || null,
         cancel_date:      cancelDate,
         source_run_id:    runId,
         complex_id:       complexId ?? null,
@@ -398,6 +402,7 @@ export async function ingestMonthVilla(
         raw_complex_name: item.mhouseNm,
         raw_region_code:  sggCode,
         umd_nm:           item.umdNm ?? null,
+        jibun:            item.jibun?.trim() || null,
         source_run_id:    runId,
         complex_id:       complexId ?? null,
         dedupe_key:       makeDedupeKey({
