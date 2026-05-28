@@ -17,9 +17,10 @@ import path from 'path'
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
 
 import { createClient } from '@supabase/supabase-js'
+import type { Database } from '../src/types/database'
 import { ingestMonth, ingestMonthVilla } from '../src/lib/data/realprice'
 
-const supabase = createClient(
+const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
   { auth: { autoRefreshToken: false, persistSession: false } },
@@ -53,7 +54,7 @@ async function getCompletedRuns(sggCode: string): Promise<Set<string>> {
     .eq('source_id', 'molit_trade')
     .eq('sgg_code', sggCode)
     .eq('status', 'success')
-  return new Set((data ?? []).map((r: { year_month: string }) => r.year_month))
+  return new Set((data ?? []).flatMap(r => r.year_month ? [r.year_month] : []))
 }
 
 async function getCompletedVillaRuns(sggCode: string): Promise<Set<string>> {
@@ -63,7 +64,7 @@ async function getCompletedVillaRuns(sggCode: string): Promise<Set<string>> {
     .eq('source_id', 'molit_villa_trade')
     .eq('sgg_code', sggCode)
     .eq('status', 'success')
-  return new Set((data ?? []).map((r: { year_month: string }) => r.year_month))
+  return new Set((data ?? []).flatMap(r => r.year_month ? [r.year_month] : []))
 }
 
 async function getSggCodes(): Promise<string[]> {
@@ -108,6 +109,7 @@ async function main() {
   let done = 0
   let skipped = 0
   let totalUpserted = 0
+  let failures = 0
 
   for (const sggCode of sggCodes) {
     if (useApt) {
@@ -130,6 +132,7 @@ async function main() {
           }
         } catch (err) {
           console.error(`\n  ❌ apt ${sggCode} ${ym}: ${String(err)}`)
+          failures++
         }
 
         done++
@@ -159,6 +162,7 @@ async function main() {
           }
         } catch (err) {
           console.error(`\n  ❌ villa ${sggCode} ${ym}: ${String(err)}`)
+          failures++
         }
 
         done++
@@ -170,6 +174,21 @@ async function main() {
   }
 
   console.log(`\n\n✅ 완료: ${done}건 처리 (${skipped}건 skip), ${totalUpserted}건 upsert`)
+
+  const syncedAt = new Date().toISOString()
+  const finalStatus = failures === 0 ? 'success' : 'partial'
+  const baseUpdate = { last_synced_at: syncedAt, last_status: finalStatus }
+  const successUpdate = { ...baseUpdate, consecutive_failures: 0 }
+  if (useApt) {
+    await supabase.from('data_sources')
+      .update(failures === 0 ? successUpdate : baseUpdate)
+      .eq('id', 'molit_trade')
+  }
+  if (useVilla) {
+    await supabase.from('data_sources')
+      .update(failures === 0 ? successUpdate : baseUpdate)
+      .eq('id', 'molit_villa_trade')
+  }
 }
 
 main().catch((err: unknown) => {

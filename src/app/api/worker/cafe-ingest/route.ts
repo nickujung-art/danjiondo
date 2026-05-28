@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { searchCafePosts, extractComplexNames } from '@/services/naver-cafe'
 import { ingestCafePost } from '@/lib/data/cafe-posts'
+import { markCronStatus } from '@/lib/data/cron-status'
 
 export const runtime = 'nodejs'
 
@@ -66,6 +67,8 @@ export async function POST(req: Request) {
       failed++
     }
   }
+
+  await markCronStatus(supabase, 'cafe-articles', failed === 0 ? 'success' : 'partial')
 
   return NextResponse.json({ ingested, failed })
 }

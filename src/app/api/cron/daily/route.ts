@@ -1,4 +1,5 @@
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
+import { markCronStatus } from '@/lib/data/cron-status'
 import { fetchKaptBasicInfo } from '@/services/kapt'
 import {
   fetchPresaleTrades,
@@ -245,6 +246,8 @@ export async function GET(request: Request): Promise<Response> {
   } catch (err) {
     errors.push(`refresh_complex_price_stats: ${err instanceof Error ? err.message : String(err)}`)
   }
+
+  await markCronStatus(supabase, 'daily-batch', errors.length === 0 ? 'success' : 'partial')
 
   return Response.json({
     ok: errors.length === 0,

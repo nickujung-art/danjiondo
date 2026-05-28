@@ -1,5 +1,6 @@
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { computeRankings } from '@/lib/data/rankings'
+import { markCronSuccess, markCronFailed } from '@/lib/data/cron-status'
 
 export const runtime = 'nodejs'
 
@@ -48,6 +49,8 @@ export async function GET(request: Request): Promise<Response> {
         .eq('id', runId)
     }
 
+    await markCronSuccess(supabase, 'rankings')
+
     return Response.json({
       ok: true,
       results,
@@ -67,6 +70,8 @@ export async function GET(request: Request): Promise<Response> {
         })
         .eq('id', runId)
     }
+
+    await markCronFailed(supabase, 'rankings')
 
     console.error('computeRankings failed:', err)
     return Response.json(

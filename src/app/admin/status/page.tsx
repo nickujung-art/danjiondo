@@ -6,10 +6,14 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 export const revalidate = 0
 export const metadata: Metadata = { title: '관리자 · 시스템 상태' }
 
-interface RunRow {
-  source_id: string
-  status: string
-  started_at: string
+interface DataSourceRow {
+  id: string
+  ui_label: string | null
+  cadence: string
+  expected_freshness_hours: number
+  last_synced_at: string | null
+  last_status: string | null
+  consecutive_failures: number
 }
 
 function formatDateTime(s: string) {
@@ -19,6 +23,26 @@ function formatDateTime(s: string) {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+function formatElapsed(s: string): string {
+  const diff = Date.now() - new Date(s).getTime()
+  const mins  = Math.floor(diff / 60_000)
+  const hours = Math.floor(mins / 60)
+  const days  = Math.floor(hours / 24)
+  if (days > 0)  return `${days}일 전`
+  if (hours > 0) return `${hours}시간 전`
+  if (mins > 0)  return `${mins}분 전`
+  return '방금 전'
+}
+
+function cronBadge(row: DataSourceRow): { label: string; bg: string } {
+  if (!row.last_synced_at) return { label: '미실행', bg: '#6b7280' }
+  const elapsedHours = (Date.now() - new Date(row.last_synced_at).getTime()) / 3_600_000
+  if (row.last_status === 'failed') return { label: '실패', bg: '#dc2626' }
+  if (elapsedHours > row.expected_freshness_hours * 1.5) return { label: '지연', bg: '#d97706' }
+  if (row.last_status === 'partial') return { label: '부분성공', bg: '#d97706' }
+  return { label: '정상', bg: '#16a34a' }
 }
 
 // 이번 주 월요일 날짜 반환 (YYYY-MM-DD, 로컬 시간 기준)
@@ -54,7 +78,7 @@ export default async function AdminStatusPage() {
     complexRes,
     txRes,
     activeAdRes,
-    runsRes,
+    dataSourcesRes,
     pendingReportRes,
     pendingAdRes,
     noConsentRes,
@@ -72,10 +96,10 @@ export default async function AdminStatusPage() {
       .select('*', { count: 'exact', head: true })
       .eq('status', 'approved'),
     adminClient
-      .from('ingest_runs')
-      .select('source_id, status, started_at')
-      .order('started_at', { ascending: false })
-      .limit(10),
+      .from('data_sources')
+      .select('id, ui_label, cadence, expected_freshness_hours, last_synced_at, last_status, consecutive_failures')
+      .order('cadence')
+      .order('id'),
     adminClient
       .from('reports')
       .select('*', { count: 'exact', head: true })
@@ -95,7 +119,7 @@ export default async function AdminStatusPage() {
       .single(),
   ])
 
-  const runs = (runsRes.data ?? []) as unknown as RunRow[]
+  const dataSources = (dataSourcesRes.data ?? []) as unknown as DataSourceRow[]
   const cafeCode = cafeCodeRes.data
 
   const dbStats = [
@@ -213,102 +237,72 @@ export default async function AdminStatusPage() {
             id="cron-heading"
             style={{ font: '700 14px/1.4 var(--font-sans)', margin: '0 0 12px' }}
           >
-            Cron 실행 이력 (최근 10건)
+            Cron / 배치 현황
           </h2>
-          {runs.length === 0 ? (
-            <div
-              className="card"
-              style={{
-                padding: 16,
-                font: '500 13px/1.4 var(--font-sans)',
-                color: 'var(--fg-tertiary)',
-              }}
-            >
-              실행 이력이 없습니다.
-            </div>
-          ) : (
-            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr
-                    style={{
-                      borderBottom: '1px solid var(--line-default)',
-                      background: 'var(--bg-surface-2)',
-                    }}
-                  >
-                    {['일시', '소스', '상태'].map(h => (
-                      <th
-                        key={h}
-                        scope="col"
-                        style={{
-                          padding: '10px 16px',
-                          font: '600 12px/1 var(--font-sans)',
-                          color: 'var(--fg-sec)',
-                          textAlign: 'left',
-                        }}
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {runs.map((r, i) => (
-                    <tr
-                      key={`${r.source_id}_${r.started_at}_${i}`}
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--line-default)', background: 'var(--bg-surface-2)' }}>
+                  {['작업', '마지막 실행', '경과', '상태', '연속실패'].map(h => (
+                    <th
+                      key={h}
+                      scope="col"
                       style={{
-                        borderBottom:
-                          i < runs.length - 1 ? '1px solid var(--line-subtle)' : 'none',
+                        padding: '10px 16px',
+                        font: '600 12px/1 var(--font-sans)',
+                        color: 'var(--fg-sec)',
+                        textAlign: 'left',
+                        whiteSpace: 'nowrap',
                       }}
                     >
-                      <td
-                        style={{
-                          padding: '10px 16px',
-                          font: '500 12px/1.4 var(--font-sans)',
-                          color: 'var(--fg-tertiary)',
-                        }}
-                      >
-                        {formatDateTime(r.started_at)}
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {dataSources.map((row, i) => {
+                  const badge = cronBadge(row)
+                  return (
+                    <tr
+                      key={row.id}
+                      style={{ borderBottom: i < dataSources.length - 1 ? '1px solid var(--line-subtle)' : 'none' }}
+                    >
+                      <td style={{ padding: '10px 16px' }}>
+                        <div style={{ font: '500 13px/1.3 var(--font-sans)' }}>
+                          {row.ui_label ?? row.id}
+                        </div>
+                        <div style={{ font: '400 11px/1.3 var(--font-mono)', color: 'var(--fg-tertiary)', marginTop: 2 }}>
+                          {row.id}
+                        </div>
                       </td>
-                      <td
-                        style={{
-                          padding: '10px 16px',
-                          font: '400 11px/1.4 var(--font-mono)',
-                          color: 'var(--fg-tertiary)',
-                          maxWidth: 200,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                        title={r.source_id}
-                      >
-                        {r.source_id}
+                      <td style={{ padding: '10px 16px', font: '500 12px/1.4 var(--font-sans)', color: 'var(--fg-sec)', whiteSpace: 'nowrap' }}>
+                        {row.last_synced_at ? formatDateTime(row.last_synced_at) : '—'}
+                      </td>
+                      <td style={{ padding: '10px 16px', font: '500 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', whiteSpace: 'nowrap' }}>
+                        {row.last_synced_at ? formatElapsed(row.last_synced_at) : '—'}
                       </td>
                       <td style={{ padding: '10px 16px' }}>
-                        <span
-                          style={{
-                            display: 'inline-block',
-                            padding: '3px 8px',
-                            borderRadius: 4,
-                            font: '600 11px/1 var(--font-sans)',
-                            color: '#fff',
-                            background:
-                              r.status === 'success'
-                                ? '#16a34a'
-                                : r.status === 'failed'
-                                  ? '#dc2626'
-                                  : '#6b7280',
-                          }}
-                        >
-                          {r.status}
+                        <span style={{
+                          display: 'inline-block',
+                          padding: '3px 8px',
+                          borderRadius: 4,
+                          font: '600 11px/1 var(--font-sans)',
+                          color: '#fff',
+                          background: badge.bg,
+                        }}>
+                          {badge.label}
                         </span>
                       </td>
+                      <td style={{ padding: '10px 16px', font: '500 12px/1 var(--font-sans)', color: row.consecutive_failures > 0 ? '#dc2626' : 'var(--fg-tertiary)' }}>
+                        {row.consecutive_failures > 0 ? `${row.consecutive_failures}회` : '—'}
+                      </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </section>
 
         <section aria-labelledby="queue-heading" style={{ marginBottom: 24 }}>
