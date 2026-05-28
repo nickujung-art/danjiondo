@@ -26,6 +26,9 @@ import { getCafeArticlesByComplex } from '@/lib/data/cafe-articles'
 import type { CafeArticleRecord } from '@/lib/data/cafe-articles'
 import { getManagementCostMonthly } from '@/lib/data/management-cost'
 import { ManagementCostCard } from '@/components/complex/ManagementCostCard'
+import { getComplexGapStats } from '@/lib/data/gap-analysis'
+import type { ComplexGapStatsResult } from '@/lib/data/gap-analysis'
+import { GapAnalysisCard } from '@/components/complex/GapAnalysisCard'
 import { getComplexFacilityEdu } from '@/lib/data/facility-edu'
 import { EducationCard } from '@/components/complex/EducationCard'
 import { formatParkingPerUnit, formatElevatorPerBuilding } from '@/lib/utils/facility-format'
@@ -218,6 +221,7 @@ export default async function ComplexDetailPage({ params }: Props) {
     facilityEdu,
     rawSaleData,
     rawJeonseData,
+    gapStats,
   ] = await Promise.all([
     getComplexTransactionSummary(id, 'sale', supabase),
     getRealtorsByComplexId(id, supabase),
@@ -267,6 +271,8 @@ export default async function ComplexDetailPage({ params }: Props) {
     // raw 거래 데이터 (IQR + 평형 칩 클라이언트 슬라이스용)
     getComplexRawTransactions(id, 'sale', supabase).catch(() => []),
     getComplexRawTransactions(id, 'jeonse', supabase).catch(() => []),
+    // 갭투자 분석 (데이터 없으면 null — D-01)
+    getComplexGapStats(id, supabase).catch(() => null),
   ])
 
   const facilityKapt = facilityKaptResult?.data ?? null
@@ -691,6 +697,9 @@ export default async function ComplexDetailPage({ params }: Props) {
               </p>
             )}
           </div>
+
+          {/* 갭투자 분석 (D-01: 단지 상세 카드) */}
+          <GapAnalysisCard data={gapStats as ComplexGapStatsResult | null} />
 
           {/* 관리비 */}
           <ManagementCostCard
