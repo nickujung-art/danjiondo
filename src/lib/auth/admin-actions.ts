@@ -32,9 +32,7 @@ export async function suspendMember(memberId: string): Promise<{ error: string |
   const { error, admin } = await requireAdmin()
   if (error || !admin) return { error: error! }
 
-  // profiles.suspended_at은 Phase 3 마이그레이션 추가 컬럼 — database.ts 재생성 전까지 any 캐스트
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: dbErr } = await (admin as any)
+  const { error: dbErr } = await admin
     .from('profiles')
     .update({ suspended_at: new Date().toISOString() })
     .eq('id', memberId)
@@ -49,8 +47,7 @@ export async function reactivateMember(memberId: string): Promise<{ error: strin
   const { error, admin } = await requireAdmin()
   if (error || !admin) return { error: error! }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: dbErr } = await (admin as any)
+  const { error: dbErr } = await admin
     .from('profiles')
     .update({ suspended_at: null })
     .eq('id', memberId)
@@ -72,9 +69,7 @@ export async function resolveReport(
   const { error, admin, userId } = await requireAdmin()
   if (error || !admin || !userId) return { error: error! }
 
-  // reports 테이블은 Phase 3 마이그레이션으로 추가됨 — database.ts 재생성 전까지 any 캐스트
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: dbErr } = await (admin as any)
+  const { error: dbErr } = await admin
     .from('reports')
     .update({
       status: action,

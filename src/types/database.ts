@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -7,33 +7,45 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          created_at: string
+          id: string
+          points: number
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          points: number
+          reason: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          points?: number
+          reason?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ad_campaigns: {
         Row: {
           advertiser_id: string | null
@@ -226,6 +238,50 @@ export type Database = {
           },
         ]
       }
+      cafe_articles: {
+        Row: {
+          article_url: string
+          cafe_name: string | null
+          complex_id: string
+          description: string | null
+          fetched_at: string
+          id: string
+          naver_article_id: string
+          published_at: string | null
+          title: string
+        }
+        Insert: {
+          article_url: string
+          cafe_name?: string | null
+          complex_id: string
+          description?: string | null
+          fetched_at?: string
+          id?: string
+          naver_article_id: string
+          published_at?: string | null
+          title: string
+        }
+        Update: {
+          article_url?: string
+          cafe_name?: string | null
+          complex_id?: string
+          description?: string | null
+          fetched_at?: string
+          id?: string
+          naver_article_id?: string
+          published_at?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cafe_articles_complex_id_fkey"
+            columns: ["complex_id"]
+            isOneToOne: false
+            referencedRelation: "complexes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cafe_join_codes: {
         Row: {
           code: string
@@ -246,6 +302,53 @@ export type Database = {
           week_start?: string
         }
         Relationships: []
+      }
+      cafe_posts: {
+        Row: {
+          cafe_name: string | null
+          complex_id: string | null
+          confidence: number | null
+          excerpt: string | null
+          id: string
+          is_verified: boolean
+          matched_at: string
+          posted_at: string | null
+          title: string
+          url: string
+        }
+        Insert: {
+          cafe_name?: string | null
+          complex_id?: string | null
+          confidence?: number | null
+          excerpt?: string | null
+          id?: string
+          is_verified?: boolean
+          matched_at?: string
+          posted_at?: string | null
+          title: string
+          url: string
+        }
+        Update: {
+          cafe_name?: string | null
+          complex_id?: string | null
+          confidence?: number | null
+          excerpt?: string | null
+          id?: string
+          is_verified?: boolean
+          matched_at?: string
+          posted_at?: string | null
+          title?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cafe_posts_complex_id_fkey"
+            columns: ["complex_id"]
+            isOneToOne: false
+            referencedRelation: "complexes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       comments: {
         Row: {
@@ -327,6 +430,41 @@ export type Database = {
           },
         ]
       }
+      complex_embeddings: {
+        Row: {
+          chunk_type: string
+          complex_id: string
+          content: string
+          embedding: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          chunk_type: string
+          complex_id: string
+          content: string
+          embedding?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          chunk_type?: string
+          complex_id?: string
+          content?: string
+          embedding?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complex_embeddings_complex_id_fkey"
+            columns: ["complex_id"]
+            isOneToOne: false
+            referencedRelation: "complexes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       complex_match_queue: {
         Row: {
           candidate_ids: string[] | null
@@ -382,6 +520,7 @@ export type Database = {
           complex_id: string
           computed_at: string
           id: string
+          metadata: Json | null
           rank: number
           rank_type: string
           score: number
@@ -391,6 +530,7 @@ export type Database = {
           complex_id: string
           computed_at?: string
           id?: string
+          metadata?: Json | null
           rank: number
           rank_type: string
           score: number
@@ -400,6 +540,7 @@ export type Database = {
           complex_id?: string
           computed_at?: string
           id?: string
+          metadata?: Json | null
           rank?: number
           rank_type?: string
           score?: number
@@ -465,6 +606,8 @@ export type Database = {
       }
       complexes: {
         Row: {
+          avg_sale_per_pyeong: number | null
+          building_type: string
           built_year: number | null
           canonical_name: string
           created_at: string
@@ -474,9 +617,11 @@ export type Database = {
           floors_below: number | null
           geocoding_accuracy: number | null
           gu: string | null
+          hagwon_score: number | null
           heat_type: string | null
           household_count: number | null
           id: string
+          is_new_record_30d: boolean
           jibun_address: string | null
           kapt_code: string | null
           lat: number | null
@@ -485,14 +630,19 @@ export type Database = {
           molit_complex_code: string | null
           name_normalized: string
           predecessor_id: string | null
+          price_change_30d: number | null
           road_address: string | null
           sgg_code: string
           si: string | null
           status: Database["public"]["Enums"]["complex_status"]
           successor_id: string | null
+          tx_count_30d: number
           updated_at: string
+          view_count: number
         }
         Insert: {
+          avg_sale_per_pyeong?: number | null
+          building_type?: string
           built_year?: number | null
           canonical_name: string
           created_at?: string
@@ -502,9 +652,11 @@ export type Database = {
           floors_below?: number | null
           geocoding_accuracy?: number | null
           gu?: string | null
+          hagwon_score?: number | null
           heat_type?: string | null
           household_count?: number | null
           id?: string
+          is_new_record_30d?: boolean
           jibun_address?: string | null
           kapt_code?: string | null
           lat?: number | null
@@ -513,14 +665,19 @@ export type Database = {
           molit_complex_code?: string | null
           name_normalized: string
           predecessor_id?: string | null
+          price_change_30d?: number | null
           road_address?: string | null
           sgg_code: string
           si?: string | null
           status?: Database["public"]["Enums"]["complex_status"]
           successor_id?: string | null
+          tx_count_30d?: number
           updated_at?: string
+          view_count?: number
         }
         Update: {
+          avg_sale_per_pyeong?: number | null
+          building_type?: string
           built_year?: number | null
           canonical_name?: string
           created_at?: string
@@ -530,9 +687,11 @@ export type Database = {
           floors_below?: number | null
           geocoding_accuracy?: number | null
           gu?: string | null
+          hagwon_score?: number | null
           heat_type?: string | null
           household_count?: number | null
           id?: string
+          is_new_record_30d?: boolean
           jibun_address?: string | null
           kapt_code?: string | null
           lat?: number | null
@@ -541,12 +700,15 @@ export type Database = {
           molit_complex_code?: string | null
           name_normalized?: string
           predecessor_id?: string | null
+          price_change_30d?: number | null
           road_address?: string | null
           sgg_code?: string
           si?: string | null
           status?: Database["public"]["Enums"]["complex_status"]
           successor_id?: string | null
+          tx_count_30d?: number
           updated_at?: string
+          view_count?: number
         }
         Relationships: [
           {
@@ -595,8 +757,69 @@ export type Database = {
         }
         Relationships: []
       }
+      district_stats: {
+        Row: {
+          adm_cd: string
+          adm_nm: string
+          data_quarter: number
+          data_year: number
+          fetched_at: string
+          gu: string
+          households: number | null
+          id: string
+          pop_20s: number | null
+          pop_30s: number | null
+          pop_40s: number | null
+          pop_50s: number | null
+          pop_60plus: number | null
+          pop_under20: number | null
+          population: number | null
+          population_change: number | null
+          si: string
+        }
+        Insert: {
+          adm_cd: string
+          adm_nm: string
+          data_quarter: number
+          data_year: number
+          fetched_at?: string
+          gu: string
+          households?: number | null
+          id?: string
+          pop_20s?: number | null
+          pop_30s?: number | null
+          pop_40s?: number | null
+          pop_50s?: number | null
+          pop_60plus?: number | null
+          pop_under20?: number | null
+          population?: number | null
+          population_change?: number | null
+          si: string
+        }
+        Update: {
+          adm_cd?: string
+          adm_nm?: string
+          data_quarter?: number
+          data_year?: number
+          fetched_at?: string
+          gu?: string
+          households?: number | null
+          id?: string
+          pop_20s?: number | null
+          pop_30s?: number | null
+          pop_40s?: number | null
+          pop_50s?: number | null
+          pop_60plus?: number | null
+          pop_under20?: number | null
+          population?: number | null
+          population_change?: number | null
+          si?: string
+        }
+        Relationships: []
+      }
       facility_kapt: {
         Row: {
+          building_count: number | null
           complex_id: string
           created_at: string
           data_month: string | null
@@ -611,6 +834,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          building_count?: number | null
           complex_id: string
           created_at?: string
           data_month?: string | null
@@ -625,6 +849,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          building_count?: number | null
           complex_id?: string
           created_at?: string
           data_month?: string | null
@@ -775,6 +1000,106 @@ export type Database = {
           },
         ]
       }
+      gps_verification_requests: {
+        Row: {
+          complex_id: string
+          created_at: string
+          doc_type: string
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          complex_id: string
+          created_at?: string
+          doc_type: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          complex_id?: string
+          created_at?: string
+          doc_type?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gps_verification_requests_complex_id_fkey"
+            columns: ["complex_id"]
+            isOneToOne: false
+            referencedRelation: "complexes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gps_verification_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gps_verification_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gps_visits: {
+        Row: {
+          complex_id: string
+          id: string
+          lat: number | null
+          lng: number | null
+          user_id: string
+          verified_at: string
+        }
+        Insert: {
+          complex_id: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          user_id: string
+          verified_at?: string
+        }
+        Update: {
+          complex_id?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          user_id?: string
+          verified_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gps_visits_complex_id_fkey"
+            columns: ["complex_id"]
+            isOneToOne: false
+            referencedRelation: "complexes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gps_visits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ingest_runs: {
         Row: {
           completed_at: string | null
@@ -825,6 +1150,38 @@ export type Database = {
           },
         ]
       }
+      kakao_channel_subscriptions: {
+        Row: {
+          id: string
+          is_active: boolean
+          phone_number: string
+          subscribed_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          is_active?: boolean
+          phone_number: string
+          subscribed_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          is_active?: boolean
+          phone_number?: string
+          subscribed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kakao_channel_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listing_prices: {
         Row: {
           complex_id: string
@@ -870,104 +1227,172 @@ export type Database = {
           },
         ]
       }
-      district_stats: {
+      management_cost_monthly: {
         Row: {
+          cleaning_cost: number | null
+          common_cost_total: number | null
+          complex_id: string
+          consignment_fee: number | null
+          created_at: string
+          disinfection_cost: number | null
+          electricity_cost: number | null
+          elevator_cost: number | null
+          gas_cost: number | null
+          guard_cost: number | null
+          heating_cost: number | null
+          hot_water_cost: number | null
           id: string
-          adm_cd: string
-          adm_nm: string | null
-          si: string | null
-          gu: string | null
-          population: number | null
-          households: number | null
-          data_year: number
-          data_quarter: number
-          population_change: number | null
-          pop_under20: number | null
-          pop_20s: number | null
-          pop_30s: number | null
-          pop_40s: number | null
-          pop_50s: number | null
-          pop_60plus: number | null
-          fetched_at: string
+          individual_cost_total: number | null
+          kapt_code: string
+          labor_cost: number | null
+          long_term_repair_monthly: number | null
+          long_term_repair_total: number | null
+          network_cost: number | null
+          repair_cost: number | null
+          vehicle_cost: number | null
+          water_cost: number | null
+          year_month: string
         }
         Insert: {
+          cleaning_cost?: number | null
+          common_cost_total?: number | null
+          complex_id: string
+          consignment_fee?: number | null
+          created_at?: string
+          disinfection_cost?: number | null
+          electricity_cost?: number | null
+          elevator_cost?: number | null
+          gas_cost?: number | null
+          guard_cost?: number | null
+          heating_cost?: number | null
+          hot_water_cost?: number | null
           id?: string
-          adm_cd: string
-          adm_nm?: string | null
-          si?: string | null
-          gu?: string | null
-          population?: number | null
-          households?: number | null
-          data_year: number
-          data_quarter: number
-          population_change?: number | null
-          pop_under20?: number | null
-          pop_20s?: number | null
-          pop_30s?: number | null
-          pop_40s?: number | null
-          pop_50s?: number | null
-          pop_60plus?: number | null
-          fetched_at?: string
+          individual_cost_total?: number | null
+          kapt_code: string
+          labor_cost?: number | null
+          long_term_repair_monthly?: number | null
+          long_term_repair_total?: number | null
+          network_cost?: number | null
+          repair_cost?: number | null
+          vehicle_cost?: number | null
+          water_cost?: number | null
+          year_month: string
         }
         Update: {
+          cleaning_cost?: number | null
+          common_cost_total?: number | null
+          complex_id?: string
+          consignment_fee?: number | null
+          created_at?: string
+          disinfection_cost?: number | null
+          electricity_cost?: number | null
+          elevator_cost?: number | null
+          gas_cost?: number | null
+          guard_cost?: number | null
+          heating_cost?: number | null
+          hot_water_cost?: number | null
           id?: string
-          adm_cd?: string
-          adm_nm?: string | null
-          si?: string | null
-          gu?: string | null
-          population?: number | null
-          households?: number | null
-          data_year?: number
-          data_quarter?: number
-          population_change?: number | null
-          pop_under20?: number | null
-          pop_20s?: number | null
-          pop_30s?: number | null
-          pop_40s?: number | null
-          pop_50s?: number | null
-          pop_60plus?: number | null
-          fetched_at?: string
+          individual_cost_total?: number | null
+          kapt_code?: string
+          labor_cost?: number | null
+          long_term_repair_monthly?: number | null
+          long_term_repair_total?: number | null
+          network_cost?: number | null
+          repair_cost?: number | null
+          vehicle_cost?: number | null
+          water_cost?: number | null
+          year_month?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "management_cost_monthly_complex_id_fkey"
+            columns: ["complex_id"]
+            isOneToOne: false
+            referencedRelation: "complexes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       new_listings: {
         Row: {
+          competition_rate: number | null
           complex_id: string | null
           created_at: string
           fetched_at: string
+          hssply_adres: string | null
           id: string
+          is_active: boolean
+          lat: number | null
+          lng: number | null
           move_in_date: string | null
+          mvn_prearnge_ym: string | null
           name: string
+          pblanc_nm: string | null
+          pblanc_no: string | null
           price_max: number | null
           price_min: number | null
+          przwner_presnatn_de: string | null
+          rcept_bgnde: string | null
+          rcept_endde: string | null
           region: string
+          sgg_code: string | null
           source_code: string | null
+          supply_count: number | null
+          supply_region: string | null
           total_units: number | null
         }
         Insert: {
+          competition_rate?: number | null
           complex_id?: string | null
           created_at?: string
           fetched_at?: string
+          hssply_adres?: string | null
           id?: string
+          is_active?: boolean
+          lat?: number | null
+          lng?: number | null
           move_in_date?: string | null
+          mvn_prearnge_ym?: string | null
           name: string
+          pblanc_nm?: string | null
+          pblanc_no?: string | null
           price_max?: number | null
           price_min?: number | null
+          przwner_presnatn_de?: string | null
+          rcept_bgnde?: string | null
+          rcept_endde?: string | null
           region: string
+          sgg_code?: string | null
           source_code?: string | null
+          supply_count?: number | null
+          supply_region?: string | null
           total_units?: number | null
         }
         Update: {
+          competition_rate?: number | null
           complex_id?: string | null
           created_at?: string
           fetched_at?: string
+          hssply_adres?: string | null
           id?: string
+          is_active?: boolean
+          lat?: number | null
+          lng?: number | null
           move_in_date?: string | null
+          mvn_prearnge_ym?: string | null
           name?: string
+          pblanc_nm?: string | null
+          pblanc_no?: string | null
           price_max?: number | null
           price_min?: number | null
+          przwner_presnatn_de?: string | null
+          rcept_bgnde?: string | null
+          rcept_endde?: string | null
           region?: string
+          sgg_code?: string | null
           source_code?: string | null
+          supply_count?: number | null
+          supply_region?: string | null
           total_units?: number | null
         }
         Relationships: [
@@ -1116,107 +1541,16 @@ export type Database = {
           },
         ]
       }
-      gps_verification_requests: {
-        Row: {
-          complex_id: string
-          created_at: string
-          doc_type: string
-          id: string
-          reviewed_at: string | null
-          reviewed_by: string | null
-          status: string
-          storage_path: string
-          user_id: string
-        }
-        Insert: {
-          complex_id: string
-          created_at?: string
-          doc_type: string
-          id?: string
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string
-          storage_path: string
-          user_id: string
-        }
-        Update: {
-          complex_id?: string
-          created_at?: string
-          doc_type?: string
-          id?: string
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string
-          storage_path?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gps_verification_requests_complex_id_fkey"
-            columns: ["complex_id"]
-            isOneToOne: false
-            referencedRelation: "complexes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gps_verification_requests_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      gps_visits: {
-        Row: {
-          complex_id: string
-          id: string
-          lat: number | null
-          lng: number | null
-          user_id: string
-          verified_at: string
-        }
-        Insert: {
-          complex_id: string
-          id?: string
-          lat?: number | null
-          lng?: number | null
-          user_id: string
-          verified_at?: string
-        }
-        Update: {
-          complex_id?: string
-          id?: string
-          lat?: number | null
-          lng?: number | null
-          user_id?: string
-          verified_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gps_visits_complex_id_fkey"
-            columns: ["complex_id"]
-            isOneToOne: false
-            referencedRelation: "complexes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gps_visits_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       profiles: {
         Row: {
+          activity_points: number
           avatar_url: string | null
           cafe_nickname: string | null
           created_at: string
           deleted_at: string | null
           gps_badge_level: number
           id: string
+          member_tier: string
           nickname: string | null
           role: string
           signup_source: string | null
@@ -1225,12 +1559,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          activity_points?: number
           avatar_url?: string | null
           cafe_nickname?: string | null
           created_at?: string
           deleted_at?: string | null
           gps_badge_level?: number
           id: string
+          member_tier?: string
           nickname?: string | null
           role?: string
           signup_source?: string | null
@@ -1239,12 +1575,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          activity_points?: number
           avatar_url?: string | null
           cafe_nickname?: string | null
           created_at?: string
           deleted_at?: string | null
           gps_badge_level?: number
           id?: string
+          member_tier?: string
           nickname?: string | null
           role?: string
           signup_source?: string | null
@@ -1288,6 +1626,84 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      realtor_assignments: {
+        Row: {
+          complex_id: string
+          created_at: string
+          display_order: number
+          id: string
+          realtor_id: string
+        }
+        Insert: {
+          complex_id: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          realtor_id: string
+        }
+        Update: {
+          complex_id?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          realtor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "realtor_assignments_complex_id_fkey"
+            columns: ["complex_id"]
+            isOneToOne: false
+            referencedRelation: "complexes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "realtor_assignments_realtor_id_fkey"
+            columns: ["realtor_id"]
+            isOneToOne: false
+            referencedRelation: "realtors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      realtors: {
+        Row: {
+          agency_name: string
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          license_no: string | null
+          name: string
+          phone: string
+          updated_at: string
+        }
+        Insert: {
+          agency_name: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          license_no?: string | null
+          name: string
+          phone: string
+          updated_at?: string
+        }
+        Update: {
+          agency_name?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          license_no?: string | null
+          name?: string
+          phone?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       redevelopment_projects: {
         Row: {
@@ -1415,6 +1831,59 @@ export type Database = {
           },
         ]
       }
+      school_district_schools: {
+        Row: {
+          district_id: string
+          school_level: string
+          school_name: string
+        }
+        Insert: {
+          district_id: string
+          school_level: string
+          school_name: string
+        }
+        Update: {
+          district_id?: string
+          school_level?: string
+          school_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_district_schools_district_id_fkey"
+            columns: ["district_id"]
+            isOneToOne: false
+            referencedRelation: "school_districts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      school_districts: {
+        Row: {
+          created_at: string
+          geometry: unknown
+          hakgudo_id: string
+          id: string
+          school_level: string
+          source_file: string | null
+        }
+        Insert: {
+          created_at?: string
+          geometry: unknown
+          hakgudo_id: string
+          id?: string
+          school_level: string
+          source_file?: string | null
+        }
+        Update: {
+          created_at?: string
+          geometry?: unknown
+          hakgudo_id?: string
+          id?: string
+          school_level?: string
+          source_file?: string | null
+        }
+        Relationships: []
+      }
       spatial_ref_sys: {
         Row: {
           auth_name: string | null
@@ -1452,6 +1921,7 @@ export type Database = {
           dedupe_key: string
           floor: number | null
           id: number
+          jibun: string | null
           monthly_rent: number | null
           price: number | null
           raw_complex_name: string | null
@@ -1459,6 +1929,7 @@ export type Database = {
           sgg_code: string
           source_run_id: string | null
           superseded_by: number | null
+          umd_nm: string | null
           updated_at: string
         }
         Insert: {
@@ -1473,6 +1944,7 @@ export type Database = {
           dedupe_key: string
           floor?: number | null
           id?: number
+          jibun?: string | null
           monthly_rent?: number | null
           price?: number | null
           raw_complex_name?: string | null
@@ -1480,6 +1952,7 @@ export type Database = {
           sgg_code: string
           source_run_id?: string | null
           superseded_by?: number | null
+          umd_nm?: string | null
           updated_at?: string
         }
         Update: {
@@ -1494,6 +1967,7 @@ export type Database = {
           dedupe_key?: string
           floor?: number | null
           id?: number
+          jibun?: string | null
           monthly_rent?: number | null
           price?: number | null
           raw_complex_name?: string | null
@@ -1501,6 +1975,7 @@ export type Database = {
           sgg_code?: string
           source_run_id?: string | null
           superseded_by?: number | null
+          umd_nm?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1523,84 +1998,6 @@ export type Database = {
             columns: ["superseded_by"]
             isOneToOne: false
             referencedRelation: "transactions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      realtors: {
-        Row: {
-          id: string
-          name: string
-          agency_name: string
-          phone: string
-          description: string | null
-          license_no: string | null
-          image_url: string | null
-          is_active: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          name: string
-          agency_name: string
-          phone: string
-          description?: string | null
-          license_no?: string | null
-          image_url?: string | null
-          is_active?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          name?: string
-          agency_name?: string
-          phone?: string
-          description?: string | null
-          license_no?: string | null
-          image_url?: string | null
-          is_active?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      realtor_assignments: {
-        Row: {
-          id: string
-          realtor_id: string
-          complex_id: string
-          display_order: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          realtor_id: string
-          complex_id: string
-          display_order: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          realtor_id?: string
-          complex_id?: string
-          display_order?: number
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "realtor_assignments_realtor_id_fkey"
-            columns: ["realtor_id"]
-            isOneToOne: false
-            referencedRelation: "realtors"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "realtor_assignments_complex_id_fkey"
-            columns: ["complex_id"]
-            isOneToOne: false
-            referencedRelation: "complexes"
             referencedColumns: ["id"]
           },
         ]
@@ -1740,6 +2137,10 @@ export type Database = {
         Returns: unknown
       }
       _st_within: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
+      add_activity_points: {
+        Args: { p_points: number; p_reason: string; p_user_id: string }
+        Returns: undefined
+      }
       addauth: { Args: { "": string }; Returns: boolean }
       addgeometrycolumn:
         | {
@@ -1778,6 +2179,10 @@ export type Database = {
             }
             Returns: string
           }
+      award_daily_login_points: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
       check_gps_proximity: {
         Args: {
           p_complex_id: string
@@ -1793,6 +2198,20 @@ export type Database = {
           avg_area: number
           avg_price: number
           count: number
+          year_month: string
+        }[]
+      }
+      complex_transactions_for_chart: {
+        Args: {
+          p_area_m2?: number
+          p_complex_id: string
+          p_deal_type: string
+          p_months?: number
+        }
+        Returns: {
+          area_m2: number
+          deal_date: string
+          price: number
           year_month: string
         }[]
       }
@@ -1927,13 +2346,52 @@ export type Database = {
         Returns: boolean
       }
       geomfromewkt: { Args: { "": string }; Returns: unknown }
+      get_hagwon_grade: { Args: { p_complex_id: string }; Returns: string }
+      get_recent_complex_sales: {
+        Args: { p_complex_ids: string[]; p_since?: string }
+        Returns: {
+          area_m2: number
+          complex_id: string
+          deal_date: string
+          price: number
+        }[]
+      }
+      get_schools_for_point: {
+        Args: { p_lat: number; p_lng: number }
+        Returns: {
+          school_level: string
+          school_name: string
+        }[]
+      }
       gettransactionid: { Args: never; Returns: unknown }
+      hagwon_score_percentile: {
+        Args: { target_score: number }
+        Returns: number
+      }
+      hagwon_score_percentile_by_si: {
+        Args: { p_si: string; target_score: number }
+        Returns: number
+      }
+      increment_view_count: {
+        Args: { p_complex_id: string }
+        Returns: undefined
+      }
+      link_transactions_batch: {
+        Args: { p_limit?: number }
+        Returns: {
+          linked: number
+          low_confidence: number
+          no_match: number
+          processed: number
+        }[]
+      }
       longtransactionsenabled: { Args: never; Returns: boolean }
       match_complex_by_admin: {
         Args: {
           p_min_similarity?: number
           p_name_normalized: string
           p_sgg_code: string
+          p_umd_nm?: string
         }
         Returns: {
           canonical_name: string
@@ -1956,6 +2414,7 @@ export type Database = {
           trgm_sim: number
         }[]
       }
+      name_normalize_sql: { Args: { raw: string }; Returns: string }
       populate_geometry_columns:
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
         | { Args: { use_typmod?: boolean }; Returns: string }
@@ -1996,6 +2455,7 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      refresh_complex_price_stats: { Args: never; Returns: undefined }
       search_complexes: {
         Args: { p_limit?: number; p_query: string; p_sgg_codes: string[] }
         Returns: {
@@ -2621,6 +3081,9 @@ export type Database = {
         | "active"
         | "in_redevelopment"
         | "demolished"
+        | "merged"
+        | "rental"
+        | "inactive"
       deal_subtype: "sale" | "occupancy_right" | "pre_sale_right"
       deal_type: "sale" | "jeonse" | "monthly"
       estimate_method: "nearest_neighbors" | "similar_complex" | "regression"
@@ -2773,9 +3236,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       ad_status: [
@@ -2793,6 +3253,9 @@ export const Constants = {
         "active",
         "in_redevelopment",
         "demolished",
+        "merged",
+        "rental",
+        "inactive",
       ],
       deal_subtype: ["sale", "occupancy_right", "pre_sale_right"],
       deal_type: ["sale", "jeonse", "monthly"],
@@ -2817,4 +3280,3 @@ export const Constants = {
     },
   },
 } as const
-

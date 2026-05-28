@@ -1,13 +1,17 @@
 import type { Metadata } from 'next'
+import type { Database } from '@/types/database'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { ReportActions } from '@/components/admin/ReportActions'
 
 export const revalidate = 0
 export const metadata: Metadata = { title: '관리자 · 신고 큐' }
 
+type ReportStatus = Database['public']['Enums']['report_status']
+type ReportTargetType = Database['public']['Enums']['report_target_type']
+
 const PAGE_SIZE = 50
-const ALLOWED_STATUSES = new Set(['pending', 'accepted', 'rejected'])
-const ALLOWED_TARGET_TYPES = new Set(['review', 'user', 'ad', 'comment'])
+const ALLOWED_STATUSES = new Set<string>(['pending', 'accepted', 'rejected'])
+const ALLOWED_TARGET_TYPES = new Set<string>(['review', 'user', 'ad', 'comment'])
 
 function formatDateTime(s: string) {
   return new Date(s).toLocaleString('ko-KR', {
@@ -63,22 +67,20 @@ export default async function AdminReportsPage({
 }) {
   const { status: rawStatus = '', target_type: rawTargetType = '', page: rawPage = '1' } = await searchParams
 
-  const status = ALLOWED_STATUSES.has(rawStatus) ? rawStatus : ''
-  const target_type = ALLOWED_TARGET_TYPES.has(rawTargetType) ? rawTargetType : ''
+  const status = ALLOWED_STATUSES.has(rawStatus) ? (rawStatus as ReportStatus) : null
+  const target_type = ALLOWED_TARGET_TYPES.has(rawTargetType) ? (rawTargetType as ReportTargetType) : null
   const page = Math.max(1, parseInt(rawPage, 10) || 1)
   const offset = (page - 1) * PAGE_SIZE
 
   const adminClient = createSupabaseAdminClient()
-  // reports 테이블은 Phase 3 마이그레이션으로 추가됨 — database.ts 재생성 전까지 any 캐스트
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (adminClient as any)
+  let query = adminClient
     .from('reports')
     .select('id, target_type, target_id, reason, status, created_at', { count: 'exact' })
 
-  if (status) {
+  if (status !== null) {
     query = query.eq('status', status)
   }
-  if (target_type) {
+  if (target_type !== null) {
     query = query.eq('target_type', target_type)
   }
 
@@ -124,13 +126,13 @@ export default async function AdminReportsPage({
         </h1>
 
         <form method="get" style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
-          <select name="status" defaultValue={status} className="input" style={{ minWidth: 120 }}>
+          <select name="status" defaultValue={status ?? ''} className="input" style={{ minWidth: 120 }}>
             <option value="">상태 전체</option>
             <option value="pending">대기</option>
             <option value="accepted">처리 완료</option>
             <option value="rejected">기각</option>
           </select>
-          <select name="target_type" defaultValue={target_type} className="input" style={{ minWidth: 130 }}>
+          <select name="target_type" defaultValue={target_type ?? ''} className="input" style={{ minWidth: 130 }}>
             <option value="">유형 전체</option>
             <option value="review">후기</option>
             <option value="user">회원</option>

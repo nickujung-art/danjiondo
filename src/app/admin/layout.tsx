@@ -29,9 +29,7 @@ export default async function AdminLayout({
   // 미처리 항목 카운트 병렬 조회 (서비스 롤 — RLS 우회)
   const adminClient = createSupabaseAdminClient()
   const [reportRes, adRes, gpsRes] = await Promise.all([
-    // reports 테이블은 database.ts 재생성 전까지 any 캐스트
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (adminClient as any)
+    adminClient
       .from('reports')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'pending'),
