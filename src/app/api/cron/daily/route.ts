@@ -1,5 +1,6 @@
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
-import { markCronStatus } from '@/lib/data/cron-status'
+import { markCronStatus, markCronSuccess, markCronFailed } from '@/lib/data/cron-status'
+import { computeGapStats } from '@/lib/data/gap-stats'
 import { fetchKaptBasicInfo } from '@/services/kapt'
 import {
   fetchPresaleTrades,
@@ -26,6 +27,7 @@ export async function GET(request: Request): Promise<Response> {
   let competitionUpdated = 0
   let expiredDeactivated = 0
   let offiUpserted = 0
+  let gapUpdated = 0
 
   // ── K-apt 부대시설 UPSERT (DATA-01) ──────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -247,6 +249,21 @@ export async function GET(request: Request): Promise<Response> {
     errors.push(`refresh_complex_price_stats: ${err instanceof Error ? err.message : String(err)}`)
   }
 
+  // ── 갭투자 통계 재계산 (GAP-D05) ──────────────────────────────────────────
+  try {
+    const gapResult = await computeGapStats(supabase)
+    gapUpdated = gapResult.complexesUpdated
+    if (gapResult.errors.length > 0) {
+      errors.push(...gapResult.errors)
+      await markCronFailed(supabase, 'gap-stats').catch(() => {/* gap-stats source 미등록이면 무시 */})
+    } else {
+      await markCronSuccess(supabase, 'gap-stats').catch(() => {/* gap-stats source 미등록이면 무시 */})
+    }
+  } catch (err) {
+    errors.push(`computeGapStats: ${err instanceof Error ? err.message : String(err)}`)
+    await markCronFailed(supabase, 'gap-stats').catch(() => {/* gap-stats source 미등록이면 무시 */})
+  }
+
   await markCronStatus(supabase, 'daily-batch', errors.length === 0 ? 'success' : 'partial')
 
   return Response.json({
@@ -259,6 +276,7 @@ export async function GET(request: Request): Promise<Response> {
     competitionUpdated,
     expiredDeactivated,
     offiUpserted,
+    gapUpdated,
     errors,
   })
 }
