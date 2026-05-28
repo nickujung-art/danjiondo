@@ -41,6 +41,7 @@ export async function suspendMember(memberId: string): Promise<{ error: string |
 
   if (dbErr) return { error: (dbErr as { message: string }).message }
   revalidatePath('/admin/members')
+  revalidatePath('/admin', 'layout')
   return { error: null }
 }
 
@@ -56,6 +57,7 @@ export async function reactivateMember(memberId: string): Promise<{ error: strin
 
   if (dbErr) return { error: (dbErr as { message: string }).message }
   revalidatePath('/admin/members')
+  revalidatePath('/admin', 'layout')
   return { error: null }
 }
 
@@ -83,5 +85,6 @@ export async function resolveReport(
 
   if (dbErr) return { error: (dbErr as { message: string }).message }
   revalidatePath('/admin/reports')
+  revalidatePath('/admin', 'layout')
   return { error: null }
 }

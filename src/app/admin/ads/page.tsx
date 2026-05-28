@@ -1,12 +1,9 @@
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/types/database'
-import { getAllAdCampaigns } from '@/lib/data/ads'
+import { getAdRoiStats } from '@/lib/data/ads'
 import { AdminCampaignActions } from '@/components/ads/AdminCampaignActions'
 import { AdRoiTable } from '@/components/admin/AdRoiTable'
-import { getAdRoiStats } from '@/lib/data/ads'
 
 export const revalidate = 0
 
@@ -30,6 +27,8 @@ const STATUS_COLOR: Record<AdStatus, string> = {
   paused:   '#7c3aed',
 }
 
+const STATUS_KEYS = new Set<string>(Object.keys(STATUS_LABEL))
+
 function formatDate(s: string) {
   return new Date(s).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: 'numeric' })
 }
@@ -39,33 +38,36 @@ export default async function AdminAdsPage({
 }: {
   searchParams: Promise<{ status?: string }>
 }) {
-  const { status = '' } = await searchParams
+  const { status: rawStatus = '' } = await searchParams
+  const status = STATUS_KEYS.has(rawStatus) ? (rawStatus as AdStatus) : ''
 
-  // 관리자 권한 확인
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login?next=/admin/ads')
+  const adminClient = createSupabaseAdminClient()
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
+  let adsQuery = adminClient
+    .from('ad_campaigns')
+    .select('*')
+    .order('created_at', { ascending: false })
 
-  if (!profile || !['admin', 'superadmin'].includes((profile as { role: string }).role ?? '')) {
-    redirect('/')
+  if (status) {
+    adsQuery = adsQuery.eq('status', status)
   }
 
-  // 서비스 롤로 전체 캠페인 조회 (RLS 우회)
-  const adminClient = createSupabaseAdminClient()
-  const [allCampaigns, roiStats] = await Promise.all([
-    getAllAdCampaigns(adminClient),
+  const [{ data: campaigns, error: adsError }, roiStats] = await Promise.all([
+    adsQuery,
     getAdRoiStats(adminClient),
   ])
 
-  const campaigns = status
-    ? allCampaigns.filter(c => c.status === status)
-    : allCampaigns
+  if (adsError) {
+    return (
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 32px' }}>
+        <div className="card" style={{ padding: 40, textAlign: 'center', font: '500 14px/1.6 var(--font-sans)', color: 'var(--fg-negative)' }}>
+          광고 데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.
+        </div>
+      </div>
+    )
+  }
+
+  const rows = campaigns ?? []
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 32px' }}>
@@ -113,9 +115,9 @@ export default async function AdminAdsPage({
         </form>
 
         {/* ROI 집계 테이블 (캠페인이 있을 때만 표시) */}
-        {campaigns.length > 0 && <AdRoiTable rows={roiStats} />}
+        {rows.length > 0 && <AdRoiTable rows={roiStats} />}
 
-        {campaigns.length === 0 ? (
+        {rows.length === 0 ? (
           <div
             className="card"
             style={{
@@ -154,11 +156,11 @@ export default async function AdminAdsPage({
                 </tr>
               </thead>
               <tbody>
-                {campaigns.map((c, i) => (
+                {rows.map((c, i) => (
                   <tr
                     key={c.id}
                     style={{
-                      borderBottom: i < campaigns.length - 1 ? '1px solid var(--line-subtle)' : 'none',
+                      borderBottom: i < rows.length - 1 ? '1px solid var(--line-subtle)' : 'none',
                     }}
                   >
                     <td style={{ padding: '12px 16px', font: '600 13px/1.3 var(--font-sans)' }}>

@@ -71,6 +71,7 @@ async function updateStatus(
 
   if (dbErr) return { error: dbErr.message }
   revalidatePath('/admin/ads')
+  revalidatePath('/admin', 'layout')
   return { error: null }
 }
 
@@ -98,6 +99,7 @@ export async function deleteAdCampaign(id: string): Promise<{ error: string | nu
 
   if (dbErr) return { error: dbErr.message }
   revalidatePath('/admin/ads')
+  revalidatePath('/admin', 'layout')
   return { error: null }
 }
 

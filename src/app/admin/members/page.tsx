@@ -1,11 +1,15 @@
-import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { MemberActions } from '@/components/admin/MemberActions'
 
 export const revalidate = 0
 export const metadata: Metadata = { title: '관리자 · 회원 관리' }
+
+const PAGE_SIZE = 50
+const ALLOWED_ROLES = new Set(['admin', 'member', 'superadmin'])
+const ALLOWED_STATUSES = new Set(['active', 'suspended', 'deleted'])
+const ALLOWED_SORT = new Set(['created_at', 'role'])
+const ALLOWED_ORDER = new Set(['asc', 'desc'])
 
 function formatDate(s: string) {
   return new Date(s).toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' })
@@ -22,33 +26,46 @@ interface MemberRow {
   terms_agreed_at: string | null
 }
 
+function SortLink({ col, label, sortBy, order, q, role, status, page }: {
+  col: string; label: string; sortBy: string; order: string
+  q: string; role: string; status: string; page: number
+}) {
+  const isActive = sortBy === col
+  const nextOrder = isActive && order === 'desc' ? 'asc' : 'desc'
+  const indicator = isActive ? (order === 'asc' ? ' ▲' : ' ▼') : ''
+  const params = new URLSearchParams()
+  if (q) params.set('q', q)
+  if (role) params.set('role', role)
+  if (status) params.set('status', status)
+  params.set('sortBy', col)
+  params.set('order', nextOrder)
+  if (page > 1) params.set('page', String(page))
+  return (
+    <a href={`/admin/members?${params.toString()}`} style={{ color: 'inherit', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+      {label}{indicator}
+    </a>
+  )
+}
+
 export default async function AdminMembersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; role?: string; status?: string }>
+  searchParams: Promise<{ q?: string; role?: string; status?: string; page?: string; sortBy?: string; order?: string }>
 }) {
-  // 관리자 권한 확인
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login?next=/admin/members')
+  const { q: rawQ = '', role: rawRole = '', status: rawStatus = '', page: rawPage = '1', sortBy: rawSortBy = 'created_at', order: rawOrder = 'desc' } = await searchParams
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile || !['admin', 'superadmin'].includes((profile as { role: string }).role ?? '')) {
-    redirect('/')
-  }
-
-  const { q: rawQ = '', role = '', status = '' } = await searchParams
-  const q = rawQ.trim().slice(0, 50)  // 최대 50자 제한 (ilike injection 방어)
+  const q = rawQ.trim().slice(0, 50)
+  const role = ALLOWED_ROLES.has(rawRole) ? rawRole : ''
+  const status = ALLOWED_STATUSES.has(rawStatus) ? rawStatus : ''
+  const sortBy = ALLOWED_SORT.has(rawSortBy) ? rawSortBy : 'created_at'
+  const order = ALLOWED_ORDER.has(rawOrder) ? rawOrder : 'desc'
+  const page = Math.max(1, parseInt(rawPage, 10) || 1)
+  const offset = (page - 1) * PAGE_SIZE
 
   const adminClient = createSupabaseAdminClient()
   let query = adminClient
     .from('profiles')
-    .select('id, nickname, cafe_nickname, role, created_at, suspended_at, deleted_at, terms_agreed_at')
+    .select('id, nickname, cafe_nickname, role, created_at, suspended_at, deleted_at, terms_agreed_at', { count: 'exact' })
 
   if (q) {
     query = query.or(`nickname.ilike.%${q}%,cafe_nickname.ilike.%${q}%`)
@@ -64,9 +81,36 @@ export default async function AdminMembersPage({
     query = query.not('deleted_at', 'is', null)
   }
 
-  const { data: members } = await query.order('created_at', { ascending: false })
+  const { data: members, error, count } = await query
+    .order(sortBy, { ascending: order === 'asc' })
+    .range(offset, offset + PAGE_SIZE - 1)
+
+  if (error) {
+    return (
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 32px' }}>
+        <h1 style={{ font: '700 22px/1.3 var(--font-sans)', letterSpacing: '-0.02em', margin: '0 0 16px' }}>회원 관리</h1>
+        <div className="card" style={{ padding: 40, textAlign: 'center', font: '500 14px/1.6 var(--font-sans)', color: 'var(--fg-negative)' }}>
+          회원 데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.
+        </div>
+      </div>
+    )
+  }
 
   const rows = (members ?? []) as MemberRow[]
+  const totalCount = count ?? 0
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
+
+  const buildPageHref = (p: number) => {
+    const params = new URLSearchParams()
+    if (q) params.set('q', q)
+    if (role) params.set('role', role)
+    if (status) params.set('status', status)
+    if (sortBy !== 'created_at') params.set('sortBy', sortBy)
+    if (order !== 'desc') params.set('order', order)
+    if (p > 1) params.set('page', String(p))
+    const s = params.toString()
+    return `/admin/members${s ? `?${s}` : ''}`
+  }
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 32px' }}>
@@ -90,6 +134,8 @@ export default async function AdminMembersPage({
             style={{ minWidth: 180 }}
             maxLength={50}
           />
+          <input type="hidden" name="sortBy" value={sortBy} />
+          <input type="hidden" name="order" value={order} />
           <select name="role" defaultValue={role} className="input" style={{ minWidth: 100 }}>
             <option value="">역할 전체</option>
             <option value="admin">admin</option>
@@ -106,6 +152,12 @@ export default async function AdminMembersPage({
             <a href="/admin/members" className="btn btn-sm btn-secondary">초기화</a>
           )}
         </form>
+
+        {totalCount > 0 && (
+          <p style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '0 0 12px' }}>
+            전체 {totalCount.toLocaleString()}명 중 {offset + 1}–{Math.min(offset + PAGE_SIZE, totalCount)}명
+          </p>
+        )}
 
         {rows.length === 0 ? (
           <div
@@ -129,21 +181,17 @@ export default async function AdminMembersPage({
                     background: 'var(--bg-surface-2)',
                   }}
                 >
-                  {['닉네임', '카페 닉네임', '역할', '가입일', '동의', '상태', '액션'].map(h => (
-                    <th
-                      key={h}
-                      scope="col"
-                      style={{
-                        padding: '10px 16px',
-                        font: '600 12px/1 var(--font-sans)',
-                        color: 'var(--fg-sec)',
-                        textAlign: 'left',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {h}
-                    </th>
-                  ))}
+                  <th scope="col" style={{ padding: '10px 16px', font: '600 12px/1 var(--font-sans)', color: 'var(--fg-sec)', textAlign: 'left', whiteSpace: 'nowrap' }}>닉네임</th>
+                  <th scope="col" style={{ padding: '10px 16px', font: '600 12px/1 var(--font-sans)', color: 'var(--fg-sec)', textAlign: 'left', whiteSpace: 'nowrap' }}>카페 닉네임</th>
+                  <th scope="col" style={{ padding: '10px 16px', font: '600 12px/1 var(--font-sans)', color: 'var(--fg-sec)', textAlign: 'left', whiteSpace: 'nowrap', cursor: 'pointer' }}>
+                    <SortLink col="role" label="역할" sortBy={sortBy} order={order} q={q} role={role} status={status} page={page} />
+                  </th>
+                  <th scope="col" style={{ padding: '10px 16px', font: '600 12px/1 var(--font-sans)', color: 'var(--fg-sec)', textAlign: 'left', whiteSpace: 'nowrap', cursor: 'pointer' }}>
+                    <SortLink col="created_at" label="가입일" sortBy={sortBy} order={order} q={q} role={role} status={status} page={page} />
+                  </th>
+                  <th scope="col" style={{ padding: '10px 16px', font: '600 12px/1 var(--font-sans)', color: 'var(--fg-sec)', textAlign: 'left', whiteSpace: 'nowrap' }}>동의</th>
+                  <th scope="col" style={{ padding: '10px 16px', font: '600 12px/1 var(--font-sans)', color: 'var(--fg-sec)', textAlign: 'left', whiteSpace: 'nowrap' }}>상태</th>
+                  <th scope="col" style={{ padding: '10px 16px', font: '600 12px/1 var(--font-sans)', color: 'var(--fg-sec)', textAlign: 'left', whiteSpace: 'nowrap' }}>액션</th>
                 </tr>
               </thead>
               <tbody>
@@ -225,6 +273,20 @@ export default async function AdminMembersPage({
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', gap: 8, marginTop: 16, alignItems: 'center', justifyContent: 'center' }}>
+            {page > 1 && (
+              <a href={buildPageHref(page - 1)} className="btn btn-sm btn-secondary">← 이전</a>
+            )}
+            <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--fg-sec)' }}>
+              {page} / {totalPages}
+            </span>
+            {page < totalPages && (
+              <a href={buildPageHref(page + 1)} className="btn btn-sm btn-secondary">다음 →</a>
+            )}
           </div>
         )}
       </div>

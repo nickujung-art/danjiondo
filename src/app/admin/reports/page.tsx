@@ -1,11 +1,13 @@
-import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { ReportActions } from '@/components/admin/ReportActions'
 
 export const revalidate = 0
 export const metadata: Metadata = { title: '관리자 · 신고 큐' }
+
+const PAGE_SIZE = 50
+const ALLOWED_STATUSES = new Set(['pending', 'accepted', 'rejected'])
+const ALLOWED_TARGET_TYPES = new Set(['review', 'user', 'ad', 'comment'])
 
 function formatDateTime(s: string) {
   return new Date(s).toLocaleString('ko-KR', {
@@ -57,31 +59,21 @@ const STATUS_COLOR: Record<ReportRow['status'], string> = {
 export default async function AdminReportsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; target_type?: string }>
+  searchParams: Promise<{ status?: string; target_type?: string; page?: string }>
 }) {
-  // 관리자 권한 확인
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login?next=/admin/reports')
+  const { status: rawStatus = '', target_type: rawTargetType = '', page: rawPage = '1' } = await searchParams
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile || !['admin', 'superadmin'].includes((profile as { role: string }).role ?? '')) {
-    redirect('/')
-  }
-
-  const { status = '', target_type = '' } = await searchParams
+  const status = ALLOWED_STATUSES.has(rawStatus) ? rawStatus : ''
+  const target_type = ALLOWED_TARGET_TYPES.has(rawTargetType) ? rawTargetType : ''
+  const page = Math.max(1, parseInt(rawPage, 10) || 1)
+  const offset = (page - 1) * PAGE_SIZE
 
   const adminClient = createSupabaseAdminClient()
   // reports 테이블은 Phase 3 마이그레이션으로 추가됨 — database.ts 재생성 전까지 any 캐스트
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query = (adminClient as any)
     .from('reports')
-    .select('id, target_type, target_id, reason, status, created_at')
+    .select('id, target_type, target_id, reason, status, created_at', { count: 'exact' })
 
   if (status) {
     query = query.eq('status', status)
@@ -90,11 +82,34 @@ export default async function AdminReportsPage({
     query = query.eq('target_type', target_type)
   }
 
-  const { data: reports } = await query
+  const { data: reports, error, count } = await query
     .order('status', { ascending: true })
     .order('created_at', { ascending: false })
+    .range(offset, offset + PAGE_SIZE - 1)
+
+  if (error) {
+    return (
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 32px' }}>
+        <h1 style={{ font: '700 22px/1.3 var(--font-sans)', letterSpacing: '-0.02em', margin: '0 0 16px' }}>신고 큐</h1>
+        <div className="card" style={{ padding: 40, textAlign: 'center', font: '500 14px/1.6 var(--font-sans)', color: 'var(--fg-negative)' }}>
+          신고 데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.
+        </div>
+      </div>
+    )
+  }
 
   const rows = ((reports ?? []) as unknown) as ReportRow[]
+  const totalCount = count ?? 0
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
+
+  const buildPageHref = (p: number) => {
+    const params = new URLSearchParams()
+    if (status) params.set('status', status)
+    if (target_type) params.set('target_type', target_type)
+    if (p > 1) params.set('page', String(p))
+    const s = params.toString()
+    return `/admin/reports${s ? `?${s}` : ''}`
+  }
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 32px' }}>
@@ -127,6 +142,12 @@ export default async function AdminReportsPage({
             <a href="/admin/reports" className="btn btn-sm btn-secondary">초기화</a>
           )}
         </form>
+
+        {totalCount > 0 && (
+          <p style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '0 0 12px' }}>
+            전체 {totalCount.toLocaleString()}건 중 {offset + 1}–{Math.min(offset + PAGE_SIZE, totalCount)}건
+          </p>
+        )}
 
         {rows.length === 0 ? (
           <div
@@ -260,6 +281,20 @@ export default async function AdminReportsPage({
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', gap: 8, marginTop: 16, alignItems: 'center', justifyContent: 'center' }}>
+            {page > 1 && (
+              <a href={buildPageHref(page - 1)} className="btn btn-sm btn-secondary">← 이전</a>
+            )}
+            <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--fg-sec)' }}>
+              {page} / {totalPages}
+            </span>
+            {page < totalPages && (
+              <a href={buildPageHref(page + 1)} className="btn btn-sm btn-secondary">다음 →</a>
+            )}
           </div>
         )}
       </div>

@@ -1,49 +1,49 @@
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
-import { getAllRealtors } from '@/lib/data/realtors'
+import type { Database } from '@/types/database'
 import { RealtorActions } from '@/components/admin/RealtorActions'
 
 export const revalidate = 0
+
+const ALLOWED_ACTIVE = new Set(['true', 'false'])
+
+type Realtor = Database['public']['Tables']['realtors']['Row']
 
 export default async function AdminRealtorsPage({
   searchParams,
 }: {
   searchParams: Promise<{ q?: string; active?: string }>
 }) {
-  const { q: rawQ = '', active = '' } = await searchParams
+  const { q: rawQ = '', active: rawActive = '' } = await searchParams
   const q = rawQ.trim().slice(0, 50)
+  const active = ALLOWED_ACTIVE.has(rawActive) ? rawActive : ''
 
-  // 관리자 권한 확인
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login?next=/admin/realtors')
+  const adminClient = createSupabaseAdminClient()
+  let query = adminClient
+    .from('realtors')
+    .select('*')
+    .order('created_at', { ascending: false })
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile || !['admin', 'superadmin'].includes((profile as { role: string }).role ?? '')) {
-    redirect('/')
+  if (q) {
+    query = query.or(`name.ilike.%${q}%,agency_name.ilike.%${q}%`)
+  }
+  if (active !== '') {
+    query = query.eq('is_active', active === 'true')
   }
 
-  // 서비스 롤로 전체 공인중개사 조회 (RLS 우회)
-  const adminClient = createSupabaseAdminClient()
-  const allRealtors = await getAllRealtors(adminClient)
+  const { data: realtors, error } = await query
 
-  const realtors = allRealtors.filter(r => {
-    if (q) {
-      const nameMatch = r.name.toLowerCase().includes(q.toLowerCase())
-      const agencyMatch = (r.agency_name ?? '').toLowerCase().includes(q.toLowerCase())
-      if (!nameMatch && !agencyMatch) return false
-    }
-    if (active === 'true' && !r.is_active) return false
-    if (active === 'false' && r.is_active) return false
-    return true
-  })
+  if (error) {
+    return (
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 32px' }}>
+        <div className="card" style={{ padding: 40, textAlign: 'center', font: '500 14px/1.6 var(--font-sans)', color: 'var(--fg-negative)' }}>
+          중개사 데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.
+        </div>
+      </div>
+    )
+  }
+
+  const rows = (realtors ?? []) as Realtor[]
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 32px' }}>
@@ -98,7 +98,7 @@ export default async function AdminRealtorsPage({
           )}
         </form>
 
-        {realtors.length === 0 ? (
+        {rows.length === 0 ? (
           <div
             className="card"
             style={{
@@ -137,11 +137,11 @@ export default async function AdminRealtorsPage({
                 </tr>
               </thead>
               <tbody>
-                {realtors.map((r, i) => (
+                {rows.map((r, i) => (
                   <tr
                     key={r.id}
                     style={{
-                      borderBottom: i < realtors.length - 1 ? '1px solid var(--line-subtle)' : 'none',
+                      borderBottom: i < rows.length - 1 ? '1px solid var(--line-subtle)' : 'none',
                     }}
                   >
                     <td style={{ padding: '12px 16px', font: '600 13px/1.3 var(--font-sans)' }}>
