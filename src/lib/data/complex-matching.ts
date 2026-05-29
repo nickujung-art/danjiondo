@@ -39,6 +39,9 @@ export async function seedComplex(
     ? parseInt(raw.kaptUseApproveYmd.slice(0, 4), 10)
     : null
 
+  // status는 upsert 대상에서 제외 — DB DEFAULT 'active'가 신규 INSERT에만 적용됨.
+  // ON CONFLICT(kapt_code) DO UPDATE 시 status를 덮어쓰지 않아 merged/inactive 단지가
+  // seed-complexes.ts 재실행으로 active로 리셋되는 버그 방지.
   const row = {
     canonical_name:    canonicalName,
     name_normalized:   nameNormalized,
@@ -50,7 +53,6 @@ export async function seedComplex(
     built_year:        builtYear,
     lat:               raw.coordY ?? null,
     lng:               raw.coordX ?? null,
-    status:            'active' as const,
     data_completeness: INITIAL_DATA_COMPLETENESS,
   }
 
