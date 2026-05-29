@@ -1,14 +1,23 @@
 /**
- * 네이버 뉴스에서 분양 예정 아파트를 감지하고 new_listings에 저장
+ * 네이버 뉴스에서 분양 예정 아파트를 감지하고 presale_discoveries에 저장
  *
  * 실행: npx tsx --env-file=.env.local scripts/crawl-presale-news.ts
  *      npx tsx --env-file=.env.local scripts/crawl-presale-news.ts --dry-run
  *
  * 환경변수: NAVER_CLIENT_ID, NAVER_CLIENT_SECRET, KAKAO_REST_API_KEY
- *          NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+ *          MOLIT_API_KEY, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+ *
+ * 플로우:
+ *   1. 뉴스 수집 → 단지명 추출
+ *   2. new_listings / complexes 에 이미 존재하면 스킵
+ *   3. presale_discoveries 에 이미 있으면 스킵
+ *   4. 건축HUB 매칭 시도 (matchArchHub)
+ *   5. presale_discoveries 에 upsert (status: 'pending')
+ *   → new_listings 등록은 관리자가 /admin 페이지에서 confirm 시 실행
  */
 import { loadEnvConfig } from '@next/env'
 import { createClient } from '@supabase/supabase-js'
+import { matchArchHub } from '../src/services/arch-hub/client'
 
 loadEnvConfig(process.cwd(), true)
 
@@ -61,8 +70,9 @@ function extractAptNames(title: string, desc: string): string[] {
   for (const pattern of EXTRACT_PATTERNS) {
     const matches = text.matchAll(new RegExp(pattern.source, 'g'))
     for (const m of matches) {
-      const name = m[1].trim().replace(/\s+/g, ' ')
+      const name = m[1]?.trim().replace(/\s+/g, ' ')
       if (
+        name &&
         name.length >= 4 &&
         !NOISE_WORDS.some(w => name.includes(w)) &&
         !GENERIC_NAMES.test(name)
@@ -111,6 +121,55 @@ async function geocode(query: string): Promise<{ lat: number; lng: number; addre
   const doc = json.documents?.[0]
   if (!doc) return null
   return { lat: parseFloat(doc.y), lng: parseFloat(doc.x), address: doc.address_name }
+}
+
+// ── 지역명 추출 ────────────────────────────────────────────────────
+function extractRegion(address: string | undefined, aptName: string): string {
+  if (address) {
+    if (address.includes('김해')) return '김해시'
+    if (address.includes('마산')) return '창원시 마산'
+    if (address.includes('창원')) return '창원시'
+  }
+  // 주소 없을 경우 단지명에서 지역 추출
+  if (aptName.includes('김해')) return '김해시'
+  if (aptName.includes('마산')) return '창원시 마산'
+  if (aptName.includes('창원')) return '창원시'
+  return '경남'
+}
+
+// ── DB 존재 여부 확인 ─────────────────────────────────────────────
+
+/** new_listings에 이미 등록된 단지인지 확인 */
+async function existsInNewListings(name: string): Promise<boolean> {
+  const pattern = `%${name.replace(/\s+/g, '%')}%`
+  const { data } = await supabase
+    .from('new_listings')
+    .select('id')
+    .ilike('name', pattern)
+    .limit(1)
+  return (data?.length ?? 0) > 0
+}
+
+/** complexes(canonical_name)에 이미 있는 단지인지 확인 */
+async function existsInComplexes(name: string): Promise<boolean> {
+  const pattern = `%${name.replace(/\s+/g, '%')}%`
+  const { data } = await supabase
+    .from('complexes')
+    .select('id')
+    .ilike('canonical_name', pattern)
+    .limit(1)
+  return (data?.length ?? 0) > 0
+}
+
+/** presale_discoveries에 이미 있는지 확인 (name+region unique) */
+async function existsInDiscoveries(name: string, region: string): Promise<boolean> {
+  const { data } = await supabase
+    .from('presale_discoveries')
+    .select('id')
+    .eq('name', name)
+    .eq('region', region)
+    .limit(1)
+  return (data?.length ?? 0) > 0
 }
 
 // ── 메인 ─────────────────────────────────────────────────────────
@@ -167,79 +226,93 @@ async function main() {
     return
   }
 
-  // 4. DB에 없는 단지만 처리
-  let upserted = 0
+  // 4. 각 단지 처리
+  let inserted = 0
+  let skipped = 0
   const errors: string[] = []
 
   for (const [name, meta] of aptMap) {
-    // 이미 new_listings에 있는지 확인 (이름 유사 매칭)
-    const { data: existing } = await supabase
-      .from('new_listings')
-      .select('id')
-      .ilike('name', `%${name.replace(/\s+/g, '%')}%`)
-      .limit(1)
-
-    if (existing && existing.length > 0) {
-      console.log(`  [SKIP] 이미 존재: ${name}`)
+    // ── 4-1. new_listings 존재 확인 ──────────────────────────────
+    if (await existsInNewListings(name)) {
+      console.log(`  [SKIP] new_listings 이미 존재: ${name}`)
+      skipped++
       continue
     }
 
-    // 카카오로 위치 조회
+    // ── 4-2. complexes 존재 확인 ─────────────────────────────────
+    if (await existsInComplexes(name)) {
+      console.log(`  [SKIP] complexes 이미 존재: ${name}`)
+      skipped++
+      continue
+    }
+
+    // ── 4-3. 카카오 지오코딩 ──────────────────────────────────────
     const geo = await geocode(name + ' 아파트')
     console.log(`  [GEO] ${name} → ${geo ? `${geo.address} (${geo.lat}, ${geo.lng})` : '위치 없음'}`)
 
-    // 지역명 추출 (창원/김해 여부)
-    const region = geo?.address?.includes('김해') ? '김해시' :
-                   geo?.address?.includes('마산') ? '창원시 마산' :
-                   geo?.address?.includes('창원') ? '창원시' : '경남'
+    const region = extractRegion(geo?.address, name)
 
-    // new_listings에 저장
+    // ── 4-4. presale_discoveries 중복 확인 ───────────────────────
+    if (await existsInDiscoveries(name, region)) {
+      console.log(`  [SKIP] presale_discoveries 이미 존재: ${name} @ ${region}`)
+      skipped++
+      continue
+    }
+
+    // ── 4-5. 건축HUB 매칭 ────────────────────────────────────────
+    let archHubId: string | null = null
+    let archHubData: Record<string, unknown> | null = null
+    let archHubMatchedAt: string | null = null
+
+    try {
+      const archMatch = await matchArchHub(name)
+      if (archMatch) {
+        archHubId = archMatch.mgmPmsrgstPk ?? null
+        archHubData = archMatch as unknown as Record<string, unknown>
+        archHubMatchedAt = new Date().toISOString()
+        console.log(`  [ARCH] ${name} → ${archMatch.bldNm ?? '?'} (${archMatch.hhldCnt ?? '?'}세대)`)
+      } else {
+        console.log(`  [ARCH] ${name} → 매칭 없음 (admin 수동 입력 필요)`)
+      }
+    } catch (err) {
+      console.warn(`  [ARCH] ${name} 건축HUB 조회 실패: ${String(err)}`)
+    }
+
+    // ── 4-6. presale_discoveries upsert ──────────────────────────
     const row = {
       name,
       region,
-      pblanc_no:    null,               // 공고번호 없음 (청약 전)
-      pblanc_nm:    name,
-      sgg_code:     null,
-      supply_region: region,
-      supply_count:  null,
-      rcept_bgnde:   null,
-      rcept_endde:   null,
-      przwner_presnatn_de: null,
-      mvn_prearnge_ym: null,
-      hssply_adres:  geo?.address ?? null,
-      is_active:     true,
-      fetched_at:    new Date().toISOString(),
-      price_min:     null,
-      price_max:     null,
-      source_code:   'news_crawl',
-      lat:           geo?.lat ?? null,
-      lng:           geo?.lng ?? null,
+      hssply_adres:        geo?.address ?? null,
+      lat:                 geo?.lat ?? null,
+      lng:                 geo?.lng ?? null,
+      source_url:          meta.link,
+      discovered_at:       new Date(meta.pubDate).toISOString(),
+      arch_hub_id:         archHubId,
+      arch_hub_data:       archHubData,
+      arch_hub_matched_at: archHubMatchedAt,
+      status:              'pending' as const,
     }
 
     if (!DRY_RUN) {
-      // news_crawl 항목은 pblanc_no가 null이므로 name+region으로 중복 확인 후 insert
-      const { data: dup } = await supabase
-        .from('new_listings')
-        .select('id')
-        .eq('name', name)
-        .eq('source_code', 'news_crawl')
-        .limit(1)
-      if (dup && dup.length > 0) {
-        console.log(`  [SKIP] 이미 존재 (news_crawl): ${name}`)
-        continue
+      const { error } = await supabase
+        .from('presale_discoveries')
+        .upsert(row, { onConflict: 'name,region', ignoreDuplicates: true })
+      if (error) {
+        errors.push(`${name}: ${error.message}`)
+      } else {
+        console.log(`  [INSERT] presale_discoveries: ${name} @ ${region}`)
+        inserted++
       }
-      const { error } = await supabase.from('new_listings').insert(row)
-      if (error) errors.push(`${name}: ${error.message}`)
-      else upserted++
     } else {
-      console.log(`  [DRY] 저장 예정: ${name} @ ${region}`)
-      upserted++
+      console.log(`  [DRY] 저장 예정: ${name} @ ${region}${archHubId ? ` (arch_hub: ${archHubId})` : ''}`)
+      inserted++
     }
   }
 
   console.log('\n== 결과 ==')
-  console.log(`  신규 등록: ${upserted}건`)
-  if (errors.length > 0) errors.forEach(e => console.log(`  ❌ ${e}`))
+  console.log(`  신규 등록: ${inserted}건`)
+  console.log(`  스킵:      ${skipped}건`)
+  if (errors.length > 0) errors.forEach(e => console.error(`  ❌ ${e}`))
   else console.log('  errors: 0')
 }
 
