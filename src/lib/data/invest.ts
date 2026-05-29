@@ -63,43 +63,45 @@ export async function getComplexAreaTypes(
   cutoff.setMonth(cutoff.getMonth() - months)
   const cutoffStr = cutoff.toISOString().slice(0, 10)
 
-  const result: AreaType[] = []
-  for (const bucket of buckets) {
-    const bucketFilter =
-      bucket === '소형'
-        ? { lt: 50 }
-        : bucket === '59'
-        ? { gte: 50, lt: 66 }
-        : bucket === '84'
-        ? { gte: 66, lt: 95 }
-        : { gte: 95 }
+  const counts = await Promise.all(
+    buckets.map(async (bucket) => {
+      const bucketFilter =
+        bucket === '소형'
+          ? { lt: 50 }
+          : bucket === '59'
+          ? { gte: 50, lt: 66 }
+          : bucket === '84'
+          ? { gte: 66, lt: 95 }
+          : { gte: 95 }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let q = (supabase as any)
-      .from('transactions')
-      .select('id', { count: 'exact', head: true })
-      .eq('complex_id', complexId)
-      .eq('deal_type', 'sale')
-      .gte('deal_date', cutoffStr)
-      .is('cancel_date', null)
-      .is('superseded_by', null)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let q = (supabase as any)
+        .from('transactions')
+        .select('id', { count: 'exact', head: true })
+        .eq('complex_id', complexId)
+        .eq('deal_type', 'sale')
+        .gte('deal_date', cutoffStr)
+        .is('cancel_date', null)
+        .is('superseded_by', null)
 
-    if ('lt' in bucketFilter && 'gte' in bucketFilter) {
-      q = q
-        .gte('area_m2', (bucketFilter as { gte: number; lt: number }).gte)
-        .lt('area_m2', (bucketFilter as { gte: number; lt: number }).lt)
-    } else if ('lt' in bucketFilter) {
-      q = q.lt('area_m2', (bucketFilter as { lt: number }).lt)
-    } else {
-      q = q.gte('area_m2', (bucketFilter as { gte: number }).gte)
-    }
+      if ('lt' in bucketFilter && 'gte' in bucketFilter) {
+        q = q
+          .gte('area_m2', (bucketFilter as { gte: number; lt: number }).gte)
+          .lt('area_m2', (bucketFilter as { gte: number; lt: number }).lt)
+      } else if ('lt' in bucketFilter) {
+        q = q.lt('area_m2', (bucketFilter as { lt: number }).lt)
+      } else {
+        q = q.gte('area_m2', (bucketFilter as { gte: number }).gte)
+      }
 
-    const { count } = await q
-    if ((count ?? 0) >= 3) {
-      result.push({ bucket, txCount: count ?? 0 })
-    }
-  }
-  return result
+      const { count } = await q
+      return { bucket, count: count ?? 0 }
+    })
+  )
+
+  return counts
+    .filter(({ count }) => count >= 3)
+    .map(({ bucket, count }) => ({ bucket, txCount: count }))
 }
 
 /**
