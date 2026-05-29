@@ -29,6 +29,9 @@ import { ManagementCostCard } from '@/components/complex/ManagementCostCard'
 import { getComplexGapStats } from '@/lib/data/gap-analysis'
 import type { ComplexGapStatsResult } from '@/lib/data/gap-analysis'
 import { GapAnalysisCard } from '@/components/complex/GapAnalysisCard'
+import { getComplexAreaTypes, getComplexPriceByType, ALLOWED_AREA_BUCKETS } from '@/lib/data/invest'
+import type { AreaBucket, AreaType, RegionalPricePoint } from '@/lib/data/invest'
+import { ComplexPriceChartWrapper } from '@/components/invest/ComplexPriceChartWrapper'
 import { getComplexFacilityEdu } from '@/lib/data/facility-edu'
 import { EducationCard } from '@/components/complex/EducationCard'
 import { formatParkingPerUnit, formatElevatorPerBuilding } from '@/lib/utils/facility-format'
@@ -37,7 +40,8 @@ import { ViewCountTracker } from './ViewCountTracker'
 export const revalidate = 86400
 
 interface Props {
-  params: Promise<{ id: string }>
+  params:       Promise<{ id: string }>
+  searchParams: Promise<{ area_type?: string }>
 }
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://danjiondo.kr'
@@ -198,8 +202,12 @@ function formatPrice(price: number): string {
   return `${price.toLocaleString()}만`
 }
 
-export default async function ComplexDetailPage({ params }: Props) {
+export default async function ComplexDetailPage({ params, searchParams }: Props) {
   const { id } = await params
+  const sp         = await searchParams
+  const rawArea    = typeof sp.area_type === 'string' ? sp.area_type : ''
+  const areaBucket = (ALLOWED_AREA_BUCKETS as ReadonlyArray<string>).includes(rawArea)
+    ? (rawArea as AreaBucket) : undefined
   const supabase = createReadonlyClient()
 
   // complex를 먼저 단독 fetch — si/gu로 getQuadrantData 호출에 필요
@@ -222,6 +230,8 @@ export default async function ComplexDetailPage({ params }: Props) {
     rawSaleData,
     rawJeonseData,
     gapStats,
+    areaTypes,
+    priceHistory,
   ] = await Promise.all([
     getComplexTransactionSummary(id, 'sale', supabase),
     getRealtorsByComplexId(id, supabase),
@@ -273,6 +283,10 @@ export default async function ComplexDetailPage({ params }: Props) {
     getComplexRawTransactions(id, 'jeonse', supabase).catch(() => []),
     // 갭투자 분석 (데이터 없으면 null — D-01)
     getComplexGapStats(id, supabase).catch(() => null),
+    // 시세 흐름 차트 — 단지 타입 목록 (D-02)
+    getComplexAreaTypes(supabase, id, 24).catch((): AreaType[] => []),
+    // 시세 흐름 차트 — 타입별 월별 시세 (D-02)
+    getComplexPriceByType(supabase, id, areaBucket, 24).catch((): RegionalPricePoint[] => []),
   ])
 
   const facilityKapt = facilityKaptResult?.data ?? null
@@ -700,6 +714,53 @@ export default async function ComplexDetailPage({ params }: Props) {
 
           {/* 갭투자 분석 (D-01: 단지 상세 카드) */}
           <GapAnalysisCard data={gapStats as ComplexGapStatsResult | null} />
+
+          {/* 신규: 시세 흐름 차트 섹션 (D-02, D-04) */}
+          {(areaTypes.length > 0 || priceHistory.length > 0) && (
+            <div className="card" style={{ padding: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                <h3 style={{ font: '700 15px/1.4 var(--font-sans)', margin: 0 }}>시세 흐름</h3>
+                {/* 타입 탭 — URL searchParam area_type */}
+                {areaTypes.length > 0 && (
+                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                    {/* '전체' 탭 */}
+                    <a href={`/complexes/${id}`}
+                      style={{
+                        display: 'inline-block', padding: '4px 10px', borderRadius: 5,
+                        font: '500 11px/1 var(--font-sans)', textDecoration: 'none',
+                        background: !areaBucket ? 'var(--dj-orange)' : 'var(--bg-surface-2)',
+                        color: !areaBucket ? '#fff' : 'var(--fg-sec)',
+                        border: '1px solid var(--line-subtle)', whiteSpace: 'nowrap',
+                      }}>전체</a>
+                    {areaTypes.map(t => {
+                      const AREA_LABEL: Record<string, string> = { '소형': '소형', '59': '59㎡', '84': '84㎡', '대형': '대형' }
+                      const isActive = areaBucket === t.bucket
+                      return (
+                        <a key={t.bucket} href={`/complexes/${id}?area_type=${t.bucket}`}
+                          style={{
+                            display: 'inline-block', padding: '4px 10px', borderRadius: 5,
+                            font: '500 11px/1 var(--font-sans)', textDecoration: 'none',
+                            background: isActive ? 'var(--dj-orange)' : 'var(--bg-surface-2)',
+                            color: isActive ? '#fff' : 'var(--fg-sec)',
+                            border: '1px solid var(--line-subtle)', whiteSpace: 'nowrap',
+                          }}>
+                          {AREA_LABEL[t.bucket] ?? t.bucket}
+                        </a>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+              <ComplexPriceChartWrapper
+                data={priceHistory}
+                title={`최근 24개월 매매 실거래 월평균${areaBucket ? ` (${areaBucket === '59' ? '59㎡' : areaBucket === '84' ? '84㎡' : areaBucket})` : ''}`}
+              />
+              {/* 법적 면책 문구 (D-01) */}
+              <p style={{ font: '400 11px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '12px 0 0' }}>
+                * 실거래 흐름 기반 참고 지수입니다. 투자 결정에 직접 활용하지 마세요.
+              </p>
+            </div>
+          )}
 
           {/* 관리비 */}
           <ManagementCostCard
