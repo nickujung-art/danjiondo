@@ -26,7 +26,7 @@
 | 18 | 공인중개사 추천 섹션 | V3.1 | 단지 상세 공인중개사 카드 + 어드민 CRUD + 단지 배정 UI | ADMIN-14~16 | ✅ Completed 2026-05-27 |
 | 19 | 어드민 UI/UX 전면 개선 | V3.1 | 공유 레이아웃 + 사이드바 네비게이션으로 13개 어드민 기능 통합, 운영자 접근성 전면 개선 | ADMIN-10~13 | ✅ Completed 2026-05-28 |
 | 20 | 갭투자 분석 | V3.2 | 매매/전세 실거래 데이터 기반 갭투자 지표 계산 + 단지 상세 + 전용 분석 페이지 | GAP-01~04 | ✅ Completed 2026-05-28 |
-| 21 | 투자 분석 통합 페이지 | V3.3 | 실거래 2년 시세 흐름 차트 + 갭투자 랭킹을 /invest 페이지로 통합 | INVEST-01~04 | 🟡 Planned |
+| 21 | 투자 분석 통합 페이지 | V3.3 | 실거래 2년 시세 흐름 차트 + 갭투자 랭킹을 /invest 페이지로 통합 | INVEST-01~04 | ✅ Completed 2026-05-29 |
 
 ---
 
@@ -819,12 +819,12 @@
 **Plans:** 4 plans / 2 waves
 
 **Wave 1** *(병렬 실행 가능)*
-- [ ] 21-00-PLAN.md -- DB 마이그레이션 (invest_regional_price_history + invest_price_history RPC) + next.config.ts 301 redirect (INVEST-01, INVEST-04)
-- [ ] 21-01-PLAN.md -- src/lib/data/invest.ts 데이터 함수 3종 + RegionalPriceChart/ComplexPriceChart Wrapper (INVEST-01, INVEST-02, INVEST-03, INVEST-04)
+- [x] 21-00-PLAN.md -- DB 마이그레이션 (invest_regional_price_history + invest_price_history RPC) + next.config.ts 301 redirect (INVEST-01, INVEST-04)
+- [x] 21-01-PLAN.md -- src/lib/data/invest.ts 데이터 함수 3종 + RegionalPriceChart/ComplexPriceChart Wrapper (INVEST-01, INVEST-02, INVEST-03, INVEST-04)
 
 **Wave 2** *(Wave 1 완료 후; 21-02/21-03 병렬 실행 가능)*
-- [ ] 21-02-PLAN.md -- /invest RSC 통합 페이지 (시세 차트 + 갭투자 랭킹 테이블) (INVEST-03)
-- [ ] 21-03-PLAN.md -- /complexes/[id] 시세 차트 섹션 추가 (INVEST-02, INVEST-04)
+- [x] 21-02-PLAN.md -- /invest RSC 통합 페이지 (시세 차트 + 갭투자 랭킹 테이블) (INVEST-03)
+- [x] 21-03-PLAN.md -- /complexes/[id] 시세 차트 섹션 추가 (INVEST-02, INVEST-04)
 
 **Cross-cutting constraints:**
 - 거래 데이터 조회: cancel_date IS NULL AND superseded_by IS NULL 필수 (RPC SQL 포함)

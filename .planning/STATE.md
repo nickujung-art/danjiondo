@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-05-26T06:29:00Z"
-last_activity: 2026-05-26 — Phase 18-01 COMPLETE (공인중개사 데이터 레이어 + Server Actions, auth guard 3건 GREEN)
+last_updated: "2026-05-29T00:00:00Z"
+last_activity: 2026-05-29 — Phase 21 COMPLETE (/invest 투자 분석 통합 페이지 + 단지 상세 시세 차트 + gap-analysis redirect)
 progress:
   total_phases: 13
   completed_phases: 13
@@ -23,6 +23,20 @@ See: .planning/PROJECT.md (updated 2026-05-06)
 **Current focus:** Phase 4 complete — Phase 5 (데이터 확장·운영 안정성) next
 
 ## Current Phase
+
+**Phase 21: 투자 분석 통합 페이지** ✅ Complete
+
+Goal: 실거래 2년 시세 흐름 차트 + 갭투자 랭킹을 /invest 페이지로 통합
+
+Requirements: INVEST-01~04
+
+Plans: 4/4 complete (21-00 ~ 21-03) — verified 2026-05-29
+
+Waves:
+- Wave 1: 21-00 (DB RPC 마이그레이션 + 301 redirect), 21-01 (데이터 레이어 + 차트 컴포넌트) ✅
+- Wave 2: 21-02 (/invest RSC 페이지), 21-03 (단지 상세 시세 차트 섹션) ✅
+
+---
 
 **Phase 5: 데이터 확장·운영 안정성** ✅ Complete
 
