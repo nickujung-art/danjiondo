@@ -39,9 +39,10 @@ export async function seedComplex(
     ? parseInt(raw.kaptUseApproveYmd.slice(0, 4), 10)
     : null
 
-  // status는 upsert 대상에서 제외 — DB DEFAULT 'active'가 신규 INSERT에만 적용됨.
-  // ON CONFLICT(kapt_code) DO UPDATE 시 status를 덮어쓰지 않아 merged/inactive 단지가
-  // seed-complexes.ts 재실행으로 active로 리셋되는 버그 방지.
+  // status, lat, lng는 upsert 대상에서 제외:
+  // - status: merged/inactive 단지가 seed 재실행으로 active 리셋되는 버그 방지
+  // - lat/lng: KAPT API가 좌표를 null로 반환할 때 기존 좌표(카카오 지오코딩 등으로 확보한)를
+  //   덮어쓰는 버그 방지. 좌표 갱신은 fill-missing-coords.ts / fix-null-coords.ts 전용 스크립트로만.
   const row = {
     canonical_name:    canonicalName,
     name_normalized:   nameNormalized,
@@ -51,16 +52,47 @@ export async function seedComplex(
     jibun_address:     raw.kaptAddr ?? null,
     household_count:   raw.kaptdaCnt ?? null,
     built_year:        builtYear,
-    lat:               raw.coordY ?? null,
-    lng:               raw.coordX ?? null,
     data_completeness: INITIAL_DATA_COMPLETENESS,
   }
 
+  // 신규 INSERT 시에만 좌표 설정 (기존 row 좌표 보호)
+  const insertRow = {
+    ...row,
+    lat: raw.coordY ?? null,
+    lng: raw.coordX ?? null,
+  }
+
+  // 1. 기존 row 존재 여부 확인
+  const { data: existing } = await supabase
+    .from('complexes')
+    .select('id')
+    .eq('kapt_code', raw.kaptCode)
+    .maybeSingle()
+
+  if (existing) {
+    // 기존 row — lat/lng/status 제외하고 나머지만 업데이트
+    const { data, error } = await supabase
+      .from('complexes')
+      .update(row)
+      .eq('kapt_code', raw.kaptCode)
+      .select('id')
+      .single()
+    if (error) throw new Error(`seedComplex update failed for ${canonicalName}: ${error.message}`)
+    if (!data) throw new Error(`seedComplex update returned no data for ${canonicalName}`)
+    return { id: (data as { id: string }).id, created: false }
+  }
+
+  // 신규 row — 좌표 포함 INSERT
   const { data, error } = await supabase
     .from('complexes')
-    .upsert(row, { onConflict: 'kapt_code' })
+    .insert(insertRow)
     .select('id')
     .single()
+
+  if (error) throw new Error(`seedComplex insert failed for ${canonicalName}: ${error.message}`)
+  if (!data) throw new Error(`seedComplex insert returned no data for ${canonicalName}`)
+
+  return { id: (data as { id: string }).id, created: true }
 
   if (error) throw new Error(`seedComplex failed for ${canonicalName}: ${error.message}`)
   if (!data) throw new Error(`seedComplex returned no data for ${canonicalName}`)
