@@ -9,6 +9,20 @@ const withSerwist = withSerwistInit({
 })
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      {
+        source:      '/gap-analysis',
+        destination: '/invest',
+        permanent:   true,
+      },
+      {
+        source:      '/gap-analysis/:path*',
+        destination: '/invest/:path*',
+        permanent:   true,
+      },
+    ]
+  },
   async headers() {
     return [
       {
