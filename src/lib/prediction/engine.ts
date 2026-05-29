@@ -62,9 +62,14 @@ function sanitizePrices(prices: number[]): number[] {
  * 'YYYY-MM' 마지막 월에서 n개월 뒤의 달을 반환한다.
  */
 function addMonths(ym: string, n: number): string {
-  const [year, month] = ym.split('-').map(Number)
-  const total = (year ?? 0) * 12 + (month ?? 1) - 1 + n
-  const newYear = Math.floor(total / 12)
+  const parts = ym.split('-')
+  const year  = parseInt(parts[0] ?? '', 10)
+  const month = parseInt(parts[1] ?? '', 10)
+  if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) {
+    throw new Error(`addMonths: invalid yearMonth format "${ym}"`)
+  }
+  const total    = year * 12 + month - 1 + n
+  const newYear  = Math.floor(total / 12)
   const newMonth = (total % 12) + 1
   return `${newYear}-${String(newMonth).padStart(2, '0')}`
 }
