@@ -3,8 +3,8 @@ import Link from 'next/link'
 import { createReadonlyClient } from '@/lib/supabase/readonly'
 import { getGapRankings } from '@/lib/data/gap-analysis'
 import type { GapRankingRow } from '@/lib/data/gap-analysis'
-import { getRegionalPriceHistory, ALLOWED_SGG_CODES, ALLOWED_AREA_BUCKETS } from '@/lib/data/invest'
-import type { AreaBucket, RegionalPricePoint } from '@/lib/data/invest'
+import { getRegionalPriceHistory, getRegionalPricePredictions, ALLOWED_SGG_CODES, ALLOWED_AREA_BUCKETS } from '@/lib/data/invest'
+import type { AreaBucket, RegionalPricePoint, PredictionPoint } from '@/lib/data/invest'
 import { RegionalPriceChartWrapper } from '@/components/invest/RegionalPriceChartWrapper'
 import { formatPrice } from '@/lib/format'
 
@@ -100,10 +100,31 @@ export default async function InvestPage({ searchParams }: Props) {
   const supabase = createReadonlyClient()
 
   // 병렬 fetch
-  const [priceHistory, rows] = await Promise.all([
+  const [priceHistory, rows, predictions] = await Promise.all([
     getRegionalPriceHistory(supabase, sggCode, areaBucket, 24).catch((): RegionalPricePoint[] => []),
     getGapRankings({ sggCode, riskLevel }, supabase).catch((): GapRankingRow[] => []),
+    getRegionalPricePredictions(supabase, sggCode, areaBucket).catch((): PredictionPoint[] => []),
   ])
+
+  // AI 해설 (sggCode + areaBucket + 예측 데이터가 있을 때만, ISR 1주일 캐시)
+  let aiCommentary: string | null = null
+  if (sggCode && areaBucket && predictions.length > 0) {
+    const trend = predictions.length >= 2
+      ? (predictions[predictions.length - 1]!.mean > predictions[0]!.mean ? 'up' : 'down')
+      : 'neutral'
+    const avgMape = predictions.reduce((s, p) => s + p.trainingMape, 0) / predictions.length
+    try {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+      const res = await fetch(
+        `${siteUrl}/api/invest/prediction-commentary?sgg_code=${sggCode}&area_bucket=${encodeURIComponent(areaBucket)}&trend=${trend}&mape=${avgMape}`,
+        { next: { revalidate: 604800 } },
+      )
+      if (res.ok) {
+        const json = await res.json() as { commentary: string | null }
+        aiCommentary = json.commentary
+      }
+    } catch { /* 해설 없이 차트만 표시 */ }
+  }
 
   // ─── tab active helpers ───────────────────────────────────────────────────
   function isSggActive(value: string): boolean {
@@ -224,9 +245,41 @@ export default async function InvestPage({ searchParams }: Props) {
             </div>
           </div>
 
-          <RegionalPriceChartWrapper data={priceHistory} title={chartTitle} />
+          <RegionalPriceChartWrapper data={priceHistory} title={chartTitle} predictionData={predictions} />
 
-          {/* 법적 면책 문구 (D-01) */}
+          {/* AI 해설 카드 (predictions + aiCommentary 있을 때만) */}
+          {aiCommentary && (
+            <div
+              style={{
+                marginTop:    12,
+                padding:      '12px 16px',
+                background:   'var(--bg-surface-2)',
+                borderRadius: 8,
+                borderLeft:   '3px solid var(--dj-orange)',
+              }}
+            >
+              <p
+                style={{
+                  font:   '500 11px/1.4 var(--font-sans)',
+                  color:  'var(--fg-tertiary)',
+                  margin: '0 0 4px',
+                }}
+              >
+                AI 시장 해설 (참고용)
+              </p>
+              <p
+                style={{
+                  font:   '400 13px/1.6 var(--font-sans)',
+                  color:  'var(--fg-sec)',
+                  margin: 0,
+                }}
+              >
+                {aiCommentary}
+              </p>
+            </div>
+          )}
+
+          {/* 법적 면책 문구 (D-01, D-06) */}
           <p
             style={{
               font:   '400 11px/1.5 var(--font-sans)',
@@ -235,7 +288,8 @@ export default async function InvestPage({ searchParams }: Props) {
             }}
           >
             * 본 데이터는 국토교통부 실거래가 공개시스템 기반입니다.<br />
-            * 투자 결정에 직접 활용하지 마세요. 부동산 전문가와 상담하시기 바랍니다.
+            * 투자 결정에 직접 활용하지 마세요. 부동산 전문가와 상담하시기 바랍니다.<br />
+            * AI 예측은 참고용이며 투자 판단의 근거로 사용 불가.
           </p>
         </div>
 
