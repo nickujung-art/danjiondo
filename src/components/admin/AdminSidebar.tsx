@@ -5,6 +5,7 @@ interface PendingCounts {
   reports: number
   ads: number
   gps: number
+  presale: number
 }
 
 interface NavItem {
@@ -24,6 +25,7 @@ export function buildNavItems(pendingCounts: PendingCounts): NavItem[] {
     { label: '카드뉴스', href: '/admin/cardnews' },
     { label: '시세 입력', href: '/admin/listing-prices' },
     { label: '재개발 관리', href: '/admin/redevelopment' },
+    { label: '분양 검수', href: '/admin/presale-discoveries', pendingCount: pendingCounts.presale },
   ]
 }
 

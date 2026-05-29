@@ -89,7 +89,7 @@ describe('buildNavItems — pending count 뱃지', () => {
 
   it('Test 4: pendingCount=150 → label "99+"', async () => {
     const { buildNavItems } = await import('@/components/admin/AdminSidebar')
-    const items = buildNavItems({ reports: 150, ads: 0, gps: 0 })
+    const items = buildNavItems({ reports: 150, ads: 0, gps: 0, presale: 0 })
     const reportsItem = items.find(i => i.href === '/admin/reports')
     expect(reportsItem?.pendingCount).toBe(150)
     // 뱃지 렌더 로직: > 99 → '99+'
@@ -99,16 +99,16 @@ describe('buildNavItems — pending count 뱃지', () => {
 
   it('Test 5: pendingCount=0 → 뱃지 숨김 (count > 0 조건)', async () => {
     const { buildNavItems } = await import('@/components/admin/AdminSidebar')
-    const items = buildNavItems({ reports: 0, ads: 0, gps: 0 })
+    const items = buildNavItems({ reports: 0, ads: 0, gps: 0, presale: 0 })
     const reportsItem = items.find(i => i.href === '/admin/reports')
     // pendingCount=0이면 뱃지 숨김 조건: (pendingCount ?? 0) > 0 이 false
     const shouldShowBadge = (reportsItem?.pendingCount ?? 0) > 0
     expect(shouldShowBadge).toBe(false)
   })
 
-  it('Test 6: buildNavItems — 9개 항목 반환', async () => {
+  it('Test 6: buildNavItems — 10개 항목 반환', async () => {
     const { buildNavItems } = await import('@/components/admin/AdminSidebar')
-    const items = buildNavItems({ reports: 0, ads: 0, gps: 0 })
-    expect(items).toHaveLength(9)
+    const items = buildNavItems({ reports: 0, ads: 0, gps: 0, presale: 0 })
+    expect(items).toHaveLength(10)
   })
 })

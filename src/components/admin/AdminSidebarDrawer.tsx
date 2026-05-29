@@ -9,6 +9,7 @@ interface PendingCounts {
   reports: number
   ads: number
   gps: number
+  presale: number
 }
 
 interface AdminSidebarDrawerProps {
