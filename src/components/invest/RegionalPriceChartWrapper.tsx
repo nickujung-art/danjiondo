@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import type { RegionalPricePoint } from '@/lib/data/invest'
+import type { RegionalPricePoint, PredictionPoint } from '@/lib/data/invest'
 
 const RegionalPriceChart = dynamic(
   () => import('./RegionalPriceChart').then(m => m.RegionalPriceChart),
@@ -10,12 +10,12 @@ const RegionalPriceChart = dynamic(
     loading: () => (
       <div
         style={{
-          height:          220,
-          background:      'var(--bg-surface-2)',
-          borderRadius:    6,
-          display:         'flex',
-          alignItems:      'center',
-          justifyContent:  'center',
+          height:         220,
+          background:     'var(--bg-surface-2)',
+          borderRadius:   6,
+          display:        'flex',
+          alignItems:     'center',
+          justifyContent: 'center',
         }}
       >
         <span
@@ -32,10 +32,11 @@ const RegionalPriceChart = dynamic(
 )
 
 interface Props {
-  data:  RegionalPricePoint[]
-  title: string
+  data:            RegionalPricePoint[]
+  title:           string
+  predictionData?: PredictionPoint[]
 }
 
-export function RegionalPriceChartWrapper({ data, title }: Props) {
-  return <RegionalPriceChart data={data} title={title} />
+export function RegionalPriceChartWrapper({ data, title, predictionData }: Props) {
+  return <RegionalPriceChart data={data} title={title} predictionData={predictionData} />
 }

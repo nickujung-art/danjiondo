@@ -2,6 +2,17 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 
+// ─── Prediction Types ─────────────────────────────────────────────────────────
+
+export interface PredictionPoint {
+  yearMonth:    string
+  mean:         number
+  lower:        number
+  upper:        number
+  modelName:    string
+  trainingMape: number
+}
+
 // ─── Allowlists ───────────────────────────────────────────────────────────────
 
 export const ALLOWED_SGG_CODES = ['48121', '48123', '48125', '48127', '48128', '48129', '48250'] as const
@@ -128,4 +139,81 @@ export async function getComplexPriceByType(
     avgPrice:  Number(r.avg_price),
     txCount:   Number(r.tx_count),
   }))
+}
+
+/**
+ * 지역 집계 예측값 조회.
+ * complex_price_predictions 테이블에서 sgg_code 지역의 단지들 예측 중위값을 반환.
+ * 예측 데이터가 없으면 빈 배열 반환 (graceful degradation, D-07).
+ */
+export async function getRegionalPricePredictions(
+  supabase:   SupabaseClient<Database>,
+  sggCode:    string | undefined,
+  areaBucket: AreaBucket | undefined,
+): Promise<PredictionPoint[]> {
+  if (!sggCode || !areaBucket) return []
+
+  const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+
+  // 1) 해당 sgg_code의 단지 id 조회
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: complexIds } = await (supabase as any)
+    .from('complexes')
+    .select('id')
+    .eq('sgg_code', sggCode)
+    .limit(500)
+
+  if (!complexIds || complexIds.length === 0) return []
+  const ids = (complexIds as { id: string }[]).map(c => c.id)
+
+  // 2) 예측 데이터 조회 (최근 2일 내 computed)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('complex_price_predictions')
+    .select('predicted_month, predicted_price_mean, predicted_price_lower, predicted_price_upper, model_name, training_mape')
+    .in('complex_id', ids)
+    .eq('area_bucket', areaBucket)
+    .gte('computed_at', twoDaysAgo)
+    .order('predicted_month', { ascending: true })
+
+  if (error || !data) return []
+
+  // 3) 같은 predicted_month끼리 mean/lower/upper 각각 중위값 집계
+  type MonthBucket = { means: number[]; lowers: number[]; uppers: number[] }
+  const byMonth = new Map<string, MonthBucket>()
+  for (const row of (data as Array<{
+    predicted_month:       string
+    predicted_price_mean:  number
+    predicted_price_lower: number
+    predicted_price_upper: number
+    model_name:            string
+    training_mape:         number
+  }>)) {
+    const ym = row.predicted_month.slice(0, 7) // 'YYYY-MM'
+    if (!byMonth.has(ym)) byMonth.set(ym, { means: [], lowers: [], uppers: [] })
+    const b = byMonth.get(ym)!
+    b.means.push(row.predicted_price_mean)
+    b.lowers.push(row.predicted_price_lower)
+    b.uppers.push(row.predicted_price_upper)
+  }
+
+  // 중위값 계산 (DB 저장된 실제 Holt-Winters 신뢰구간 사용)
+  function median(arr: number[]): number {
+    const sorted = [...arr].sort((a, b) => a - b)
+    const mid = Math.floor(sorted.length / 2)
+    return sorted.length % 2 === 0
+      ? Math.round((sorted[mid - 1]! + sorted[mid]!) / 2)
+      : sorted[mid]!
+  }
+
+  return Array.from(byMonth.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([ym, b]) => ({
+      yearMonth:    ym,
+      mean:         median(b.means),
+      lower:        median(b.lowers),
+      upper:        median(b.uppers),
+      modelName:    'regional-median',
+      trainingMape: 0,
+    }))
 }
