@@ -1,6 +1,6 @@
-# Roadmap — 단지온도
+﻿# Roadmap — 단지온도
 
-**15 phases** | **65 requirements mapped** | v1~v7 requirements covered ✓
+**21 phases** | **65+ requirements mapped** | v1~v7 requirements covered ✓
 
 ## Overview
 
@@ -11,9 +11,9 @@
 | 3 | 카드뉴스·법적·운영 | V1.0 | V1.0 정식 출시 가능 상태 | SHARE-03~04, LEGAL-01~05, ADMIN-01~04, A11Y-01~03 | ✅ Complete (5/5 plans) |
 | 4 | 커뮤니티 기초 | V1.5 | 참여·소통 기능 + 데이터 확장 | COMM-01~05, DATA-01~02, NOTIF-01~02 | ✅ Complete |
 | 5 | 데이터 확장·운영 | V1.5 | V1.5 완성 — 데이터 깊이 + 운영 안정성 | DATA-03~05, OPS-01 | ✅ Complete |
-| 6 | AI·차별화 기술 | V2.0 | 기술 차별화 — AI 봇 + 고도화 분석 | DIFF-03, DATA-06~07, AD-01~02, AUTH-01 | 📋 Planned (5 plans) |
+| 6 | AI·차별화 기술 | V2.0 | 기술 차별화 — AI 봇 + 고도화 분석 | DIFF-03, DATA-06~07, AD-01~02, AUTH-01 | ✅ Complete (DATA-07 Phase 7 이월) |
 | 7 | 데이터 파이프라인 수리 | V2.0 | 단지↔거래 연결 + KAPT 단지정보 적재 — 서비스 데이터 기반 완성 | DATA-08~10 | ✅ Complete |
-| 8 | 커뮤니티 심화 | V2.0 | V2.0 완성 — 게이미피케이션 + 자동화 | DIFF-01~02, DIFF-04~06, OPS-02 | ⬜ Not Started |
+| 8 | 커뮤니티 심화 | V2.0 | V2.0 완성 — 게이미피케이션 + 자동화 | DIFF-01~02, DIFF-04~06, OPS-02 | ✅ Complete (OPS-02 복사버튼으로 축소) |
 | 9 | 단지 상세 UX 고도화 | V2.1 | 실거래가 그래프·시설·관리비 실수요자 관점 개선 | UX-01~04 | ✅ Complete |
 | 10 | 교육 환경 고도화 | V2.2 | 학구도 기반 배정학교 + 교육 카드 UX 전면 개선 | EDU-01~05 | ✅ Complete |
 | 11 | 지도 고도화 | V2.3 | 카카오맵 게임화 — 클러스터 줌인·평당가 라벨·사이드 패널·배지 마커 | MAP-01~05 | 🚫 Dropped |
@@ -21,7 +21,12 @@
 | 13 | 신축·분양·재건축 대시보드 | V2.5 | 청약홈 API 연동 + 신축/분양/재건축 3-tier 우선순위 대시보드 구현 | PRESALE-01~03, REDV-01 | ✅ Complete |
 | 14 | 지도 줌 중간 레벨 — 동 클러스터 | V2.5 | 구 클러스터→개별 마커 사이 동 단위 칩 중간 레벨 추가로 줌인 UX 개선 | MAP-10~12 | ✅ Complete |
 | 15 | 커뮤니티 & 게이미피케이션 | V3.0 | 회원 등급 5단계 + 단지 비교 표 + Naver 카페 글 단지 연결 | DIFF-01, DIFF-02, DIFF-06 | ✅ Completed 2026-05-22 |
-| 19 | 어드민 UI/UX 전면 개선 | V3.1 | 공유 레이아웃 + 사이드바 네비게이션으로 13개 어드민 기능 통합, 운영자 접근성 전면 개선 | ADMIN-10~13 | ⬜ Not Started |
+| 16 | 광고 플랫폼 MVP | V3.0 | 홈 배너 캐러셀 + 광고주 문의 페이지 + 어드민 캠페인 관리 | AD-03~05 | ✅ Completed 2026-05-27 |
+| 17 | 광고 게재 확장 | V3.0 | map_popup 신규 placement + 지역 매칭 sidebar + SidePanel in_feed 렌더링 | AD-06~09 | ✅ Completed 2026-05-27 |
+| 18 | 공인중개사 추천 섹션 | V3.1 | 단지 상세 공인중개사 카드 + 어드민 CRUD + 단지 배정 UI | ADMIN-14~16 | ✅ Completed 2026-05-27 |
+| 19 | 어드민 UI/UX 전면 개선 | V3.1 | 공유 레이아웃 + 사이드바 네비게이션으로 13개 어드민 기능 통합, 운영자 접근성 전면 개선 | ADMIN-10~13 | ✅ Completed 2026-05-28 |
+| 20 | 갭투자 분석 | V3.2 | 매매/전세 실거래 데이터 기반 갭투자 지표 계산 + 단지 상세 + 전용 분석 페이지 | GAP-01~04 | ✅ Completed 2026-05-28 |
+| 21 | 투자 분석 통합 페이지 | V3.3 | 실거래 2년 시세 흐름 차트 + 갭투자 랭킹을 /invest 페이지로 통합 | INVEST-01~04 | 🟡 Planned |
 
 ---
 
@@ -628,15 +633,102 @@
 
 **UI hint**: no
 
+---
+
+### Phase 16: 광고 플랫폼 MVP
+
+**Goal:** 단지온도 홈페이지에 실제 광고를 노출하고 광고주 문의 흐름을 완성. 운영자는 `/admin/ads`에서 캠페인을 관리하고, 광고주는 `/ads`에서 상품을 보고 문의를 남기며, 방문자는 홈 상단 배너에서 승인된 광고를 볼 수 있다.
+
+**Version:** V3.0
+
+**Depends on:** Phase 15
+
+**Requirements:**
+- AD-03: 홈 상단 `banner_top` 캐러셀 — 승인된 광고 순환 노출
+- AD-04: 광고주 문의 페이지 `/ads` + 문의 폼 + Server Action
+- AD-05: 어드민 캠페인 관리 — 목록·ROI 통계·생성·승인/거절/일시정지
+
+**Plans:** 2 plans / 1 wave
+
+**Wave 1** *(독립 실행 가능 — 병렬)*
+- [x] 16-01-PLAN.md — 홈 배너 캐러셀 (`AdBannerCarousel`) + 홈 통합 (AD-03)
+- [x] 16-02-PLAN.md — 광고주 문의 페이지 + 문의 폼 Server Action (AD-04)
+
+**Success Criteria:**
+1. 홈 상단에 승인된 banner_top 광고가 캐러셀로 순환 표시된다
+2. `/ads` 페이지에서 광고 상품 소개 + 문의 폼이 동작한다
+3. 광고 문의 제출 시 Resend 이메일이 발송된다
+4. 어드민에서 캠페인 생성·승인·거절·일시정지가 동작한다
+
+**UI hint**: no
+
+---
+
+### Phase 17: 광고 게재 확장
+
+**Goal:** 광고 placement를 3종(banner_top·sidebar·in_feed)에서 5종으로 확장. 신규 `map_popup` + 지역 매칭 sidebar + SidePanel in_feed 실제 렌더링 추가.
+
+**Version:** V3.0
+
+**Depends on:** Phase 16
+
+**Requirements:**
+- AD-06: DB 마이그레이션 — `map_popup` placement + `target_sgg_code/lat/lng` 컬럼
+- AD-07: `AdMapPopup` 컴포넌트 (CustomOverlayMap, 5초 자동 닫힘, impression/click)
+- AD-08: `GET /api/ads/sidebar?sgg_code=` + MapSidePanel 광고 통합
+- AD-09: SidePanel ComplexList in_feed 광고 + 단지 상세 사이드바 광고
+
+**Plans:** 4 plans / 2 waves
+
+**Wave 1** *(독립 실행 가능 — 병렬)*
+- [x] 17-01-PLAN.md — DB 마이그레이션 + `getActiveAds` sggCode 필터 + `AdCreateForm` 확장 (AD-06)
+- [x] 17-02-PLAN.md — `AdMapPopup` 컴포넌트 + KakaoMap 통합 (AD-07)
+
+**Wave 2** *(blocked on Wave 1)*
+- [x] 17-03-PLAN.md — `GET /api/ads/sidebar` route + MapSidePanel 통합 (AD-08)
+- [x] 17-04-PLAN.md — SidePanel in_feed 광고 + 단지 상세 사이드바 광고 (AD-09)
+
+**Success Criteria:**
+1. 지도에서 단지 클릭 시 해당 sgg_code 매칭 sidebar 광고가 사이드 패널에 표시된다
+2. 지도 위에 `map_popup` 광고 오버레이가 5초 후 자동 닫힘된다
+3. SidePanel 검색 결과 5번째 이후에 in_feed 광고가 삽입된다
+4. 모든 impression/click 이벤트가 `/api/ads/events`에 기록된다
+
+**UI hint**: no
+
+---
+
 ### Phase 18: 공인중개사 추천 섹션
 
-**Goal:** [To be planned]
-**Requirements**: TBD
-**Depends on:** Phase 17
-**Plans:** 0 plans
+**Goal:** 아파트 단지 상세 페이지의 in_feed 광고 섹션을 공인중개사 추천 섹션으로 교체. 단지별 담당 공인중개사 최대 2명 배정 + 방문자 전화 문의 링크 제공.
 
-Plans:
-- [ ] TBD (run /gsd-plan-phase 18 to break down)
+**Version:** V3.1
+
+**Depends on:** Phase 17
+
+**Requirements:**
+- ADMIN-14: `realtors` + `realtor_assignments` 테이블 + RLS 마이그레이션
+- ADMIN-15: 어드민 `/admin/realtors` CRUD (목록·등록·수정·삭제·단지 배정)
+- ADMIN-16: 단지 상세 페이지 "이 단지 담당 공인중개사" 섹션 + `RealtorCard` 컴포넌트
+
+**Plans:** 4 plans / 2 waves
+
+**Wave 0** *(독립 실행 가능)*
+- [x] 18-00-PLAN.md — DB 마이그레이션 (realtors + realtor_assignments 테이블 + RLS) (ADMIN-14)
+- [x] 18-01-PLAN.md — 데이터 레이어 + Server Actions + RealtorCard 컴포넌트 (ADMIN-15, ADMIN-16)
+
+**Wave 1** *(blocked on Wave 0)*
+- [x] 18-02-PLAN.md — 어드민 CRUD 페이지 (목록·등록·수정·단지 배정) (ADMIN-15)
+- [x] 18-03-PLAN.md — 단지 상세 페이지 섹션 교체 + 테스트 (ADMIN-16)
+
+**Success Criteria:**
+1. `/admin/realtors`에서 공인중개사 등록·수정·삭제 및 단지 배정이 동작한다
+2. 단지 상세 페이지에 배정된 공인중개사 카드가 최대 2개 표시된다
+3. 배정된 공인중개사가 없으면 섹션이 숨겨진다
+4. `tel:` 링크로 전화 문의가 가능하다
+5. npm run lint && npm run build && npm run test 모두 PASS
+
+**UI hint**: no
 
 ---
 
@@ -653,14 +745,17 @@ Plans:
 - ADMIN-12: 사이드바 미처리 항목 뱃지 — pending 신고·광고·GPS 요청 카운트 표시
 - ADMIN-13: 어드민 페이지 공통 UX 개선 — 모바일 햄버거 메뉴 + 현재 페이지 active 표시
 
-**Plans:** 3 plans / 2 waves
+**Plans:** 4 plans / 3 waves
 
 **Wave 0** *(BLOCKING — 공유 레이아웃 + 기존 header 제거)*
-- [ ] 19-00-PLAN.md — 공유 어드민 레이아웃 (layout.tsx + AdminSidebar/Links/Drawer) + /admin 리다이렉트 + 기존 9개 페이지 header 제거 + 테스트 (ADMIN-10, ADMIN-13)
+- [x] 19-00-PLAN.md — 공유 어드민 레이아웃 (layout.tsx + AdminSidebar/Links/Drawer) + /admin 리다이렉트 + 기존 9개 페이지 header 제거 + 테스트 (ADMIN-10, ADMIN-13)
 
 **Wave 1** *(blocked on Wave 0; 19-01/19-02 병렬 실행 가능 — files_modified 무중복)*
-- [ ] 19-01-PLAN.md — 회원 + 신고 목록 검색·필터 (ADMIN-11, ADMIN-12)
-- [ ] 19-02-PLAN.md — 광고 + 중개사 목록 검색·필터 (ADMIN-11)
+- [x] 19-01-PLAN.md — 회원 + 신고 목록 검색·필터 (ADMIN-11, ADMIN-12)
+- [x] 19-02-PLAN.md — 광고 + 중개사 목록 검색·필터 (ADMIN-11)
+
+**Wave 2** *(blocked on Wave 1)*
+- [x] 19-03-PLAN.md — 에지케이스·에러 처리·고도화 (중복 auth 제거, searchParams 화이트리스트, DB 에러 표시, 인메모리→DB 필터, 페이지네이션, Server Action revalidate, 편집 페이지 레이아웃, 정렬)
 
 **Cross-cutting constraints:**
 - RSC-first: layout.tsx RSC, AdminSidebarLinks + AdminSidebarDrawer만 'use client'
@@ -679,8 +774,77 @@ Plans:
 
 **UI hint**: no
 
----
+### Phase 20: 갭투자 분석
 
+**Goal:** 기존 국토부 실거래 데이터(매매/전세)를 활용해 단지별 갭투자 지표를 계산하고, 단지 상세 페이지와 전용 /gap-analysis 랭킹 페이지에 신호등 배지 + 숫자 형태로 위험도를 노출한다.
+
+**Version:** V3.2
+
+**Requirements:**
+- GAP-01: `complex_gap_stats` DB 뷰/캐시 — 단지별 갭 금액·갭 비율·전세가율 집계 (매매/전세 중위값 기반)
+- GAP-02: 일배치 cron 갱신 — 갭 통계를 daily-batch에 포함, data_sources 상태 추적
+- GAP-03: 단지 상세 페이지 갭투자 카드 — 갭 금액·비율 + 신호등 배지(안전/주의/위험)
+- GAP-04: /gap-analysis 전용 페이지 — 지역별 갭 비율 랭킹 테이블 (필터·정렬)
+
+**Plans:** TBD (연구 후 결정)
+
+**Cross-cutting constraints:**
+- 거래 데이터 조회: `cancel_date IS NULL AND superseded_by IS NULL` 필수
+- Supabase 쿼리는 서버 컴포넌트 또는 API Route에서만 (CLAUDE.md)
+- AI 슬롭 금지: backdrop-blur, gradient-text, glow, 보라/인디고 없음
+- 이모지 금지 — CSS dot 또는 SVG path로 신호등 표현
+
+**Success Criteria:**
+1. 단지 상세 페이지에 갭 금액·비율·전세가율 + 신호등 배지가 표시된다
+2. 거래 데이터가 부족한 단지(3건 미만)는 갭투자 섹션이 숨겨진다
+3. /gap-analysis 페이지에서 창원·김해 단지 갭 비율 랭킹을 확인할 수 있다
+4. 일배치 cron 실행 후 갭 통계가 갱신된다
+5. npm run lint && npm run build && npm run test 모두 PASS
+
+**UI hint**: yes
+
+
+### Phase 21: 투자 분석 통합 페이지
+
+**Goal:** 실거래 2년 시세 흐름 차트 + 갭투자 랭킹을 /invest 페이지로 통합. 'AI 예측'이 아닌 '실거래 흐름 기반 참고 지수'로 포지셔닝.
+
+**Version:** V3.3
+
+**Requirements:**
+- INVEST-01: invest_regional_price_history RPC -- sgg_code + area_bucket + months 기반 지역 전체 매매 시세 월별 집계
+- INVEST-02: invest_price_history RPC -- 단지별 + area_bucket 타입별 24개월 매매 시세 집계
+- INVEST-03: /invest 통합 페이지 -- 상단 지역 시세 Recharts AreaChart + 하단 갭투자 랭킹 테이블
+- INVEST-04: /complexes/[id] 시세 차트 섹션 추가 + /gap-analysis -> /invest 301 redirect
+
+**Plans:** 4 plans / 2 waves
+
+**Wave 1** *(병렬 실행 가능)*
+- [ ] 21-00-PLAN.md -- DB 마이그레이션 (invest_regional_price_history + invest_price_history RPC) + next.config.ts 301 redirect (INVEST-01, INVEST-04)
+- [ ] 21-01-PLAN.md -- src/lib/data/invest.ts 데이터 함수 3종 + RegionalPriceChart/ComplexPriceChart Wrapper (INVEST-01, INVEST-02, INVEST-03, INVEST-04)
+
+**Wave 2** *(Wave 1 완료 후; 21-02/21-03 병렬 실행 가능)*
+- [ ] 21-02-PLAN.md -- /invest RSC 통합 페이지 (시세 차트 + 갭투자 랭킹 테이블) (INVEST-03)
+- [ ] 21-03-PLAN.md -- /complexes/[id] 시세 차트 섹션 추가 (INVEST-02, INVEST-04)
+
+**Cross-cutting constraints:**
+- 거래 데이터 조회: cancel_date IS NULL AND superseded_by IS NULL 필수 (RPC SQL 포함)
+- Supabase 쿼리는 서버 컴포넌트에서만 (CLAUDE.md)
+- AI 슬롭 금지: backdrop-blur, gradient-text, glow, 보라/인디고 없음
+- formatPrice는 src/lib/format.ts에서 import (로컬 복사 금지)
+- /invest ISR: revalidate = 3600 / /complexes/[id]: revalidate = 86400 유지
+- 법적 면책 문구 필수: '투자 결정에 직접 활용하지 마세요' (D-01)
+
+**Success Criteria:**
+1. /invest 페이지에 지역+타입 필터 탭 + Recharts AreaChart 시세 차트가 렌더된다
+2. /invest 하단 갭투자 랭킹 테이블이 표시되고 단지 클릭 시 /complexes/[id]로 이동한다
+3. /gap-analysis 접근 시 /invest로 301 redirect된다
+4. 단지 상세 페이지에 시세 흐름 차트 섹션이 GapAnalysisCard 아래 존재한다
+5. 법적 면책 문구가 두 페이지 모두 존재한다
+6. npm run lint && npm run build && npm run test 통과
+
+**UI hint**: yes
+
+---
 ## Milestone Summary
 
 | Milestone | Phases | Gate |
@@ -688,3 +852,5 @@ Plans:
 | **V1.0 정식 출시** | Phase 1~3 | lint + build + test + E2E 5종 + axe-core 0 critical + 법적 페이지 존재 + Vercel 배포 |
 | **V1.5 커뮤니티** | Phase 4~5 | Phase 1~3 gate + 후기 댓글 + 신고 SLA ≤ 24h + DB 백업 |
 | **V2.0 차별화** | Phase 6~8 | Phase 4~5 gate + AI 봇 환각률 ≤ 5% + NLP 정확도 ≥ 85% + 광고 AI 법무 승인 |
+
+
