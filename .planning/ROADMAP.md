@@ -1,6 +1,6 @@
 ﻿# Roadmap — 단지온도
 
-**21 phases** | **65+ requirements mapped** | v1~v7 requirements covered ✓
+**22 phases** | **69+ requirements mapped** | v1~v7 requirements covered ✓
 
 ## Overview
 
@@ -27,6 +27,7 @@
 | 19 | 어드민 UI/UX 전면 개선 | V3.1 | 공유 레이아웃 + 사이드바 네비게이션으로 13개 어드민 기능 통합, 운영자 접근성 전면 개선 | ADMIN-10~13 | ✅ Completed 2026-05-28 |
 | 20 | 갭투자 분석 | V3.2 | 매매/전세 실거래 데이터 기반 갭투자 지표 계산 + 단지 상세 + 전용 분석 페이지 | GAP-01~04 | ✅ Completed 2026-05-28 |
 | 21 | 투자 분석 통합 페이지 | V3.3 | 실거래 2년 시세 흐름 차트 + 갭투자 랭킹을 /invest 페이지로 통합 | INVEST-01~04 | ✅ Completed 2026-05-29 |
+| 22 | AI 가격 예측 | V3.4 | Holt-Winters 통계 엔진 + Claude Haiku 해설로 단지별 평형별 6개월 예측선 구현 | PRED-01~04 | 🟡 Planned |
 
 ---
 
@@ -844,6 +845,51 @@
 
 **UI hint**: yes
 
+### Phase 22: AI 가격 예측
+
+**Goal:** Holt-Winters 통계 엔진 + Claude Haiku 해설로 단지별 평형별 6개월 예측선 구현. /invest 페이지 지역 시세 차트에 점선 예측 구간 + AI 한국어 트렌드 해설 카드 추가.
+
+**Version:** V3.4
+
+**Depends on:** Phase 21 (invest.ts 데이터 함수, RegionalPriceChart 컴포넌트)
+
+**Requirements:**
+- PRED-01: 통계 예측 엔진 — Holt-Winters/이중지수/선형회귀 TypeScript 구현, 데이터 양 기반 자동 알고리즘 선택 (24개월+= Holt-Winters, 12-23=이중지수, 6-11=선형회귀, 6 미만=미표시)
+- PRED-02: GitHub Actions 배치 — 매일 새벽 예측값 계산 → complex_price_predictions 테이블 저장
+- PRED-03: /invest 차트 예측선 — 기존 RegionalPriceChart에 6개월 점선 + 신뢰구간 추가
+- PRED-04: Claude Haiku 해설 카드 — 예측 방향 + 근거 한 문장 (ISR 1주일 캐싱)
+
+**Plans:** 4 plans / 2 waves
+
+**Wave 1** *(병렬 실행 가능)*
+- [ ] 22-00-PLAN.md -- DB 마이그레이션 (complex_price_predictions 테이블 + compute_predictions RPC + RLS) (PRED-01, PRED-02)
+- [ ] 22-01-PLAN.md -- 예측 엔진 TypeScript 구현 (src/lib/prediction/engine.ts) (PRED-01)
+
+**Wave 2** *(Wave 1 완료 후; 22-02/22-03 병렬 실행 가능)*
+- [ ] 22-02-PLAN.md -- GitHub Actions 배치 스크립트 (scripts/compute-predictions.ts + compute-predictions.yml) (PRED-02)
+- [ ] 22-03-PLAN.md -- /invest 차트 예측선 + Claude Haiku 해설 카드 UI (PRED-03, PRED-04)
+
+**Cross-cutting constraints:**
+- 거래 데이터 조회: cancel_date IS NULL AND superseded_by IS NULL 필수
+- Supabase 쿼리는 서버 컴포넌트에서만 (CLAUDE.md)
+- AI 슬롭 금지: backdrop-blur, gradient-text, glow, 보라/인디고 없음
+- Claude Haiku 해설: 숫자(가격) 절대 포함 금지 — hallucination 방지
+- 예측 실패 graceful degradation 필수 (D-07): 차트는 유지, 예측 구간만 숨김
+- 법적 면책 강화 (D-06): AI 예측은 참고용이며 투자 판단의 근거로 사용 불가
+- 거래 10건 미만 평형은 예측 미표시 (D-02)
+
+**Success Criteria:**
+1. complex_price_predictions 테이블에 UNIQUE (complex_id, area_bucket, predicted_month) 제약 존재
+2. forecast(data_6개_미만) === null (graceful degradation)
+3. /invest 차트에 점선 예측 구간이 표시되고 실거래 실선과 시각적으로 구분된다
+4. Claude Haiku 해설 카드가 숫자 없는 한국어 트렌드 설명을 표시한다
+5. 예측 데이터 없을 때 차트가 에러 없이 정상 표시된다
+6. GitHub Actions compute-predictions.yml이 매일 KST 02:00 실행된다
+7. npm run lint && npm run build && npm run test 통과
+
+**UI hint**: yes
+
+---
 ---
 ## Milestone Summary
 
