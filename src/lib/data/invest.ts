@@ -167,6 +167,9 @@ export async function getRegionalPricePredictions(
   const ids = (complexIds as { id: string }[]).map(c => c.id)
 
   // 2) 예측 데이터 조회 (최근 2일 내 computed)
+  // ids.length × 6 (예측 개월) + 버퍼; PostgREST 기본 1000행 한도 방지 (CR-02)
+  const rowLimit = Math.min(ids.length * 6 + 100, 6000)
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('complex_price_predictions')
@@ -174,6 +177,7 @@ export async function getRegionalPricePredictions(
     .in('complex_id', ids)
     .eq('area_bucket', areaBucket)
     .gte('computed_at', twoDaysAgo)
+    .limit(rowLimit)
     .order('predicted_month', { ascending: true })
 
   if (error || !data) return []
