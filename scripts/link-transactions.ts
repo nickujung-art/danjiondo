@@ -91,6 +91,28 @@ async function matchByAliasLookup(
   return { complexId: matched.complex_id, confidence: matched.confidence ?? 0.95 }
 }
 
+// ── Step 0.5: jibun 정확 매칭 ──────────────────────────────────
+// umd_nm + jibun → complexes.jibun_address 마지막 토큰 비교
+// "대동" 같은 동명 중복 단지를 번지로 특정한다. 2건 이상 매칭 시 스킵(모호).
+async function matchByJibun(
+  params: { sggCode: string; umdNm: string; jibun: string },
+  supabase: SupabaseClientType,
+): Promise<{ complexId: string; confidence: number } | null> {
+  // jibun_address 형식: "경남 창원시 XX구 {umdNm} {jibun}" — 마지막 두 토큰이 읍면동+번지
+  const suffix = `${params.umdNm} ${params.jibun}`
+  const { data, error } = await supabase
+    .from('complexes')
+    .select('id')
+    .eq('sgg_code', params.sggCode)
+    .neq('status', 'demolished')
+    .neq('status', 'merged')
+    .like('jibun_address', `%${suffix}`)
+
+  if (error || !data || data.length === 0) return null
+  if (data.length === 1) return { complexId: (data[0] as { id: string }).id, confidence: 0.95 }
+  return null  // 2건 이상 → 모호, 다음 단계로 넘김
+}
+
 // ── 중복 방지 가드 (Pitfall 3) ──────────────────────────────────
 // complex_match_queue에 동일 transaction_id가 이미 존재하면 true 반환
 async function isAlreadyQueued(
@@ -203,7 +225,7 @@ async function main(): Promise<void> {
 
     const { data: rows, error: fetchError } = await supabase
       .from('transactions')
-      .select('id, sgg_code, raw_complex_name')
+      .select('id, sgg_code, raw_complex_name, umd_nm, jibun')
       .is('complex_id', null)
       .is('cancel_date', null)
       .is('superseded_by', null)
@@ -218,8 +240,8 @@ async function main(): Promise<void> {
 
     const linkedPairs: Array<{ id: string; complexId: string }> = []
 
-    // 3. 각 행에 대해 Step 0 (alias) → matchByAdminCode 순으로 매칭
-    for (const tx of rows as Array<{ id: string; sgg_code: string; raw_complex_name: string }>) {
+    // 3. 각 행에 대해 Step 0 (alias) → Step 0.5 (jibun) → matchByAdminCode 순으로 매칭
+    for (const tx of rows as Array<{ id: string; sgg_code: string; raw_complex_name: string; umd_nm: string | null; jibun: string | null }>) {
       const nameNormalized = nameNormalize(tx.raw_complex_name)
 
       // Step 0: complex_aliases exact-match (수동 매핑 우선 조회)
@@ -230,6 +252,19 @@ async function main(): Promise<void> {
       if (aliasResult && aliasResult.confidence >= AUTO_THRESHOLD) {
         linkedPairs.push({ id: tx.id, complexId: aliasResult.complexId })
         continue
+      }
+
+      // Step 0.5: jibun 정확 매칭 — umd_nm + jibun → jibun_address 마지막 토큰 비교
+      // 대동/동성 등 동명 중복 단지를 번지로 정확히 특정한다
+      if (tx.umd_nm && tx.jibun) {
+        const jibunResult = await matchByJibun(
+          { sggCode: tx.sgg_code, umdNm: tx.umd_nm, jibun: tx.jibun },
+          supabase,
+        )
+        if (jibunResult && jibunResult.confidence >= AUTO_THRESHOLD) {
+          linkedPairs.push({ id: tx.id, complexId: jibunResult.complexId })
+          continue
+        }
       }
 
       // CLAUDE.md 필수: sgg_code + pg_trgm 복합 매칭 — 이름 단독 매칭 절대 금지
