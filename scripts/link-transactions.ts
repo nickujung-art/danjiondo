@@ -99,14 +99,23 @@ async function matchByJibun(
   supabase: SupabaseClientType,
 ): Promise<{ complexId: string; confidence: number } | null> {
   // jibun_address 형식: "경남 창원시 XX구 {umdNm} {jibun}" — 마지막 두 토큰이 읍면동+번지
+  // 패턴: "사파동 142" 뒤에 아무것도 없거나(일반 형식) 공백+단지명(KAPT 형식) 둘 다 허용
+  // LIKE '%사파동 142' : "경남 창원시 성산구 사파동 142" 매칭
+  // LIKE '%사파동 142 %': "경상남도 창원성산구 사파동 142 사파대동2차아파트" 매칭
   const suffix = `${params.umdNm} ${params.jibun}`
-  const { data, error } = await supabase
-    .from('complexes')
-    .select('id')
+  const { data: d1 } = await supabase
+    .from('complexes').select('id')
     .eq('sgg_code', params.sggCode)
-    .neq('status', 'demolished')
-    .neq('status', 'merged')
+    .neq('status', 'demolished').neq('status', 'merged')
     .like('jibun_address', `%${suffix}`)
+  const { data: d2 } = await supabase
+    .from('complexes').select('id')
+    .eq('sgg_code', params.sggCode)
+    .neq('status', 'demolished').neq('status', 'merged')
+    .like('jibun_address', `%${suffix} %`)
+  const combined = [...(d1 ?? []), ...(d2 ?? [])]
+  const unique = [...new Map(combined.map((r: { id: string }) => [r.id, r])).values()]
+  const { data, error } = { data: unique, error: null }
 
   if (error || !data || data.length === 0) return null
   if (data.length === 1) return { complexId: (data[0] as { id: string }).id, confidence: 0.95 }
