@@ -1,0 +1,29 @@
+name: 가격 예측 배치 (단지×버킷 6개월 예측 계산)
+
+on:
+  schedule:
+    - cron: '0 17 * * *'   # 02:00 KST (UTC 17:00) — 매일 자동 실행
+  workflow_dispatch: {}
+
+jobs:
+  compute:
+    name: 전체 단지 가격 예측 계산
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: 가격 예측 계산 (전체 단지 × 4 area_bucket)
+        env:
+          NEXT_PUBLIC_SUPABASE_URL:  ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npx tsx scripts/compute-predictions.ts
