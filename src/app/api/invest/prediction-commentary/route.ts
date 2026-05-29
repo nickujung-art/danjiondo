@@ -60,8 +60,17 @@ export async function GET(request: NextRequest): Promise<Response> {
       }],
     })
 
-    const text = message.content[0]?.type === 'text' ? message.content[0].text : null
-    return Response.json({ commentary: text })
+    const raw = message.content[0]?.type === 'text' ? message.content[0].text : null
+    if (!raw) return Response.json({ commentary: null })
+
+    // 가격 숫자 포함 여부 사후 검증 (CR-01)
+    const PRICE_PATTERN = /\d[\d,]*\s*(만원|억원|원|만|억|\$)/
+    const UNIT_PATTERN  = /\d+\s*(만|억)/
+    if (PRICE_PATTERN.test(raw) || UNIT_PATTERN.test(raw)) {
+      // 규칙 위반 — 해설 폐기, null 반환
+      return Response.json({ commentary: null })
+    }
+    return Response.json({ commentary: raw })
   } catch {
     return Response.json({ commentary: null })
   }
