@@ -8,7 +8,10 @@ import type { CheongyakItem, CheongyakRemndrItem, NewListingCheongyakRow } from 
 /**
  * 분양정보 API 응답 1건을 new_listings 삽입용 행으로 정규화.
  */
-export function normalizeCheongyakItem(item: CheongyakItem): NewListingCheongyakRow {
+export function normalizeCheongyakItem(
+  item: CheongyakItem,
+  prices?: { min: number; max: number },
+): NewListingCheongyakRow {
   return {
     name:                item.HOUSE_NM ?? '',
     region:              item.SUBSCRPT_AREA_CODE_NM ?? '',
@@ -24,6 +27,9 @@ export function normalizeCheongyakItem(item: CheongyakItem): NewListingCheongyak
     hssply_adres:        item.HSSPLY_ADRES ?? null,
     is_active:           true,
     fetched_at:          new Date().toISOString(),
+    price_min:           prices?.min ?? null,
+    price_max:           prices?.max ?? null,
+    source_code:         'cheongyak',
   }
 }
 
@@ -58,5 +64,8 @@ export function normalizeRemndrItem(item: CheongyakRemndrItem): NewListingCheong
     hssply_adres:        item.HSSPLY_ADRES ?? null,
     is_active:           true,
     fetched_at:          new Date().toISOString(),
+    price_min:           null,
+    price_max:           null,
+    source_code:         'cheongyak',
   }
 }

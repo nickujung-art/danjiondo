@@ -8,6 +8,7 @@
 import { withRetry } from '@/lib/api/retry'
 import {
   CheongyakItemSchema,
+  CheongyakModelItemSchema,
   CheongyakRemndrItemSchema,
   CompetitionRateItemSchema,
   type CheongyakItem,
@@ -17,6 +18,8 @@ import {
 
 const BASE_LIST_URL =
   'https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail'
+const BASE_MODEL_URL =
+  'https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancMdl'
 const BASE_REMNDR_URL =
   'https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getRemndrLttotPblancDetail'
 const BASE_RATE_URL =
@@ -75,6 +78,57 @@ async function fetchListPage(
     }
     return { items, totalCount }
   })
+}
+
+/**
+ * 공고번호 목록의 평형별 분양가를 조회해 { pblancNo → { min, max } } 맵 반환.
+ * LTTOT_TOP_AMOUNT(만원) 기준으로 공고별 min/max 집계.
+ */
+export async function fetchModelPrices(
+  pblancNos: string[],
+): Promise<Map<string, { min: number; max: number }>> {
+  if (pblancNos.length === 0) return new Map()
+  const apiKey = process.env.MOLIT_API_KEY
+  if (!apiKey) throw new Error('MOLIT_API_KEY not set')
+
+  const result = new Map<string, { min: number; max: number }>()
+  const BATCH = 100
+  for (let offset = 0; offset < pblancNos.length; offset += BATCH) {
+    const batch = pblancNos.slice(offset, offset + BATCH)
+
+    // 공고번호 IN 조건으로 한 번에 조회 (단건씩 N회 호출 방지)
+    for (const pblanc of batch) {
+      const url = new URL(BASE_MODEL_URL)
+      url.searchParams.set('serviceKey', apiKey)
+      url.searchParams.set('page', '1')
+      url.searchParams.set('perPage', '20')
+      url.searchParams.set('returnType', 'json')
+      url.searchParams.set('cond[PBLANC_NO::EQ]', pblanc)
+
+      try {
+        const res = await fetch(url.toString(), {
+          headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0' },
+          signal: AbortSignal.timeout(10_000),
+        })
+        if (!res.ok) continue
+        const json: unknown = await res.json()
+        const rawItems = normalizeData(json)
+        const prices: number[] = []
+        for (const raw of rawItems) {
+          const parsed = CheongyakModelItemSchema.safeParse(raw)
+          if (parsed.success && parsed.data.LTTOT_TOP_AMOUNT) {
+            prices.push(parsed.data.LTTOT_TOP_AMOUNT)
+          }
+        }
+        if (prices.length > 0) {
+          result.set(pblanc, { min: Math.min(...prices), max: Math.max(...prices) })
+        }
+      } catch {
+        // 개별 실패는 조용히 스킵
+      }
+    }
+  }
+  return result
 }
 
 /**

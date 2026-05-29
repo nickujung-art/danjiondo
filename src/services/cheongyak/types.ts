@@ -59,6 +59,18 @@ export const CompetitionRateItemSchema = z.object({
 
 export type CompetitionRateItem = z.infer<typeof CompetitionRateItemSchema>
 
+// ── 평형별 상세 응답 스키마 (getAPTLttotPblancMdl) ──────────────
+
+export const CheongyakModelItemSchema = z.object({
+  PBLANC_NO:         z.string(),                     // 공고번호 (join key)
+  HOUSE_TY:          z.string().optional(),           // 주택형 (예: "84A")
+  SUPLY_AR:          z.coerce.number().optional(),    // 공급면적 (㎡)
+  LTTOT_TOP_AMOUNT:  z.coerce.number().optional(),    // 분양가 최고가 (만원)
+  SUPLY_HSHLDCO:     z.coerce.number().optional(),    // 공급세대수
+})
+
+export type CheongyakModelItem = z.infer<typeof CheongyakModelItemSchema>
+
 // ── new_listings 테이블 행 인터페이스 ────────────────────────────
 
 export interface NewListingCheongyakRow {
@@ -76,4 +88,7 @@ export interface NewListingCheongyakRow {
   hssply_adres:        string | null // 공급위치 주소
   is_active:           boolean       // 활성 여부 (마감 시 false)
   fetched_at:          string        // ISO 타임스탬프
+  price_min:           number | null // 분양가 최저 (만원, 평형별 집계)
+  price_max:           number | null // 분양가 최고 (만원, 평형별 집계)
+  source_code:         string | null // 출처: 'cheongyak' | 'lh'
 }

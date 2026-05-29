@@ -3,9 +3,11 @@
  * 사용: npx tsx --env-file=.env.local scripts/fetch-cheongyak.ts
  */
 import { createClient } from '@supabase/supabase-js'
-import { fetchCheongyakList, fetchRemndrList, fetchCompetitionRate } from '../src/services/cheongyak/client'
+import { fetchCheongyakList, fetchRemndrList, fetchCompetitionRate, fetchModelPrices } from '../src/services/cheongyak/client'
 import { normalizeCheongyakItem, normalizeRemndrItem } from '../src/services/cheongyak/normalize'
 import type { NewListingCheongyakRow } from '../src/services/cheongyak/types'
+import { fetchLhList, fetchLhDetail } from '../src/services/lh/client'
+import { normalizeLhItem } from '../src/services/lh/normalize'
 
 async function upsertRow(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -32,6 +34,9 @@ async function upsertRow(
         hssply_adres:        row.hssply_adres,
         is_active:           true,
         fetched_at:          row.fetched_at,
+        price_min:           row.price_min ?? null,
+        price_max:           row.price_max ?? null,
+        source_code:         row.source_code ?? null,
       },
       { onConflict: 'pblanc_no' },
     )
@@ -61,11 +66,33 @@ async function main() {
   try {
     const items = await fetchCheongyakList()
     console.log(`  → ${items.length}건 수신 (창원·김해)`)
+
+    // 평형별 분양가 일괄 조회
+    const allPblancNos = items.map(i => i.PBLANC_NO)
+    console.log(`  → 분양가 조회 중 (${allPblancNos.length}건)...`)
+    const priceMap = await fetchModelPrices(allPblancNos).catch(() => new Map())
+
     for (const item of items) {
-      upserted += await upsertRow(supabase, normalizeCheongyakItem(item), errors, pblancNos)
+      const prices = priceMap.get(item.PBLANC_NO)
+      upserted += await upsertRow(supabase, normalizeCheongyakItem(item, prices), errors, pblancNos)
     }
   } catch (err) {
     errors.push(`fetchCheongyakList: ${err instanceof Error ? err.message : String(err)}`)
+  }
+
+  // ── LH 분양·임대 공고 ────────────────────────────────────────────
+  console.log('\nLH 공급정보 수집 중...')
+  let lhUpserted = 0
+  try {
+    const lhItems = await fetchLhList()
+    console.log(`  → ${lhItems.length}건 수신 (창원·김해)`)
+    for (const notice of lhItems) {
+      const detail = await fetchLhDetail(notice).catch(() => null)
+      const row = normalizeLhItem(notice, detail)
+      lhUpserted += await upsertRow(supabase, row, errors, pblancNos)
+    }
+  } catch (err) {
+    errors.push(`fetchLhList: ${err instanceof Error ? err.message : String(err)}`)
   }
 
   // ── 잔여세대·무순위 ──────────────────────────────────────────────
@@ -110,6 +137,7 @@ async function main() {
   console.log('\n결과:')
   console.log(`  분양공고 upserted:    ${upserted}`)
   console.log(`  잔여세대 upserted:    ${remndrUpserted}`)
+  console.log(`  LH 공급정보 upserted: ${lhUpserted}`)
   console.log(`  competitionUpdated:  ${competitionUpdated}`)
   console.log(`  expiredDeactivated:  ${expired?.length ?? 0}`)
   if (errors.length > 0) {
