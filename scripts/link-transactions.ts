@@ -122,6 +122,105 @@ async function matchByJibun(
   return null  // 2건 이상 → 모호, 다음 단계로 넘김
 }
 
+// ── sgg_code → 지역명 (Kakao 주소 검색용) ────────────────────────
+const SGG_LABEL: Record<string, string> = {
+  '48121': '창원시 의창구',
+  '48123': '창원시 성산구',
+  '48125': '창원시 마산합포구',
+  '48127': '창원시 마산회원구',
+  '48129': '창원시 진해구',
+  '48250': '김해시',
+}
+
+// 동일 umd_nm+jibun 반복 호출 방지
+const geocodeCache = new Map<string, { lat: number; lng: number } | null>()
+
+async function geocodeJibun(
+  sggCode: string,
+  umdNm: string,
+  jibun: string,
+): Promise<{ lat: number; lng: number } | null> {
+  const apiKey = process.env.KAKAO_REST_API_KEY
+  if (!apiKey) return null
+
+  const cacheKey = `${sggCode}|${umdNm}|${jibun}`
+  if (geocodeCache.has(cacheKey)) return geocodeCache.get(cacheKey) ?? null
+
+  await new Promise(r => setTimeout(r, 100)) // Kakao API rate limit
+
+  // 1차: sgg_label 포함 전체 주소
+  const sggLabel = SGG_LABEL[sggCode] ?? ''
+  const queries = [
+    `경남 ${sggLabel} ${umdNm} ${jibun}`.trim(),
+    `경상남도 창원 ${umdNm} ${jibun}`.trim(),
+    `경남 ${umdNm} ${jibun}`.trim(),
+  ]
+
+  for (const query of queries) {
+    try {
+      const res = await fetch(
+        `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(query)}`,
+        {
+          headers: { Authorization: `KakaoAK ${apiKey}` },
+          signal: AbortSignal.timeout(5_000),
+        },
+      )
+      if (!res.ok) continue
+      const json = await res.json() as { documents?: Array<{ x: string; y: string }> }
+      const doc = json.documents?.[0]
+      if (!doc) continue
+      const lng = parseFloat(doc.x)
+      const lat = parseFloat(doc.y)
+      if (isNaN(lat) || isNaN(lng)) continue
+      const result = { lat, lng }
+      geocodeCache.set(cacheKey, result)
+      return result
+    } catch { continue }
+  }
+
+  geocodeCache.set(cacheKey, null)
+  return null
+}
+
+// ── Step 0.7: jibun → Kakao 주소 검색 → 반경 200m 최근접 단지 ────
+// Step 0.5(jibun_address LIKE)가 null을 반환한 경우의 폴백.
+// complexes.jibun_address 미등재 단지(삼계리 34, 중리 338-1 등)를 좌표로 특정한다.
+async function matchByJibunGeocode(
+  params: { sggCode: string; umdNm: string; jibun: string },
+  supabase: SupabaseClientType,
+): Promise<{ complexId: string; confidence: number } | null> {
+  const coords = await geocodeJibun(params.sggCode, params.umdNm, params.jibun)
+  if (!coords) return null
+
+  const { lat, lng } = coords
+  const D = 0.002 // bbox ≈ 200m
+
+  const { data } = await supabase
+    .from('complexes')
+    .select('id, lat, lng')
+    .eq('sgg_code', params.sggCode)
+    .neq('status', 'demolished').neq('status', 'merged')
+    .not('lat', 'is', null).not('lng', 'is', null)
+    .gte('lat', lat - D).lte('lat', lat + D)
+    .gte('lng', lng - D).lte('lng', lng + D)
+
+  if (!data || data.length === 0) return null
+
+  type R = { id: string; lat: number; lng: number }
+  const sorted = (data as R[])
+    .map(c => ({ id: c.id, dist: Math.hypot(c.lat - lat, c.lng - lng) }))
+    .sort((a, b) => a.dist - b.dist)
+
+  // 1개이거나 1등이 2등보다 2배 이상 가까운 경우만 확정
+  const first = sorted[0]
+  const second = sorted[1]
+  if (first && (sorted.length === 1 || (second && first.dist * 2 < second.dist))) {
+    return { complexId: first.id, confidence: 0.90 }
+  }
+
+  return null // 여러 단지가 유사 거리 → 모호
+}
+
 // ── 중복 방지 가드 (Pitfall 3) ──────────────────────────────────
 // complex_match_queue에 동일 transaction_id가 이미 존재하면 true 반환
 async function isAlreadyQueued(
@@ -272,6 +371,19 @@ async function main(): Promise<void> {
         )
         if (jibunResult && jibunResult.confidence >= AUTO_THRESHOLD) {
           linkedPairs.push({ id: tx.id, complexId: jibunResult.complexId })
+          continue
+        }
+      }
+
+      // Step 0.7: jibun → Kakao 주소 API → 반경 200m 최근접 단지
+      // jibun_address 미등재 단지(삼계리 34, 중리 338-1 등)를 좌표 기반으로 특정한다
+      if (tx.umd_nm && tx.jibun) {
+        const geocodeResult = await matchByJibunGeocode(
+          { sggCode: tx.sgg_code, umdNm: tx.umd_nm, jibun: tx.jibun },
+          supabase,
+        )
+        if (geocodeResult && geocodeResult.confidence >= AUTO_THRESHOLD) {
+          linkedPairs.push({ id: tx.id, complexId: geocodeResult.complexId })
           continue
         }
       }

@@ -93,11 +93,6 @@ export async function seedComplex(
   if (!data) throw new Error(`seedComplex insert returned no data for ${canonicalName}`)
 
   return { id: (data as { id: string }).id, created: true }
-
-  if (error) throw new Error(`seedComplex failed for ${canonicalName}: ${error.message}`)
-  if (!data) throw new Error(`seedComplex returned no data for ${canonicalName}`)
-
-  return { id: (data as { id: string }).id, created: true }
 }
 
 export async function initDataCompleteness(
