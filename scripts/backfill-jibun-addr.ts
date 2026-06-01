@@ -27,7 +27,7 @@ if (!SUPABASE_SRV_KEY) { console.error('❌ SUPABASE_SERVICE_ROLE_KEY 없음'); 
 const args    = process.argv.slice(2)
 const DRY_RUN = args.includes('--dry-run')
 const limitArg = args.find(a => a.startsWith('--limit='))
-const LIMIT   = limitArg ? parseInt(limitArg.split('=')[1], 10) : 10000
+const LIMIT   = limitArg ? parseInt(limitArg.split('=')[1] ?? '10000', 10) : 10000
 
 const supabase = createClient(
   SUPABASE_URL,
