@@ -61,7 +61,15 @@ export function PredictionSection({
           시세 예측 분석
         </h2>
         <p style={{ font: '500 12px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>
-          AI 예측 모델 기반 · 참고용 (최근 실거래 Holt-Winters / 이중지수평활)
+          <span style={{
+            display: 'inline-block', padding: '1px 6px', borderRadius: 4,
+            background: 'var(--bg-surface-2)', border: '1px solid var(--line-subtle)',
+            font: '600 11px/1.6 var(--font-sans)', color: 'var(--fg-sec)',
+            marginRight: 6,
+          }}>
+            Chronos-Bolt-Small
+          </span>
+          Amazon 오픈소스 AI · 과거 실거래 기반 6개월 예측 · 참고용
         </p>
       </div>
 
