@@ -82,11 +82,14 @@ def select_paginated(table: str, columns: str) -> list:
     return rows
 
 
-def upsert_batch(table: str, rows: list) -> None:
+def upsert_batch(table: str, rows: list, on_conflict: str = "") -> None:
     if not rows:
         return
+    url = f"{SUPABASE_URL}/rest/v1/{table}"
+    if on_conflict:
+        url += f"?on_conflict={on_conflict}"
     r = requests.post(
-        f"{SUPABASE_URL}/rest/v1/{table}",
+        url,
         headers={**HEADERS, "Prefer": "resolution=merge-duplicates,return=minimal"},
         json=rows,
         timeout=60,
@@ -114,7 +117,7 @@ print(f"[init] 모델 로드: {MODEL_HF_ID}", flush=True)
 pipeline = ChronosBoltPipeline.from_pretrained(
     MODEL_HF_ID,
     device_map="cpu",
-    torch_dtype=torch.float32,
+    dtype=torch.float32,
 )
 print("[init] 모델 준비 완료", flush=True)
 
@@ -215,7 +218,8 @@ def main() -> None:
                 errors += 1
 
             if len(pending) >= UPSERT_BATCH:
-                upsert_batch("complex_price_predictions", pending)
+                upsert_batch("complex_price_predictions", pending,
+                             "complex_id,area_bucket,predicted_month")
                 pending = []
 
         if (ci + 1) % 50 == 0:
@@ -228,7 +232,8 @@ def main() -> None:
             )
 
     if pending:
-        upsert_batch("complex_price_predictions", pending)
+        upsert_batch("complex_price_predictions", pending,
+                     "complex_id,area_bucket,predicted_month")
 
     print(
         f"[done] 처리:{processed}  스킵:{skipped}  오류:{errors}",
