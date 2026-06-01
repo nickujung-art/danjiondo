@@ -16,7 +16,7 @@ export interface PredictionPoint {
 // ─── Allowlists ───────────────────────────────────────────────────────────────
 
 export const ALLOWED_SGG_CODES = ['48121', '48123', '48125', '48127', '48128', '48129', '48250'] as const
-export const ALLOWED_AREA_BUCKETS = ['소형', '59', '84', '대형'] as const
+export const ALLOWED_AREA_BUCKETS = ['소형', '59', '74', '84', '대형'] as const
 export type AreaBucket = typeof ALLOWED_AREA_BUCKETS[number]
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -99,7 +99,7 @@ export async function getComplexAreaTypes(
   complexId: string,
   months = 24,
 ): Promise<AreaType[]> {
-  const buckets: AreaBucket[] = ['소형', '59', '84', '대형']
+  const buckets: AreaBucket[] = ['소형', '59', '74', '84', '대형']
   const cutoff = new Date()
   cutoff.setMonth(cutoff.getMonth() - months)
   const cutoffStr = cutoff.toISOString().slice(0, 10)
@@ -111,8 +111,10 @@ export async function getComplexAreaTypes(
           ? { lt: 50 }
           : bucket === '59'
           ? { gte: 50, lt: 66 }
+          : bucket === '74'
+          ? { gte: 66, lt: 79 }
           : bucket === '84'
-          ? { gte: 66, lt: 95 }
+          ? { gte: 79, lt: 95 }
           : { gte: 95 }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

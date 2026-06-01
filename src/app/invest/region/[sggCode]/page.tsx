@@ -31,7 +31,7 @@ const SGG_LABEL: Record<string, string> = {
 
 interface Props {
   params: Promise<{ sggCode: string }>
-  searchParams: Promise<{ area_bucket?: string }>
+  searchParams: Promise<{ area_bucket?: string; horizon?: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -47,8 +47,14 @@ const AREA_OPTIONS = [
   { label: '전체',  value: '' },
   { label: '소형',  value: '소형' },
   { label: '59㎡',  value: '59' },
+  { label: '74㎡',  value: '74' },
   { label: '84㎡',  value: '84' },
   { label: '대형',  value: '대형' },
+] as const
+
+const HORIZON_OPTIONS = [
+  { label: '3개월', value: '3' },
+  { label: '6개월', value: '6' },
 ] as const
 
 const DIRECTION_COLOR: Record<'up' | 'flat' | 'down', string> = {
@@ -79,6 +85,7 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
   const { sggCode } = await params
   const sp = await searchParams
   const rawBucket = typeof sp.area_bucket === 'string' ? sp.area_bucket : ''
+  const horizon = sp.horizon === '3' ? 3 : 6
 
   if (!(ALLOWED_SGG_CODES as ReadonlyArray<string>).includes(sggCode)) notFound()
 
@@ -97,7 +104,7 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
     getRegionalUnsold(supabase, sggCode).catch(() => [] as RegionalUnsoldPoint[]),
   ])
 
-  const predictionPoints: PredictionPoint[] = predTimeseries.map(p => ({
+  const rawPredPoints: PredictionPoint[] = predTimeseries.map(p => ({
     yearMonth:    p.predictedMonth,
     mean:         p.medianPrice,
     lower:        p.lowerPrice,
@@ -105,6 +112,23 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
     modelName:    'chronos-bolt-small',
     trainingMape: 0,
   }))
+
+  // 예측선을 역사 데이터 마지막 가격에 연결 (단지 표본 편차 보정)
+  const predictionPoints: PredictionPoint[] = (() => {
+    if (rawPredPoints.length === 0 || history.length === 0) return rawPredPoints
+    const lastHistPrice = history[history.length - 1]!.avgPrice
+    const firstPredMean = rawPredPoints[0]!.mean
+    if (firstPredMean <= 0) return rawPredPoints
+    const scale = lastHistPrice / firstPredMean
+    // 차이가 10% 이상일 때만 보정 (정상 범위는 그대로 표시)
+    if (Math.abs(scale - 1) < 0.1) return rawPredPoints
+    return rawPredPoints.map(p => ({
+      ...p,
+      mean:  Math.round(p.mean  * scale),
+      lower: Math.round(p.lower * scale),
+      upper: Math.round(p.upper * scale),
+    }))
+  })().slice(0, horizon)
 
   const latestUnsold  = unsoldHistory.length > 0 ? unsoldHistory[unsoldHistory.length - 1] : null
   const prevUnsold    = unsoldHistory.length > 1 ? unsoldHistory[unsoldHistory.length - 2] : null
@@ -124,6 +148,15 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
   function tabHref(bucket: string): string {
     const p = new URLSearchParams()
     if (bucket) p.set('area_bucket', bucket)
+    if (horizon !== 6) p.set('horizon', String(horizon))
+    const s = p.toString()
+    return `/invest/region/${sggCode}${s ? `?${s}` : ''}`
+  }
+
+  function horizonHref(h: string): string {
+    const p = new URLSearchParams()
+    if (areaBucket) p.set('area_bucket', areaBucket)
+    if (h !== '6') p.set('horizon', h)
     const s = p.toString()
     return `/invest/region/${sggCode}${s ? `?${s}` : ''}`
   }
@@ -168,14 +201,25 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
           </p>
         </div>
 
-        {/* 면적 탭 */}
-        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 20 }}>
-          {AREA_OPTIONS.map(opt => (
-            <Link key={opt.value} href={tabHref(opt.value)}
-              style={tabStyle(opt.value === '' ? !areaBucket : areaBucket === opt.value)}>
-              {opt.label}
-            </Link>
-          ))}
+        {/* 면적 탭 + 예측 기간 토글 */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            {AREA_OPTIONS.map(opt => (
+              <Link key={opt.value} href={tabHref(opt.value)}
+                style={tabStyle(opt.value === '' ? !areaBucket : areaBucket === opt.value)}>
+                {opt.label}
+              </Link>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+            <span style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginRight: 4 }}>예측 기간</span>
+            {HORIZON_OPTIONS.map(opt => (
+              <Link key={opt.value} href={horizonHref(opt.value)}
+                style={tabStyle(String(horizon) === opt.value)}>
+                {opt.label}
+              </Link>
+            ))}
+          </div>
         </div>
 
         {/* 핵심 지표 카드 4개 */}
@@ -270,9 +314,16 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
         {/* 시세 + 예측 차트 */}
         <section aria-labelledby="chart-heading" style={{ marginBottom: 28 }}>
           <div className="card" style={{ padding: 20 }}>
-            <h2 id="chart-heading" style={{ font: '600 14px/1.4 var(--font-sans)', margin: '0 0 16px', color: 'var(--fg-pri)' }}>
-              시세 흐름 + 6개월 예측
-            </h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h2 id="chart-heading" style={{ font: '600 14px/1.4 var(--font-sans)', margin: 0, color: 'var(--fg-pri)' }}>
+                시세 흐름 + {horizon}개월 예측
+              </h2>
+              {areaBucket === '74' && (
+                <span style={{ font: '500 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', background: 'var(--bg-surface-2)', padding: '3px 8px', borderRadius: 4, border: '1px solid var(--line-subtle)' }}>
+                  74㎡ 예측은 다음 배치 후 제공
+                </span>
+              )}
+            </div>
             {history.length < 2 ? (
               <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--fg-tertiary)', font: '500 13px/1.4 var(--font-sans)' }}>
                 거래 데이터 부족
