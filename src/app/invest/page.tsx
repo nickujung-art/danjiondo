@@ -3,10 +3,14 @@ import Link from 'next/link'
 import { createReadonlyClient } from '@/lib/supabase/readonly'
 import { getGapRankings } from '@/lib/data/gap-analysis'
 import type { GapRankingRow } from '@/lib/data/gap-analysis'
-import { getComplexPriceByType, ALLOWED_SGG_CODES, ALLOWED_AREA_BUCKETS } from '@/lib/data/invest'
+import {
+  getTopPredictionComplexes,
+  getRegionalPredictionSummary,
+  ALLOWED_SGG_CODES,
+  ALLOWED_AREA_BUCKETS,
+} from '@/lib/data/invest'
 import type { AreaBucket } from '@/lib/data/invest'
-import { TopComplexSparklines } from '@/components/invest/TopComplexSparklines'
-import type { ComplexSparklineItem } from '@/components/invest/TopComplexSparklines'
+import { PredictionSection } from '@/components/invest/PredictionSection'
 import { formatPrice } from '@/lib/format'
 
 export const revalidate = 3600
@@ -100,26 +104,18 @@ export default async function InvestPage({ searchParams }: Props) {
 
   const supabase = createReadonlyClient()
 
-  // 병렬 fetch: 갭랭킹 먼저 조회
-  const rows = await getGapRankings({ sggCode, riskLevel }, supabase).catch((): GapRankingRow[] => [])
+  // 병렬 fetch: 갭랭킹 + 예측 랭킹 + 지역 예측 요약
+  const [rows, rankingItems, regionalSummaries] = await Promise.all([
+    getGapRankings({ sggCode, riskLevel }, supabase).catch((): GapRankingRow[] => []),
+    getTopPredictionComplexes(supabase, sggCode, areaBucket, 10).catch(() => []),
+    getRegionalPredictionSummary(supabase, areaBucket).catch(() => []),
+  ])
 
-  // 상위 5개 단지 시세 이력 병렬 조회
-  const TOP_N = 5
-  const topRows = rows.slice(0, TOP_N)
-  const histories = await Promise.all(
-    topRows.map((row) =>
-      getComplexPriceByType(supabase, row.complexId, areaBucket, 24).catch(() => []),
-    ),
-  )
-
-  const sparklineItems: ComplexSparklineItem[] = topRows.map((row, i) => ({
-    complexId:   row.complexId,
-    complexName: row.complexName,
-    si:          row.si,
-    gu:          row.gu,
-    gapRatio:    row.gapRatio,
-    riskLevel:   row.riskLevel,
-    history:     histories[i] ?? [],
+  // 예측 섹션 면적 탭 (전체 | 59㎡ | 84㎡)
+  const areaTabItems = AREA_OPTIONS.map((opt) => ({
+    label:  opt.label,
+    href:   filterTab('area_type', opt.value, sggCode, riskLevel, areaBucket),
+    active: opt.value === '' ? !areaBucket : areaBucket === opt.value,
   }))
 
   // ─── tab active helpers ───────────────────────────────────────────────────
@@ -128,9 +124,6 @@ export default async function InvestPage({ searchParams }: Props) {
   }
   function isRiskActive(value: string): boolean {
     return value === '' ? !riskLevel : riskLevel === value
-  }
-  function isAreaActive(value: string): boolean {
-    return value === '' ? !areaBucket : areaBucket === value
   }
 
   const tabStyle = (active: boolean): React.CSSProperties => ({
@@ -207,54 +200,12 @@ export default async function InvestPage({ searchParams }: Props) {
           ))}
         </div>
 
-        {/* ─── 갭랭킹 상위 단지 시세 추이 섹션 ─────────────────────────────── */}
-        <div className="card" style={{ padding: 20, marginBottom: 24 }}>
-          <div
-            style={{
-              display:        'flex',
-              alignItems:     'center',
-              justifyContent: 'space-between',
-              marginBottom:   14,
-              flexWrap:       'wrap',
-              gap:            8,
-            }}
-          >
-            <div>
-              <h2 style={{ font: '700 15px/1.4 var(--font-sans)', margin: '0 0 3px' }}>
-                갭랭킹 상위 단지 시세 추이
-              </h2>
-              <p style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>
-                갭 비율 상위 {Math.min(TOP_N, rows.length)}개 단지 · 최근 24개월 월평균 매매가
-              </p>
-            </div>
-            {/* 타입 탭 — 전체|59㎡|84㎡ */}
-            <div style={{ display: 'flex', gap: 4 }}>
-              {AREA_OPTIONS.map((opt) => (
-                <Link
-                  key={`area-${opt.value}`}
-                  href={filterTab('area_type', opt.value, sggCode, riskLevel, areaBucket)}
-                  style={tabStyle(isAreaActive(opt.value))}
-                >
-                  {opt.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          <TopComplexSparklines items={sparklineItems} />
-
-          {/* 법적 면책 문구 */}
-          <p
-            style={{
-              font:   '400 11px/1.5 var(--font-sans)',
-              color:  'var(--fg-tertiary)',
-              margin: '12px 0 0',
-            }}
-          >
-            * 본 데이터는 국토교통부 실거래가 공개시스템 기반입니다.<br />
-            * 투자 결정에 직접 활용하지 마세요. 부동산 전문가와 상담하시기 바랍니다.
-          </p>
-        </div>
+        {/* ─── 시세 예측 분석 섹션 ─────────────────────────────────────────── */}
+        <PredictionSection
+          regionalSummaries={regionalSummaries}
+          rankingItems={rankingItems}
+          areaTabItems={areaTabItems}
+        />
 
         {/* ─── 갭투자 랭킹 섹션 ──────────────────────────────────────────────── */}
         <div style={{ marginBottom: 16 }}>

@@ -32,6 +32,36 @@ export interface AreaType {
   txCount: number
 }
 
+export interface PredictionRankingItem {
+  complexId:    string
+  complexName:  string
+  si:           string | null
+  gu:           string | null
+  sggCode:      string
+  areaBucket:   string
+  nearPrice:    number   // 만원
+  farPrice:     number   // 만원
+  changePct:    number   // %
+  mape:         number   // 0~1
+  direction:    'up' | 'flat' | 'down'
+  aiCommentary: string | null
+}
+
+export interface RegionalPredictionSummary {
+  sggCode:         string
+  complexCount:    number
+  medianChangePct: number
+  avgNearPrice:    number
+  avgFarPrice:     number
+  direction:       'up' | 'flat' | 'down'
+}
+
+function directionOf(changePct: number): 'up' | 'flat' | 'down' {
+  if (changePct > 3) return 'up'
+  if (changePct < -3) return 'down'
+  return 'flat'
+}
+
 // ─── Functions ────────────────────────────────────────────────────────────────
 
 /**
@@ -139,6 +169,89 @@ export async function getComplexPriceByType(
     avgPrice:  Number(r.avg_price),
     txCount:   Number(r.tx_count),
   }))
+}
+
+/**
+ * 단지별 6개월 예측 상승률 랭킹 조회.
+ * invest_prediction_ranking RPC를 호출한다.
+ * 오류 시 빈 배열 반환.
+ */
+export async function getTopPredictionComplexes(
+  supabase:   SupabaseClient<Database>,
+  sggCode?:   string,
+  areaBucket?: string,
+  limit = 10,
+): Promise<PredictionRankingItem[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any).rpc('invest_prediction_ranking', {
+    p_sgg_code:    sggCode    ?? null,
+    p_area_bucket: areaBucket ?? null,
+    p_max_mape:    0.25,
+    p_limit:       limit,
+  })
+  if (error || !data) return []
+  return (data as Array<{
+    complex_id:    string
+    complex_name:  string
+    si:            string | null
+    gu:            string | null
+    sgg_code:      string
+    area_bucket:   string
+    near_price:    number
+    far_price:     number
+    change_pct:    number
+    avg_mape:      number
+    ai_commentary: string | null
+  }>).map(r => {
+    const changePct = Number(r.change_pct)
+    return {
+      complexId:    r.complex_id,
+      complexName:  r.complex_name,
+      si:           r.si,
+      gu:           r.gu,
+      sggCode:      r.sgg_code,
+      areaBucket:   r.area_bucket,
+      nearPrice:    Number(r.near_price),
+      farPrice:     Number(r.far_price),
+      changePct,
+      mape:         Number(r.avg_mape),
+      direction:    directionOf(changePct),
+      aiCommentary: r.ai_commentary,
+    }
+  })
+}
+
+/**
+ * 지역(sgg)별 예측 방향 요약 조회.
+ * invest_regional_prediction_summary RPC를 호출한다.
+ * 오류 시 빈 배열 반환.
+ */
+export async function getRegionalPredictionSummary(
+  supabase:    SupabaseClient<Database>,
+  areaBucket?: string,
+): Promise<RegionalPredictionSummary[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any).rpc('invest_regional_prediction_summary', {
+    p_area_bucket: areaBucket ?? null,
+  })
+  if (error || !data) return []
+  return (data as Array<{
+    sgg_code:          string
+    complex_count:     number
+    median_change_pct: number
+    avg_near_price:    number
+    avg_far_price:     number
+  }>).map(r => {
+    const medianChangePct = Number(r.median_change_pct)
+    return {
+      sggCode:         r.sgg_code,
+      complexCount:    Number(r.complex_count),
+      medianChangePct,
+      avgNearPrice:    Number(r.avg_near_price),
+      avgFarPrice:     Number(r.avg_far_price),
+      direction:       directionOf(medianChangePct),
+    }
+  })
 }
 
 /**
