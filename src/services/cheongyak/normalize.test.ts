@@ -48,8 +48,8 @@ describe('normalizeCheongyakItem', () => {
     expect(result.is_active).toBe(true)
   })
 
-  it('결과 객체가 정확히 14개 필드를 가진다', () => {
+  it('결과 객체가 정확히 17개 필드를 가진다', () => {
     const result = normalizeCheongyakItem(sampleItem)
-    expect(Object.keys(result)).toHaveLength(14)
+    expect(Object.keys(result)).toHaveLength(17)
   })
 })

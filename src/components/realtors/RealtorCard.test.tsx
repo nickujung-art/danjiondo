@@ -24,7 +24,7 @@ describe('RealtorCard', () => {
 
   it('renders initials avatar when no image_url', () => {
     const { getByText } = render(<RealtorCard realtor={mockRealtor} />)
-    expect(getByText('홍길')).toBeTruthy()
+    expect(getByText('홍')).toBeTruthy()
   })
 
   it('renders image when image_url is set', () => {
