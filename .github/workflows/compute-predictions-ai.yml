@@ -19,6 +19,7 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
+          cache-dependency-path: scripts/requirements-ai.txt
 
       - name: HuggingFace 모델 캐시
         uses: actions/cache@v4
