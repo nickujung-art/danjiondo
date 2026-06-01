@@ -328,6 +328,30 @@ export async function getRegionalJeonseRatio(
   }))
 }
 
+// ─── Regional Unsold ─────────────────────────────────────────────────────────
+
+export interface RegionalUnsoldPoint {
+  yearMonth:  string   // 'YYYYMM'
+  unsoldCount: number
+}
+
+export async function getRegionalUnsold(
+  supabase: SupabaseClient<Database>,
+  sggCode:  string,
+): Promise<RegionalUnsoldPoint[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('regional_unsold')
+    .select('year_month, unsold_count')
+    .eq('sgg_code', sggCode)
+    .order('year_month', { ascending: false })
+    .limit(13)
+  if (error || !data) return []
+  return (data as Array<{ year_month: string; unsold_count: number }>)
+    .map(r => ({ yearMonth: r.year_month, unsoldCount: Number(r.unsold_count) }))
+    .reverse()
+}
+
 /**
  * 지역 집계 예측값 조회.
  * complex_price_predictions 테이블에서 sgg_code 지역의 단지들 예측 중위값을 반환.

@@ -1,0 +1,29 @@
+name: 경남 미분양현황 월별 적재
+
+on:
+  schedule:
+    - cron: '0 15 1 * *' # 매월 1일 00:00 KST (UTC 15:00 전일)
+  workflow_dispatch: {} # 수동 실행 지원
+
+jobs:
+  fetch:
+    name: 경남 미분양 집계 → regional_unsold upsert
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: 경남 미분양현황 수집
+        env:
+          MOLIT_API_KEY: ${{ secrets.MOLIT_API_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+        run: npx tsx scripts/fetch-regional-unsold.ts

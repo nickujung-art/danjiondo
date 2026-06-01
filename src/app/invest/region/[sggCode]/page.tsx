@@ -7,10 +7,12 @@ import {
   getRegionalPredictionTimeseries,
   getRegionalJeonseRatio,
   getTopPredictionComplexes,
+  getRegionalUnsold,
   ALLOWED_SGG_CODES,
   ALLOWED_AREA_BUCKETS,
   type AreaBucket,
   type PredictionPoint,
+  type RegionalUnsoldPoint,
 } from '@/lib/data/invest'
 import { RegionalPriceChartWrapper } from '@/components/invest/RegionalPriceChartWrapper'
 import { formatPrice } from '@/lib/format'
@@ -87,11 +89,12 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
   const supabase = createReadonlyClient()
   const label = SGG_LABEL[sggCode] ?? sggCode
 
-  const [history, predTimeseries, jeonseData, complexRanking] = await Promise.all([
+  const [history, predTimeseries, jeonseData, complexRanking, unsoldHistory] = await Promise.all([
     getRegionalPriceHistory(supabase, sggCode, areaBucket, 36).catch(() => []),
     getRegionalPredictionTimeseries(supabase, sggCode, areaBucket).catch(() => []),
     getRegionalJeonseRatio(supabase, sggCode, areaBucket, 24).catch(() => []),
     getTopPredictionComplexes(supabase, sggCode, areaBucket, 10).catch(() => []),
+    getRegionalUnsold(supabase, sggCode).catch(() => [] as RegionalUnsoldPoint[]),
   ])
 
   const predictionPoints: PredictionPoint[] = predTimeseries.map(p => ({
@@ -102,6 +105,10 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
     modelName:    'chronos-bolt-small',
     trainingMape: 0,
   }))
+
+  const latestUnsold  = unsoldHistory.length > 0 ? unsoldHistory[unsoldHistory.length - 1] : null
+  const prevUnsold    = unsoldHistory.length > 1 ? unsoldHistory[unsoldHistory.length - 2] : null
+  const unsoldChange  = latestUnsold && prevUnsold ? latestUnsold.unsoldCount - prevUnsold.unsoldCount : null
 
   const latestJeonse = [...jeonseData].reverse().find(j => j.jeonseRatio != null)
   const latestHistory = history[history.length - 1]
@@ -238,6 +245,26 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
               MAPE 25% 이하
             </div>
           </div>
+
+          <div className="card" style={{ padding: 16, textAlign: 'center' }}>
+            <div style={{ font: '500 11px/1.3 var(--font-sans)', color: 'var(--fg-sec)', marginBottom: 6 }}>
+              미분양
+            </div>
+            {latestUnsold ? (
+              <>
+                <div className="tnum" style={{ font: '700 24px/1 var(--font-sans)', color: latestUnsold.unsoldCount > 500 ? '#dc2626' : latestUnsold.unsoldCount > 100 ? '#d97706' : 'var(--fg-pri)', marginBottom: 2 }}>
+                  {latestUnsold.unsoldCount.toLocaleString('ko-KR')}세대
+                </div>
+                <div style={{ font: '400 10px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                  {unsoldChange !== null
+                    ? `전월比 ${unsoldChange >= 0 ? '+' : ''}${unsoldChange.toLocaleString('ko-KR')}세대`
+                    : `${latestUnsold.yearMonth.slice(0, 4)}.${latestUnsold.yearMonth.slice(4, 6)} 기준`}
+                </div>
+              </>
+            ) : (
+              <div style={{ font: '500 13px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>집계 중</div>
+            )}
+          </div>
         </div>
 
         {/* 시세 + 예측 차트 */}
@@ -302,6 +329,55 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
                       </td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {/* 미분양 추이 */}
+        {unsoldHistory.length > 0 && (
+          <section aria-labelledby="unsold-heading" style={{ marginBottom: 28 }}>
+            <h2 id="unsold-heading" style={{ font: '600 14px/1.4 var(--font-sans)', margin: '0 0 12px' }}>
+              미분양 추이
+            </h2>
+            <div className="card" style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: 'var(--bg-surface-2)', borderBottom: '1px solid var(--line-default)' }}>
+                    {['기준월', '미분양', '전월 대비'].map((h, i) => (
+                      <th key={h} style={{
+                        padding: '8px 12px', font: '600 11px/1 var(--font-sans)',
+                        color: 'var(--fg-sec)', whiteSpace: 'nowrap',
+                        textAlign: i === 0 ? 'left' : 'right',
+                      }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...unsoldHistory].reverse().map((row, idx, arr) => {
+                    const prev = arr[idx + 1]
+                    const diff = prev ? row.unsoldCount - prev.unsoldCount : null
+                    return (
+                      <tr key={row.yearMonth} style={{ borderBottom: '1px solid var(--line-subtle)' }}>
+                        <td style={{ padding: '8px 12px', font: '500 12px/1 var(--font-sans)', color: 'var(--fg-sec)' }}>
+                          {row.yearMonth.slice(0, 4)}.{row.yearMonth.slice(4, 6)}
+                        </td>
+                        <td className="tnum" style={{
+                          padding: '8px 12px', font: '600 12px/1 var(--font-sans)', textAlign: 'right',
+                          color: row.unsoldCount > 500 ? '#dc2626' : row.unsoldCount > 100 ? '#d97706' : 'var(--fg-pri)',
+                        }}>
+                          {row.unsoldCount.toLocaleString('ko-KR')}세대
+                        </td>
+                        <td className="tnum" style={{
+                          padding: '8px 12px', font: '500 12px/1 var(--font-sans)', textAlign: 'right',
+                          color: diff == null ? 'var(--fg-tertiary)' : diff > 0 ? '#dc2626' : diff < 0 ? '#16a34a' : 'var(--fg-tertiary)',
+                        }}>
+                          {diff == null ? '—' : `${diff >= 0 ? '+' : ''}${diff.toLocaleString('ko-KR')}`}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
