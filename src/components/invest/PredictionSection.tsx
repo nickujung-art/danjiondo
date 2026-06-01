@@ -39,12 +39,14 @@ interface PredictionSectionProps {
   regionalSummaries: RegionalPredictionSummary[]
   rankingItems:      PredictionRankingItem[]
   areaTabItems:      { label: string; href: string; active: boolean }[]
+  activeBucket?:     string
 }
 
 export function PredictionSection({
   regionalSummaries,
   rankingItems,
   areaTabItems,
+  activeBucket,
 }: PredictionSectionProps) {
   return (
     <section aria-labelledby="prediction-heading" style={{ marginBottom: 28 }}>
@@ -122,37 +124,42 @@ export function PredictionSection({
           }}
         >
           {regionalSummaries.map((r) => {
-            const color = DIRECTION_COLOR[r.direction]
+            const color   = DIRECTION_COLOR[r.direction]
+            const href    = `/invest/region/${r.sggCode}${activeBucket ? `?area_bucket=${activeBucket}` : ''}`
             return (
-              <div
+              <Link
                 key={r.sggCode}
-                className="card"
-                style={{
-                  padding:   16,
-                  flex:      '1 1 150px',
-                  minWidth:  140,
-                  textAlign: 'center',
-                }}
+                href={href}
+                style={{ textDecoration: 'none', display: 'block', flex: '1 1 150px', minWidth: 140 }}
               >
-                <div style={{ font: '500 12px/1.3 var(--font-sans)', color: 'var(--fg-sec)', marginBottom: 6 }}>
-                  {SGG_LABEL[r.sggCode] ?? r.sggCode}
-                </div>
                 <div
-                  aria-hidden="true"
-                  style={{ font: '700 28px/1 var(--font-sans)', color, marginBottom: 2 }}
+                  className="card"
+                  style={{
+                    padding:   16,
+                    textAlign: 'center',
+                    cursor:    'pointer',
+                  }}
                 >
-                  {DIRECTION_ARROW[r.direction]}
+                  <div style={{ font: '500 12px/1.3 var(--font-sans)', color: 'var(--fg-sec)', marginBottom: 6 }}>
+                    {SGG_LABEL[r.sggCode] ?? r.sggCode}
+                  </div>
+                  <div
+                    aria-hidden="true"
+                    style={{ font: '700 28px/1 var(--font-sans)', color, marginBottom: 2 }}
+                  >
+                    {DIRECTION_ARROW[r.direction]}
+                  </div>
+                  <div className="tnum" style={{ font: '700 18px/1.2 var(--font-sans)', color, marginBottom: 4 }}>
+                    {fmtPct(r.medianChangePct)}
+                  </div>
+                  <div style={{ font: '400 10px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                    6개월 예측
+                  </div>
+                  <div style={{ font: '400 10px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                    단지 {r.complexCount}개
+                  </div>
                 </div>
-                <div className="tnum" style={{ font: '700 18px/1.2 var(--font-sans)', color, marginBottom: 4 }}>
-                  {fmtPct(r.medianChangePct)}
-                </div>
-                <div style={{ font: '400 10px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
-                  6개월 예측
-                </div>
-                <div style={{ font: '400 10px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
-                  단지 {r.complexCount}개
-                </div>
-              </div>
+              </Link>
             )
           })}
         </div>

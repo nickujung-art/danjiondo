@@ -53,12 +53,14 @@ const RISK_OPTIONS: Array<{ label: string; value: string }> = [
   { label: '위험', value: 'danger' },
 ]
 
-// D-03/D-09: 타입 탭은 정확히 3개 (전체 | 59㎡ | 84㎡)
+// 예측 면적 탭: 전체 | 소형 | 59㎡ | 84㎡ | 대형
 // 입력 검증은 ALLOWED_AREA_BUCKETS (4값) 사용 — 탭 표시와 별개
 const AREA_OPTIONS = [
-  { label: '전체', value: '' },
-  { label: '59㎡', value: '59' },
-  { label: '84㎡', value: '84' },
+  { label: '전체',  value: '' },
+  { label: '소형',  value: '소형' },
+  { label: '59㎡',  value: '59' },
+  { label: '84㎡',  value: '84' },
+  { label: '대형',  value: '대형' },
 ] as const
 
 const RISK_BADGE: Record<AllowedRiskLevel, { bg: string; label: string }> = {
@@ -205,6 +207,7 @@ export default async function InvestPage({ searchParams }: Props) {
           regionalSummaries={regionalSummaries}
           rankingItems={rankingItems}
           areaTabItems={areaTabItems}
+          activeBucket={areaBucket}
         />
 
         {/* ─── 갭투자 랭킹 섹션 ──────────────────────────────────────────────── */}

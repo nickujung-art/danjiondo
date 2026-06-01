@@ -254,6 +254,80 @@ export async function getRegionalPredictionSummary(
   })
 }
 
+// ─── Regional Prediction Timeseries ──────────────────────────────────────────
+
+export interface RegionalPredictionTimePoint {
+  predictedMonth: string   // 'YYYY-MM'
+  medianPrice:    number
+  lowerPrice:     number
+  upperPrice:     number
+  complexCount:   number
+}
+
+export interface RegionalJeonsePoint {
+  yearMonth:   string
+  saleAvg:     number
+  rentAvg:     number | null
+  jeonseRatio: number | null
+  saleCount:   number
+}
+
+export async function getRegionalPredictionTimeseries(
+  supabase:     SupabaseClient<Database>,
+  sggCode:      string,
+  areaBucket?:  string,
+): Promise<RegionalPredictionTimePoint[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any).rpc('invest_regional_prediction_timeseries', {
+    p_sgg_code:    sggCode,
+    p_area_bucket: areaBucket ?? null,
+    p_max_mape:    0.25,
+  })
+  if (error || !data) return []
+  return (data as Array<{
+    predicted_month: string
+    median_price:    number
+    lower_price:     number
+    upper_price:     number
+    complex_count:   number
+  }>).map(r => ({
+    predictedMonth: r.predicted_month,
+    medianPrice:    Number(r.median_price),
+    lowerPrice:     Number(r.lower_price),
+    upperPrice:     Number(r.upper_price),
+    complexCount:   Number(r.complex_count),
+  }))
+}
+
+export async function getRegionalJeonseRatio(
+  supabase:    SupabaseClient<Database>,
+  sggCode?:    string,
+  areaBucket?: string,
+  months = 24,
+): Promise<RegionalJeonsePoint[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any).rpc('invest_regional_jeonse_ratio', {
+    p_sgg_code:    sggCode    ?? null,
+    p_area_bucket: areaBucket ?? null,
+    p_months:      months,
+  })
+  if (error || !data) return []
+  return (data as Array<{
+    year_month:   string
+    sale_avg:     number
+    rent_avg:     number | null
+    jeonse_ratio: number | null
+    sale_count:   number
+    rent_count:   number
+  }>).map(r => ({
+    yearMonth:   r.year_month,
+    saleAvg:     Number(r.sale_avg),
+    rentAvg:     r.rent_avg != null ? Number(r.rent_avg) : null,
+    jeonseRatio: r.jeonse_ratio != null ? Number(r.jeonse_ratio) : null,
+    saleCount:   Number(r.sale_count),
+  }))
+}
+
 /**
  * 지역 집계 예측값 조회.
  * complex_price_predictions 테이블에서 sgg_code 지역의 단지들 예측 중위값을 반환.

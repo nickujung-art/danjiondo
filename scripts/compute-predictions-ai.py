@@ -129,11 +129,11 @@ def process_bucket(
     computed_at: str,
 ) -> list[dict] | None:
 
-    # 실거래 이력 조회 (최대 30개월)
+    # 실거래 이력 조회 (전체 데이터)
     raw = rpc("compute_predictions", {
         "p_complex_id":  complex_id,
         "p_area_bucket": bucket,
-        "p_months":      30,
+        "p_months":      None,
     })
     if not raw:
         return None

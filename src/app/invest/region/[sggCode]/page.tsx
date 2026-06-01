@@ -1,0 +1,381 @@
+import type { Metadata } from 'next'
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
+import { createReadonlyClient } from '@/lib/supabase/readonly'
+import {
+  getRegionalPriceHistory,
+  getRegionalPredictionTimeseries,
+  getRegionalJeonseRatio,
+  getTopPredictionComplexes,
+  ALLOWED_SGG_CODES,
+  ALLOWED_AREA_BUCKETS,
+  type AreaBucket,
+  type PredictionPoint,
+} from '@/lib/data/invest'
+import { RegionalPriceChartWrapper } from '@/components/invest/RegionalPriceChartWrapper'
+import { formatPrice } from '@/lib/format'
+
+export const revalidate = 3600
+
+const SGG_LABEL: Record<string, string> = {
+  '48121': '창원 의창구',
+  '48123': '창원 창원구',
+  '48125': '창원 성산구',
+  '48127': '창원 마산합포구',
+  '48128': '창원 마산회원구',
+  '48129': '창원 진해구',
+  '48250': '김해시',
+}
+
+interface Props {
+  params: Promise<{ sggCode: string }>
+  searchParams: Promise<{ area_bucket?: string }>
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { sggCode } = await params
+  const label = SGG_LABEL[sggCode] ?? sggCode
+  return {
+    title: `${label} 시세 예측 — 단지온도`,
+    description: `${label} 아파트 AI 시세 예측 분석. 과거 거래 기반 6개월 예측.`,
+  }
+}
+
+const AREA_OPTIONS = [
+  { label: '전체',  value: '' },
+  { label: '소형',  value: '소형' },
+  { label: '59㎡',  value: '59' },
+  { label: '84㎡',  value: '84' },
+  { label: '대형',  value: '대형' },
+] as const
+
+const DIRECTION_COLOR: Record<'up' | 'flat' | 'down', string> = {
+  up: '#16a34a', flat: '#d97706', down: '#dc2626',
+}
+const DIRECTION_ARROW: Record<'up' | 'flat' | 'down', string> = {
+  up: '↑', flat: '→', down: '↓',
+}
+
+function directionOf(pct: number): 'up' | 'flat' | 'down' {
+  if (pct > 3) return 'up'
+  if (pct < -3) return 'down'
+  return 'flat'
+}
+
+function fmtPct(pct: number): string {
+  const sign = pct > 0 ? '+' : ''
+  return `${sign}${pct.toFixed(1)}%`
+}
+
+function confidenceBadge(mape: number): { label: string; color: string } {
+  if (mape < 0.10) return { label: '높음', color: '#16a34a' }
+  if (mape < 0.20) return { label: '보통', color: '#d97706' }
+  return { label: '낮음', color: '#dc2626' }
+}
+
+export default async function RegionDetailPage({ params, searchParams }: Props) {
+  const { sggCode } = await params
+  const sp = await searchParams
+  const rawBucket = typeof sp.area_bucket === 'string' ? sp.area_bucket : ''
+
+  if (!(ALLOWED_SGG_CODES as ReadonlyArray<string>).includes(sggCode)) notFound()
+
+  const areaBucket = (ALLOWED_AREA_BUCKETS as ReadonlyArray<string>).includes(rawBucket)
+    ? (rawBucket as AreaBucket)
+    : undefined
+
+  const supabase = createReadonlyClient()
+  const label = SGG_LABEL[sggCode] ?? sggCode
+
+  const [history, predTimeseries, jeonseData, complexRanking] = await Promise.all([
+    getRegionalPriceHistory(supabase, sggCode, areaBucket, 36).catch(() => []),
+    getRegionalPredictionTimeseries(supabase, sggCode, areaBucket).catch(() => []),
+    getRegionalJeonseRatio(supabase, sggCode, areaBucket, 24).catch(() => []),
+    getTopPredictionComplexes(supabase, sggCode, areaBucket, 10).catch(() => []),
+  ])
+
+  const predictionPoints: PredictionPoint[] = predTimeseries.map(p => ({
+    yearMonth:    p.predictedMonth,
+    mean:         p.medianPrice,
+    lower:        p.lowerPrice,
+    upper:        p.upperPrice,
+    modelName:    'chronos-bolt-small',
+    trainingMape: 0,
+  }))
+
+  const latestJeonse = [...jeonseData].reverse().find(j => j.jeonseRatio != null)
+  const latestHistory = history[history.length - 1]
+
+  let changePct: number | null = null
+  if (predTimeseries.length >= 2) {
+    const first = predTimeseries[0]!.medianPrice
+    const last  = predTimeseries[predTimeseries.length - 1]!.medianPrice
+    changePct = first > 0 ? ((last - first) / first) * 100 : null
+  }
+  const direction = changePct != null ? directionOf(changePct) : null
+
+  function tabHref(bucket: string): string {
+    const p = new URLSearchParams()
+    if (bucket) p.set('area_bucket', bucket)
+    const s = p.toString()
+    return `/invest/region/${sggCode}${s ? `?${s}` : ''}`
+  }
+
+  const tabStyle = (active: boolean): React.CSSProperties => ({
+    display: 'inline-block', padding: '5px 12px', borderRadius: 6,
+    font: '500 12px/1 var(--font-sans)', textDecoration: 'none',
+    background: active ? 'var(--dj-orange)' : 'var(--bg-surface-2)',
+    color: active ? '#fff' : 'var(--fg-sec)',
+    border: '1px solid var(--line-subtle)', whiteSpace: 'nowrap' as const,
+  })
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--bg-canvas)', fontFamily: 'var(--font-sans)' }}>
+      <header style={{
+        height: 60, background: '#fff', borderBottom: '1px solid var(--line-default)',
+        display: 'flex', alignItems: 'center', padding: '0 32px', gap: 16,
+        position: 'sticky', top: 0, zIndex: 50,
+      }}>
+        <Link href="/" className="dj-logo">
+          <span className="mark">단</span><span>단지온도</span>
+        </Link>
+        <Link href="/invest" style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--fg-tertiary)', textDecoration: 'none' }}>
+          투자 분석
+        </Link>
+        <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>›</span>
+        <span style={{ font: '600 13px/1 var(--font-sans)', color: 'var(--fg-pri)' }}>{label}</span>
+      </header>
+
+      <main style={{ maxWidth: 1040, margin: '0 auto', padding: '24px 32px' }}>
+        <div style={{ marginBottom: 20 }}>
+          <h1 style={{ font: '700 22px/1.3 var(--font-sans)', letterSpacing: '-0.02em', margin: '0 0 6px' }}>
+            {label} 시세 예측 분석
+          </h1>
+          <p style={{ font: '500 12px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>
+            <span style={{
+              display: 'inline-block', padding: '1px 6px', borderRadius: 4,
+              background: 'var(--bg-surface-2)', border: '1px solid var(--line-subtle)',
+              font: '600 11px/1.6 var(--font-sans)', color: 'var(--fg-sec)', marginRight: 6,
+            }}>Chronos-Bolt-Small</span>
+            Amazon 오픈소스 AI · 과거 실거래 기반 6개월 예측 · 참고용
+          </p>
+        </div>
+
+        {/* 면적 탭 */}
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 20 }}>
+          {AREA_OPTIONS.map(opt => (
+            <Link key={opt.value} href={tabHref(opt.value)}
+              style={tabStyle(opt.value === '' ? !areaBucket : areaBucket === opt.value)}>
+              {opt.label}
+            </Link>
+          ))}
+        </div>
+
+        {/* 핵심 지표 카드 4개 */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10, marginBottom: 24 }}>
+          <div className="card" style={{ padding: 16, textAlign: 'center' }}>
+            <div style={{ font: '500 11px/1.3 var(--font-sans)', color: 'var(--fg-sec)', marginBottom: 6 }}>
+              6개월 예측 변화율
+            </div>
+            {changePct != null && direction ? (
+              <>
+                <div style={{ font: '700 24px/1 var(--font-sans)', color: DIRECTION_COLOR[direction], marginBottom: 2 }}>
+                  {DIRECTION_ARROW[direction]} {fmtPct(changePct)}
+                </div>
+                <div style={{ font: '400 10px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                  단지 중위 기준
+                </div>
+              </>
+            ) : (
+              <div style={{ font: '500 13px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>데이터 처리 중</div>
+            )}
+          </div>
+
+          <div className="card" style={{ padding: 16, textAlign: 'center' }}>
+            <div style={{ font: '500 11px/1.3 var(--font-sans)', color: 'var(--fg-sec)', marginBottom: 6 }}>
+              최근 전세가율
+            </div>
+            {latestJeonse?.jeonseRatio != null ? (
+              <>
+                <div className="tnum" style={{ font: '700 24px/1 var(--font-sans)', color: 'var(--fg-pri)', marginBottom: 2 }}>
+                  {latestJeonse.jeonseRatio.toFixed(1)}%
+                </div>
+                <div style={{ font: '400 10px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                  {latestJeonse.yearMonth}
+                </div>
+              </>
+            ) : (
+              <div style={{ font: '500 13px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>집계 중</div>
+            )}
+          </div>
+
+          <div className="card" style={{ padding: 16, textAlign: 'center' }}>
+            <div style={{ font: '500 11px/1.3 var(--font-sans)', color: 'var(--fg-sec)', marginBottom: 6 }}>
+              최근월 거래량
+            </div>
+            {latestHistory ? (
+              <>
+                <div className="tnum" style={{ font: '700 24px/1 var(--font-sans)', color: 'var(--fg-pri)', marginBottom: 2 }}>
+                  {latestHistory.txCount}건
+                </div>
+                <div style={{ font: '400 10px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                  {latestHistory.yearMonth}
+                </div>
+              </>
+            ) : (
+              <div style={{ font: '500 13px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>집계 중</div>
+            )}
+          </div>
+
+          <div className="card" style={{ padding: 16, textAlign: 'center' }}>
+            <div style={{ font: '500 11px/1.3 var(--font-sans)', color: 'var(--fg-sec)', marginBottom: 6 }}>
+              AI 예측 단지
+            </div>
+            <div className="tnum" style={{ font: '700 24px/1 var(--font-sans)', color: 'var(--fg-pri)', marginBottom: 2 }}>
+              {predTimeseries[0]?.complexCount ?? 0}개
+            </div>
+            <div style={{ font: '400 10px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+              MAPE 25% 이하
+            </div>
+          </div>
+        </div>
+
+        {/* 시세 + 예측 차트 */}
+        <section aria-labelledby="chart-heading" style={{ marginBottom: 28 }}>
+          <div className="card" style={{ padding: 20 }}>
+            <h2 id="chart-heading" style={{ font: '600 14px/1.4 var(--font-sans)', margin: '0 0 16px', color: 'var(--fg-pri)' }}>
+              시세 흐름 + 6개월 예측
+            </h2>
+            {history.length < 2 ? (
+              <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--fg-tertiary)', font: '500 13px/1.4 var(--font-sans)' }}>
+                거래 데이터 부족
+              </div>
+            ) : (
+              <RegionalPriceChartWrapper
+                data={history}
+                title=""
+                predictionData={predictionPoints.length > 0 ? predictionPoints : undefined}
+              />
+            )}
+          </div>
+        </section>
+
+        {/* 전세가율 추이 */}
+        {jeonseData.length > 0 && (
+          <section aria-labelledby="jeonse-heading" style={{ marginBottom: 28 }}>
+            <h2 id="jeonse-heading" style={{ font: '600 14px/1.4 var(--font-sans)', margin: '0 0 12px' }}>
+              전세가율 추이 (최근 12개월)
+            </h2>
+            <div className="card" style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: 'var(--bg-surface-2)', borderBottom: '1px solid var(--line-default)' }}>
+                    {['월', '매매 평균', '전세 평균', '전세가율', '거래량'].map(h => (
+                      <th key={h} style={{
+                        padding: '8px 12px', font: '600 11px/1 var(--font-sans)',
+                        color: 'var(--fg-sec)', whiteSpace: 'nowrap',
+                        textAlign: h === '월' ? 'left' : 'right',
+                      }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {jeonseData.slice(-12).map(row => (
+                    <tr key={row.yearMonth} style={{ borderBottom: '1px solid var(--line-subtle)' }}>
+                      <td style={{ padding: '8px 12px', font: '500 12px/1 var(--font-sans)', color: 'var(--fg-sec)' }}>{row.yearMonth}</td>
+                      <td className="tnum" style={{ padding: '8px 12px', font: '500 12px/1 var(--font-sans)', textAlign: 'right' }}>{formatPrice(row.saleAvg)}</td>
+                      <td className="tnum" style={{ padding: '8px 12px', font: '500 12px/1 var(--font-sans)', textAlign: 'right', color: 'var(--fg-sec)' }}>
+                        {row.rentAvg ? formatPrice(row.rentAvg) : '—'}
+                      </td>
+                      <td className="tnum" style={{
+                        padding: '8px 12px', font: '600 12px/1 var(--font-sans)', textAlign: 'right',
+                        color: row.jeonseRatio != null && row.jeonseRatio > 80
+                          ? '#dc2626'
+                          : row.jeonseRatio != null && row.jeonseRatio > 70
+                            ? '#d97706'
+                            : 'var(--fg-pri)',
+                      }}>
+                        {row.jeonseRatio != null ? `${row.jeonseRatio.toFixed(1)}%` : '—'}
+                      </td>
+                      <td className="tnum" style={{ padding: '8px 12px', font: '400 12px/1 var(--font-sans)', textAlign: 'right', color: 'var(--fg-tertiary)' }}>
+                        {row.saleCount}건
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {/* 예측 상승 기대 단지 */}
+        <section aria-labelledby="complex-heading" style={{ marginBottom: 28 }}>
+          <h2 id="complex-heading" style={{ font: '600 14px/1.4 var(--font-sans)', margin: '0 0 12px' }}>
+            예측 상승 기대 단지
+          </h2>
+          {complexRanking.length === 0 ? (
+            <div className="card" style={{ padding: 28, textAlign: 'center' }}>
+              <p style={{ font: '500 13px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>
+                예측 데이터를 처리 중입니다
+              </p>
+            </div>
+          ) : (
+            <div className="card" style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: 'var(--bg-surface-2)', borderBottom: '1px solid var(--line-default)' }}>
+                    {[
+                      { h: '#',         align: 'center' as const },
+                      { h: '단지명',     align: 'left'   as const },
+                      { h: '면적',       align: 'left'   as const },
+                      { h: '현재 예측가', align: 'right'  as const },
+                      { h: '6개월 후',   align: 'right'  as const },
+                      { h: '변화율',     align: 'right'  as const },
+                      { h: '신뢰도',     align: 'center' as const },
+                    ].map(({ h, align }) => (
+                      <th key={h} style={{ padding: '10px 12px', font: '600 11px/1 var(--font-sans)', color: 'var(--fg-sec)', textAlign: align, whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {complexRanking.map((item, idx) => {
+                    const color = DIRECTION_COLOR[item.direction]
+                    const conf  = confidenceBadge(item.mape)
+                    return (
+                      <tr key={`${item.complexId}-${item.areaBucket}`} style={{ borderBottom: '1px solid var(--line-subtle)' }}>
+                        <td style={{ padding: '10px 12px', font: '500 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', textAlign: 'center', width: 36 }}>{idx + 1}</td>
+                        <td style={{ padding: '10px 12px' }}>
+                          <Link href={`/complexes/${item.complexId}`} style={{ font: '600 13px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none' }}>
+                            {item.complexName}
+                          </Link>
+                        </td>
+                        <td style={{ padding: '10px 12px', font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                          {item.areaBucket === '소형' || item.areaBucket === '대형' ? item.areaBucket : `${item.areaBucket}㎡`}
+                        </td>
+                        <td className="tnum" style={{ padding: '10px 12px', font: '500 13px/1 var(--font-sans)', textAlign: 'right', whiteSpace: 'nowrap' }}>{formatPrice(item.nearPrice)}</td>
+                        <td className="tnum" style={{ padding: '10px 12px', font: '600 13px/1 var(--font-sans)', textAlign: 'right', whiteSpace: 'nowrap' }}>{formatPrice(item.farPrice)}</td>
+                        <td className="tnum" style={{ padding: '10px 12px', font: '700 13px/1 var(--font-sans)', color, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <span aria-hidden="true" style={{ marginRight: 2 }}>{DIRECTION_ARROW[item.direction]}</span>
+                          {fmtPct(item.changePct)}
+                        </td>
+                        <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                          <span style={{ display: 'inline-block', color: conf.color, font: '600 11px/1 var(--font-sans)', border: `1px solid ${conf.color}`, borderRadius: 4, padding: '3px 8px', whiteSpace: 'nowrap' }}>
+                            {conf.label}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <p style={{ font: '400 11px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '12px 0 0' }}>
+          본 예측은 과거 실거래 패턴 기반 통계 모델이며 투자 결정에 활용하지 마세요.
+        </p>
+      </main>
+    </div>
+  )
+}
