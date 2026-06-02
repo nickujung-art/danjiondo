@@ -14,11 +14,12 @@
  * 4. 각 단지에 fetchKaptBasicInfo 호출 → si/gu/dong/road_address/household_count/built_year/heat_type/data_completeness 업데이트
  * 5. 진행 상황 + 완료 요약 출력
  */
-import { loadEnvConfig } from '@next/env'
+import { config as dotenvConfig } from 'dotenv'
+import path from 'path'
 import { createClient } from '@supabase/supabase-js'
 import { fetchComplexList, fetchKaptBasicInfo } from '../src/services/kapt'
 
-loadEnvConfig(process.cwd())
+dotenvConfig({ path: path.resolve(process.cwd(), '.env.local') })
 
 // ── 환경변수 검증 ──────────────────────────────────────────────
 if (!process.env.KAPT_API_KEY) {

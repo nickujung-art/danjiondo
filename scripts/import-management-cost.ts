@@ -14,7 +14,7 @@
  * K-apt dimension ref="A1" 버그 자동 감지 → 7z + 스트리밍 XML 파싱 폴백
  * 폴백 시 7z가 PATH에 있어야 함: scoop install 7zip
  */
-import { loadEnvConfig } from '@next/env'
+import { config as dotenvConfig } from 'dotenv'
 import { createClient } from '@supabase/supabase-js'
 import * as XLSX from 'xlsx'
 import * as path from 'path'
@@ -23,7 +23,7 @@ import * as os from 'os'
 import { execSync } from 'child_process'
 import { createInterface } from 'readline'
 
-loadEnvConfig(process.cwd())
+dotenvConfig({ path: path.resolve(process.cwd(), '.env.local') })
 
 // ─── 컬럼 인덱스 (0-indexed, A=0) ─────────────────────────────────────────
 

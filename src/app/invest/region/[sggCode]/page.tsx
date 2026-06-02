@@ -55,6 +55,7 @@ const AREA_OPTIONS = [
 const HORIZON_OPTIONS = [
   { label: '3개월', value: '3' },
   { label: '6개월', value: '6' },
+  { label: '1년',   value: '12' },
 ] as const
 
 const DIRECTION_COLOR: Record<'up' | 'flat' | 'down', string> = {
@@ -85,7 +86,7 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
   const { sggCode } = await params
   const sp = await searchParams
   const rawBucket = typeof sp.area_bucket === 'string' ? sp.area_bucket : ''
-  const horizon = sp.horizon === '3' ? 3 : 6
+  const horizon = sp.horizon === '3' ? 3 : sp.horizon === '12' ? 12 : 6
 
   if (!(ALLOWED_SGG_CODES as ReadonlyArray<string>).includes(sggCode)) notFound()
 
@@ -104,7 +105,11 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
     getRegionalUnsold(supabase, sggCode).catch(() => [] as RegionalUnsoldPoint[]),
   ])
 
-  const rawPredPoints: PredictionPoint[] = predTimeseries.map(p => ({
+  // 미래 예측 포인트만 필터링 (Chronos는 backtesting 결과도 저장하므로 현재 달 이후만 사용)
+  const currentYearMonth = new Date().toISOString().slice(0, 7)  // 'YYYY-MM'
+  const futurePredTimeseries = predTimeseries.filter(p => p.predictedMonth > currentYearMonth)
+
+  const rawPredPoints: PredictionPoint[] = futurePredTimeseries.map(p => ({
     yearMonth:    p.predictedMonth,
     mean:         p.medianPrice,
     lower:        p.lowerPrice,
@@ -137,11 +142,17 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
   const latestJeonse = [...jeonseData].reverse().find(j => j.jeonseRatio != null)
   const latestHistory = history[history.length - 1]
 
+  // changePct: 미래 예측 기준 (horizon 기간 내 첫→마지막)
   let changePct: number | null = null
-  if (predTimeseries.length >= 2) {
-    const first = predTimeseries[0]!.medianPrice
-    const last  = predTimeseries[predTimeseries.length - 1]!.medianPrice
+  if (predictionPoints.length >= 2) {
+    const first = predictionPoints[0]!.mean
+    const last  = predictionPoints[predictionPoints.length - 1]!.mean
     changePct = first > 0 ? ((last - first) / first) * 100 : null
+  } else if (predictionPoints.length === 1) {
+    // 예측 1개: 실거래 마지막 vs 예측 첫 달
+    const lastReal = history[history.length - 1]?.avgPrice
+    const predFirst = predictionPoints[0]!.mean
+    changePct = lastReal && lastReal > 0 ? ((predFirst - lastReal) / lastReal) * 100 : null
   }
   const direction = changePct != null ? directionOf(changePct) : null
 
@@ -197,7 +208,7 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
               background: 'var(--bg-surface-2)', border: '1px solid var(--line-subtle)',
               font: '600 11px/1.6 var(--font-sans)', color: 'var(--fg-sec)', marginRight: 6,
             }}>Chronos-Bolt-Small</span>
-            Amazon 오픈소스 AI · 과거 실거래 기반 6개월 예측 · 참고용
+            Amazon 오픈소스 AI · 과거 실거래 기반 {horizon}개월 예측 · 참고용
           </p>
         </div>
 
@@ -226,7 +237,7 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10, marginBottom: 24 }}>
           <div className="card" style={{ padding: 16, textAlign: 'center' }}>
             <div style={{ font: '500 11px/1.3 var(--font-sans)', color: 'var(--fg-sec)', marginBottom: 6 }}>
-              6개월 예측 변화율
+              {horizon}개월 예측 변화율
             </div>
             {changePct != null && direction ? (
               <>
@@ -456,7 +467,7 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
                       { h: '단지명',     align: 'left'   as const },
                       { h: '면적',       align: 'left'   as const },
                       { h: '현재 예측가', align: 'right'  as const },
-                      { h: '6개월 후',   align: 'right'  as const },
+                      { h: `${horizon === 12 ? '1년' : `${horizon}개월`} 후`, align: 'right'  as const },
                       { h: '변화율',     align: 'right'  as const },
                       { h: '신뢰도',     align: 'center' as const },
                     ].map(({ h, align }) => (
