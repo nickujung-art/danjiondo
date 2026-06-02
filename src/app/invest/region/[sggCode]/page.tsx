@@ -83,6 +83,84 @@ function confidenceBadge(mape: number): { label: string; color: string } {
   return { label: '낮음', color: '#dc2626' }
 }
 
+type RiskGrade = 'good' | 'caution' | 'bad' | 'na'
+interface RiskItem {
+  label: string
+  grade: RiskGrade
+  value: string
+  desc: string
+}
+
+const RISK_COLOR: Record<RiskGrade, string> = {
+  good:   '#16a34a',
+  caution:'#d97706',
+  bad:    '#dc2626',
+  na:     'var(--fg-tertiary)',
+}
+const RISK_LABEL: Record<RiskGrade, string> = {
+  good: '양호', caution: '주의', bad: '위험', na: '—',
+}
+
+function buildRiskItems(opts: {
+  changePct:   number | null
+  jeonseRatio: number | null
+  txCount:     number | null
+  unsoldCount: number | null
+}): RiskItem[] {
+  const { changePct, jeonseRatio, txCount, unsoldCount } = opts
+
+  const priceGrade: RiskGrade =
+    changePct == null ? 'na'
+    : changePct > 3   ? 'good'
+    : changePct > -3  ? 'caution'
+    : 'bad'
+
+  const jeonseGrade: RiskGrade =
+    jeonseRatio == null  ? 'na'
+    : jeonseRatio < 70   ? 'good'
+    : jeonseRatio < 80   ? 'caution'
+    : 'bad'
+
+  const unsoldGrade: RiskGrade =
+    unsoldCount == null  ? 'na'
+    : unsoldCount < 100  ? 'good'
+    : unsoldCount < 500  ? 'caution'
+    : 'bad'
+
+  const txGrade: RiskGrade =
+    txCount == null  ? 'na'
+    : txCount >= 50  ? 'good'
+    : txCount >= 20  ? 'caution'
+    : 'bad'
+
+  return [
+    {
+      label: '가격 방향성',
+      grade: priceGrade,
+      value: changePct != null ? fmtPct(changePct) : '—',
+      desc:  'AI 예측 기준 단기 방향',
+    },
+    {
+      label: '전세 리스크',
+      grade: jeonseGrade,
+      value: jeonseRatio != null ? `${jeonseRatio.toFixed(1)}%` : '—',
+      desc:  '전세가율 높을수록 갭투자 리스크',
+    },
+    {
+      label: '공급 과잉',
+      grade: unsoldGrade,
+      value: unsoldCount != null ? `${unsoldCount.toLocaleString('ko-KR')}세대` : '—',
+      desc:  '미분양 적을수록 수요 우세',
+    },
+    {
+      label: '거래 유동성',
+      grade: txGrade,
+      value: txCount != null ? `${txCount}건/월` : '—',
+      desc:  '최근 거래량, 낮으면 매도 어려움',
+    },
+  ]
+}
+
 export default async function RegionDetailPage({ params, searchParams }: Props) {
   const { sggCode } = await params
   const sp = await searchParams
@@ -156,6 +234,13 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
     changePct = lastReal && lastReal > 0 ? ((predFirst - lastReal) / lastReal) * 100 : null
   }
   const direction = changePct != null ? directionOf(changePct) : null
+
+  const riskItems = buildRiskItems({
+    changePct,
+    jeonseRatio: latestJeonse?.jeonseRatio ?? null,
+    txCount:     latestHistory?.txCount ?? null,
+    unsoldCount: latestUnsold?.unsoldCount ?? null,
+  })
 
   const aiCommentary = await getRegionalCommentary(sggCode, {
     label,
@@ -366,6 +451,36 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
             </div>
           </div>
         )}
+
+        {/* 리스크 평가 */}
+        <section aria-labelledby="risk-heading" style={{ marginBottom: 24 }}>
+          <h2 id="risk-heading" style={{ font: '600 14px/1.4 var(--font-sans)', margin: '0 0 10px' }}>
+            리스크 평가
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
+            {riskItems.map(item => (
+              <div key={item.label} className="card" style={{ padding: '14px 16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <span style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--fg-sec)' }}>{item.label}</span>
+                  <span style={{
+                    font: '600 11px/1 var(--font-sans)',
+                    color: RISK_COLOR[item.grade],
+                    border: `1px solid ${RISK_COLOR[item.grade]}`,
+                    borderRadius: 4, padding: '2px 7px',
+                  }}>
+                    {RISK_LABEL[item.grade]}
+                  </span>
+                </div>
+                <div className="tnum" style={{ font: '700 20px/1 var(--font-sans)', color: RISK_COLOR[item.grade], marginBottom: 6 }}>
+                  {item.value}
+                </div>
+                <div style={{ font: '400 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                  {item.desc}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {/* 시세 + 예측 차트 */}
         <section aria-labelledby="chart-heading" style={{ marginBottom: 28 }}>
