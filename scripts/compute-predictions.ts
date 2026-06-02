@@ -37,7 +37,7 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
 
 // ─── 상수 ─────────────────────────────────────────────────────────────────────
 
-const AREA_BUCKETS = ['소형', '59', '84', '대형'] as const
+const AREA_BUCKETS = ['소형', '59', '74', '84', '대형'] as const
 type AreaBucket = (typeof AREA_BUCKETS)[number]
 
 const PAGE_SIZE = 1000
