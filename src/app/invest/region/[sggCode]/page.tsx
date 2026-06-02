@@ -12,12 +12,14 @@ import {
   getMortgageRate,
   getMortgageRateSeries,
   getRegionalPopulation,
+  getRegionalGapItems,
   calcHAI,
   ALLOWED_SGG_CODES,
   ALLOWED_AREA_BUCKETS,
   type AreaBucket,
   type PredictionPoint,
   type RegionalUnsoldPoint,
+  type RegionalGapItem,
 } from '@/lib/data/invest'
 import { RegionChartSection } from '@/components/invest/RegionChartSection'
 import { RateSparklineWrapper } from '@/components/invest/RateSparklineWrapper'
@@ -176,7 +178,7 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
   const supabase = createReadonlyClient()
   const label = SGG_LABEL[sggCode] ?? sggCode
 
-  const [history, predTimeseries, jeonseData, complexRanking, unsoldHistory, incomeData, mortgageRateData, populationData, rateSeries] = await Promise.all([
+  const [history, predTimeseries, jeonseData, complexRanking, unsoldHistory, incomeData, mortgageRateData, populationData, rateSeries, gapItems] = await Promise.all([
     getRegionalPriceHistory(supabase, sggCode, areaBucket, 36).catch(() => []),
     getRegionalPredictionTimeseries(supabase, sggCode, areaBucket).catch(() => []),
     getRegionalJeonseRatio(supabase, sggCode, areaBucket, 24).catch(() => []),
@@ -186,6 +188,7 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
     getMortgageRate().catch(() => null),
     getRegionalPopulation(sggCode, 10).catch(() => []),
     getMortgageRateSeries(24).catch(() => []),
+    getRegionalGapItems(supabase, sggCode, 12).catch(() => [] as RegionalGapItem[]),
   ])
 
   // 미래 예측 포인트만 필터링 (Chronos는 backtesting 결과도 저장하므로 현재 달 이후만 사용)
@@ -804,6 +807,123 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
             </div>
           </section>
         )}
+
+        {/* 갭투자 소자본 진입 단지 */}
+        {gapItems.length > 0 && (() => {
+          const avgJeonseRatio = gapItems.reduce((s, g) => s + g.jeonseRatio, 0) / gapItems.length
+          const minGap = gapItems[0]?.gapAmount ?? 0
+          const riskColor = (r: string) =>
+            r === 'safe' ? '#16a34a' : r === 'caution' ? '#d97706' : '#dc2626'
+          const riskLabel = (r: string) =>
+            r === 'safe' ? '안전' : r === 'caution' ? '주의' : '위험'
+
+          return (
+            <section aria-labelledby="gap-heading" style={{ marginBottom: 28 }}>
+              <h2 id="gap-heading" style={{ font: '600 14px/1.4 var(--font-sans)', margin: '0 0 10px' }}>
+                갭투자 소자본 진입 단지
+                <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 8 }}>
+                  갭(매매–전세) 적은 순 · 거래 3건+ 단지만
+                </span>
+              </h2>
+              {/* 요약 배너 */}
+              <div style={{
+                display: 'flex', gap: 20, marginBottom: 12, flexWrap: 'wrap',
+                padding: '10px 14px', background: 'var(--bg-surface)',
+                border: '1px solid var(--line-subtle)', borderRadius: 8,
+                font: '500 12px/1.4 var(--font-sans)',
+              }}>
+                <span>
+                  <span style={{ color: 'var(--fg-tertiary)' }}>분석 단지</span>
+                  <strong style={{ marginLeft: 6, color: 'var(--fg-pri)' }}>{gapItems.length}개</strong>
+                </span>
+                <span>
+                  <span style={{ color: 'var(--fg-tertiary)' }}>평균 전세가율</span>
+                  <strong style={{ marginLeft: 6, color: avgJeonseRatio > 80 ? '#dc2626' : '#d97706' }}>
+                    {avgJeonseRatio.toFixed(1)}%
+                  </strong>
+                </span>
+                <span>
+                  <span style={{ color: 'var(--fg-tertiary)' }}>최소 진입 갭</span>
+                  <strong className="tnum" style={{ marginLeft: 6, color: 'var(--fg-pri)' }}>
+                    {minGap < 0
+                      ? `역갭 ${Math.abs(minGap).toLocaleString('ko-KR')}만`
+                      : `${minGap.toLocaleString('ko-KR')}만`}
+                  </strong>
+                </span>
+                <span style={{ color: 'var(--fg-tertiary)', fontSize: 11 }}>
+                  ※ 역갭 = 전세가 &gt; 매매가 (보증금 초과 위험 주의)
+                </span>
+              </div>
+              <div className="card" style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: 'var(--bg-surface-2)', borderBottom: '1px solid var(--line-default)' }}>
+                      {[
+                        { h: '#',       align: 'center' as const },
+                        { h: '단지명',   align: 'left'   as const },
+                        { h: '매매가',   align: 'right'  as const },
+                        { h: '전세가',   align: 'right'  as const },
+                        { h: '갭',       align: 'right'  as const },
+                        { h: '전세가율', align: 'right'  as const },
+                        { h: '위험',     align: 'center' as const },
+                      ].map(({ h, align }) => (
+                        <th key={h} style={{
+                          padding: '8px 12px', font: '600 11px/1 var(--font-sans)',
+                          color: 'var(--fg-sec)', whiteSpace: 'nowrap', textAlign: align,
+                        }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {gapItems.map((item, idx) => (
+                      <tr key={item.complexId} style={{ borderBottom: '1px solid var(--line-subtle)' }}>
+                        <td style={{ padding: '9px 12px', font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', textAlign: 'center', width: 32 }}>{idx + 1}</td>
+                        <td style={{ padding: '9px 12px' }}>
+                          <Link href={`/complexes/${item.complexId}`}
+                            style={{ font: '600 12px/1.4 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none' }}>
+                            {item.complexName}
+                          </Link>
+                        </td>
+                        <td className="tnum" style={{ padding: '9px 12px', font: '500 12px/1 var(--font-sans)', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          {formatPrice(item.medianSalePrice)}
+                        </td>
+                        <td className="tnum" style={{ padding: '9px 12px', font: '500 12px/1 var(--font-sans)', textAlign: 'right', color: 'var(--fg-sec)', whiteSpace: 'nowrap' }}>
+                          {formatPrice(item.medianJeonsePrice)}
+                        </td>
+                        <td className="tnum" style={{
+                          padding: '9px 12px', font: '700 12px/1 var(--font-sans)', textAlign: 'right', whiteSpace: 'nowrap',
+                          color: item.gapAmount < 0 ? '#dc2626' : item.gapAmount < 5000 ? '#d97706' : 'var(--fg-pri)',
+                        }}>
+                          {item.gapAmount < 0
+                            ? `역갭 ${Math.abs(item.gapAmount).toLocaleString('ko-KR')}만`
+                            : `${item.gapAmount.toLocaleString('ko-KR')}만`}
+                        </td>
+                        <td className="tnum" style={{
+                          padding: '9px 12px', font: '600 12px/1 var(--font-sans)', textAlign: 'right',
+                          color: item.jeonseRatio > 90 ? '#dc2626' : item.jeonseRatio > 80 ? '#d97706' : 'var(--fg-pri)',
+                        }}>
+                          {item.jeonseRatio.toFixed(1)}%
+                        </td>
+                        <td style={{ padding: '9px 12px', textAlign: 'center' }}>
+                          <span style={{
+                            display: 'inline-block', font: '600 10px/1 var(--font-sans)',
+                            color: riskColor(item.riskLevel), border: `1px solid ${riskColor(item.riskLevel)}`,
+                            borderRadius: 4, padding: '2px 7px', whiteSpace: 'nowrap',
+                          }}>
+                            {riskLabel(item.riskLevel)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p style={{ font: '400 11px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '8px 0 0' }}>
+                갭투자는 전세 미갱신·역전세 위험을 수반합니다. 전세가율 80% 초과 단지는 특히 주의가 필요합니다.
+              </p>
+            </section>
+          )
+        })()}
 
         {/* 예측 상승 기대 단지 */}
         <section aria-labelledby="complex-heading" style={{ marginBottom: 28 }}>

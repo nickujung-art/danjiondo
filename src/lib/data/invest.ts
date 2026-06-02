@@ -420,6 +420,79 @@ export async function getRegionalPopulation(
   }))
 }
 
+// ─── Regional Gap Stats ───────────────────────────────────────────────────────
+
+export interface RegionalGapItem {
+  complexId:         string
+  complexName:       string
+  medianSalePrice:   number   // 만원
+  medianJeonsePrice: number   // 만원
+  gapAmount:         number   // 만원 (매매-전세)
+  gapRatio:          number   // % (갭/매매)
+  jeonseRatio:       number   // %
+  riskLevel:         string   // 'safe' | 'caution' | 'danger'
+  saleCount:         number
+  jeonseCount:       number
+}
+
+/**
+ * 지역 내 갭투자 가능 단지 — 갭 금액 오름차순 (소자본 진입 순).
+ * sale_count, jeonse_count 각 3건 이상인 단지만 포함.
+ * 최대 limit건 반환.
+ */
+export async function getRegionalGapItems(
+  supabase:  SupabaseClient<Database>,
+  sggCode:   string,
+  limit = 12,
+): Promise<RegionalGapItem[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('complex_gap_stats')
+    .select(
+      'gap_amount, gap_ratio, jeonse_ratio, risk_level, sale_count, jeonse_count, median_sale_price, median_jeonse_price, complexes!inner(id, canonical_name, sgg_code)',
+    )
+    .eq('complexes.sgg_code', sggCode)
+    .gte('sale_count', 3)
+    .gte('jeonse_count', 3)
+    .order('gap_amount', { ascending: true })
+    .limit(limit)
+  if (error || !data) return []
+
+  type RawRow = {
+    gap_amount:          number
+    gap_ratio:           string | number
+    jeonse_ratio:        string | number
+    risk_level:          string
+    sale_count:          number
+    jeonse_count:        number
+    median_sale_price:   number
+    median_jeonse_price: number
+    complexes:
+      | { id: string; canonical_name: string; sgg_code: string | null }
+      | Array<{ id: string; canonical_name: string; sgg_code: string | null }>
+      | null
+  }
+
+  const result: RegionalGapItem[] = []
+  for (const raw of data as RawRow[]) {
+    const c = Array.isArray(raw.complexes) ? raw.complexes[0] : raw.complexes
+    if (!c) continue
+    result.push({
+      complexId:         c.id,
+      complexName:       c.canonical_name,
+      medianSalePrice:   raw.median_sale_price,
+      medianJeonsePrice: raw.median_jeonse_price,
+      gapAmount:         raw.gap_amount,
+      gapRatio:          Number(raw.gap_ratio),
+      jeonseRatio:       Number(raw.jeonse_ratio),
+      riskLevel:         raw.risk_level,
+      saleCount:         raw.sale_count,
+      jeonseCount:       raw.jeonse_count,
+    })
+  }
+  return result
+}
+
 /**
  * HAI (주택구입부담지수) 계산.
  * HAI = (월소득 × 25%) / 월원리금상환액 × 100
