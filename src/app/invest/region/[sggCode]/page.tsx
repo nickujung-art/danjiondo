@@ -18,7 +18,7 @@ import {
   type PredictionPoint,
   type RegionalUnsoldPoint,
 } from '@/lib/data/invest'
-import { RegionalPriceChartWrapper } from '@/components/invest/RegionalPriceChartWrapper'
+import { RegionChartSection } from '@/components/invest/RegionChartSection'
 import { formatPrice } from '@/lib/format'
 import { getRegionalCommentary } from '@/lib/ai/regional-commentary'
 
@@ -55,12 +55,6 @@ const AREA_OPTIONS = [
   { label: '74㎡',  value: '74' },
   { label: '84㎡',  value: '84' },
   { label: '대형',  value: '대형' },
-] as const
-
-const HORIZON_OPTIONS = [
-  { label: '3개월', value: '3' },
-  { label: '6개월', value: '6' },
-  { label: '1년',   value: '12' },
 ] as const
 
 const DIRECTION_COLOR: Record<'up' | 'flat' | 'down', string> = {
@@ -205,7 +199,7 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
   }))
 
   // 예측선을 역사 데이터 마지막 가격에 연결 (단지 표본 편차 보정)
-  const predictionPoints: PredictionPoint[] = (() => {
+  const scaledPredPoints: PredictionPoint[] = (() => {
     if (rawPredPoints.length === 0 || history.length === 0) return rawPredPoints
     const lastHistPrice = history[history.length - 1]!.avgPrice
     const firstPredMean = rawPredPoints[0]!.mean
@@ -219,7 +213,9 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
       lower: Math.round(p.lower * scale),
       upper: Math.round(p.upper * scale),
     }))
-  })().slice(0, horizon)
+  })()
+  // 서버 렌더 지표(changePct, riskItems)용 — URL horizon 기준으로 슬라이스
+  const predictionPoints = scaledPredPoints.slice(0, horizon)
 
   const latestUnsold  = unsoldHistory.length > 0 ? unsoldHistory[unsoldHistory.length - 1] : null
   const prevUnsold    = unsoldHistory.length > 1 ? unsoldHistory[unsoldHistory.length - 2] : null
@@ -296,14 +292,6 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
     return `/invest/region/${sggCode}${s ? `?${s}` : ''}`
   }
 
-  function horizonHref(h: string): string {
-    const p = new URLSearchParams()
-    if (areaBucket) p.set('area_bucket', areaBucket)
-    if (h !== '6') p.set('horizon', h)
-    const s = p.toString()
-    return `/invest/region/${sggCode}${s ? `?${s}` : ''}`
-  }
-
   const tabStyle = (active: boolean): React.CSSProperties => ({
     display: 'inline-block', padding: '5px 12px', borderRadius: 6,
     font: '500 12px/1 var(--font-sans)', textDecoration: 'none',
@@ -344,25 +332,14 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
           </p>
         </div>
 
-        {/* 면적 탭 + 예측 기간 토글 */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
-          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-            {AREA_OPTIONS.map(opt => (
-              <Link key={opt.value} href={tabHref(opt.value)}
-                style={tabStyle(opt.value === '' ? !areaBucket : areaBucket === opt.value)}>
-                {opt.label}
-              </Link>
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-            <span style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginRight: 4 }}>예측 기간</span>
-            {HORIZON_OPTIONS.map(opt => (
-              <Link key={opt.value} href={horizonHref(opt.value)}
-                style={tabStyle(String(horizon) === opt.value)}>
-                {opt.label}
-              </Link>
-            ))}
-          </div>
+        {/* 면적 탭 */}
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 20 }}>
+          {AREA_OPTIONS.map(opt => (
+            <Link key={opt.value} href={tabHref(opt.value)}
+              style={tabStyle(opt.value === '' ? !areaBucket : areaBucket === opt.value)}>
+              {opt.label}
+            </Link>
+          ))}
         </div>
 
         {/* 핵심 지표 카드 4개 */}
@@ -691,31 +668,15 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
           </section>
         )}
 
-        {/* 시세 + 예측 차트 */}
+        {/* 시세 + 예측 차트 — 클라이언트 인터랙티브 */}
         <section aria-labelledby="chart-heading" style={{ marginBottom: 28 }}>
-          <div className="card" style={{ padding: 20 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <h2 id="chart-heading" style={{ font: '600 14px/1.4 var(--font-sans)', margin: 0, color: 'var(--fg-pri)' }}>
-                시세 흐름 + {horizon}개월 예측
-              </h2>
-              {areaBucket === '74' && (
-                <span style={{ font: '500 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', background: 'var(--bg-surface-2)', padding: '3px 8px', borderRadius: 4, border: '1px solid var(--line-subtle)' }}>
-                  74㎡ 예측은 다음 배치 후 제공
-                </span>
-              )}
-            </div>
-            {history.length < 2 ? (
-              <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--fg-tertiary)', font: '500 13px/1.4 var(--font-sans)' }}>
-                거래 데이터 부족
-              </div>
-            ) : (
-              <RegionalPriceChartWrapper
-                data={history}
-                title=""
-                predictionData={predictionPoints.length > 0 ? predictionPoints : undefined}
-              />
-            )}
-          </div>
+          <RegionChartSection
+            history={history}
+            allPredictions={scaledPredPoints}
+            initialHorizon={horizon as 3 | 6 | 12}
+            sggCode={sggCode}
+            areaBucket={areaBucket}
+          />
         </section>
 
         {/* 전세가율 추이 */}

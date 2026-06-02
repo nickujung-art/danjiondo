@@ -126,6 +126,9 @@ export function RegionalPriceChart({ data, title, predictionData }: RegionalPric
             dot={false}
             activeDot={{ r: 4 }}
             connectNulls={false}
+            isAnimationActive
+            animationDuration={500}
+            animationEasing="ease-out"
           />
           {/* 예측 점선 — predictionData가 있을 때만 */}
           {hasPrediction && (
@@ -137,6 +140,9 @@ export function RegionalPriceChart({ data, title, predictionData }: RegionalPric
               strokeDasharray="5 3"
               dot={false}
               connectNulls
+              isAnimationActive
+              animationDuration={500}
+              animationEasing="ease-out"
             />
           )}
           {/* 신뢰구간 상한 영역 (predUpper) */}
@@ -148,6 +154,8 @@ export function RegionalPriceChart({ data, title, predictionData }: RegionalPric
               fill={color}
               fillOpacity={0.08}
               connectNulls
+              isAnimationActive
+              animationDuration={500}
             />
           )}
           {/* 신뢰구간 하한 아래 채우기 제거 (predLower를 흰 배경으로 덮기) */}
@@ -159,6 +167,8 @@ export function RegionalPriceChart({ data, title, predictionData }: RegionalPric
               fill="white"
               fillOpacity={1}
               connectNulls
+              isAnimationActive
+              animationDuration={500}
             />
           )}
         </ComposedChart>
