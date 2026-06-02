@@ -8,6 +8,7 @@ import {
   getRegionalJeonseRatio,
   getTopPredictionComplexes,
   getRegionalUnsold,
+  getLatestRegionalIncome,
   ALLOWED_SGG_CODES,
   ALLOWED_AREA_BUCKETS,
   type AreaBucket,
@@ -176,12 +177,13 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
   const supabase = createReadonlyClient()
   const label = SGG_LABEL[sggCode] ?? sggCode
 
-  const [history, predTimeseries, jeonseData, complexRanking, unsoldHistory] = await Promise.all([
+  const [history, predTimeseries, jeonseData, complexRanking, unsoldHistory, incomeData] = await Promise.all([
     getRegionalPriceHistory(supabase, sggCode, areaBucket, 36).catch(() => []),
     getRegionalPredictionTimeseries(supabase, sggCode, areaBucket).catch(() => []),
     getRegionalJeonseRatio(supabase, sggCode, areaBucket, 24).catch(() => []),
     getTopPredictionComplexes(supabase, sggCode, areaBucket, 10).catch(() => []),
     getRegionalUnsold(supabase, sggCode).catch(() => [] as RegionalUnsoldPoint[]),
+    getLatestRegionalIncome(supabase).catch(() => null),
   ])
 
   // 미래 예측 포인트만 필터링 (Chronos는 backtesting 결과도 저장하므로 현재 달 이후만 사용)
@@ -234,6 +236,18 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
     changePct = lastReal && lastReal > 0 ? ((predFirst - lastReal) / lastReal) * 100 : null
   }
   const direction = changePct != null ? directionOf(changePct) : null
+
+  // PIR: 최근 6개월 평균 매매가 ÷ 연간 가구소득 (단위 통일: 만원)
+  const recentAvgPrice = history.length > 0
+    ? history.slice(-6).reduce((s, r) => s + r.avgPrice, 0) / Math.min(history.slice(-6).length, 6)
+    : null
+  const recentJeonseAvg = jeonseData.length > 0
+    ? [...jeonseData].reverse().find(j => j.rentAvg != null)?.rentAvg ?? null
+    : null
+
+  const annualIncome = incomeData?.avgIncome ?? null  // 만원
+  const pir  = recentAvgPrice && annualIncome ? recentAvgPrice / annualIncome : null
+  const jhai = recentJeonseAvg && annualIncome ? recentJeonseAvg / annualIncome : null
 
   const riskItems = buildRiskItems({
     changePct,
@@ -481,6 +495,76 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
             ))}
           </div>
         </section>
+
+        {/* 구입부담 지수 */}
+        {(pir != null || jhai != null) && (
+          <section aria-labelledby="affordability-heading" style={{ marginBottom: 24 }}>
+            <h2 id="affordability-heading" style={{ font: '600 14px/1.4 var(--font-sans)', margin: '0 0 10px' }}>
+              구입부담 지수
+              <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 8 }}>
+                경남 평균 가구소득 {annualIncome?.toLocaleString('ko-KR')}만원 ({incomeData?.year}) 기준
+              </span>
+            </h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
+              {pir != null && (
+                <div className="card" style={{ padding: '16px 18px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                    <div>
+                      <div style={{ font: '600 12px/1 var(--font-sans)', color: 'var(--fg-sec)', marginBottom: 4 }}>
+                        PIR <span style={{ fontWeight: 400, fontSize: 11 }}>(Price-to-Income)</span>
+                      </div>
+                      <div style={{ font: '400 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                        연소득 대비 매매가
+                      </div>
+                    </div>
+                    <span style={{
+                      font: '600 11px/1 var(--font-sans)', borderRadius: 4, padding: '3px 8px',
+                      ...(pir < 8 ? { color: '#16a34a', border: '1px solid #16a34a' }
+                        : pir < 12 ? { color: '#d97706', border: '1px solid #d97706' }
+                        : { color: '#dc2626', border: '1px solid #dc2626' }),
+                    }}>
+                      {pir < 8 ? '양호' : pir < 12 ? '주의' : '위험'}
+                    </span>
+                  </div>
+                  <div className="tnum" style={{ font: '700 28px/1 var(--font-sans)', color: 'var(--fg-pri)', marginBottom: 6 }}>
+                    {pir.toFixed(1)}<span style={{ font: '500 14px/1 var(--font-sans)', marginLeft: 4 }}>배</span>
+                  </div>
+                  <div style={{ font: '400 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                    전국 평균 9~11배 · 서울 20배+
+                  </div>
+                </div>
+              )}
+              {jhai != null && (
+                <div className="card" style={{ padding: '16px 18px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                    <div>
+                      <div style={{ font: '600 12px/1 var(--font-sans)', color: 'var(--fg-sec)', marginBottom: 4 }}>
+                        JHAI <span style={{ fontWeight: 400, fontSize: 11 }}>(전세부담지수)</span>
+                      </div>
+                      <div style={{ font: '400 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                        연소득 대비 전세가
+                      </div>
+                    </div>
+                    <span style={{
+                      font: '600 11px/1 var(--font-sans)', borderRadius: 4, padding: '3px 8px',
+                      ...(jhai < 4 ? { color: '#16a34a', border: '1px solid #16a34a' }
+                        : jhai < 7 ? { color: '#d97706', border: '1px solid #d97706' }
+                        : { color: '#dc2626', border: '1px solid #dc2626' }),
+                    }}>
+                      {jhai < 4 ? '양호' : jhai < 7 ? '주의' : '위험'}
+                    </span>
+                  </div>
+                  <div className="tnum" style={{ font: '700 28px/1 var(--font-sans)', color: 'var(--fg-pri)', marginBottom: 6 }}>
+                    {jhai.toFixed(1)}<span style={{ font: '500 14px/1 var(--font-sans)', marginLeft: 4 }}>배</span>
+                  </div>
+                  <div style={{ font: '400 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                    낮을수록 전세 부담 적음
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* 시세 + 예측 차트 */}
         <section aria-labelledby="chart-heading" style={{ marginBottom: 28 }}>

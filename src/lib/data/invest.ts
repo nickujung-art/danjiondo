@@ -354,6 +354,29 @@ export async function getRegionalUnsold(
     .reverse()
 }
 
+// ─── Income (PIR/JHAI 계산용) ─────────────────────────────────────────────────
+
+export interface RegionalIncome {
+  year:      number
+  avgIncome: number  // 연간 평균 가구소득 (만원)
+}
+
+export async function getLatestRegionalIncome(
+  supabase: SupabaseClient<Database>,
+  regionCode = 'gyeongnam',
+): Promise<RegionalIncome | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('regional_income')
+    .select('year, avg_income')
+    .eq('region_code', regionCode)
+    .order('year', { ascending: false })
+    .limit(1)
+    .single()
+  if (error || !data) return null
+  return { year: data.year, avgIncome: Number(data.avg_income) }
+}
+
 /**
  * 지역 집계 예측값 조회.
  * complex_price_predictions 테이블에서 sgg_code 지역의 단지들 예측 중위값을 반환.
