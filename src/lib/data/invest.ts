@@ -2,6 +2,7 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import { fetchMortgageRate } from '@/services/ecos'
+import { fetchPopulationBySgg } from '@/services/kosis'
 
 // ─── Prediction Types ─────────────────────────────────────────────────────────
 
@@ -389,6 +390,28 @@ export async function getMortgageRate(): Promise<MortgageRate | null> {
   const rate = await fetchMortgageRate()
   if (rate == null) return null
   return { rate, source: 'ecos' }
+}
+
+// ─── Population (KOSIS) ──────────────────────────────────────────────────────
+
+export interface PopulationPoint {
+  year:       number
+  population: number  // 명
+  sggCode:    string
+  sggName:    string
+}
+
+export async function getRegionalPopulation(
+  sggCode: string,
+  years = 10,
+): Promise<PopulationPoint[]> {
+  const rows = await fetchPopulationBySgg([sggCode], years)
+  return rows.map(r => ({
+    year:       r.year,
+    population: r.population,
+    sggCode:    r.sggCode,
+    sggName:    r.sggName,
+  }))
 }
 
 /**

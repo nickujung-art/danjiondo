@@ -10,6 +10,7 @@ import {
   getRegionalUnsold,
   getLatestRegionalIncome,
   getMortgageRate,
+  getRegionalPopulation,
   calcHAI,
   ALLOWED_SGG_CODES,
   ALLOWED_AREA_BUCKETS,
@@ -179,7 +180,7 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
   const supabase = createReadonlyClient()
   const label = SGG_LABEL[sggCode] ?? sggCode
 
-  const [history, predTimeseries, jeonseData, complexRanking, unsoldHistory, incomeData, mortgageRateData] = await Promise.all([
+  const [history, predTimeseries, jeonseData, complexRanking, unsoldHistory, incomeData, mortgageRateData, populationData] = await Promise.all([
     getRegionalPriceHistory(supabase, sggCode, areaBucket, 36).catch(() => []),
     getRegionalPredictionTimeseries(supabase, sggCode, areaBucket).catch(() => []),
     getRegionalJeonseRatio(supabase, sggCode, areaBucket, 24).catch(() => []),
@@ -187,6 +188,7 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
     getRegionalUnsold(supabase, sggCode).catch(() => [] as RegionalUnsoldPoint[]),
     getLatestRegionalIncome(supabase).catch(() => null),
     getMortgageRate().catch(() => null),
+    getRegionalPopulation(sggCode, 10).catch(() => []),
   ])
 
   // 미래 예측 포인트만 필터링 (Chronos는 backtesting 결과도 저장하므로 현재 달 이후만 사용)
@@ -254,6 +256,15 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
   const jhai = recentJeonseAvg && annualIncome ? recentJeonseAvg / annualIncome : null
   const hai  = recentAvgPrice && annualIncome && mortgageRate
     ? calcHAI({ avgPrice: recentAvgPrice, annualIncome, mortgageRate })
+    : null
+
+  // 인구 추이
+  const latestPop   = populationData.length > 0 ? populationData[populationData.length - 1] : null
+  const prevPop     = populationData.length > 1 ? populationData[populationData.length - 2] : null
+  const pop5yAgo    = populationData.length >= 5 ? populationData[populationData.length - 5] : null
+  const popYoyChange   = latestPop && prevPop ? latestPop.population - prevPop.population : null
+  const pop5yChangePct = latestPop && pop5yAgo && pop5yAgo.population > 0
+    ? ((latestPop.population - pop5yAgo.population) / pop5yAgo.population) * 100
     : null
 
   const riskItems = buildRiskItems({
@@ -441,6 +452,25 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
               <div style={{ font: '500 13px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>집계 중</div>
             )}
           </div>
+
+          <div className="card" style={{ padding: 16, textAlign: 'center' }}>
+            <div style={{ font: '500 11px/1.3 var(--font-sans)', color: 'var(--fg-sec)', marginBottom: 6 }}>
+              인구 (KOSIS)
+            </div>
+            {latestPop ? (
+              <>
+                <div className="tnum" style={{ font: '700 24px/1 var(--font-sans)', color: 'var(--fg-pri)', marginBottom: 2 }}>
+                  {(latestPop.population / 10000).toFixed(1)}만
+                </div>
+                <div style={{ font: '400 10px/1.4 var(--font-sans)', color: popYoyChange != null && popYoyChange < 0 ? '#dc2626' : 'var(--fg-tertiary)' }}>
+                  {latestPop.year}년
+                  {popYoyChange != null && ` · 전년比 ${popYoyChange >= 0 ? '+' : ''}${popYoyChange.toLocaleString('ko-KR')}명`}
+                </div>
+              </>
+            ) : (
+              <div style={{ font: '500 13px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>집계 중</div>
+            )}
+          </div>
         </div>
 
         {/* AI 지역 분석 코멘트 */}
@@ -601,6 +631,62 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
                   </div>
                 </div>
               )}
+            </div>
+          </section>
+        )}
+
+        {/* 인구 추이 */}
+        {populationData.length > 0 && (
+          <section aria-labelledby="population-heading" style={{ marginBottom: 24 }}>
+            <h2 id="population-heading" style={{ font: '600 14px/1.4 var(--font-sans)', margin: '0 0 10px' }}>
+              인구 추이
+              <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 8 }}>
+                KOSIS 주민등록인구 · 연간
+              </span>
+              {pop5yChangePct != null && (
+                <span style={{
+                  marginLeft: 8, font: '600 11px/1 var(--font-sans)', padding: '2px 8px', borderRadius: 4,
+                  ...(pop5yChangePct < -5 ? { color: '#dc2626', border: '1px solid #dc2626' }
+                    : pop5yChangePct < 0 ? { color: '#d97706', border: '1px solid #d97706' }
+                    : { color: '#16a34a', border: '1px solid #16a34a' }),
+                }}>
+                  5년 {pop5yChangePct >= 0 ? '+' : ''}{pop5yChangePct.toFixed(1)}%
+                </span>
+              )}
+            </h2>
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', font: '500 12px/1.4 var(--font-sans)' }}>
+                <thead>
+                  <tr style={{ background: 'var(--bg-surface-2)', borderBottom: '1px solid var(--line-subtle)' }}>
+                    <th style={{ padding: '8px 14px', textAlign: 'left', color: 'var(--fg-tertiary)', fontWeight: 500 }}>연도</th>
+                    <th style={{ padding: '8px 14px', textAlign: 'right', color: 'var(--fg-tertiary)', fontWeight: 500 }}>인구수</th>
+                    <th style={{ padding: '8px 14px', textAlign: 'right', color: 'var(--fg-tertiary)', fontWeight: 500 }}>전년比</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...populationData].reverse().map((row, i) => {
+                    const idx = populationData.length - 1 - i
+                    const prev = idx > 0 ? populationData[idx - 1] : null
+                    const diff = prev ? row.population - prev.population : null
+                    return (
+                      <tr key={row.year} style={{ borderBottom: '1px solid var(--line-subtle)' }}>
+                        <td style={{ padding: '8px 14px', color: 'var(--fg-pri)', fontWeight: i === 0 ? 600 : 400 }}>
+                          {row.year}년
+                        </td>
+                        <td className="tnum" style={{ padding: '8px 14px', textAlign: 'right', color: 'var(--fg-pri)' }}>
+                          {row.population.toLocaleString('ko-KR')}명
+                        </td>
+                        <td className="tnum" style={{
+                          padding: '8px 14px', textAlign: 'right',
+                          color: diff == null ? 'var(--fg-tertiary)' : diff < 0 ? '#dc2626' : diff > 0 ? '#16a34a' : 'var(--fg-tertiary)',
+                        }}>
+                          {diff != null ? `${diff >= 0 ? '+' : ''}${diff.toLocaleString('ko-KR')}` : '—'}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
           </section>
         )}
