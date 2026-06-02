@@ -10,6 +10,7 @@ import {
   getRegionalUnsold,
   getLatestRegionalIncome,
   getMortgageRate,
+  getMortgageRateSeries,
   getRegionalPopulation,
   calcHAI,
   ALLOWED_SGG_CODES,
@@ -19,6 +20,7 @@ import {
   type RegionalUnsoldPoint,
 } from '@/lib/data/invest'
 import { RegionChartSection } from '@/components/invest/RegionChartSection'
+import { RateSparklineWrapper } from '@/components/invest/RateSparklineWrapper'
 import { formatPrice } from '@/lib/format'
 import { getRegionalCommentary } from '@/lib/ai/regional-commentary'
 
@@ -174,7 +176,7 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
   const supabase = createReadonlyClient()
   const label = SGG_LABEL[sggCode] ?? sggCode
 
-  const [history, predTimeseries, jeonseData, complexRanking, unsoldHistory, incomeData, mortgageRateData, populationData] = await Promise.all([
+  const [history, predTimeseries, jeonseData, complexRanking, unsoldHistory, incomeData, mortgageRateData, populationData, rateSeries] = await Promise.all([
     getRegionalPriceHistory(supabase, sggCode, areaBucket, 36).catch(() => []),
     getRegionalPredictionTimeseries(supabase, sggCode, areaBucket).catch(() => []),
     getRegionalJeonseRatio(supabase, sggCode, areaBucket, 24).catch(() => []),
@@ -183,6 +185,7 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
     getLatestRegionalIncome(supabase).catch(() => null),
     getMortgageRate().catch(() => null),
     getRegionalPopulation(sggCode, 10).catch(() => []),
+    getMortgageRateSeries(24).catch(() => []),
   ])
 
   // 미래 예측 포인트만 필터링 (Chronos는 backtesting 결과도 저장하므로 현재 달 이후만 사용)
@@ -608,6 +611,32 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
                   </div>
                 </div>
               )}
+            </div>
+          </section>
+        )}
+
+        {/* 주담대 금리 추이 */}
+        {rateSeries.length >= 3 && (
+          <section aria-labelledby="rate-heading" style={{ marginBottom: 24 }}>
+            <h2 id="rate-heading" style={{ font: '600 14px/1.4 var(--font-sans)', margin: '0 0 10px' }}>
+              주택담보대출 금리 추이
+              <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 8 }}>
+                ECOS 예금은행 신규취급액 기준 · 최근 {rateSeries.length}개월
+              </span>
+            </h2>
+            <div className="card" style={{ padding: '16px 20px' }}>
+              <p style={{ font: '400 11px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '0 0 12px' }}>
+                금리 상승 시 HAI(구입부담지수) 하락 — 월 상환 부담 증가.
+                {rateSeries.length >= 2 && (() => {
+                  const delta = rateSeries[rateSeries.length - 1]!.rate - rateSeries[0]!.rate
+                  return delta > 0.2
+                    ? ` 최근 ${rateSeries.length}개월 ${delta.toFixed(2)}%p 상승 구간 — 구입 부담 증가 추세.`
+                    : delta < -0.2
+                    ? ` 최근 ${rateSeries.length}개월 ${Math.abs(delta).toFixed(2)}%p 하락 구간 — 구입 여건 개선 추세.`
+                    : ` 최근 ${rateSeries.length}개월 횡보 구간 — 금리 안정.`
+                })()}
+              </p>
+              <RateSparklineWrapper data={rateSeries} />
             </div>
           </section>
         )}

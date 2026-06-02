@@ -1,7 +1,7 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
-import { fetchMortgageRate } from '@/services/ecos'
+import { fetchMortgageRate, fetchMortgageRateSeries, type MortgageRatePoint } from '@/services/ecos'
 import { fetchPopulationBySgg } from '@/services/kosis'
 
 // ─── Prediction Types ─────────────────────────────────────────────────────────
@@ -390,6 +390,12 @@ export async function getMortgageRate(): Promise<MortgageRate | null> {
   const rate = await fetchMortgageRate()
   if (rate == null) return null
   return { rate, source: 'ecos' }
+}
+
+export type { MortgageRatePoint }
+
+export async function getMortgageRateSeries(months = 24): Promise<MortgageRatePoint[]> {
+  return fetchMortgageRateSeries(months)
 }
 
 // ─── Population (KOSIS) ──────────────────────────────────────────────────────
