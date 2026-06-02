@@ -9,6 +9,8 @@ import {
   getTopPredictionComplexes,
   getRegionalUnsold,
   getLatestRegionalIncome,
+  getMortgageRate,
+  calcHAI,
   ALLOWED_SGG_CODES,
   ALLOWED_AREA_BUCKETS,
   type AreaBucket,
@@ -177,13 +179,14 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
   const supabase = createReadonlyClient()
   const label = SGG_LABEL[sggCode] ?? sggCode
 
-  const [history, predTimeseries, jeonseData, complexRanking, unsoldHistory, incomeData] = await Promise.all([
+  const [history, predTimeseries, jeonseData, complexRanking, unsoldHistory, incomeData, mortgageRateData] = await Promise.all([
     getRegionalPriceHistory(supabase, sggCode, areaBucket, 36).catch(() => []),
     getRegionalPredictionTimeseries(supabase, sggCode, areaBucket).catch(() => []),
     getRegionalJeonseRatio(supabase, sggCode, areaBucket, 24).catch(() => []),
     getTopPredictionComplexes(supabase, sggCode, areaBucket, 10).catch(() => []),
     getRegionalUnsold(supabase, sggCode).catch(() => [] as RegionalUnsoldPoint[]),
     getLatestRegionalIncome(supabase).catch(() => null),
+    getMortgageRate().catch(() => null),
   ])
 
   // 미래 예측 포인트만 필터링 (Chronos는 backtesting 결과도 저장하므로 현재 달 이후만 사용)
@@ -245,9 +248,13 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
     ? [...jeonseData].reverse().find(j => j.rentAvg != null)?.rentAvg ?? null
     : null
 
-  const annualIncome = incomeData?.avgIncome ?? null  // 만원
+  const annualIncome   = incomeData?.avgIncome ?? null  // 만원
+  const mortgageRate   = mortgageRateData?.rate ?? null  // 연%
   const pir  = recentAvgPrice && annualIncome ? recentAvgPrice / annualIncome : null
   const jhai = recentJeonseAvg && annualIncome ? recentJeonseAvg / annualIncome : null
+  const hai  = recentAvgPrice && annualIncome && mortgageRate
+    ? calcHAI({ avgPrice: recentAvgPrice, annualIncome, mortgageRate })
+    : null
 
   const riskItems = buildRiskItems({
     changePct,
@@ -265,6 +272,9 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
     txCount: latestHistory?.txCount ?? null,
     unsoldCount: latestUnsold?.unsoldCount ?? null,
     horizon,
+    pir,
+    hai,
+    mortgageRate,
   }).catch(() => null)
 
   function tabHref(bucket: string): string {
@@ -497,15 +507,44 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
         </section>
 
         {/* 구입부담 지수 */}
-        {(pir != null || jhai != null) && (
+        {(pir != null || jhai != null || hai != null) && (
           <section aria-labelledby="affordability-heading" style={{ marginBottom: 24 }}>
             <h2 id="affordability-heading" style={{ font: '600 14px/1.4 var(--font-sans)', margin: '0 0 10px' }}>
               구입부담 지수
               <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 8 }}>
-                경남 평균 가구소득 {annualIncome?.toLocaleString('ko-KR')}만원 ({incomeData?.year}) 기준
+                경남 가구소득 {annualIncome?.toLocaleString('ko-KR')}만원 ({incomeData?.year})
+                {mortgageRate != null && ` · 주담대 ${mortgageRate.toFixed(2)}% (ECOS)`}
               </span>
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
+              {hai != null && (
+                <div className="card" style={{ padding: '16px 18px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                    <div>
+                      <div style={{ font: '600 12px/1 var(--font-sans)', color: 'var(--fg-sec)', marginBottom: 4 }}>
+                        HAI <span style={{ fontWeight: 400, fontSize: 11 }}>(매매구입부담지수)</span>
+                      </div>
+                      <div style={{ font: '400 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                        100 이상: 소득 25%로 상환 가능
+                      </div>
+                    </div>
+                    <span style={{
+                      font: '600 11px/1 var(--font-sans)', borderRadius: 4, padding: '3px 8px',
+                      ...(hai >= 150 ? { color: '#16a34a', border: '1px solid #16a34a' }
+                        : hai >= 100 ? { color: '#d97706', border: '1px solid #d97706' }
+                        : { color: '#dc2626', border: '1px solid #dc2626' }),
+                    }}>
+                      {hai >= 150 ? '양호' : hai >= 100 ? '주의' : '위험'}
+                    </span>
+                  </div>
+                  <div className="tnum" style={{ font: '700 28px/1 var(--font-sans)', color: 'var(--fg-pri)', marginBottom: 6 }}>
+                    {hai}
+                  </div>
+                  <div style={{ font: '400 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                    LTV 70% · 20년 원리금 기준
+                  </div>
+                </div>
+              )}
               {pir != null && (
                 <div className="card" style={{ padding: '16px 18px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>

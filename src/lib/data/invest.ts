@@ -1,6 +1,7 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
+import { fetchMortgageRate } from '@/services/ecos'
 
 // ─── Prediction Types ─────────────────────────────────────────────────────────
 
@@ -375,6 +376,43 @@ export async function getLatestRegionalIncome(
     .single()
   if (error || !data) return null
   return { year: data.year, avgIncome: Number(data.avg_income) }
+}
+
+// ─── Mortgage Rate (ECOS) ─────────────────────────────────────────────────────
+
+export interface MortgageRate {
+  rate:      number   // 연%
+  source:    'ecos'
+}
+
+export async function getMortgageRate(): Promise<MortgageRate | null> {
+  const rate = await fetchMortgageRate()
+  if (rate == null) return null
+  return { rate, source: 'ecos' }
+}
+
+/**
+ * HAI (주택구입부담지수) 계산.
+ * HAI = (월소득 × 25%) / 월원리금상환액 × 100
+ * 100 초과: 구입 여력 있음 / 100 미만: 부담
+ */
+export function calcHAI(opts: {
+  avgPrice:     number   // 만원
+  annualIncome: number   // 만원/년
+  mortgageRate: number   // 연%
+  ltv?:         number   // 기본 0.7
+  loanYears?:   number   // 기본 20
+}): number {
+  const { avgPrice, annualIncome, mortgageRate, ltv = 0.7, loanYears = 20 } = opts
+  const monthlyIncome  = annualIncome / 12
+  const loanAmount     = avgPrice * ltv
+  const r              = mortgageRate / 100 / 12
+  const n              = loanYears * 12
+  const monthlyPayment = r > 0
+    ? loanAmount * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1)
+    : loanAmount / n
+  if (monthlyPayment <= 0) return 0
+  return Math.round((monthlyIncome * 0.25) / monthlyPayment * 100)
 }
 
 /**

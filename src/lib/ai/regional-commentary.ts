@@ -10,6 +10,9 @@ interface CommentaryInput {
   txCount: number | null
   unsoldCount: number | null
   horizon: number
+  pir?: number | null
+  hai?: number | null
+  mortgageRate?: number | null
 }
 
 async function callGemini(input: CommentaryInput): Promise<string | null> {
@@ -35,6 +38,9 @@ async function callGemini(input: CommentaryInput): Promise<string | null> {
 - 최근 전세가율: ${input.jeonseRatio != null ? `${input.jeonseRatio.toFixed(1)}%` : '데이터 없음'}
 - 최근 거래량: ${input.txCount != null ? `${input.txCount}건` : '데이터 없음'}
 - 미분양: ${input.unsoldCount != null ? `${input.unsoldCount.toLocaleString('ko-KR')}세대` : '데이터 없음'}
+- PIR(연소득 대비 매매가): ${input.pir != null ? `${input.pir.toFixed(1)}배` : '데이터 없음'}
+- HAI(구입부담지수): ${input.hai != null ? String(input.hai) : '데이터 없음'}${input.hai != null ? (input.hai >= 150 ? ' (여유)' : input.hai >= 100 ? ' (보통)' : ' (부담)') : ''}
+- 주택담보대출금리: ${input.mortgageRate != null ? `${input.mortgageRate.toFixed(2)}%` : '데이터 없음'}
 
 규칙: 투자 권유 표현 금지. 2~3문장, 한국어, 사실 중심.`
 
