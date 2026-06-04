@@ -7,9 +7,11 @@ import {
   getActiveListings,
   getRecentlyExpiredListings,
   getRedevelopmentComplexes,
+  getEnrichedPresaleItems,
 } from '@/lib/data/presale'
 import { PresaleCard } from '@/components/presale/PresaleCard'
 import { RedevelopmentCard } from '@/components/presale/RedevelopmentCard'
+import { EnrichedPresaleCard } from '@/components/presale/EnrichedPresaleCard'
 import { HighRecordCard } from '@/components/home/HighRecordCard'
 import { RankingTabs } from '@/components/home/RankingTabs'
 import { UserMenu } from '@/components/auth/UserMenu'
@@ -73,7 +75,7 @@ function BellIcon() {
 export default async function HomePage() {
   const supabase = createReadonlyClient()
 
-  const [highRecords, rankHighPrice, rankVolume, rankPricePerPyeong, rankInterest, activeListingCount, activeListings, recentlyExpired, redevelopments, bannerAds] =
+  const [highRecords, rankHighPrice, rankVolume, rankPricePerPyeong, rankInterest, activeListingCount, activeListings, recentlyExpired, redevelopments, bannerAds, enrichedPresale] =
     await Promise.all([
       getRecentHighRecords(supabase, 4).catch(() => []),
       getRankingsByType(supabase, 'high_price', 10).catch(() => []),
@@ -81,10 +83,11 @@ export default async function HomePage() {
       getRankingsByType(supabase, 'price_per_pyeong', 10).catch(() => []),
       getRankingsByType(supabase, 'interest', 10).catch(() => []),
       getActiveListingCount(supabase).catch(() => 0),
-      getActiveListings(supabase, 3).catch(() => []),
-      getRecentlyExpiredListings(supabase, 3).catch(() => []),
+      getActiveListings(supabase, 4).catch(() => []),
+      getRecentlyExpiredListings(supabase, 4).catch(() => []),
       getRedevelopmentComplexes(supabase, 3).catch(() => []),
       getActiveAds('banner_top', supabase).catch(() => []),
+      getEnrichedPresaleItems(supabase, 4).catch(() => []),
     ])
 
   const rankingData = {
@@ -246,57 +249,83 @@ export default async function HomePage() {
         {/* Rankings */}
         <RankingTabs initialData={rankingData} />
 
-        {/* 분양 섹션 */}
+        {/* 분양 섹션 — 3줄 레이아웃 */}
         <section style={{ marginTop: 48 }}>
-          <h2
-            style={{
-              font: '700 18px/1.3 var(--font-sans)',
-              letterSpacing: '-0.02em',
-              margin: '0 0 16px',
-              color: 'var(--fg-pri)',
-            }}
-          >
-            분양
-            {activeListingCount > 0 && (
-              <span
-                className="badge pos"
-                style={{ marginLeft: 12, font: '500 11px/1 var(--font-sans)' }}
-              >
-                {activeListingCount}건 진행 중
-              </span>
-            )}
-          </h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20 }}>
+            <h2 style={{ font: '700 20px/1.3 var(--font-sans)', letterSpacing: '-0.02em', color: 'var(--fg-pri)', margin: 0 }}>
+              분양
+              {activeListingCount > 0 && (
+                <span className="badge pos" style={{ marginLeft: 10, font: '500 11px/1 var(--font-sans)' }}>
+                  {activeListingCount}건 진행 중
+                </span>
+              )}
+            </h2>
+            <Link href="/presale" style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--dj-orange)', textDecoration: 'none' }}>
+              전체 보기 →
+            </Link>
+          </div>
 
-          {/* 카드 리스트: 활성 → 만료 → 재건축 우선순위 */}
+          {/* 행 1: 분양 예정 (청약홈 미등록) */}
+          {enrichedPresale.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <span style={{ font: '600 13px/1 var(--font-sans)', color: 'var(--fg-pri)' }}>분양 예정</span>
+                <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>청약홈 미등록 단지</span>
+              </div>
+              <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4 }}>
+                {enrichedPresale.map(item => (
+                  <div key={item.id} style={{ minWidth: 280, maxWidth: 300, flexShrink: 0 }}>
+                    <EnrichedPresaleCard item={item} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 행 2: 분양 공고 */}
           {activeListings.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" style={{ marginBottom: 16 }}>
-              {activeListings.map(l => (
-                <PresaleCard key={l.id} listing={l} />
-              ))}
-            </div>
-          )}
-          {activeListings.length === 0 && recentlyExpired.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" style={{ marginBottom: 16 }}>
-              {recentlyExpired.map(l => (
-                <PresaleCard key={l.id} listing={l} expired />
-              ))}
-            </div>
-          )}
-          {activeListings.length === 0 && recentlyExpired.length === 0 && redevelopments.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" style={{ marginBottom: 16 }}>
-              {redevelopments.map(c => (
-                <RedevelopmentCard key={c.id} complex={c} />
-              ))}
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <span style={{ font: '600 13px/1 var(--font-sans)', color: 'var(--fg-pri)' }}>분양 공고</span>
+                <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>청약홈 기준</span>
+              </div>
+              <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4 }}>
+                {activeListings.map(l => (
+                  <div key={l.id} style={{ minWidth: 260, maxWidth: 280, flexShrink: 0 }}>
+                    <PresaleCard listing={l} />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
-          <Link
-            href="/presale"
-            className="btn btn-md btn-ghost"
-            style={{ display: 'inline-flex', textDecoration: 'none', marginTop: 4 }}
-          >
-            분양·재건축·신축 전체 보기 →
-          </Link>
+          {/* 행 3: 최근 마감 */}
+          {recentlyExpired.length > 0 && (
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <span style={{ font: '600 13px/1 var(--font-sans)', color: 'var(--fg-sec)' }}>최근 마감</span>
+                <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>30일 이내</span>
+              </div>
+              <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4 }}>
+                {recentlyExpired.map(l => (
+                  <div key={l.id} style={{ minWidth: 260, maxWidth: 280, flexShrink: 0 }}>
+                    <PresaleCard listing={l} expired />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 데이터 없을 때 재건축 fallback */}
+          {enrichedPresale.length === 0 && activeListings.length === 0 && recentlyExpired.length === 0 && redevelopments.length > 0 && (
+            <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4 }}>
+              {redevelopments.map(c => (
+                <div key={c.id} style={{ minWidth: 260, maxWidth: 280, flexShrink: 0 }}>
+                  <RedevelopmentCard complex={c} />
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </main>
     </div>
