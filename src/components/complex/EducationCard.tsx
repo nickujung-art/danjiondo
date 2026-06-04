@@ -140,7 +140,7 @@ function PoiRow({ item, icon, isLast }: { item: PoiItem; icon: React.ReactNode; 
   )
 }
 
-function SchoolList({ schools }: { schools: SchoolItem[] }) {
+function SchoolList({ schools, si }: { schools: SchoolItem[]; si?: string }) {
   const [schoolTab, setSchoolTab] = useState<'elementary' | 'middle' | 'high'>('elementary')
 
   const filtered = schools
@@ -214,7 +214,8 @@ function SchoolList({ schools }: { schools: SchoolItem[] }) {
                 </div>
 
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {/* 학교명 + 배정 배지 */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     <span style={{ font: '600 13px/1.3 var(--font-sans)', color: 'var(--fg-pri)' }}>
                       {s.school_name}
                     </span>
@@ -228,7 +229,51 @@ function SchoolList({ schools }: { schools: SchoolItem[] }) {
                         배정
                       </span>
                     )}
+                    {/* P2: 배정학교 학군 평당가 비교 배지 */}
+                    {s.is_assignment && s.price_premium != null && Math.abs(s.price_premium) >= 5 && (
+                      <span style={{
+                        font:         '600 10px/1 var(--font-sans)',
+                        color:        s.price_premium > 0 ? '#15803d' : '#9ca3af',
+                        background:   s.price_premium > 0 ? '#dcfce7' : '#f9fafb',
+                        padding:      '2px 5px',
+                        borderRadius: 4,
+                        flexShrink:   0,
+                      }}>
+                        {si ?? '지역'} 평균 대비 {s.price_premium > 0 ? '+' : ''}{s.price_premium}%
+                      </span>
+                    )}
                   </div>
+
+                  {/* 학교 품질 지표 (학교알리미 데이터 있을 때만) */}
+                  {(s.students_per_class != null || (s.school_type === 'middle' && s.advancement_rate != null)) && (
+                    <div style={{ font: '500 11px/1.7 var(--font-sans)', color: 'var(--fg-sec)', marginTop: 3 }}>
+                      {s.students_per_class != null && (
+                        <span>
+                          학급당 {s.students_per_class}명
+                          {s.students_percentile != null && (
+                            <span style={{ color: 'var(--fg-tertiary)' }}>
+                              {' '}· {si ?? '지역'} 상위 {Math.round((1 - s.students_percentile) * 100)}%
+                            </span>
+                          )}
+                        </span>
+                      )}
+                      {s.school_type === 'middle' && s.advancement_rate != null && (
+                        <span style={{ marginLeft: s.students_per_class != null ? 8 : 0 }}>
+                          진학률 {s.advancement_rate.toFixed(1)}%
+                          {s.advancement_percentile != null && (
+                            <span style={{ color: 'var(--fg-tertiary)' }}>
+                              {' '}· 상위 {Math.round((1 - s.advancement_percentile) * 100)}%
+                            </span>
+                          )}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {s.data_year != null && (s.students_per_class != null || s.advancement_rate != null) && (
+                    <div style={{ font: '500 10px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginTop: 2 }}>
+                      {s.data_year}년 기준
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
@@ -438,7 +483,8 @@ interface Props {
 
 export function EducationCard({ data, si }: Props) {
   const [tab, setTab] = useState<Tab>('school')
-  const { schools, hagwons, daycares, kindergartens, hagwonStats } = data
+  const { schools, hagwons, daycares, kindergartens, hagwonStats, si: dataSi } = data
+  const effectiveSi = si ?? dataSi ?? undefined
 
   const hasData =
     schools.length > 0 || hagwons.length > 0 ||
@@ -499,8 +545,8 @@ export function EducationCard({ data, si }: Props) {
         <EmptyNote text="교육 환경 데이터를 수집 중입니다." />
       ) : (
         <>
-          {tab === 'school'  && <SchoolList schools={schools} />}
-          {tab === 'hagwon'  && <HagwonSection hagwons={hagwons} stats={hagwonStats} si={si} />}
+          {tab === 'school'  && <SchoolList schools={schools} si={effectiveSi} />}
+          {tab === 'hagwon'  && <HagwonSection hagwons={hagwons} stats={hagwonStats} si={effectiveSi} />}
           {tab === 'daycare' && <DaycareSection daycares={daycares} kindergartens={kindergartens} />}
         </>
       )}
