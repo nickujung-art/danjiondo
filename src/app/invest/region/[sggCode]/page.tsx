@@ -191,8 +191,14 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
   ])
 
   // 미래 예측 포인트만 필터링 (Chronos는 backtesting 결과도 저장하므로 현재 달 이후만 사용)
+  // complexCount < 10인 달은 표본 부족으로 이상값 발생 — 제외 (예: 마지막 달 4개 → 중위값 급등)
   const currentYearMonth = new Date().toISOString().slice(0, 7)  // 'YYYY-MM'
-  const futurePredTimeseries = predTimeseries.filter(p => p.predictedMonth > currentYearMonth)
+  const futurePredTimeseries = predTimeseries.filter(
+    p => p.predictedMonth > currentYearMonth && p.complexCount >= 10
+  )
+  const peakComplexCount = futurePredTimeseries.length > 0
+    ? Math.max(...futurePredTimeseries.map(p => p.complexCount))
+    : 0
 
   const rawPredPoints: PredictionPoint[] = futurePredTimeseries.map(p => ({
     yearMonth:    p.predictedMonth,
@@ -408,7 +414,7 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
               AI 예측 단지
             </div>
             <div className="tnum" style={{ font: '700 24px/1 var(--font-sans)', color: 'var(--fg-pri)', marginBottom: 2 }}>
-              {predTimeseries[0]?.complexCount ?? 0}개
+              {peakComplexCount}개
             </div>
             <div style={{ font: '400 10px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
               예측 오차율 25% 미만
