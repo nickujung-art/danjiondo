@@ -12,7 +12,7 @@ export async function GET(request: NextRequest): Promise<Response> {
   const mape       = parseFloat(searchParams.get('mape') ?? '0')
 
   // 입력 검증 — allowlist (T-22-03-01)
-  const ALLOWED_SGG   = ['48121', '48123', '48125', '48127', '48128', '48129', '48250', '']
+  const ALLOWED_SGG   = ['48121', '48123', '48125', '48127', '48129', '48250', '']
   const ALLOWED_AREA  = ['소형', '59', '84', '대형', '']
   const ALLOWED_TREND = ['up', 'down', 'neutral']
   if (!ALLOWED_SGG.includes(sggCode))    return Response.json({ commentary: null }, { status: 400 })
@@ -27,10 +27,9 @@ export async function GET(request: NextRequest): Promise<Response> {
 
     const SGG_LABEL: Record<string, string> = {
       '48121': '창원 의창구',
-      '48123': '창원 창원구',
-      '48125': '창원 성산구',
-      '48127': '창원 마산합포구',
-      '48128': '창원 마산회원구',
+      '48123': '창원 성산구',
+      '48125': '창원 마산합포구',
+      '48127': '창원 마산회원구',
       '48129': '창원 진해구',
       '48250': '김해시',
     }

@@ -30,10 +30,9 @@ export const revalidate = 3600
 
 const SGG_LABEL: Record<string, string> = {
   '48121': '창원 의창구',
-  '48123': '창원 창원구',
-  '48125': '창원 성산구',
-  '48127': '창원 마산합포구',
-  '48128': '창원 마산회원구',
+  '48123': '창원 성산구',
+  '48125': '창원 마산합포구',
+  '48127': '창원 마산회원구',
   '48129': '창원 진해구',
   '48250': '김해시',
 }
@@ -412,7 +411,7 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
               {predTimeseries[0]?.complexCount ?? 0}개
             </div>
             <div style={{ font: '400 10px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
-              MAPE 25% 이하
+              예측 오차율 25% 미만
             </div>
           </div>
 

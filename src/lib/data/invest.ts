@@ -17,7 +17,7 @@ export interface PredictionPoint {
 
 // ─── Allowlists ───────────────────────────────────────────────────────────────
 
-export const ALLOWED_SGG_CODES = ['48121', '48123', '48125', '48127', '48128', '48129', '48250'] as const
+export const ALLOWED_SGG_CODES = ['48121', '48123', '48125', '48127', '48129', '48250'] as const
 export const ALLOWED_AREA_BUCKETS = ['소형', '59', '74', '84', '대형'] as const
 export type AreaBucket = typeof ALLOWED_AREA_BUCKETS[number]
 
@@ -84,11 +84,14 @@ export async function getRegionalPriceHistory(
     p_months:      months,
   })
   if (error || !data) return []
-  return (data as Array<{ year_month: string; avg_price: number; tx_count: number }>).map(r => ({
-    yearMonth: r.year_month,
-    avgPrice:  Number(r.avg_price),
-    txCount:   Number(r.tx_count),
-  }))
+  const currentYM = new Date().toISOString().slice(0, 7) // 'YYYY-MM' — 진행 중인 월은 거래 수가 적어 차트 끊김처럼 보임
+  return (data as Array<{ year_month: string; avg_price: number; tx_count: number }>)
+    .map(r => ({
+      yearMonth: r.year_month,
+      avgPrice:  Number(r.avg_price),
+      txCount:   Number(r.tx_count),
+    }))
+    .filter(r => r.yearMonth < currentYM)
 }
 
 /**

@@ -24,7 +24,7 @@ export interface GapRankingRow {
   jeonseCount: number
 }
 
-const ALLOWED_SGG_CODES = ['48121', '48123', '48125', '48127', '48128', '48129', '48250']
+const ALLOWED_SGG_CODES = ['48121', '48123', '48125', '48127', '48129', '48250']
 const ALLOWED_RISK_LEVELS: ReadonlyArray<string> = ['safe', 'caution', 'danger']
 
 /**
