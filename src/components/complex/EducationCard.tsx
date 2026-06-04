@@ -566,7 +566,7 @@ export function EducationCard({ data, si }: Props) {
     { key: 'school',  label: '학교',           count: schools.length },
     { key: 'hagwon',  label: '학원·교육',       count: hagwons.length },
     { key: 'daycare', label: '어린이집·유치원', count: daycares.length + kindergartens.length },
-    { key: 'sports',  label: '체육시설',        count: sports.length },
+    { key: 'sports',  label: '무도·도장',        count: sports.length },
   ]
 
   return (
@@ -632,7 +632,7 @@ export function EducationCard({ data, si }: Props) {
         marginBottom: 0,
         textAlign:    'right',
       }}>
-        {tab === 'sports' ? '행정안전부 인허가 기준 · 반경 1.5km' : '카카오맵 기준 · 반경 1~1.5km'}
+        {tab === 'sports' ? '행정안전부 체육도장업 인허가 기준 · 반경 1.5km' : '카카오맵 기준 · 반경 1~1.5km'}
       </p>
     </div>
   )

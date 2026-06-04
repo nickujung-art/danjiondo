@@ -134,7 +134,7 @@ async function main() {
         if (!existing || dist < existing.distance_m) {
           rowMap.set(key, {
             complex_id: cx.id,
-            category:   'sports',
+            category:   'sports_dojo',
             sport_type: sportType,
             poi_name:   f.bizNm,
             distance_m: Math.round(dist),
@@ -158,7 +158,7 @@ async function main() {
   const { error: delErr } = await supabase
     .from('facility_poi')
     .delete()
-    .eq('category', 'sports')
+    .eq('category', 'sports_dojo')
   if (delErr) console.warn('삭제 오류 (무시):', delErr.message)
 
   // ⑥ 배치 upsert

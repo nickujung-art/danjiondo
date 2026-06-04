@@ -58,7 +58,7 @@ export async function getComplexFacilityEdu(
       .from('facility_poi')
       .select('poi_name, distance_m, sport_type')
       .eq('complex_id', complexId)
-      .eq('category', 'sports')
+      .eq('category', 'sports_dojo')
       .order('distance_m', { ascending: true, nullsFirst: false }),
 
     // 이 단지의 학원 점수 + si 기반 백분위 계산
