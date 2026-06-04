@@ -35,6 +35,9 @@ import { ComplexPriceChartWrapper } from '@/components/invest/ComplexPriceChartW
 import { getComplexFacilityEdu } from '@/lib/data/facility-edu'
 import { EducationCard } from '@/components/complex/EducationCard'
 import { formatParkingPerUnit, formatElevatorPerBuilding } from '@/lib/utils/facility-format'
+import { getNearbyComplexPrices } from '@/lib/data/nearby-compare'
+import { NearbyCompareCard } from '@/components/complex/NearbyCompareCard'
+import { RecentTransactionList } from '@/components/complex/RecentTransactionList'
 import { ViewCountTracker } from './ViewCountTracker'
 
 export const revalidate = 86400
@@ -232,6 +235,7 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
     gapStats,
     areaTypes,
     priceHistory,
+    nearbyComplexes,
   ] = await Promise.all([
     getComplexTransactionSummary(id, 'sale', supabase),
     getRealtorsByComplexId(id, supabase),
@@ -287,6 +291,8 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
     getComplexAreaTypes(supabase, id, 24).catch((): AreaType[] => []),
     // 시세 흐름 차트 — 타입별 월별 시세 (D-02)
     getComplexPriceByType(supabase, id, areaBucket, 24).catch((): RegionalPricePoint[] => []),
+    // 주변 단지 시세 비교
+    getNearbyComplexPrices(supabase, id).catch(() => []),
   ])
 
   const facilityKapt = facilityKaptResult?.data ?? null
@@ -762,6 +768,24 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
             </div>
           )}
 
+          {/* 주변 단지 시세 비교 */}
+          {nearbyComplexes.length > 0 && (() => {
+            // 현재 단지 최근 6개월 평균 평당가 계산
+            const sixMonthsAgo = new Date()
+            sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+            const cutoff = sixMonthsAgo.toISOString().slice(0, 7)
+            const recentTx = rawSaleData.filter(t => t.yearMonth >= cutoff)
+            const currentPy = recentTx.length >= 3
+              ? Math.round(recentTx.reduce((s, t) => s + t.price / t.area * 3.3058, 0) / recentTx.length)
+              : null
+            return (
+              <NearbyCompareCard
+                current={{ name: complex.canonical_name, avgPricePerPy: currentPy }}
+                nearby={nearbyComplexes}
+              />
+            )
+          })()}
+
           {/* 관리비 */}
           <ManagementCostCard
             rows={managementCostRows}
@@ -803,73 +827,10 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
         {/* Right rail */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="card" style={{ padding: 20 }}>
-            <h3
-              style={{
-                font: '700 15px/1.4 var(--font-sans)',
-                margin: '0 0 12px',
-              }}
-            >
-              최근 거래
+            <h3 style={{ font: '700 15px/1.4 var(--font-sans)', margin: '0 0 12px' }}>
+              최근 실거래 내역
             </h3>
-            {saleData.length > 0 ? (
-              <div>
-                {saleData
-                  .slice(-6)
-                  .reverse()
-                  .map((t, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '10px 0',
-                        borderBottom:
-                          i < 5 ? '1px solid var(--line-subtle)' : 'none',
-                      }}
-                    >
-                      <span
-                        className="tnum"
-                        style={{
-                          font: '500 12px/1 var(--font-sans)',
-                          color: 'var(--fg-tertiary)',
-                          width: 56,
-                          flexShrink: 0,
-                        }}
-                      >
-                        {t.yearMonth}
-                      </span>
-                      <span
-                        style={{
-                          flex: 1,
-                          font: '500 13px/1 var(--font-sans)',
-                          color: 'var(--fg-sec)',
-                        }}
-                      >
-                        {t.count}건
-                      </span>
-                      <span
-                        className="tnum"
-                        style={{
-                          font: '600 13px/1 var(--font-sans)',
-                          color: i === 0 ? 'var(--dj-orange)' : 'var(--fg-pri)',
-                        }}
-                      >
-                        {formatPrice(Math.round(t.avgPrice))}
-                      </span>
-                    </div>
-                  ))}
-              </div>
-            ) : (
-              <p
-                style={{
-                  font: '500 13px/1.4 var(--font-sans)',
-                  color: 'var(--fg-tertiary)',
-                  margin: 0,
-                }}
-              >
-                거래 데이터가 없습니다.
-              </p>
-            )}
+            <RecentTransactionList transactions={rawSaleData} />
           </div>
 
           {/* Sidebar ads — 클라이언트 fetch로 ISR 우회 + sggCode 지역 필터 */}

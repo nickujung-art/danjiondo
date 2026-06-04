@@ -2,11 +2,14 @@
 import {
   AreaChart,
   Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Cell,
 } from 'recharts'
 import type { RegionalPricePoint } from '@/lib/data/invest'
 
@@ -44,6 +47,8 @@ export function ComplexPriceChart({ data, title }: ComplexPriceChartProps) {
   const color    = isRising ? '#16a34a' : '#dc2626'
   const gradId   = `complexPriceGrad-${title.replace(/\s/g, '')}`
 
+  const maxTx = Math.max(...data.map(d => d.txCount), 1)
+
   return (
     <div>
       {title && (
@@ -57,8 +62,9 @@ export function ComplexPriceChart({ data, title }: ComplexPriceChartProps) {
           {title}
         </p>
       )}
-      <ResponsiveContainer width="100%" height={220}>
-        <AreaChart data={data} margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
+      {/* 가격 추이 */}
+      <ResponsiveContainer width="100%" height={185}>
+        <AreaChart data={data} syncId="complexPrice" margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
           <defs>
             <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%"  stopColor={color} stopOpacity={0.25} />
@@ -66,12 +72,7 @@ export function ComplexPriceChart({ data, title }: ComplexPriceChartProps) {
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis
-            dataKey="yearMonth"
-            tick={{ fontSize: 11 }}
-            tickFormatter={(v: string) => v.slice(2)}
-            interval="preserveStartEnd"
-          />
+          <XAxis dataKey="yearMonth" hide />
           <YAxis tick={{ fontSize: 11 }} tickFormatter={fmtPrice} width={60} />
           <Tooltip
             formatter={(v) => [fmtPrice(v), '월평균']}
@@ -88,6 +89,31 @@ export function ComplexPriceChart({ data, title }: ComplexPriceChartProps) {
             activeDot={{ r: 4 }}
           />
         </AreaChart>
+      </ResponsiveContainer>
+
+      {/* 거래량 바 */}
+      <ResponsiveContainer width="100%" height={42}>
+        <BarChart data={data} syncId="complexPrice" margin={{ top: 2, right: 16, left: 8, bottom: 0 }}>
+          <XAxis
+            dataKey="yearMonth"
+            tick={{ fontSize: 10 }}
+            tickFormatter={(v: string) => v.slice(2)}
+            interval="preserveStartEnd"
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis hide domain={[0, maxTx * 2]} />
+          <Tooltip
+            formatter={(v) => [`${v}건`, '거래량']}
+            labelFormatter={(l) => String(l)}
+            contentStyle={{ fontSize: 12 }}
+          />
+          <Bar dataKey="txCount" radius={[2, 2, 0, 0]} maxBarSize={14}>
+            {data.map((_, i) => (
+              <Cell key={i} fill={color} opacity={0.35} />
+            ))}
+          </Bar>
+        </BarChart>
       </ResponsiveContainer>
     </div>
   )
