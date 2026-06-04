@@ -457,6 +457,7 @@ export async function getRegionalGapItems(
     .eq('complexes.sgg_code', sggCode)
     .gte('sale_count', 3)
     .gte('jeonse_count', 3)
+    .gt('gap_amount', 0)            // 역전세(갭 음수) 제외 — 소자본 투자 대상이 아님
     .order('gap_amount', { ascending: true })
     .limit(limit)
   if (error || !data) return []

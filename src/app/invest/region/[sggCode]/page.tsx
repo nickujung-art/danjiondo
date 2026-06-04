@@ -193,7 +193,8 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
 
   // 미래 예측 포인트만 필터링 (Chronos는 backtesting 결과도 저장하므로 현재 달 이후만 사용)
   // complexCount < 10인 달은 표본 부족으로 이상값 발생 — 제외 (예: 마지막 달 4개 → 중위값 급등)
-  const currentYearMonth = new Date().toISOString().slice(0, 7)  // 'YYYY-MM'
+  // KST(UTC+9) 기준 연월 — UTC 기준으로 계산하면 매월 1일 자정~9시 사이에 전달로 오분류됨
+  const currentYearMonth = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 7)
   const futurePredTimeseries = predTimeseries.filter(
     p => p.predictedMonth > currentYearMonth && p.complexCount >= 10
   )

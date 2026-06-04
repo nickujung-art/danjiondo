@@ -2,6 +2,7 @@
 // 가격·평수·날짜 포맷 유틸 — page.tsx에서 추출, 프로젝트 전반 공유
 
 export function formatPrice(price: number): string {
+  if (!Number.isFinite(price) || price < 0) return '—'
   const uk = Math.floor(price / 10000)
   const man = price % 10000
   if (uk > 0 && man > 0) return `${uk}억 ${man.toLocaleString()}`
@@ -15,6 +16,7 @@ export function formatPrice(price: number): string {
  * 1억 미만: "N만원"
  */
 export function formatGap(gapWan: number): string {
+  if (!Number.isFinite(gapWan)) return '—'
   const abs = Math.abs(gapWan)
   if (abs >= 10000) {
     const uk = Math.floor(abs / 10000)

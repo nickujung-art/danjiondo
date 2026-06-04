@@ -6,8 +6,15 @@ const WINDOW_MONTHS = 12
 
 export type RiskLevel = 'safe' | 'caution' | 'danger'
 
-/** D-02: 갭 비율 기준 위험도 분류 (40% 미만=safe, 40~60%=caution, 60% 초과=danger) */
+/**
+ * D-02: 갭 비율 기준 위험도 분류
+ * gap_ratio < 0 = 역전세(전세가 > 매매가) = 깡통전세 위험 → danger
+ * 0 ≤ gap_ratio < 40% → safe (소자본 갭투자 가능)
+ * 40% ≤ gap_ratio ≤ 60% → caution
+ * gap_ratio > 60% → danger (고자본 필요)
+ */
 export function computeRiskLevel(gapRatio: number): RiskLevel {
+  if (gapRatio < 0) return 'danger'   // 역전세: 전세보증금 > 매매가 = 깡통전세 위험
   if (gapRatio < 40) return 'safe'
   if (gapRatio <= 60) return 'caution'
   return 'danger'
