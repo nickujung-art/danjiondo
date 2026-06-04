@@ -158,6 +158,53 @@ export async function getNewBuiltComplexes(
   return (data as NewBuiltComplex[] | null) ?? []
 }
 
+// ─── Tier 0: 청약홈 미등록 분양 예정 (크롤링 데이터) ─────────────────────────
+
+export interface EnrichedPresaleListing {
+  id:          string
+  name:        string
+  sggCode:     string | null
+  address:     string | null
+  sourceUrl:   string | null
+  builder:     string | null
+  totalUnits:  number | null
+  moveInDate:  string | null
+  summary:     Record<string, unknown>
+  unitTypes:   Array<{ type: string; area_m2?: number | null; units?: number | null; priceMin?: number | null; priceMax?: number | null }>
+  community:   Record<string, unknown>
+  saleStatus:  string
+  crawledAt:   string | null
+}
+
+export async function getEnrichedPresaleItems(
+  supabase: AnySupabaseClient,
+  limit = 10,
+): Promise<EnrichedPresaleListing[]> {
+  const { data } = await supabase
+    .from('presale_enriched')
+    .select('id, name, sgg_code, address, source_url, builder, total_units, move_in_date, summary, unit_types, community, sale_status, crawled_at')
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (!data) return []
+
+  return (data as Record<string, unknown>[]).map(r => ({
+    id:         r['id'] as string,
+    name:       r['name'] as string,
+    sggCode:    (r['sgg_code'] as string | null) ?? null,
+    address:    (r['address'] as string | null) ?? null,
+    sourceUrl:  (r['source_url'] as string | null) ?? null,
+    builder:    (r['builder'] as string | null) ?? null,
+    totalUnits: (r['total_units'] as number | null) ?? null,
+    moveInDate: (r['move_in_date'] as string | null) ?? null,
+    summary:    (r['summary'] as Record<string, unknown>) ?? {},
+    unitTypes:  (r['unit_types'] as EnrichedPresaleListing['unitTypes']) ?? [],
+    community:  (r['community'] as Record<string, unknown>) ?? {},
+    saleStatus: (r['sale_status'] as string) ?? 'presale',
+    crawledAt:  (r['crawled_at'] as string | null) ?? null,
+  }))
+}
+
 // 기존 함수: 분양권전매 실거래 조회 (transactions 대원칙 보존)
 export async function getPresaleTransactions(
   listingId: string,

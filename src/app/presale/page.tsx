@@ -6,10 +6,12 @@ import {
   getRecentlyExpiredListings,
   getRedevelopmentComplexes,
   getNewBuiltComplexes,
+  getEnrichedPresaleItems,
 } from '@/lib/data/presale'
 import { PresaleCard } from '@/components/presale/PresaleCard'
 import { RedevelopmentCard } from '@/components/presale/RedevelopmentCard'
 import { NewBuildCard } from '@/components/presale/NewBuildCard'
+import { EnrichedPresaleCard } from '@/components/presale/EnrichedPresaleCard'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,11 +22,12 @@ export const metadata: Metadata = {
 
 export default async function PresalePage() {
   const supabase = createReadonlyClient()
-  const [listings, recentlyExpired, redevelopments, newBuilds] = await Promise.all([
+  const [listings, recentlyExpired, redevelopments, newBuilds, enrichedItems] = await Promise.all([
     getActiveListings(supabase, 20),
     getRecentlyExpiredListings(supabase, 20),
     getRedevelopmentComplexes(supabase, 20),
     getNewBuiltComplexes(supabase, 30),
+    getEnrichedPresaleItems(supabase, 10),
   ])
 
   return (
@@ -68,6 +71,31 @@ export default async function PresalePage() {
             청약홈 분양 공고 · admin 지정 재건축 단지 · 2021년 이후 신축 단지
           </p>
         </div>
+
+        {/* Tier 0: 분양 예정 — 청약홈 미등록, 공식 사이트 크롤링 데이터 */}
+        {enrichedItems.length > 0 && (
+          <section style={{ marginBottom: 40 }} aria-labelledby="section-enriched">
+            <h2
+              id="section-enriched"
+              style={{
+                font: '700 18px/1.3 var(--font-sans)',
+                letterSpacing: '-0.02em',
+                margin: '0 0 4px',
+                color: 'var(--fg-pri)',
+              }}
+            >
+              분양 예정
+            </h2>
+            <p style={{ font: '500 12px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '0 0 16px' }}>
+              청약홈에 미등록된 분양 예정 단지 · 공식 사이트 기준
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {enrichedItems.map(item => (
+                <EnrichedPresaleCard key={item.id} item={item} />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Tier 1: 분양 공고 (데이터 없으면 헤더도 숨김) */}
         {listings.length > 0 && (

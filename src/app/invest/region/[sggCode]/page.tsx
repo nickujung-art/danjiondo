@@ -23,6 +23,7 @@ import {
 } from '@/lib/data/invest'
 import { RegionChartSection } from '@/components/invest/RegionChartSection'
 import { RateSparklineWrapper } from '@/components/invest/RateSparklineWrapper'
+import { PopulationChart } from '@/components/invest/PopulationChart'
 import { formatPrice } from '@/lib/format'
 import { getRegionalCommentary } from '@/lib/ai/regional-commentary'
 
@@ -668,40 +669,42 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
                 </span>
               )}
             </h2>
-            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', font: '500 12px/1.4 var(--font-sans)' }}>
-                <thead>
-                  <tr style={{ background: 'var(--bg-surface-2)', borderBottom: '1px solid var(--line-subtle)' }}>
-                    <th style={{ padding: '8px 14px', textAlign: 'left', color: 'var(--fg-tertiary)', fontWeight: 500 }}>연도</th>
-                    <th style={{ padding: '8px 14px', textAlign: 'right', color: 'var(--fg-tertiary)', fontWeight: 500 }}>인구수</th>
-                    <th style={{ padding: '8px 14px', textAlign: 'right', color: 'var(--fg-tertiary)', fontWeight: 500 }}>전년比</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...populationData].reverse().map((row, i) => {
-                    const idx = populationData.length - 1 - i
-                    const prev = idx > 0 ? populationData[idx - 1] : null
-                    const diff = prev ? row.population - prev.population : null
-                    return (
-                      <tr key={row.year} style={{ borderBottom: '1px solid var(--line-subtle)' }}>
-                        <td style={{ padding: '8px 14px', color: 'var(--fg-pri)', fontWeight: i === 0 ? 600 : 400 }}>
-                          {row.year}년
-                        </td>
-                        <td className="tnum" style={{ padding: '8px 14px', textAlign: 'right', color: 'var(--fg-pri)' }}>
-                          {row.population.toLocaleString('ko-KR')}명
-                        </td>
-                        <td className="tnum" style={{
-                          padding: '8px 14px', textAlign: 'right',
-                          color: diff == null ? 'var(--fg-tertiary)' : diff < 0 ? '#dc2626' : diff > 0 ? '#16a34a' : 'var(--fg-tertiary)',
-                        }}>
-                          {diff != null ? `${diff >= 0 ? '+' : ''}${diff.toLocaleString('ko-KR')}` : '—'}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+            {/* 막대(총인구) + 꺾은선(전년比%) 콤보 차트 */}
+            <div className="card" style={{ padding: '12px 4px 4px' }}>
+              <div style={{ display: 'flex', gap: 16, paddingBottom: 8, paddingLeft: 12, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: '#60a5fa', opacity: 0.6 }} />
+                  <span style={{ font: '400 10px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>총인구</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ display: 'inline-block', width: 10, height: 2, background: '#f97316' }} />
+                  <span style={{ font: '400 10px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>전년比</span>
+                </div>
+              </div>
+              <PopulationChart data={populationData} />
             </div>
+            {/* 최근 3년 요약 수치 */}
+            {latestPop && (
+              <div style={{ display: 'flex', gap: 20, marginTop: 10, paddingLeft: 2, flexWrap: 'wrap' }}>
+                <div>
+                  <div style={{ font: '400 10px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>최근 인구</div>
+                  <div className="tnum" style={{ font: '600 13px/1 var(--font-sans)', color: 'var(--fg-pri)', marginTop: 3 }}>
+                    {latestPop.population.toLocaleString('ko-KR')}명
+                  </div>
+                </div>
+                {popYoyChange != null && (
+                  <div>
+                    <div style={{ font: '400 10px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>전년 증감</div>
+                    <div className="tnum" style={{
+                      font: '600 13px/1 var(--font-sans)', marginTop: 3,
+                      color: popYoyChange < 0 ? '#dc2626' : popYoyChange > 0 ? '#16a34a' : 'var(--fg-tertiary)',
+                    }}>
+                      {popYoyChange >= 0 ? '+' : ''}{popYoyChange.toLocaleString('ko-KR')}명
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </section>
         )}
 
