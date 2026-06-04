@@ -37,10 +37,10 @@ export function EnrichedPresaleCard({ item, sponsored = false }: Props) {
         boxShadow: sponsored ? '0 4px 16px rgba(234,88,12,0.10)' : 'none',
       }}
     >
-      {/* 헤더 배너 */}
+      {/* 헤더 배너 — 항상 amber 계열 */}
       <div style={{
-        background: sponsored ? '#fff7ed' : '#fafafa',
-        borderBottom: sponsored ? '1px solid #fed7aa' : '1px solid var(--line-subtle)',
+        background: '#fff7ed',
+        borderBottom: '1px solid #fed7aa',
         padding: '14px 16px 12px',
         display: 'flex',
         flexDirection: 'column',
@@ -51,9 +51,9 @@ export function EnrichedPresaleCard({ item, sponsored = false }: Props) {
           {sggLabel && (
             <span style={{
               font: '500 11px/1 var(--font-sans)',
-              color: sponsored ? '#c2410c' : 'var(--fg-sec)',
-              background: sponsored ? '#ffedd5' : 'var(--bg-surface-2)',
-              border: `1px solid ${sponsored ? '#fdba74' : 'var(--line-subtle)'}`,
+              color: '#c2410c',
+              background: '#ffedd5',
+              border: '1px solid #fdba74',
               borderRadius: 4,
               padding: '2px 7px',
               flexShrink: 0,
@@ -76,8 +76,8 @@ export function EnrichedPresaleCard({ item, sponsored = false }: Props) {
             )}
             <span style={{
               font: '500 10px/1 var(--font-sans)',
-              color: 'var(--fg-tertiary)',
-              border: '1px solid var(--line-subtle)',
+              color: '#9a3412',
+              border: '1px solid #fdba74',
               borderRadius: 4,
               padding: '2px 6px',
             }}>
@@ -89,7 +89,7 @@ export function EnrichedPresaleCard({ item, sponsored = false }: Props) {
         {/* 단지명 */}
         <div style={{
           font: '700 15px/1.3 var(--font-sans)',
-          color: sponsored ? '#1c1917' : 'var(--fg-pri)',
+          color: '#1c1917',
           letterSpacing: '-0.01em',
         }}>
           {item.name}
@@ -99,15 +99,11 @@ export function EnrichedPresaleCard({ item, sponsored = false }: Props) {
         {item.totalUnits && (
           <div style={{
             font: '700 24px/1 var(--font-sans)',
-            color: sponsored ? '#ea580c' : 'var(--fg-pri)',
+            color: '#ea580c',
             letterSpacing: '-0.02em',
           }}>
             {item.totalUnits.toLocaleString('ko-KR')}
-            <span style={{
-              font: '500 13px/1 var(--font-sans)',
-              color: sponsored ? '#c2410c' : 'var(--fg-sec)',
-              marginLeft: 4,
-            }}>세대</span>
+            <span style={{ font: '500 13px/1 var(--font-sans)', color: '#c2410c', marginLeft: 4 }}>세대</span>
           </div>
         )}
       </div>
