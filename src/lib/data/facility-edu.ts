@@ -12,12 +12,6 @@ export interface PoiItem {
   distance_m: number | null
 }
 
-export interface SportsItem {
-  poi_name:   string
-  distance_m: number | null
-  sport_type: string
-}
-
 export interface HagwonStats {
   cnt500:     number   // 500m 이내
   cnt1000:    number   // 1km 이내 전체
@@ -28,10 +22,9 @@ export interface HagwonStats {
 
 export interface FacilityEduData {
   schools:       SchoolItem[]
-  hagwons:       PoiItem[]
+  hagwons:       PoiItem[]   // 학원(카카오) + 무도·도장(행안부) 통합
   daycares:      PoiItem[]
   kindergartens: PoiItem[]
-  sports:        SportsItem[]
   hagwonStats:   HagwonStats | null
 }
 
@@ -40,28 +33,21 @@ export async function getComplexFacilityEdu(
   complexId: string,
   supabase: SupabaseClient,
 ): Promise<FacilityEduData> {
-  const [schoolRes, poiRes, sportsRes, scoreRes] = await Promise.all([
+  const [schoolRes, poiRes, scoreRes] = await Promise.all([
     supabase
       .from('facility_school')
       .select('school_name, school_type, distance_m, is_assignment')
       .eq('complex_id', complexId)
       .order('distance_m', { ascending: true, nullsFirst: false }),
 
+    // 학원·어린이집·무도도장 통합 조회 (sports_dojo는 예체능으로 분류)
     supabase
       .from('facility_poi')
       .select('category, poi_name, distance_m')
       .eq('complex_id', complexId)
-      .in('category', ['hagwon', 'daycare'])
+      .in('category', ['hagwon', 'daycare', 'sports_dojo'])
       .order('distance_m', { ascending: true, nullsFirst: false }),
 
-    supabase
-      .from('facility_poi')
-      .select('poi_name, distance_m, sport_type')
-      .eq('complex_id', complexId)
-      .eq('category', 'sports_dojo')
-      .order('distance_m', { ascending: true, nullsFirst: false }),
-
-    // 이 단지의 학원 점수 + si 기반 백분위 계산
     supabase
       .from('complexes')
       .select('hagwon_score, si')
@@ -71,10 +57,10 @@ export async function getComplexFacilityEdu(
 
   const schools = (schoolRes.data ?? []) as SchoolItem[]
   const allPois = poiRes.data ?? []
-  const sports  = ((sportsRes.data ?? []) as Array<{ poi_name: string; distance_m: number | null; sport_type: string | null }>)
-    .map(p => ({ poi_name: p.poi_name, distance_m: p.distance_m, sport_type: p.sport_type ?? 'etc' }))
+
+  // hagwon + sports_dojo → 학원·교육 탭 통합 (사용자 인식: 태권도·검도도 학원)
   const hagwons = allPois
-    .filter(p => p.category === 'hagwon')
+    .filter(p => p.category === 'hagwon' || p.category === 'sports_dojo')
     .map(p => ({ poi_name: p.poi_name, distance_m: p.distance_m }))
 
   const isKindergarten = (name: string) =>
@@ -88,13 +74,12 @@ export async function getComplexFacilityEdu(
     .filter(p => p.category === 'daycare' && !isKindergarten(p.poi_name))
     .map(p => ({ poi_name: p.poi_name, distance_m: p.distance_m }))
 
-  // 학원 통계
+  // 학원 통계 (hagwon_score는 카카오 학원 기준, 표시용으로만 사용)
   let hagwonStats: HagwonStats | null = null
   const complexData = scoreRes.data as { hagwon_score?: number | null; si?: string | null } | null
   const rawScore = complexData?.hagwon_score
   const si = complexData?.si
   if (rawScore != null) {
-    // 백분위: si(시) 기반 또는 전체 분포에서 이 단지 위치
     const percentileRes = si
       ? await supabase.rpc('hagwon_score_percentile_by_si', { target_score: rawScore, p_si: si })
       : await supabase.rpc('hagwon_score_percentile', { target_score: rawScore })
@@ -111,7 +96,6 @@ export async function getComplexFacilityEdu(
                 : 'D',
     }
   } else if (hagwons.length > 0) {
-    // DB 점수가 없지만 POI는 있는 경우 (배치 전 임시)
     const cnt500 = hagwons.filter(h => (h.distance_m ?? 9999) <= 500).length
     const score  = cnt500 * 3 + (hagwons.length - cnt500)
     hagwonStats = {
@@ -123,5 +107,5 @@ export async function getComplexFacilityEdu(
     }
   }
 
-  return { schools, hagwons, daycares, kindergartens, sports, hagwonStats }
+  return { schools, hagwons, daycares, kindergartens, hagwonStats }
 }

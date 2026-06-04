@@ -7,7 +7,8 @@ export type WalkColor = 'green' | 'yellow' | 'red'
 const CATEGORY_KEYWORDS: Array<{ keywords: string[]; category: HagwonCategory }> = [
   { keywords: ['수학', '수능수학', '연산', '수과학'], category: '수학' },
   { keywords: ['영어', '어학', '영수', 'English', 'EFL'], category: '영어' },
-  { keywords: ['미술', '아트', '미대', '공예', '피아노', '음악', '체육', '무용', '발레'], category: '예체능' },
+  { keywords: ['미술', '아트', '미대', '공예', '피아노', '음악', '체육', '무용', '발레',
+               '태권도', '검도', '유도', '합기도', '복싱', '권투', '킥복싱', '씨름', '우슈'], category: '예체능' },
   { keywords: ['국어', '논술', '독서', '글쓰기', '문해'], category: '국어' },
   { keywords: ['과학', '화학', '물리', '생물', 'STEM'], category: '과학' },
   { keywords: ['중국어', '일어', '일본어', '한자'], category: '중국어/일어' },
