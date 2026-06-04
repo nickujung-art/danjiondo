@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import type { FacilityEduData, SchoolItem, PoiItem } from '@/lib/data/facility-edu'
+import type { FacilityEduData, SchoolItem, PoiItem, SportsItem } from '@/lib/data/facility-edu'
 import { classifyHagwon, walkColor, WALK_COLOR_HEX } from '@/lib/hagwon-category'
+import { SPORT_TYPE_LABEL, type SportType } from '@/lib/sports-category'
 
 // ─── 아이콘 ────────────────────────────────────────────────────────────────
 
@@ -30,6 +31,16 @@ function HagwonIcon() {
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
       <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+    </svg>
+  )
+}
+
+function SportsIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+      <path d="M2 12h20" />
     </svg>
   )
 }
@@ -373,6 +384,113 @@ function HagwonSection({ hagwons, stats, si }: {
   )
 }
 
+const SPORT_TYPE_COLOR: Record<SportType, { color: string; bg: string }> = {
+  taekwondo: { color: '#b45309', bg: '#fffbeb' },
+  kendo:     { color: '#1d4ed8', bg: '#dbeafe' },
+  judo:      { color: '#15803d', bg: '#dcfce7' },
+  hapkido:   { color: '#7c3aed', bg: '#f5f3ff' },
+  boxing:    { color: '#dc2626', bg: '#fef2f2' },
+  swimming:  { color: '#0891b2', bg: '#ecfeff' },
+  gym:       { color: '#374151', bg: '#f3f4f6' },
+  etc:       { color: '#9ca3af', bg: '#f9fafb' },
+}
+
+function SportsSection({ sports }: { sports: SportsItem[] }) {
+  const [expanded, setExpanded] = useState(false)
+
+  if (sports.length === 0) {
+    return <EmptyNote text="반경 1.5km 내 체육시설 정보가 없습니다." />
+  }
+
+  const INITIAL_LIMIT = 8
+  const visible = expanded ? sports : sports.slice(0, INITIAL_LIMIT)
+
+  // 종목별 카운트 요약
+  const typeCounts: Partial<Record<SportType, number>> = {}
+  for (const s of sports) {
+    const t = s.sport_type as SportType
+    typeCounts[t] = (typeCounts[t] ?? 0) + 1
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+        {(Object.entries(typeCounts) as Array<[SportType, number]>)
+          .sort((a, b) => b[1] - a[1])
+          .map(([type, cnt]) => {
+            const style = SPORT_TYPE_COLOR[type]
+            return (
+              <span
+                key={type}
+                style={{
+                  font: '500 11px/1 var(--font-sans)',
+                  color: style.color, background: style.bg,
+                  padding: '3px 7px', borderRadius: 5,
+                }}
+              >
+                {SPORT_TYPE_LABEL[type]} {cnt}
+              </span>
+            )
+          })}
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        {visible.map((s, i) => {
+          const type = s.sport_type as SportType
+          const style = SPORT_TYPE_COLOR[type] ?? SPORT_TYPE_COLOR.etc
+          return (
+            <div
+              key={i}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '9px 0',
+                borderBottom: i < visible.length - 1 ? '1px solid var(--line-subtle)' : 'none',
+              }}
+            >
+              <div style={{
+                width: 28, height: 28, borderRadius: 7,
+                background: 'var(--bg-surface-2)',
+                display: 'grid', placeItems: 'center',
+                flexShrink: 0, color: 'var(--fg-sec)',
+              }}>
+                <SportsIcon />
+              </div>
+              <span style={{ flex: 1, font: '500 13px/1.3 var(--font-sans)', color: 'var(--fg-pri)' }}>
+                {s.poi_name}
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                <span style={{
+                  font: '500 10px/1 var(--font-sans)',
+                  color: style.color, background: style.bg,
+                  padding: '2px 5px', borderRadius: 4,
+                }}>
+                  {SPORT_TYPE_LABEL[type] ?? type}
+                </span>
+                <span style={{ font: '600 13px/1 var(--font-sans)', color: 'var(--fg-sec)' }}>
+                  {fmtDist(s.distance_m)}
+                </span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {sports.length > INITIAL_LIMIT && (
+        <button
+          onClick={() => setExpanded(v => !v)}
+          style={{
+            font: '500 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)',
+            textAlign: 'center', padding: '10px 0 0', margin: 0,
+            background: 'none', border: 'none', cursor: 'pointer', width: '100%',
+          }}
+        >
+          {expanded ? '접기' : `외 ${sports.length - INITIAL_LIMIT}개 더보기`}
+        </button>
+      )}
+    </div>
+  )
+}
+
 function DaycareSection({ daycares, kindergartens }: {
   daycares: PoiItem[]
   kindergartens: PoiItem[]
@@ -429,7 +547,7 @@ function DaycareSection({ daycares, kindergartens }: {
 
 // ─── 메인 컴포넌트 ─────────────────────────────────────────────────────────
 
-type Tab = 'school' | 'hagwon' | 'daycare'
+type Tab = 'school' | 'hagwon' | 'daycare' | 'sports'
 
 interface Props {
   data: FacilityEduData
@@ -438,14 +556,17 @@ interface Props {
 
 export function EducationCard({ data, si }: Props) {
   const [tab, setTab] = useState<Tab>('school')
-  const { schools, hagwons, daycares, kindergartens, hagwonStats } = data
+  const { schools, hagwons, daycares, kindergartens, sports, hagwonStats } = data
 
-  const hasData = schools.length > 0 || hagwons.length > 0 || daycares.length > 0 || kindergartens.length > 0
+  const hasData =
+    schools.length > 0 || hagwons.length > 0 ||
+    daycares.length > 0 || kindergartens.length > 0 || sports.length > 0
 
   const tabs: Array<{ key: Tab; label: string; count?: number }> = [
     { key: 'school',  label: '학교',           count: schools.length },
     { key: 'hagwon',  label: '학원·교육',       count: hagwons.length },
     { key: 'daycare', label: '어린이집·유치원', count: daycares.length + kindergartens.length },
+    { key: 'sports',  label: '체육시설',        count: sports.length },
   ]
 
   return (
@@ -500,6 +621,7 @@ export function EducationCard({ data, si }: Props) {
           {tab === 'school'  && <SchoolList schools={schools} />}
           {tab === 'hagwon'  && <HagwonSection hagwons={hagwons} stats={hagwonStats} si={si} />}
           {tab === 'daycare' && <DaycareSection daycares={daycares} kindergartens={kindergartens} />}
+          {tab === 'sports'  && <SportsSection sports={sports} />}
         </>
       )}
 
@@ -510,7 +632,7 @@ export function EducationCard({ data, si }: Props) {
         marginBottom: 0,
         textAlign:    'right',
       }}>
-        카카오맵 기준 · 반경 1~1.5km
+        {tab === 'sports' ? '행정안전부 인허가 기준 · 반경 1.5km' : '카카오맵 기준 · 반경 1~1.5km'}
       </p>
     </div>
   )

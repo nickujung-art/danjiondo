@@ -12,6 +12,12 @@ export interface PoiItem {
   distance_m: number | null
 }
 
+export interface SportsItem {
+  poi_name:   string
+  distance_m: number | null
+  sport_type: string
+}
+
 export interface HagwonStats {
   cnt500:     number   // 500m 이내
   cnt1000:    number   // 1km 이내 전체
@@ -25,6 +31,7 @@ export interface FacilityEduData {
   hagwons:       PoiItem[]
   daycares:      PoiItem[]
   kindergartens: PoiItem[]
+  sports:        SportsItem[]
   hagwonStats:   HagwonStats | null
 }
 
@@ -33,7 +40,7 @@ export async function getComplexFacilityEdu(
   complexId: string,
   supabase: SupabaseClient,
 ): Promise<FacilityEduData> {
-  const [schoolRes, poiRes, scoreRes] = await Promise.all([
+  const [schoolRes, poiRes, sportsRes, scoreRes] = await Promise.all([
     supabase
       .from('facility_school')
       .select('school_name, school_type, distance_m, is_assignment')
@@ -47,6 +54,13 @@ export async function getComplexFacilityEdu(
       .in('category', ['hagwon', 'daycare'])
       .order('distance_m', { ascending: true, nullsFirst: false }),
 
+    supabase
+      .from('facility_poi')
+      .select('poi_name, distance_m, sport_type')
+      .eq('complex_id', complexId)
+      .eq('category', 'sports')
+      .order('distance_m', { ascending: true, nullsFirst: false }),
+
     // 이 단지의 학원 점수 + si 기반 백분위 계산
     supabase
       .from('complexes')
@@ -57,6 +71,8 @@ export async function getComplexFacilityEdu(
 
   const schools = (schoolRes.data ?? []) as SchoolItem[]
   const allPois = poiRes.data ?? []
+  const sports  = ((sportsRes.data ?? []) as Array<{ poi_name: string; distance_m: number | null; sport_type: string | null }>)
+    .map(p => ({ poi_name: p.poi_name, distance_m: p.distance_m, sport_type: p.sport_type ?? 'etc' }))
   const hagwons = allPois
     .filter(p => p.category === 'hagwon')
     .map(p => ({ poi_name: p.poi_name, distance_m: p.distance_m }))
@@ -107,5 +123,5 @@ export async function getComplexFacilityEdu(
     }
   }
 
-  return { schools, hagwons, daycares, kindergartens, hagwonStats }
+  return { schools, hagwons, daycares, kindergartens, sports, hagwonStats }
 }

@@ -277,7 +277,7 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
     // 관리비 (오류 시 빈 배열 fallback)
     getManagementCostMonthly(id, supabase).catch(() => []),
     // 교육 환경 (오류 시 빈 데이터 fallback)
-    getComplexFacilityEdu(id, supabase).catch(() => ({ schools: [], hagwons: [], daycares: [], kindergartens: [], hagwonStats: null })),
+    getComplexFacilityEdu(id, supabase).catch(() => ({ schools: [], hagwons: [], daycares: [], kindergartens: [], sports: [], hagwonStats: null })),
     // raw 거래 데이터 (IQR + 평형 칩 클라이언트 슬라이스용)
     getComplexRawTransactions(id, 'sale', supabase).catch(() => []),
     getComplexRawTransactions(id, 'jeonse', supabase).catch(() => []),
