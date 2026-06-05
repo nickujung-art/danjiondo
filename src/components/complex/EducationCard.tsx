@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { FacilityEduData, SchoolItem, PoiItem } from '@/lib/data/facility-edu'
 import { classifyHagwon, walkColor, WALK_COLOR_HEX } from '@/lib/hagwon-category'
 
@@ -250,7 +251,7 @@ function SchoolDetailSheet({ school, si, onClose }: {
   const hasQuality       = school.students_per_class != null || school.teachers_ratio != null
   const hasPricePremium  = school.is_assignment && school.district_avg_py != null && school.si_avg_py != null
 
-  return (
+  return createPortal(
     <>
       {/* 오버레이 */}
       <div
@@ -269,7 +270,7 @@ function SchoolDetailSheet({ school, si, onClose }: {
         background:    'var(--bg-base)',
         borderRadius:  '20px 20px 0 0',
         zIndex:        201,
-        maxHeight:     '88dvh',
+        maxHeight:     '88vh',
         overflowY:     'auto',
         boxShadow:     '0 -8px 40px rgba(0,0,0,0.15)',
         paddingBottom: 'env(safe-area-inset-bottom, 16px)',
@@ -483,7 +484,8 @@ function SchoolDetailSheet({ school, si, onClose }: {
           </p>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   )
 }
 
