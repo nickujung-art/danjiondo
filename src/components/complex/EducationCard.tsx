@@ -181,19 +181,21 @@ function PercentileBar({
   const pct    = Math.round(percentile * 100)
   const color  = percentile >= 0.6 ? '#16a34a' : percentile >= 0.3 ? '#d97706' : '#dc2626'
 
+  const city = siLabel ?? '지역'
   let summary: string
   if (goodSide === 'left') {
+    // percentile = 나보다 학생 많은(나쁜) 학교 비율 → 높을수록 소규모(좋음)
     summary = percentile >= 0.6
-      ? `${siLabel ?? '지역'} 소규모 상위 ${pct}% (학급 쾌적)`
+      ? `${city} 소규모 상위 ${pct}%`
       : percentile >= 0.3
-        ? `${siLabel ?? '지역'} 중간 수준`
-        : `${siLabel ?? '지역'} 과밀 상위 ${100 - pct}% (학급 혼잡)`
+        ? `${city} 보통 수준`
+        : `${city} 과밀 (소규모 하위 ${pct}%)`
   } else {
     summary = percentile >= 0.6
-      ? `${siLabel ?? '지역'} 상위 ${pct}%`
+      ? `${city} 상위 ${pct}%`
       : percentile >= 0.3
-        ? `${siLabel ?? '지역'} 중간 수준`
-        : `${siLabel ?? '지역'} 하위 ${100 - pct}%`
+        ? `${city} 보통 수준`
+        : `${city} 하위 ${100 - pct}%`
   }
 
   return (
@@ -249,7 +251,7 @@ function SchoolDetailSheet({ school, si, onClose }: {
   const typeColor = SCHOOL_TYPE_COLOR[school.school_type]
   const wc        = walkColor(school.distance_m)
   const hasQuality       = school.students_per_class != null || school.teachers_ratio != null
-  const hasPricePremium  = school.is_assignment && school.district_avg_py != null && school.si_avg_py != null
+  const hasPricePremium  = school.is_assignment && !!school.district_avg_py && !!school.si_avg_py
 
   return createPortal(
     <>

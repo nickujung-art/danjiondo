@@ -126,15 +126,15 @@ export async function getComplexFacilityEdu(
         p_school_name: s.school_name,
         p_months:      12,
       })
-      const row = data?.[0] as { district_avg_py: number; si_avg_py: number } | undefined
-      if (!row) return { school_name: s.school_name, district_avg_py: null, si_avg_py: null, price_premium: null }
-      const premium = row.si_avg_py > 0
-        ? Math.round((row.district_avg_py - row.si_avg_py) / row.si_avg_py * 100)
-        : null
+      const row = data?.[0] as { district_avg_py: number | null; si_avg_py: number | null } | undefined
+      const dpy = row?.district_avg_py ? Number(row.district_avg_py) : null
+      const spy = row?.si_avg_py       ? Number(row.si_avg_py)       : null
+      if (!dpy || !spy) return { school_name: s.school_name, district_avg_py: null, si_avg_py: null, price_premium: null }
+      const premium = Math.round((dpy - spy) / spy * 100)
       return {
         school_name:     s.school_name,
-        district_avg_py: Number(row.district_avg_py),
-        si_avg_py:       Number(row.si_avg_py),
+        district_avg_py: dpy,
+        si_avg_py:       spy,
         price_premium:   premium,
       }
     })
