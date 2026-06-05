@@ -43,6 +43,14 @@ function DaycareIcon() {
   )
 }
 
+function ChevronRightIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+      <path d="M9 18l6-6-6-6" />
+    </svg>
+  )
+}
+
 // ─── 유틸 ─────────────────────────────────────────────────────────────────
 
 function fmtDist(m: number | null): string {
@@ -57,10 +65,20 @@ function fmtWalk(m: number | null): string {
   return `도보 ${min}분`
 }
 
+function fmtPy(won: number): string {
+  return `${Math.round(won / 10000).toLocaleString()}만원`
+}
+
 const SCHOOL_TYPE_LABEL: Record<string, string> = {
   elementary: '초등학교',
   middle:     '중학교',
   high:       '고등학교',
+}
+
+const SCHOOL_TYPE_COLOR: Record<string, { color: string; bg: string }> = {
+  elementary: { color: '#15803d', bg: '#dcfce7' },
+  middle:     { color: '#1d4ed8', bg: '#dbeafe' },
+  high:       { color: '#7c3aed', bg: '#ede9fe' },
 }
 
 const GRADE_COLOR: Record<string, string> = {
@@ -140,23 +158,355 @@ function PoiRow({ item, icon, isLast }: { item: PoiItem; icon: React.ReactNode; 
   )
 }
 
+// ─── 백분위 바 ─────────────────────────────────────────────────────────────
+// percentile: 이 학교보다 나쁜(더 많은/더 낮은) 학교 비율 — 높을수록 이 학교가 좋음
+// goodSide='left': 바 왼쪽이 좋음 (학급당 학생수 → 적을수록 좋음)
+// goodSide='right': 바 오른쪽이 좋음 (진학률 → 높을수록 좋음)
+
+function PercentileBar({
+  percentile,
+  leftLabel,
+  rightLabel,
+  goodSide,
+  siLabel,
+}: {
+  percentile: number
+  leftLabel:  string
+  rightLabel: string
+  goodSide:   'left' | 'right'
+  siLabel?:   string
+}) {
+  const dotPos = goodSide === 'left' ? 1 - percentile : percentile
+  const pct    = Math.round(percentile * 100)
+  const color  = percentile >= 0.6 ? '#16a34a' : percentile >= 0.3 ? '#d97706' : '#dc2626'
+
+  let summary: string
+  if (goodSide === 'left') {
+    summary = percentile >= 0.6
+      ? `${siLabel ?? '지역'} 소규모 상위 ${pct}% (학급 쾌적)`
+      : percentile >= 0.3
+        ? `${siLabel ?? '지역'} 중간 수준`
+        : `${siLabel ?? '지역'} 과밀 상위 ${100 - pct}% (학급 혼잡)`
+  } else {
+    summary = percentile >= 0.6
+      ? `${siLabel ?? '지역'} 상위 ${pct}%`
+      : percentile >= 0.3
+        ? `${siLabel ?? '지역'} 중간 수준`
+        : `${siLabel ?? '지역'} 하위 ${100 - pct}%`
+  }
+
+  return (
+    <div>
+      <div style={{
+        display: 'flex', justifyContent: 'space-between',
+        font: '500 10px/1 var(--font-sans)', color: 'var(--fg-tertiary)',
+        marginBottom: 5,
+      }}>
+        <span>{leftLabel}</span>
+        <span>{rightLabel}</span>
+      </div>
+
+      {/* 바 트랙 */}
+      <div style={{ position: 'relative', height: 6, background: '#e5e7eb', borderRadius: 3, margin: '0 6px' }}>
+        <div style={{
+          position: 'absolute', top: 0, bottom: 0, left: 0,
+          width: `${dotPos * 100}%`,
+          background: `${color}40`,
+          borderRadius: '3px 0 0 3px',
+        }} />
+        <div style={{
+          position: 'absolute',
+          left: `${dotPos * 100}%`,
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 14, height: 14,
+          background: '#fff',
+          border: `3px solid ${color}`,
+          borderRadius: '50%',
+          boxShadow: `0 0 0 2px ${color}30`,
+        }} />
+      </div>
+
+      <div style={{
+        font: '600 11px/1 var(--font-sans)', color,
+        marginTop: 6, textAlign: 'center',
+      }}>
+        {summary}
+      </div>
+    </div>
+  )
+}
+
+// ─── 학교 상세 바텀 시트 ───────────────────────────────────────────────────
+
+function SchoolDetailSheet({ school, si, onClose }: {
+  school:  SchoolItem
+  si?:     string
+  onClose: () => void
+}) {
+  const typeLabel = SCHOOL_TYPE_LABEL[school.school_type] ?? school.school_type
+  const typeColor = SCHOOL_TYPE_COLOR[school.school_type]
+  const wc        = walkColor(school.distance_m)
+  const hasQuality       = school.students_per_class != null || school.teachers_ratio != null
+  const hasPricePremium  = school.is_assignment && school.district_avg_py != null && school.si_avg_py != null
+
+  return (
+    <>
+      {/* 오버레이 */}
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,0,0,0.45)',
+          zIndex: 200,
+        }}
+      />
+
+      {/* 시트 */}
+      <div style={{
+        position:      'fixed',
+        bottom:        0, left: 0, right: 0,
+        background:    'var(--bg-base)',
+        borderRadius:  '20px 20px 0 0',
+        zIndex:        201,
+        maxHeight:     '88dvh',
+        overflowY:     'auto',
+        boxShadow:     '0 -8px 40px rgba(0,0,0,0.15)',
+        paddingBottom: 'env(safe-area-inset-bottom, 16px)',
+      }}>
+        {/* 드래그 핸들 */}
+        <div style={{ padding: '12px 0 0', display: 'flex', justifyContent: 'center' }}>
+          <div style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--line-default)' }} />
+        </div>
+
+        {/* 헤더 */}
+        <div style={{ padding: '12px 20px 16px', borderBottom: '1px solid var(--line-subtle)' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+              background: typeColor?.bg ?? 'var(--bg-surface-2)',
+              display: 'grid', placeItems: 'center',
+              color: typeColor?.color ?? 'var(--fg-sec)',
+            }}>
+              <SchoolIcon />
+            </div>
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h2 style={{ font: '700 18px/1.3 var(--font-sans)', margin: '0 0 6px', color: 'var(--fg-pri)' }}>
+                {school.school_name}
+              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <span style={{
+                  font: '600 11px/1 var(--font-sans)',
+                  color: typeColor?.color, background: typeColor?.bg,
+                  padding: '3px 7px', borderRadius: 4,
+                }}>
+                  {typeLabel}
+                </span>
+                {school.is_assignment && (
+                  <span style={{
+                    font: '600 11px/1 var(--font-sans)',
+                    color: '#2563eb', background: '#eff6ff',
+                    padding: '3px 7px', borderRadius: 4,
+                  }}>
+                    배정학교
+                  </span>
+                )}
+                {school.distance_m != null && (
+                  <span style={{
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    font: '500 11px/1 var(--font-sans)', color: WALK_COLOR_HEX[wc],
+                  }}>
+                    <WalkIcon color={WALK_COLOR_HEX[wc]} />
+                    {fmtDist(school.distance_m)} · {fmtWalk(school.distance_m)}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <button
+              onClick={onClose}
+              style={{
+                width: 32, height: 32, flexShrink: 0,
+                display: 'grid', placeItems: 'center',
+                border: 'none', background: 'var(--bg-surface-2)',
+                borderRadius: 8, cursor: 'pointer',
+                color: 'var(--fg-sec)', font: '500 18px/1 var(--font-sans)',
+              }}
+              aria-label="닫기"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+
+        {/* 학교 환경 지표 */}
+        {hasQuality && (
+          <div style={{ padding: '18px 20px', borderBottom: hasPricePremium ? '1px solid var(--line-subtle)' : 'none' }}>
+            <div style={{
+              font: '600 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)',
+              letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 16,
+            }}>
+              학교 환경{school.data_year != null ? ` · ${school.data_year}년 학교알리미` : ''}
+            </div>
+
+            {/* 학급당 학생수 */}
+            {school.students_per_class != null && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
+                  <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--fg-sec)' }}>
+                    학급당 학생수
+                  </span>
+                  <span style={{ font: '800 22px/1 var(--font-sans)', color: 'var(--fg-pri)', letterSpacing: '-0.5px' }}>
+                    {school.students_per_class}
+                    <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--fg-sec)', marginLeft: 2 }}>명</span>
+                  </span>
+                </div>
+                {school.students_percentile != null ? (
+                  <PercentileBar
+                    percentile={school.students_percentile}
+                    leftLabel="소규모 (좋음)"
+                    rightLabel="과밀 (나쁨)"
+                    goodSide="left"
+                    siLabel={si}
+                  />
+                ) : (
+                  <div style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                    백분위 데이터 준비 중
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 교원 1인당 학생수 */}
+            {school.teachers_ratio != null && (
+              <div style={{
+                padding: '14px 16px',
+                background: 'var(--bg-surface-2)',
+                borderRadius: 10,
+                marginBottom: school.school_type === 'middle' && school.advancement_rate != null ? 16 : 0,
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ font: '600 13px/1.3 var(--font-sans)', color: 'var(--fg-pri)' }}>
+                      수업교원 1인당 학생수
+                    </div>
+                    <div style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginTop: 3 }}>
+                      교원 수업 부담 지표
+                    </div>
+                  </div>
+                  <span style={{ font: '800 20px/1 var(--font-sans)', color: 'var(--fg-pri)', letterSpacing: '-0.5px' }}>
+                    {school.teachers_ratio}
+                    <span style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--fg-sec)', marginLeft: 2 }}>명</span>
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* 특목고 진학률 — 데이터 수집 후 자동 활성화 */}
+            {school.school_type === 'middle' && school.advancement_rate != null && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
+                  <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--fg-sec)' }}>
+                    특목고 진학률
+                  </span>
+                  <span style={{ font: '800 22px/1 var(--font-sans)', color: 'var(--fg-pri)', letterSpacing: '-0.5px' }}>
+                    {school.advancement_rate.toFixed(1)}
+                    <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--fg-sec)', marginLeft: 2 }}>%</span>
+                  </span>
+                </div>
+                {school.advancement_percentile != null && (
+                  <PercentileBar
+                    percentile={school.advancement_percentile}
+                    leftLabel="낮음"
+                    rightLabel="높음 (좋음)"
+                    goodSide="right"
+                    siLabel={si}
+                  />
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 학군 부동산 */}
+        {hasPricePremium && (
+          <div style={{ padding: '18px 20px' }}>
+            <div style={{
+              font: '600 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)',
+              letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 14,
+            }}>
+              학군 부동산 · 최근 12개월 평균
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ padding: '14px 16px', background: 'var(--bg-surface-2)', borderRadius: 12 }}>
+                <div style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginBottom: 8 }}>
+                  학군 평균
+                </div>
+                <div style={{ font: '700 17px/1 var(--font-sans)', color: 'var(--fg-pri)' }}>
+                  {fmtPy(school.district_avg_py!)}
+                </div>
+                <div style={{ font: '500 10px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginTop: 3 }}>/평</div>
+              </div>
+
+              <div style={{
+                padding: '14px 16px', borderRadius: 12,
+                background: school.price_premium != null && school.price_premium >= 5 ? '#f0fdf4'
+                  : school.price_premium != null && school.price_premium <= -5 ? '#fef2f2'
+                  : 'var(--bg-surface-2)',
+              }}>
+                <div style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginBottom: 8 }}>
+                  {si ?? '시'} 평균 대비
+                </div>
+                <div style={{
+                  font: '700 17px/1 var(--font-sans)',
+                  color: school.price_premium != null && school.price_premium >= 5 ? '#15803d'
+                    : school.price_premium != null && school.price_premium <= -5 ? '#dc2626'
+                    : 'var(--fg-pri)',
+                }}>
+                  {school.price_premium != null
+                    ? `${school.price_premium > 0 ? '+' : ''}${school.price_premium}%`
+                    : '-'}
+                </div>
+                <div style={{ font: '500 10px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginTop: 3 }}>
+                  {si ?? '시'} {fmtPy(school.si_avg_py!)}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div style={{ padding: '8px 20px 16px', textAlign: 'center' }}>
+          <p style={{ font: '500 10px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>
+            학교알리미 공시 데이터 · 행정안전부 인허가 기준
+          </p>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ─── SchoolList ────────────────────────────────────────────────────────────
+
 function SchoolList({ schools, si }: { schools: SchoolItem[]; si?: string }) {
-  const [schoolTab, setSchoolTab] = useState<'elementary' | 'middle' | 'high'>('elementary')
+  const [schoolTab, setSchoolTab]           = useState<'elementary' | 'middle' | 'high'>('elementary')
+  const [selectedSchool, setSelectedSchool] = useState<SchoolItem | null>(null)
 
   const filtered = schools
     .filter(s => s.school_type === schoolTab)
     .sort((a, b) => {
-      // 배정 학교 우선 → 거리순
       if (a.is_assignment !== b.is_assignment) return a.is_assignment ? -1 : 1
       return (a.distance_m ?? 99999) - (b.distance_m ?? 99999)
     })
-    .slice(0, 3)
+    .slice(0, 4)
 
   return (
     <div>
+      {/* 학교급 탭 */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
         {(['elementary', 'middle', 'high'] as const).map(type => {
-          const count = schools.filter(s => s.school_type === type).length
+          const count  = schools.filter(s => s.school_type === type).length
           const active = schoolTab === type
           return (
             <button
@@ -187,21 +537,30 @@ function SchoolList({ schools, si }: { schools: SchoolItem[]; si?: string }) {
         })}
       </div>
 
+      {/* 학교 목록 — 클릭 시 상세 시트 열림 */}
       {filtered.length === 0 ? (
         <EmptyNote text="반경 1.5km 내 해당 학교가 없습니다." />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
           {filtered.map((s, i) => {
-            const wc = walkColor(s.distance_m)
+            const wc      = walkColor(s.distance_m)
+            const hasData = s.students_per_class != null
             return (
-              <div
+              <button
                 key={i}
+                onClick={() => setSelectedSchool(s)}
                 style={{
                   display:      'flex',
                   alignItems:   'center',
                   gap:          10,
-                  padding:      '10px 0',
-                  borderBottom: i < filtered.length - 1 ? '1px solid var(--line-subtle)' : 'none',
+                  padding:      '11px 6px',
+                  background:   'none',
+                  border:       'none',
+                  borderTop:    i === 0 ? 'none' : '1px solid var(--line-subtle)',
+                  cursor:       'pointer',
+                  textAlign:    'left',
+                  width:        '100%',
+                  borderRadius: 8,
                 }}
               >
                 <div style={{
@@ -214,8 +573,7 @@ function SchoolList({ schools, si }: { schools: SchoolItem[]; si?: string }) {
                 </div>
 
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  {/* 학교명 + 배정 배지 */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
                     <span style={{ font: '600 13px/1.3 var(--font-sans)', color: 'var(--fg-pri)' }}>
                       {s.school_name}
                     </span>
@@ -223,87 +581,63 @@ function SchoolList({ schools, si }: { schools: SchoolItem[]; si?: string }) {
                       <span style={{
                         font: '600 10px/1 var(--font-sans)',
                         color: '#2563eb', background: '#eff6ff',
-                        padding: '2px 5px', borderRadius: 4,
-                        flexShrink: 0,
+                        padding: '2px 5px', borderRadius: 4, flexShrink: 0,
                       }}>
                         배정
                       </span>
                     )}
-                    {/* P2: 배정학교 학군 평당가 비교 배지 */}
                     {s.is_assignment && s.price_premium != null && Math.abs(s.price_premium) >= 5 && (
                       <span style={{
-                        font:         '600 10px/1 var(--font-sans)',
-                        color:        s.price_premium > 0 ? '#15803d' : '#9ca3af',
-                        background:   s.price_premium > 0 ? '#dcfce7' : '#f9fafb',
-                        padding:      '2px 5px',
-                        borderRadius: 4,
-                        flexShrink:   0,
+                        font:       '600 10px/1 var(--font-sans)',
+                        color:      s.price_premium > 0 ? '#15803d' : '#9ca3af',
+                        background: s.price_premium > 0 ? '#dcfce7' : '#f9fafb',
+                        padding:    '2px 5px', borderRadius: 4, flexShrink: 0,
                       }}>
-                        {si ?? '지역'} 평균 대비 {s.price_premium > 0 ? '+' : ''}{s.price_premium}%
+                        {si ?? '지역'} 대비 {s.price_premium > 0 ? '+' : ''}{s.price_premium}%
                       </span>
                     )}
                   </div>
-
-                  {/* 학교 품질 지표 (학교알리미 데이터 있을 때만) */}
-                  {(s.students_per_class != null || (s.school_type === 'middle' && s.advancement_rate != null)) && (
-                    <div style={{ font: '500 11px/1.7 var(--font-sans)', color: 'var(--fg-sec)', marginTop: 3 }}>
-                      {s.students_per_class != null && (
-                        <span>
-                          학급당 {s.students_per_class}명
-                          {s.students_percentile != null && (
-                            <span style={{ color: 'var(--fg-tertiary)' }}>
-                              {' '}· {si ?? '지역'} 상위 {Math.round((1 - s.students_percentile) * 100)}%
-                            </span>
-                          )}
-                        </span>
-                      )}
-                      {s.school_type === 'middle' && s.advancement_rate != null && (
-                        <span style={{ marginLeft: s.students_per_class != null ? 8 : 0 }}>
-                          진학률 {s.advancement_rate.toFixed(1)}%
-                          {s.advancement_percentile != null && (
-                            <span style={{ color: 'var(--fg-tertiary)' }}>
-                              {' '}· 상위 {Math.round((1 - s.advancement_percentile) * 100)}%
-                            </span>
-                          )}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  {s.data_year != null && (s.students_per_class != null || s.advancement_rate != null) && (
-                    <div style={{ font: '500 10px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginTop: 2 }}>
-                      {s.data_year}년 기준
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <div style={{ font: '600 13px/1 var(--font-sans)', color: 'var(--fg-pri)' }}>
-                    {fmtDist(s.distance_m)}
+                  <div style={{
+                    font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)',
+                    marginTop: 3, display: 'flex', alignItems: 'center', gap: 6,
+                  }}>
+                    <span style={{ color: WALK_COLOR_HEX[wc] }}>{fmtDist(s.distance_m)}</span>
+                    {hasData && (
+                      <>
+                        <span>·</span>
+                        <span style={{ color: 'var(--fg-sec)' }}>학급당 {s.students_per_class}명</span>
+                      </>
+                    )}
                   </div>
-                  {s.distance_m != null && (
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end',
-                      marginTop: 3,
-                      font: '500 11px/1 var(--font-sans)', color: WALK_COLOR_HEX[wc],
-                    }}>
-                      <WalkIcon color={WALK_COLOR_HEX[wc]} />
-                      {fmtWalk(s.distance_m)}
-                    </div>
-                  )}
                 </div>
-              </div>
+
+                <div style={{ color: 'var(--fg-tertiary)', flexShrink: 0 }}>
+                  <ChevronRightIcon />
+                </div>
+              </button>
             )
           })}
         </div>
+      )}
+
+      {/* 상세 바텀 시트 */}
+      {selectedSchool && (
+        <SchoolDetailSheet
+          school={selectedSchool}
+          si={si}
+          onClose={() => setSelectedSchool(null)}
+        />
       )}
     </div>
   )
 }
 
+// ─── HagwonSection ────────────────────────────────────────────────────────
+
 function HagwonSection({ hagwons, stats, si }: {
   hagwons: PoiItem[]
-  stats: FacilityEduData['hagwonStats']
-  si?: string
+  stats:   FacilityEduData['hagwonStats']
+  si?:     string
 }) {
   const [expanded, setExpanded] = useState(false)
 
@@ -311,10 +645,10 @@ function HagwonSection({ hagwons, stats, si }: {
     return <EmptyNote text="학원 데이터를 수집 중입니다." />
   }
 
-  const INITIAL_LIMIT = 8
+  const INITIAL_LIMIT  = 8
   const visibleHagwons = expanded ? hagwons : hagwons.slice(0, INITIAL_LIMIT)
-  const grade = stats?.grade ?? 'D'
-  const above = stats ? 100 - stats.percentile : null
+  const grade  = stats?.grade ?? 'D'
+  const above  = stats ? 100 - stats.percentile : null
   const siLabel = si ? `${si} 상위 ${above}%` : `창원·김해 상위 ${above}%`
 
   return (
@@ -331,26 +665,19 @@ function HagwonSection({ hagwons, stats, si }: {
           marginBottom: 16,
         }}>
           <div style={{
-            minWidth: 52, height: 48, borderRadius: 12,
-            padding: '0 8px',
+            minWidth: 52, height: 48, borderRadius: 12, padding: '0 8px',
             background: GRADE_COLOR[grade],
-            display: 'grid', placeItems: 'center',
-            flexShrink: 0,
+            display: 'grid', placeItems: 'center', flexShrink: 0,
           }}>
             <span style={{ font: '800 20px/1 var(--font-sans)', color: '#fff', letterSpacing: '-0.5px' }}>
               {grade}
             </span>
           </div>
-
           <div style={{ flex: 1 }}>
             <div style={{ font: '700 14px/1.3 var(--font-sans)', color: 'var(--fg-pri)', marginBottom: 3 }}>
               학원 밀도 {grade}등급
               {above !== null && (
-                <span style={{
-                  marginLeft: 8,
-                  font: '500 12px/1 var(--font-sans)',
-                  color: GRADE_COLOR[grade],
-                }}>
+                <span style={{ marginLeft: 8, font: '500 12px/1 var(--font-sans)', color: GRADE_COLOR[grade] }}>
                   {siLabel}
                 </span>
               )}
@@ -366,7 +693,7 @@ function HagwonSection({ hagwons, stats, si }: {
       {visibleHagwons.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {visibleHagwons.map((h, i) => {
-            const cat = classifyHagwon(h.poi_name)
+            const cat      = classifyHagwon(h.poi_name)
             const catStyle = CATEGORY_COLOR[cat] ?? CATEGORY_COLOR['기타']
             return (
               <div key={i} style={{
@@ -418,8 +745,10 @@ function HagwonSection({ hagwons, stats, si }: {
   )
 }
 
+// ─── DaycareSection ───────────────────────────────────────────────────────
+
 function DaycareSection({ daycares, kindergartens }: {
-  daycares: PoiItem[]
+  daycares:      PoiItem[]
   kindergartens: PoiItem[]
 }) {
   const hasBoth = daycares.length > 0 && kindergartens.length > 0
@@ -448,7 +777,6 @@ function DaycareSection({ daycares, kindergartens }: {
           </div>
         </>
       )}
-
       {daycares.length > 0 && (
         <>
           {hasBoth && (
@@ -502,12 +830,7 @@ export function EducationCard({ data, si }: Props) {
         교육 환경
       </h3>
 
-      <div style={{
-        display:      'flex',
-        borderBottom: '1px solid var(--line-default)',
-        marginBottom: 16,
-        gap:          0,
-      }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--line-default)', marginBottom: 16 }}>
         {tabs.map(t => {
           const active = tab === t.key
           return (
@@ -515,15 +838,15 @@ export function EducationCard({ data, si }: Props) {
               key={t.key}
               onClick={() => setTab(t.key)}
               style={{
-                padding:       '8px 14px',
-                border:        'none',
-                borderBottom:  active ? '2px solid var(--dj-orange)' : '2px solid transparent',
-                background:    'none',
-                color:         active ? 'var(--dj-orange)' : 'var(--fg-sec)',
-                font:          `${active ? 700 : 500} 13px/1 var(--font-sans)`,
-                cursor:        'pointer',
-                marginBottom:  -1,
-                whiteSpace:    'nowrap',
+                padding:      '8px 14px',
+                border:       'none',
+                borderBottom: active ? '2px solid var(--dj-orange)' : '2px solid transparent',
+                background:   'none',
+                color:        active ? 'var(--dj-orange)' : 'var(--fg-sec)',
+                font:         `${active ? 700 : 500} 13px/1 var(--font-sans)`,
+                cursor:       'pointer',
+                marginBottom: -1,
+                whiteSpace:   'nowrap',
               }}
             >
               {t.label}
@@ -552,11 +875,8 @@ export function EducationCard({ data, si }: Props) {
       )}
 
       <p style={{
-        font:         '500 11px/1 var(--font-sans)',
-        color:        'var(--fg-tertiary)',
-        marginTop:    14,
-        marginBottom: 0,
-        textAlign:    'right',
+        font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)',
+        marginTop: 14, marginBottom: 0, textAlign: 'right',
       }}>
         카카오맵 + 행정안전부 인허가 기준 · 반경 1~1.5km
       </p>
