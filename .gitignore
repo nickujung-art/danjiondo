@@ -42,6 +42,9 @@ phases/**/step*-output.json
 # E2E auth storage state (contains session tokens)
 e2e/.auth/user.json
 
+# 임시 참조용 레포 (빌드/타입 체크 제외)
+temp_repo/
+
 # K-apt 관리비 원본/생성 파일 (용량 큼, 재생성 가능)
 data/management-cost/*.xlsx
 data/management-cost/*.sql
