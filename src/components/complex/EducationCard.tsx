@@ -437,12 +437,12 @@ function SchoolDetailSheet({ school, si, onClose }: {
               </div>
             )}
 
-            {/* 특목고 진학률 — 데이터 수집 후 자동 활성화 */}
+            {/* 특목고·자사고 진학률 */}
             {school.school_type === 'middle' && school.advancement_rate != null && (
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
                   <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--fg-sec)' }}>
-                    특목고 진학률
+                    특목고·자사고 진학률
                   </span>
                   <span style={{ font: '800 22px/1 var(--font-sans)', color: 'var(--fg-pri)', letterSpacing: '-0.5px' }}>
                     {school.advancement_rate.toFixed(1)}
@@ -457,6 +457,28 @@ function SchoolDetailSheet({ school, si, onClose }: {
                     goodSide="right"
                     siLabel={si}
                   />
+                )}
+                {(school.advancement_science != null || school.advancement_foreign != null || school.advancement_private != null) && (
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
+                    {school.advancement_science != null && school.advancement_science > 0 && (
+                      <span style={{ font: '500 11px/1 var(--font-sans)', color: '#1d4ed8',
+                        background: '#eff6ff', padding: '3px 8px', borderRadius: 4 }}>
+                        과학고 {school.advancement_science.toFixed(1)}%
+                      </span>
+                    )}
+                    {school.advancement_foreign != null && school.advancement_foreign > 0 && (
+                      <span style={{ font: '500 11px/1 var(--font-sans)', color: '#0369a1',
+                        background: '#f0f9ff', padding: '3px 8px', borderRadius: 4 }}>
+                        외고·국제고 {school.advancement_foreign.toFixed(1)}%
+                      </span>
+                    )}
+                    {school.advancement_private != null && school.advancement_private > 0 && (
+                      <span style={{ font: '500 11px/1 var(--font-sans)', color: '#7c3aed',
+                        background: '#f5f3ff', padding: '3px 8px', borderRadius: 4 }}>
+                        자사고 {school.advancement_private.toFixed(1)}%
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
             )}

@@ -11,7 +11,10 @@ export interface SchoolItem {
   // 학교알리미 품질 지표 (null = 데이터 미수집)
   students_per_class:     number | null
   teachers_ratio:         number | null
-  advancement_rate:       number | null   // 특목고 진학률 % (중학교)
+  advancement_rate:       number | null   // 특목고+자율고 진학률 % (중학교)
+  advancement_science:    number | null   // 과학고 진학률 % (중학교)
+  advancement_foreign:    number | null   // 외고·국제고 진학률 % (중학교)
+  advancement_private:    number | null   // 자율형사립고(자사고) 진학률 % (중학교)
   data_year:              number | null
   // 창원/김해 내 백분위 (0.0~1.0, RPC 계산)
   students_percentile:    number | null   // 높을수록 학급당학생수 적음(좋음)
@@ -52,7 +55,7 @@ export async function getComplexFacilityEdu(
   const [schoolRes, poiRes, scoreRes] = await Promise.all([
     supabase
       .from('facility_school')
-      .select('school_name, school_type, distance_m, is_assignment, establishment_type, total_students, students_per_class, teachers_ratio, advancement_rate, data_year')
+      .select('school_name, school_type, distance_m, is_assignment, establishment_type, total_students, students_per_class, teachers_ratio, advancement_rate, advancement_science, advancement_foreign, advancement_private, data_year')
       .eq('complex_id', complexId)
       .order('distance_m', { ascending: true, nullsFirst: false }),
 
@@ -82,10 +85,13 @@ export async function getComplexFacilityEdu(
     is_assignment:      boolean
     establishment_type: string | null
     total_students:     number | null
-    students_per_class: number | null
-    teachers_ratio:     number | null
-    advancement_rate:   number | null
-    data_year:          number | null
+    students_per_class:  number | null
+    teachers_ratio:      number | null
+    advancement_rate:    number | null
+    advancement_science: number | null
+    advancement_foreign: number | null
+    advancement_private: number | null
+    data_year:           number | null
   }>
 
   // 백분위 RPC는 si가 있고 데이터가 있는 학교만 (상위 5개 배정학교 대상)
@@ -160,6 +166,9 @@ export async function getComplexFacilityEdu(
       students_per_class:     s.students_per_class,
       teachers_ratio:         s.teachers_ratio,
       advancement_rate:       s.advancement_rate,
+      advancement_science:    s.advancement_science,
+      advancement_foreign:    s.advancement_foreign,
+      advancement_private:    s.advancement_private,
       data_year:              s.data_year,
       students_percentile:    pct?.studentsPct ?? null,
       advancement_percentile: pct?.advancementPct ?? null,
