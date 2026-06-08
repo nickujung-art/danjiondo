@@ -21,8 +21,10 @@ import { createClient } from '@supabase/supabase-js'
 
 // ─── 학교알리미 API 설정 ─────────────────────────────────────────────────────
 const API_BASE = 'https://www.schoolinfo.go.kr/openApi.do'
-const API_TYPE_STUDENTS = '09'  // 학년별·학급별 학생수 (COL_SUM, TEACH_CAL)
-const API_TYPE_TEACHERS = '22'  // 직위별 교원 현황 (COL_S: 총 교원수)
+const API_TYPE_STUDENTS     = '09'  // 학년별·학급별 학생수 (COL_SUM, TEACH_CAL)
+const API_TYPE_TEACHERS     = '22'  // 직위별 교원 현황 (COL_S: 총 교원수)
+const API_TYPE_BASIC        = '08'  // 학교 기본 현황 (FOND_SC_CODE: 설립구분)
+const API_TYPE_STUDENT_LIST = '10'  // 학급·학생수 현황 (STDNT_SUM: 총학생수)
 
 // ─── 경남 시군구 코드 (창원 5개 구 + 김해) ──────────────────────────────────
 const GYEONGNAM_SGG: Array<{ name: string; sggCode: string; schulKndCodes: string[] }> = [
@@ -97,7 +99,7 @@ async function main() {
   console.log(`[수집] year=${dataYear}, dry-run=${isDryRun}`)
 
   // ─── 1단계: 학년별·학급별 학생수(apiType=09) 수집 ──────────────────────────
-  console.log('\n[1/2] 학년별·학급별 학생수(apiType=09) 수집...')
+  console.log('\n[1/3] 학년별·학급별 학생수(apiType=09) 수집...')
 
   // school_code → { students_per_class, teachers_ratio, school_name, school_type }
   const statsMap = new Map<string, { students_per_class: number | null; teachers_ratio: number | null; school_name: string; school_type: string }>()
@@ -126,15 +128,62 @@ async function main() {
   }
   console.log(`  전체 수집: ${statsMap.size}개 학교`)
 
-  // ─── 2단계: DB 업데이트 ────────────────────────────────────────────────────
-  console.log('\n[2/2] DB 업데이트...')
+  // ─── 2단계: 기본정보(apiType=08) + 총학생수(apiType=10) 수집 ──────────────
+  console.log('\n[2/3] 설립구분(apiType=08) + 총학생수(apiType=10) 수집...')
+
+  // school_code → { establishment_type, total_students }
+  const basicMap = new Map<string, { establishment_type: string | null; total_students: number | null }>()
+
+  for (const area of GYEONGNAM_SGG) {
+    process.stdout.write(`  ${area.name}: `)
+    let areaCount = 0
+    for (const knd of area.schulKndCodes) {
+      const [basicRows, listRows] = await Promise.all([
+        callSchoolInfoApi(apiKey, API_TYPE_BASIC, dataYear, knd, area.sggCode),
+        callSchoolInfoApi(apiKey, API_TYPE_STUDENT_LIST, dataYear, knd, area.sggCode),
+      ])
+      // apiType=08: 설립구분
+      for (const r of basicRows ?? []) {
+        if (!r.SCHUL_CODE) continue
+        const existing = basicMap.get(r.SCHUL_CODE)
+        if (!existing) {
+          basicMap.set(r.SCHUL_CODE, {
+            establishment_type: r.FOND_SC_CODE ?? null,
+            total_students:     null,
+          })
+          areaCount++
+        }
+      }
+      // apiType=10: 총학생수 (STDNT_SUM)
+      for (const r of listRows ?? []) {
+        if (!r.SCHUL_CODE) continue
+        const entry = basicMap.get(r.SCHUL_CODE)
+        if (entry) {
+          entry.total_students = r.STDNT_SUM != null ? Number(r.STDNT_SUM) : null
+        } else {
+          basicMap.set(r.SCHUL_CODE, {
+            establishment_type: null,
+            total_students:     r.STDNT_SUM != null ? Number(r.STDNT_SUM) : null,
+          })
+        }
+      }
+    }
+    process.stdout.write(`${areaCount}개\n`)
+  }
+  console.log(`  전체 수집: ${basicMap.size}개 학교`)
+
+  // ─── 3단계: DB 업데이트 ────────────────────────────────────────────────────
+  console.log('\n[3/3] DB 업데이트...')
   let byCode = 0, byName = 0, notFound = 0
 
   for (const [schoolCode, stats] of statsMap) {
+    const basic = basicMap.get(schoolCode)
     const updatePayload = {
       students_per_class: stats.students_per_class,
       teachers_ratio:     stats.teachers_ratio,
       data_year:          Number(dataYear),
+      ...(basic?.establishment_type != null && { establishment_type: basic.establishment_type }),
+      ...(basic?.total_students     != null && { total_students:     basic.total_students     }),
     }
 
     if (isDryRun) {

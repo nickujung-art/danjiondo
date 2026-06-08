@@ -5,6 +5,9 @@ export interface SchoolItem {
   school_type:            'elementary' | 'middle' | 'high'
   distance_m:             number | null
   is_assignment:          boolean
+  // 학교알리미 기본정보
+  establishment_type:     string | null   // 공립/사립/국립
+  total_students:         number | null   // 총학생수
   // 학교알리미 품질 지표 (null = 데이터 미수집)
   students_per_class:     number | null
   teachers_ratio:         number | null
@@ -49,7 +52,7 @@ export async function getComplexFacilityEdu(
   const [schoolRes, poiRes, scoreRes] = await Promise.all([
     supabase
       .from('facility_school')
-      .select('school_name, school_type, distance_m, is_assignment, students_per_class, teachers_ratio, advancement_rate, data_year')
+      .select('school_name, school_type, distance_m, is_assignment, establishment_type, total_students, students_per_class, teachers_ratio, advancement_rate, data_year')
       .eq('complex_id', complexId)
       .order('distance_m', { ascending: true, nullsFirst: false }),
 
@@ -73,14 +76,16 @@ export async function getComplexFacilityEdu(
 
   // ─── 학교 품질 백분위 계산 ────────────────────────────────────────────────
   const rawSchools = (schoolRes.data ?? []) as Array<{
-    school_name: string
-    school_type: string
-    distance_m: number | null
-    is_assignment: boolean
+    school_name:        string
+    school_type:        string
+    distance_m:         number | null
+    is_assignment:      boolean
+    establishment_type: string | null
+    total_students:     number | null
     students_per_class: number | null
-    teachers_ratio: number | null
-    advancement_rate: number | null
-    data_year: number | null
+    teachers_ratio:     number | null
+    advancement_rate:   number | null
+    data_year:          number | null
   }>
 
   // 백분위 RPC는 si가 있고 데이터가 있는 학교만 (상위 5개 배정학교 대상)
@@ -150,6 +155,8 @@ export async function getComplexFacilityEdu(
       school_type:            s.school_type as SchoolItem['school_type'],
       distance_m:             s.distance_m,
       is_assignment:          s.is_assignment,
+      establishment_type:     s.establishment_type,
+      total_students:         s.total_students,
       students_per_class:     s.students_per_class,
       teachers_ratio:         s.teachers_ratio,
       advancement_rate:       s.advancement_rate,

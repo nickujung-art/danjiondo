@@ -66,8 +66,8 @@ function fmtWalk(m: number | null): string {
   return `도보 ${min}분`
 }
 
-function fmtPy(won: number): string {
-  return `${Math.round(won / 10000).toLocaleString()}만원`
+function fmtPy(manwonPerPy: number): string {
+  return `${Math.round(manwonPerPy).toLocaleString()}만원`
 }
 
 const SCHOOL_TYPE_LABEL: Record<string, string> = {
@@ -250,6 +250,7 @@ function SchoolDetailSheet({ school, si, onClose }: {
   const typeLabel = SCHOOL_TYPE_LABEL[school.school_type] ?? school.school_type
   const typeColor = SCHOOL_TYPE_COLOR[school.school_type]
   const wc        = walkColor(school.distance_m)
+  const hasBasicInfo     = school.establishment_type != null || school.total_students != null
   const hasQuality       = school.students_per_class != null || school.teachers_ratio != null
   const hasPricePremium  = school.is_assignment && !!school.district_avg_py && !!school.si_avg_py
 
@@ -269,7 +270,7 @@ function SchoolDetailSheet({ school, si, onClose }: {
       <div style={{
         position:      'fixed',
         bottom:        0, left: 0, right: 0,
-        background:    'var(--bg-base)',
+        background:    'var(--bg-surface)',
         borderRadius:  '20px 20px 0 0',
         zIndex:        201,
         maxHeight:     '88vh',
@@ -342,6 +343,36 @@ function SchoolDetailSheet({ school, si, onClose }: {
             </button>
           </div>
         </div>
+
+        {/* 기본정보 칩 (설립구분, 총학생수) */}
+        {hasBasicInfo && (
+          <div style={{
+            display: 'flex', gap: 8, flexWrap: 'wrap',
+            padding: '12px 20px',
+            borderBottom: '1px solid var(--line-subtle)',
+          }}>
+            {school.establishment_type && (
+              <span style={{
+                font: '500 12px/1 var(--font-sans)',
+                color: school.establishment_type === '사립' ? '#7c3aed' : '#1d4ed8',
+                background: school.establishment_type === '사립' ? '#f5f3ff' : '#eff6ff',
+                padding: '4px 9px', borderRadius: 5,
+              }}>
+                {school.establishment_type}
+              </span>
+            )}
+            {school.total_students != null && (
+              <span style={{
+                font: '500 12px/1 var(--font-sans)',
+                color: 'var(--fg-sec)',
+                background: 'var(--bg-surface-2)',
+                padding: '4px 9px', borderRadius: 5,
+              }}>
+                전교생 {school.total_students.toLocaleString()}명
+              </span>
+            )}
+          </div>
+        )}
 
         {/* 학교 환경 지표 */}
         {hasQuality && (
