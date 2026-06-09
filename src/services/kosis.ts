@@ -1,6 +1,6 @@
 import 'server-only'
 
-const KOSIS_BASE = 'https://kosis.kr/openapi/Param/statisticsParameterData.do'
+export const KOSIS_BASE = 'https://kosis.kr/openapi/Param/statisticsParameterData.do'
 
 // 행정구역(시군구)별, 성별 인구수
 const ORG_ID  = '101'

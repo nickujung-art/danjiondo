@@ -1,0 +1,58 @@
+name: 경남 가구소득 업데이트 (KOSIS 연 1회)
+
+on:
+  schedule:
+    - cron: '0 1 1 7 *'   # 매년 7월 1일 01:00 UTC (10:00 KST)
+                           # 가계금융복지조사 발표(3~5월) 후 충분한 여유
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'DB 수정 없이 결과만 확인'
+        required: false
+        default: 'true'
+        type: choice
+        options: ['true', 'false']
+      probe:
+        description: 'KOSIS API 원시 응답 출력 (테이블 ID 확인용)'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+      year:
+        description: '특정 연도만 처리 (예: 2025). 비워두면 전체'
+        required: false
+        default: ''
+
+jobs:
+  update:
+    name: 경남 가구소득 KOSIS 조회 및 upsert
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: 소득 데이터 업데이트
+        env:
+          NEXT_PUBLIC_SUPABASE_URL:   ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY:  ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          KOSIS_API_KEY:              ${{ secrets.KOSIS_API_KEY }}
+        run: |
+          ARGS=""
+          if [ "${{ inputs.probe }}" = "true" ]; then
+            ARGS="--probe"
+          elif [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="--dry-run"
+          fi
+          if [ -n "${{ inputs.year }}" ]; then
+            ARGS="$ARGS --year=${{ inputs.year }}"
+          fi
+          npx tsx scripts/update-regional-income.ts $ARGS
