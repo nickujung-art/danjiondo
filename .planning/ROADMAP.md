@@ -1,6 +1,6 @@
 ﻿# Roadmap — 단지온도
 
-**22 phases** | **69+ requirements mapped** | v1~v7 requirements covered ✓
+**23 phases** | **75+ requirements mapped** | v1~v8 requirements covered ✓
 
 ## Overview
 
@@ -28,6 +28,7 @@
 | 20 | 갭투자 분석 | V3.2 | 매매/전세 실거래 데이터 기반 갭투자 지표 계산 + 단지 상세 + 전용 분석 페이지 | GAP-01~04 | ✅ Completed 2026-05-28 |
 | 21 | 투자 분석 통합 페이지 | V3.3 | 실거래 2년 시세 흐름 차트 + 갭투자 랭킹을 /invest 페이지로 통합 | INVEST-01~04 | ✅ Completed 2026-05-29 |
 | 22 | AI 가격 예측 | V3.4 | Holt-Winters 통계 엔진 + Claude Haiku 해설로 단지별 평형별 6개월 예측선 구현 | PRED-01~04 | ✅ Completed 2026-05-29 |
+| 23 | SEO URL 구조 최적화 | V4.0 | 한글 디렉토리 URL + 계층별 페이지 + BreadcrumbList + 사이트맵·RSS — 네이버 검색 노출 최대화 | SEO-01~06 | ○ Planned |
 
 ---
 
@@ -885,6 +886,45 @@
 4. Claude Haiku 해설 카드가 숫자 없는 한국어 트렌드 설명을 표시한다
 5. 예측 데이터 없을 때 차트가 에러 없이 정상 표시된다
 6. GitHub Actions compute-predictions.yml이 매일 KST 02:00 실행된다
+7. npm run lint && npm run build && npm run test 통과
+
+**UI hint**: yes
+
+---
+
+### Phase 23: SEO URL 구조 최적화
+
+**Goal:** 창원시/성산구/내동/대우2차 형태 한글 디렉토리 URL 도입 + 네이버 Yeti 기준 계층별 페이지·BreadcrumbList·사이트맵·RSS 구현으로 네이버 검색 노출 최대화.
+
+**Version:** V4.0
+
+**Requirements:**
+- SEO-01: 한글 URL 구조 — url_slug 컬럼 + 창원 4단계/김해 3단계 catch-all 라우팅
+- SEO-02: 계층별 페이지 — 시/구/동/단지 SSR 페이지 + BreadcrumbList JSON-LD
+- SEO-03: 301 리다이렉트 — /complexes/[id] → 한글 URL
+- SEO-04: 메타데이터 최적화 — title/description/content-language + FAQ JSON-LD
+- SEO-05: 사이트맵·RSS 피드
+- SEO-06: robots.txt + 네이버 서치어드바이저 소유권 인증 경로
+
+**Plans:** 4 plans / 3 waves
+
+**Wave 0** *(BLOCKING — autonomous: false, supabase db push)*
+- [ ] 23-00-PLAN.md — DB 마이그레이션 (complexes.url_slug + backfill) + [BLOCKING] supabase db push + backfill 스크립트 (SEO-01)
+
+**Wave 1** *(blocked on Wave 0)*
+- [ ] 23-01-PLAN.md — url-slug.ts 유틸 + seo-hierarchy.ts 데이터 함수 + complex-detail/sitemap 확장 (SEO-01, SEO-02)
+
+**Wave 2** *(blocked on Wave 1; 23-02/23-03 병렬 실행 가능)*
+- [ ] 23-02-PLAN.md — catch-all [...slug]/page.tsx (계층별 SSR + JSON-LD + breadcrumb) + /complexes/[id] 308 리다이렉트 + layout.tsx meta (SEO-02, SEO-03, SEO-04)
+- [ ] 23-03-PLAN.md — sitemap.ts 한글 URL 확장 + feed.xml RSS 2.0 + robots.ts Yeti + Naver 인증 안내 (SEO-05, SEO-06)
+
+**Success Criteria:**
+1. 단지 URL이 `/창원시/성산구/내동/대우2차` 형태로 접근 가능하고 SSR 렌더된다
+2. 창원시·김해시·각 구·각 동 계층 페이지가 존재하고 해당 단지 목록을 SSR로 표시한다
+3. `/complexes/[uuid]` 접근 시 새 한글 URL로 301 리다이렉트된다
+4. BreadcrumbList JSON-LD가 모든 계층 페이지에 존재한다
+5. `/sitemap.xml`이 모든 단지+계층 URL을 포함하고 `lastmod`가 정확하다
+6. `/feed.xml`이 최근 거래 50건 RSS를 반환한다
 7. npm run lint && npm run build && npm run test 통과
 
 **UI hint**: yes
