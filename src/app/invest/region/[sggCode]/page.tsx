@@ -283,18 +283,44 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
     unsoldCount: latestUnsold?.unsoldCount ?? null,
   })
 
+  const mortgageTrend = rateSeries.length >= 2
+    ? rateSeries[rateSeries.length - 1]!.rate - rateSeries[0]!.rate
+    : null
+
   const aiCommentary = await getRegionalCommentary(sggCode, {
     label,
     areaBucket,
+    // 예측
     changePct,
     direction,
-    jeonseRatio: latestJeonse?.jeonseRatio ?? null,
-    txCount: latestHistory?.txCount ?? null,
-    unsoldCount: latestUnsold?.unsoldCount ?? null,
     horizon,
+    // 가격
+    recentAvgPrice,
+    recentJeonseAvg,
+    jeonseRatio: latestJeonse?.jeonseRatio ?? null,
+    // 거래/공급
+    txCount:     latestHistory?.txCount ?? null,
+    unsoldCount: latestUnsold?.unsoldCount ?? null,
+    unsoldChange,
+    // 부담 지수
     pir,
+    jhai,
     hai,
+    // 금리
     mortgageRate,
+    mortgageTrend,
+    // 인구/소득
+    population:     latestPop?.population ?? null,
+    populationYear: latestPop?.year ?? null,
+    popYoyChange,
+    pop5yChangePct,
+    annualIncome,
+    incomeYear: incomeData?.year ?? null,
+    // 리스크 등급
+    riskPriceGrade:  riskItems[0]?.grade ?? null,
+    riskJeonseGrade: riskItems[1]?.grade ?? null,
+    riskUnsoldGrade: riskItems[2]?.grade ?? null,
+    riskTxGrade:     riskItems[3]?.grade ?? null,
   }).catch(() => null)
 
   function tabHref(bucket: string): string {
