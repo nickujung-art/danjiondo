@@ -1,0 +1,30 @@
+name: new_listings 지오코딩 (카카오 API)
+
+on:
+  schedule:
+    - cron: '30 20 * * *'   # 05:30 KST — daily cron(19:00 UTC) 이후 1.5시간 대기 후 실행
+  workflow_dispatch:
+
+jobs:
+  geocode:
+    name: new_listings lat/lng 채우기
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: 지오코딩 실행
+        env:
+          NEXT_PUBLIC_SUPABASE_URL:   ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY:  ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          KAKAO_REST_API_KEY:         ${{ secrets.KAKAO_REST_API_KEY }}
+        run: npx tsx scripts/geocode-new-listings.ts

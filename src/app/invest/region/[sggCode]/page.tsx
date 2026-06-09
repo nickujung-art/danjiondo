@@ -24,8 +24,10 @@ import {
 import { RegionChartSection } from '@/components/invest/RegionChartSection'
 import { RateSparklineWrapper } from '@/components/invest/RateSparklineWrapper'
 import { PopulationChart } from '@/components/invest/PopulationChart'
+import { PriceIndexChart } from '@/components/invest/PriceIndexChart'
 import { formatPrice } from '@/lib/format'
 import { getRegionalCommentary } from '@/lib/ai/regional-commentary'
+import { fetchPriceIndexSeries } from '@/services/reb'
 
 export const revalidate = 3600
 
@@ -178,7 +180,7 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
   const supabase = createReadonlyClient()
   const label = SGG_LABEL[sggCode] ?? sggCode
 
-  const [history, predTimeseries, jeonseData, complexRanking, unsoldHistory, incomeData, mortgageRateData, populationData, rateSeries, gapItems] = await Promise.all([
+  const [history, predTimeseries, jeonseData, complexRanking, unsoldHistory, incomeData, mortgageRateData, populationData, rateSeries, gapItems, priceIndexData] = await Promise.all([
     getRegionalPriceHistory(supabase, sggCode, areaBucket, 36).catch(() => []),
     getRegionalPredictionTimeseries(supabase, sggCode, areaBucket).catch(() => []),
     getRegionalJeonseRatio(supabase, sggCode, areaBucket, 24).catch(() => []),
@@ -189,6 +191,7 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
     getRegionalPopulation(sggCode, 10).catch(() => []),
     getMortgageRateSeries(24).catch(() => []),
     getRegionalGapItems(supabase, sggCode, 12).catch(() => [] as RegionalGapItem[]),
+    fetchPriceIndexSeries(sggCode, 24).catch(() => null),
   ])
 
   // 미래 예측 포인트만 필터링 (Chronos는 backtesting 결과도 저장하므로 현재 달 이후만 사용)
@@ -734,6 +737,77 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
             )}
           </section>
         )}
+
+        {/* 부동산원 가격지수 */}
+        {priceIndexData && priceIndexData.regional.length > 0 && (() => {
+          const latest   = priceIndexData.regional[priceIndexData.regional.length - 1]!
+          const ago12    = priceIndexData.regional[Math.max(0, priceIndexData.regional.length - 13)]
+          const saleChg  = latest.saleIdx != null && ago12?.saleIdx != null
+            ? ((latest.saleIdx  - ago12.saleIdx)  / ago12.saleIdx)  * 100 : null
+          const jenChg   = latest.jeonseIdx != null && ago12?.jeonseIdx != null
+            ? ((latest.jeonseIdx - ago12.jeonseIdx) / ago12.jeonseIdx) * 100 : null
+
+          return (
+            <section aria-labelledby="price-index-heading" style={{ marginBottom: 24 }}>
+              <h2 id="price-index-heading" style={{ font: '600 14px/1.4 var(--font-sans)', margin: '0 0 10px' }}>
+                부동산원 가격지수
+                <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 8 }}>
+                  R-ONE 월간 아파트 · 2019=100 · 최근 {priceIndexData.regional.length}개월
+                  {priceIndexData.level === 'si' && ' (시 전체 집계)'}
+                </span>
+              </h2>
+              <div className="card" style={{ padding: '12px 4px 4px' }}>
+                <div style={{ display: 'flex', gap: 16, paddingBottom: 8, paddingLeft: 12, flexWrap: 'wrap' }}>
+                  {[
+                    { color: '#f97316', label: '지역 매매', dash: false },
+                    { color: '#60a5fa', label: '지역 전세', dash: false },
+                    { color: '#94a3b8', label: '전국 매매(비교)', dash: true },
+                  ].map(({ color, label, dash }) => (
+                    <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <svg width="16" height="8" viewBox="0 0 16 8">
+                        {dash
+                          ? <line x1="0" y1="4" x2="16" y2="4" stroke={color} strokeWidth="1.5" strokeDasharray="4 2" />
+                          : <line x1="0" y1="4" x2="16" y2="4" stroke={color} strokeWidth="2.5" />}
+                      </svg>
+                      <span style={{ font: '400 10px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>{label}</span>
+                    </div>
+                  ))}
+                </div>
+                <PriceIndexChart regional={priceIndexData.regional} national={priceIndexData.national} />
+              </div>
+              {(latest.saleIdx != null || latest.jeonseIdx != null) && (
+                <div style={{ display: 'flex', gap: 24, marginTop: 10, paddingLeft: 2, flexWrap: 'wrap' }}>
+                  {latest.saleIdx != null && (
+                    <div>
+                      <div style={{ font: '400 10px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>매매지수 ({latest.yearMonth})</div>
+                      <div className="tnum" style={{ font: '600 13px/1.3 var(--font-sans)', color: 'var(--fg-pri)', marginTop: 3 }}>
+                        {latest.saleIdx.toFixed(1)}
+                        {saleChg != null && (
+                          <span style={{ font: '500 11px/1 var(--font-sans)', marginLeft: 6, color: saleChg > 0 ? '#16a34a' : saleChg < 0 ? '#dc2626' : 'var(--fg-tertiary)' }}>
+                            {saleChg >= 0 ? '+' : ''}{saleChg.toFixed(1)}% (12개월)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {latest.jeonseIdx != null && (
+                    <div>
+                      <div style={{ font: '400 10px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>전세지수 ({latest.yearMonth})</div>
+                      <div className="tnum" style={{ font: '600 13px/1.3 var(--font-sans)', color: 'var(--fg-pri)', marginTop: 3 }}>
+                        {latest.jeonseIdx.toFixed(1)}
+                        {jenChg != null && (
+                          <span style={{ font: '500 11px/1 var(--font-sans)', marginLeft: 6, color: jenChg > 0 ? '#16a34a' : jenChg < 0 ? '#dc2626' : 'var(--fg-tertiary)' }}>
+                            {jenChg >= 0 ? '+' : ''}{jenChg.toFixed(1)}% (12개월)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+          )
+        })()}
 
         {/* 시세 + 예측 차트 — 클라이언트 인터랙티브 */}
         <section aria-labelledby="chart-heading" style={{ marginBottom: 28 }}>

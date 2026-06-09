@@ -1,0 +1,43 @@
+name: 학교알리미 통계 수집 (연 1회)
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '--dry-run: DB 수정 없이 결과만 확인'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+
+# 실행 시점: 매년 학교알리미 공시 갱신 후 (보통 4~5월)
+# 진학률(scrape-school-advancement.ts)은 11월 공시 후 별도 수동 실행
+
+jobs:
+  collect:
+    name: 학교 통계 수집 (학급당학생수·교원비율)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: 학교알리미 API 통계 수집
+        env:
+          NEXT_PUBLIC_SUPABASE_URL:   ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY:  ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SCHOOL_API_KEY:             ${{ secrets.SCHOOL_API_KEY }}
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            npx tsx scripts/collect-school-stats.ts --dry-run
+          else
+            npx tsx scripts/collect-school-stats.ts
+          fi
