@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.5
+milestone: v4.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-05-29T00:00:00Z"
-last_activity: 2026-05-29 — Phase 21 COMPLETE (/invest 투자 분석 통합 페이지 + 단지 상세 시세 차트 + gap-analysis redirect)
+last_updated: "2026-06-09T00:00:00Z"
+last_activity: 2026-06-09 — Phase 23 Plan 00 COMPLETE (complexes.url_slug 컬럼 + UNIQUE PARTIAL INDEX + backfill 스크립트)
 progress:
-  total_phases: 13
-  completed_phases: 13
-  total_plans: 57
-  completed_plans: 57
-  percent: 100
+  total_phases: 23
+  completed_phases: 22
+  total_plans: 61
+  completed_plans: 58
+  percent: 95
 ---
 
 # Project State — 단지온도
@@ -23,6 +23,16 @@ See: .planning/PROJECT.md (updated 2026-05-06)
 **Current focus:** Phase 4 complete — Phase 5 (데이터 확장·운영 안정성) next
 
 ## Current Phase
+
+**Phase 23: SEO URL 구조 최적화** 🔄 In Progress
+
+Goal: 한글 디렉토리 URL + 계층별 페이지 + BreadcrumbList + 사이트맵·RSS — 네이버 검색 노출 최대화
+
+Requirements: SEO-01~06
+
+Plans: 1/4 complete (23-00 done) — 2026-06-09
+
+---
 
 **Phase 21: 투자 분석 통합 페이지** ✅ Complete
 
@@ -197,6 +207,10 @@ Key notes: MOLIT_API_KEY (기존 data.go.kr 키) 재사용. B552555 청약홈 �
 | 2026-05-26 | assignRealtorToComplex uses upsert onConflict to handle UNIQUE(complex_id, display_order) without error | 18-01 |
 | 2026-05-28 | getGapRankings uses ALLOWED_SGG_CODES/RISK_LEVELS allowlists before .eq() — prevents injection via URL params | 20-03 |
 | 2026-05-28 | /gap-analysis filter tabs are Link hrefs (not form selects) — no JS required, fully URL-driven | 20-03 |
+| 2026-06-09 | 한글 URL — si/gu/dong/canonical_name 그대로 (로마자 변환 없음) — 네이버 키워드 매칭 보존 | 23-00 |
+| 2026-06-09 | 창원 4단계/김해 3단계 catch-all 라우트 (D-02) — 김해 구 없음, 유지보수 단순 | 23-00 |
+| 2026-06-09 | url_slug 사전 계산 (D-08) — 런타임 slug 생성 방지, backfill 스크립트로 신규 단지 대응 | 23-00 |
+| 2026-06-09 | si/dong=NULL인 ~143개 단지 url_slug=NULL 유지 (D-09) — 기존 UUID URL 그대로 | 23-00 |
 
 ---
 *Initialized: 2026-05-06*

@@ -28,7 +28,7 @@
 | 20 | 갭투자 분석 | V3.2 | 매매/전세 실거래 데이터 기반 갭투자 지표 계산 + 단지 상세 + 전용 분석 페이지 | GAP-01~04 | ✅ Completed 2026-05-28 |
 | 21 | 투자 분석 통합 페이지 | V3.3 | 실거래 2년 시세 흐름 차트 + 갭투자 랭킹을 /invest 페이지로 통합 | INVEST-01~04 | ✅ Completed 2026-05-29 |
 | 22 | AI 가격 예측 | V3.4 | Holt-Winters 통계 엔진 + Claude Haiku 해설로 단지별 평형별 6개월 예측선 구현 | PRED-01~04 | ✅ Completed 2026-05-29 |
-| 23 | SEO URL 구조 최적화 | V4.0 | 한글 디렉토리 URL + 계층별 페이지 + BreadcrumbList + 사이트맵·RSS — 네이버 검색 노출 최대화 | SEO-01~06 | ○ Planned |
+| 23 | SEO URL 구조 최적화 | V4.0 | 한글 디렉토리 URL + 계층별 페이지 + BreadcrumbList + 사이트맵·RSS — 네이버 검색 노출 최대화 | SEO-01~06 | 🔄 In Progress (1/4 plans) |
 
 ---
 
