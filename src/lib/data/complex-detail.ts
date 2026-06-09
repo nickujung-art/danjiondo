@@ -16,6 +16,7 @@ export interface ComplexDetail {
   status:          string
   lat:             number | null
   lng:             number | null
+  url_slug:        string | null  // SEO-01: 한글 URL 경로 (예: '창원시/성산구/내동/대우2차')
 }
 
 export interface MonthlyPriceSummary {
@@ -35,7 +36,7 @@ export async function getComplexById(
       id, canonical_name, road_address,
       si, gu, dong,
       built_year, household_count, floors_above, heat_type,
-      sgg_code, status, lat, lng
+      sgg_code, status, lat, lng, url_slug
     `)
     .eq('id', id)
     .maybeSingle()
