@@ -638,6 +638,7 @@ export type Database = {
           successor_id: string | null
           tx_count_30d: number
           updated_at: string
+          url_slug: string | null
           view_count: number
         }
         Insert: {
@@ -673,6 +674,7 @@ export type Database = {
           successor_id?: string | null
           tx_count_30d?: number
           updated_at?: string
+          url_slug?: string | null
           view_count?: number
         }
         Update: {
@@ -708,6 +710,7 @@ export type Database = {
           successor_id?: string | null
           tx_count_30d?: number
           updated_at?: string
+          url_slug?: string | null
           view_count?: number
         }
         Relationships: [
