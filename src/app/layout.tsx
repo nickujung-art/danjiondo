@@ -40,6 +40,17 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko" className={pretendard.variable}>
+      <head>
+        {/* SEO-04: Naver Yeti 한국어 페이지 명시 (D-06) */}
+        <meta httpEquiv="content-language" content="ko-kr" />
+        {/* RSS autodiscovery — 네이버 서치어드바이저 RSS 등록용 (SEO-05 연계) */}
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title="단지온도 최신 실거래가"
+          href="/feed.xml"
+        />
+      </head>
       <body className="font-sans antialiased">
         <NuqsAdapter>
           {children}

@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createReadonlyClient } from '@/lib/supabase/readonly'
@@ -216,6 +216,14 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
   // complex를 먼저 단독 fetch — si/gu로 getQuadrantData 호출에 필요
   const complex = await getComplexById(id, supabase)
   if (!complex) notFound()
+
+  // SEO-03: url_slug 있는 단지는 한글 URL로 영구 리다이렉트 (308)
+  // D-09: url_slug=null인 ~143개 단지는 기존 페이지 그대로 렌더
+  // permanentRedirect는 내부적으로 throw — 이후 코드 실행 안 됨
+  // T-23-02-01: url_slug는 DB 조회 결과값만 사용 (사용자 입력 미포함, Open redirect 방어)
+  if (complex.url_slug) {
+    permanentRedirect('/' + complex.url_slug)
+  }
 
   const [
     saleData,
