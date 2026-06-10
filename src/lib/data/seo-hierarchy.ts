@@ -57,18 +57,19 @@ export async function getSiPageData(
 
   if (hasGu) {
     // 창원시 — gu별 집계 (avgPrice 포함)
-    const byGu = new Map<string, number[]>()
+    const byGu = new Map<string, { count: number; prices: number[] }>()
     for (const c of data) {
       if (!c.gu) continue
-      const arr = byGu.get(c.gu) ?? []
-      if (c.avg_sale_per_pyeong) arr.push(c.avg_sale_per_pyeong)
-      byGu.set(c.gu, arr)
+      const entry = byGu.get(c.gu) ?? { count: 0, prices: [] }
+      entry.count++
+      if (c.avg_sale_per_pyeong) entry.prices.push(c.avg_sale_per_pyeong)
+      byGu.set(c.gu, entry)
     }
     return {
       si,
-      guList: [...byGu.entries()].map(([gu, prices]) => ({
+      guList: [...byGu.entries()].map(([gu, { count, prices }]) => ({
         gu,
-        complexCount: prices.length,
+        complexCount: count,
         avgPrice: prices.length
           ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length)
           : null,
@@ -117,20 +118,21 @@ export async function getGuPageData(
 
   if (error || !data || data.length === 0) return null
 
-  const byDong = new Map<string, number[]>()
+  const byDong = new Map<string, { count: number; prices: number[] }>()
   for (const c of data) {
     if (!c.dong) continue
-    const arr = byDong.get(c.dong) ?? []
-    if (c.avg_sale_per_pyeong) arr.push(c.avg_sale_per_pyeong)
-    byDong.set(c.dong, arr)
+    const entry = byDong.get(c.dong) ?? { count: 0, prices: [] }
+    entry.count++
+    if (c.avg_sale_per_pyeong) entry.prices.push(c.avg_sale_per_pyeong)
+    byDong.set(c.dong, entry)
   }
 
   return {
     si,
     gu,
-    dongList: [...byDong.entries()].map(([dong, prices]) => ({
+    dongList: [...byDong.entries()].map(([dong, { count, prices }]) => ({
       dong,
-      complexCount: prices.length,
+      complexCount: count,
       avgPrice: prices.length
         ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length)
         : null,
