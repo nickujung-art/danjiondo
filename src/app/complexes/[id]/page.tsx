@@ -221,7 +221,7 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
   // D-09: url_slug=null인 ~143개 단지는 기존 페이지 그대로 렌더
   // permanentRedirect는 내부적으로 throw — 이후 코드 실행 안 됨
   // T-23-02-01: url_slug는 DB 조회 결과값만 사용 (사용자 입력 미포함, Open redirect 방어)
-  if (complex.url_slug) {
+  if (complex.url_slug && complex.status === 'active') {
     permanentRedirect('/' + complex.url_slug)
   }
 
