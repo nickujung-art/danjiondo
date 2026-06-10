@@ -21,3 +21,11 @@ export async function getComplexesForSitemap(
     .limit(50000)
   return data ?? []
 }
+
+/**
+ * 한글 url_slug를 RFC 3986 인코딩 (Pitfall 5: canonical과 일관성 유지)
+ * 각 세그먼트에 encodeURIComponent 적용 — export하여 sitemap.ts와 테스트에서 공유 (W4b)
+ */
+export function encodeSlug(slug: string): string {
+  return slug.split('/').map(encodeURIComponent).join('/')
+}
