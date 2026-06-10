@@ -1,0 +1,23 @@
+# Naver 서치어드바이저 소유권 인증 안내
+# 위치: public/naver-site-verification.txt
+#
+# 등록 방법 (2가지 중 택1):
+#
+# [방법 1] HTML 파일 업로드 (권장)
+# - https://searchadvisor.naver.com 접속
+# - '웹마스터 도구' → '사이트 등록' → HTML 파일 인증
+# - 다운로드한 [코드].html 파일을 public/ 폴더에 배치
+# - 예: public/naver0123456789abcdef.html
+# - Vercel 재배포 후 인증 완료 클릭
+#
+# [방법 2] Meta 태그 (layout.tsx metadata에 추가)
+# - src/app/layout.tsx의 metadata 객체에:
+#   verification: {
+#     other: {
+#       'naver-site-verification': ['[코드]'],
+#     },
+#   }
+#
+# [RSS 등록]
+# - 서치어드바이저 → RSS 피드 등록: https://danjiondo.kr/feed.xml
+# - 사이트맵 등록: https://danjiondo.kr/sitemap.xml
