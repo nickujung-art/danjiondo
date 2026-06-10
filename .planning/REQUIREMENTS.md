@@ -128,8 +128,8 @@
 - [x] **SEO-02**: 계층별 페이지 — 시(창원시/김해시), 구(창원 전용), 동, 단지 4개 계층에 독립 페이지. 각 페이지에 BreadcrumbList JSON-LD + `<nav>` 브레드크럼 HTML + 실거래 데이터 SSR 필수 (Yeti JS 불렌더링).
 - [x] **SEO-03**: 단지 상세 301 리다이렉트 — `/complexes/[id]` → 새 한글 URL 영구 301 리다이렉트 (기존 링크 보존).
 - [x] **SEO-04**: 메타데이터 최적화 — 각 계층별 `<title>` ≤40자, `<meta name="description">` ≤80자, `<meta http-equiv="content-language" content="ko-kr">`. 시/동 레벨 페이지에 FAQ JSON-LD ("창원시 아파트 평균 매매가는?" 형태).
-- [ ] **SEO-05**: 사이트맵·RSS 피드 — `/sitemap.xml` (단지별 `lastmod` = 최근 거래일, 계층 페이지 포함), `/feed.xml` RSS (최근 거래 50건, 당일 크롤 유도).
-- [ ] **SEO-06**: robots.txt 최적화 + 네이버 서치어드바이저 소유권 인증 파일 경로 준비 (`/[naver-verification-code].html` 정적 route).
+- [x] **SEO-05**: 사이트맵·RSS 피드 — `/sitemap.xml` (단지별 `lastmod` = 최근 거래일, 계층 페이지 포함), `/feed.xml` RSS (최근 거래 50건, 당일 크롤 유도).
+- [x] **SEO-06**: robots.txt 최적화 + 네이버 서치어드바이저 소유권 인증 파일 경로 준비 (`/[naver-verification-code].html` 정적 route).
 
 ---
 

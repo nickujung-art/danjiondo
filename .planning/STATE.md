@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-06-10T08:00:00Z"
-last_activity: 2026-06-10 — Phase 23 Plan 02 COMPLETE (catch-all URL 라우팅 + 308 리다이렉트 + content-language meta)
+last_updated: "2026-06-10T17:31:00Z"
+last_activity: 2026-06-10 — Phase 23 Plan 03 COMPLETE (sitemap 한글 URL + RSS 피드 + robots Yeti + Naver 인증 안내)
 progress:
   total_phases: 23
-  completed_phases: 22
+  completed_phases: 23
   total_plans: 61
-  completed_plans: 60
-  percent: 98
+  completed_plans: 61
+  percent: 100
 ---
 
 # Project State — 단지온도
@@ -24,13 +24,13 @@ See: .planning/PROJECT.md (updated 2026-05-06)
 
 ## Current Phase
 
-**Phase 23: SEO URL 구조 최적화** 🔄 In Progress
+**Phase 23: SEO URL 구조 최적화** ✅ Complete
 
 Goal: 한글 디렉토리 URL + 계층별 페이지 + BreadcrumbList + 사이트맵·RSS — 네이버 검색 노출 최대화
 
 Requirements: SEO-01~06
 
-Plans: 3/4 complete (23-00, 23-01, 23-02 done) — 2026-06-10
+Plans: 4/4 complete (23-00, 23-01, 23-02, 23-03 done) — 2026-06-10
 
 ---
 
@@ -215,6 +215,8 @@ Key notes: MOLIT_API_KEY (기존 data.go.kr 키) 재사용. B552555 청약홈 �
 | 2026-06-09 | getSiPageData hasGu 분기로 창원/김해 자동 감지, getComplexBySlug empty guard (Pitfall 6 방어) | 23-01 |
 | 2026-06-10 | scripts/ tsconfig exclude — 독립 Node.js 스크립트는 Next.js 빌드에서 제외 (TS2393 해결) | 23-02 |
 | 2026-06-10 | noUncheckedIndexedAccess slug dispatch: s0/s1/s2 ?? '' fallback 변수 패턴 | 23-02 |
+| 2026-06-10 | encodeSlug를 src/lib/data/sitemap.ts에서 export — sitemap.ts와 테스트 양쪽에서 재사용 | 23-03 |
+| 2026-06-10 | sitemap.ts force-dynamic 제거 — revalidate=86400 ISR만 사용 (RESEARCH Pattern 4) | 23-03 |
 
 ---
 *Initialized: 2026-05-06*
