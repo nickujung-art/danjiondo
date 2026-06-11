@@ -222,7 +222,7 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
   // permanentRedirect는 내부적으로 throw — 이후 코드 실행 안 됨
   // T-23-02-01: url_slug는 DB 조회 결과값만 사용 (사용자 입력 미포함, Open redirect 방어)
   if (complex.url_slug && complex.status === 'active') {
-    permanentRedirect('/' + complex.url_slug)
+    permanentRedirect('/' + encodeURI(complex.url_slug))
   }
 
   const [

@@ -1090,7 +1090,8 @@ async function DongPage({ si, gu, dong, slug }: { si: string; gu: string | null;
 // ──────────────────────────────────────────
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params  // Next.js 15: await params 필수
+  const { slug: rawSlug } = await params  // Next.js 15: await params 필수
+  const slug = rawSlug.map(s => decodeURIComponent(s))
   const type = classifySlug(slug)
   if (type === 'invalid') return { title: '페이지를 찾을 수 없습니다' }
 
@@ -1135,7 +1136,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 // ──────────────────────────────────────────
 
 export default async function SlugPage({ params, searchParams }: Props) {
-  const { slug } = await params  // Next.js 15: await params 필수
+  const { slug: rawSlug } = await params  // Next.js 15: await params 필수
+  const slug = rawSlug.map(s => decodeURIComponent(s))
   const type = classifySlug(slug)
 
   // Pitfall 1 방어: 5단계 이상은 404
