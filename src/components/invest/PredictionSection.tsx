@@ -247,6 +247,14 @@ export function PredictionSection({
                           ? item.areaBucket
                           : `${item.areaBucket}㎡`}
                       </div>
+                      {item.aiCommentary && (
+                        <div
+                          className="line-clamp-2"
+                          style={{ font: '400 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', marginTop: 3 }}
+                        >
+                          {item.aiCommentary}
+                        </div>
+                      )}
                     </td>
                     <td
                       style={{
