@@ -15,6 +15,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import Groq from 'groq-sdk'
 import { fileURLToPath } from 'url'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -115,6 +116,27 @@ function parseArgs(argv: string[]): CliArgs {
   return args
 }
 
+// ─── Retry Helper ────────────────────────────────────────────────────────────
+
+async function retryGenerate(
+  fn: () => Promise<string>,
+  maxRetries = 4,
+  baseDelayMs = 2000,
+): Promise<string> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      const is503 = msg.includes('503') || msg.includes('Service Unavailable') || msg.includes('overloaded') || msg.includes('rate_limit_exceeded') || msg.includes('Rate limit')
+      if (!is503 || attempt === maxRetries) throw err
+      const wait = baseDelayMs * Math.pow(2, attempt)
+      await new Promise<void>(r => setTimeout(r, wait))
+    }
+  }
+  throw new Error('unreachable')
+}
+
 // ─── Concurrency Helper ───────────────────────────────────────────────────────
 
 async function runConcurrent<T, R>(
@@ -144,12 +166,14 @@ async function main(): Promise<void> {
   const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY
   const geminiKey   = process.env.GEMINI_API_KEY
 
+  const groqKey = process.env.GROQ_API_KEY
+
   if (!supabaseUrl || !serviceKey) {
     console.error('[ERROR] NEXT_PUBLIC_SUPABASE_URL 또는 SUPABASE_SERVICE_ROLE_KEY 가 설정되지 않았습니다.')
     process.exit(1)
   }
-  if (!geminiKey) {
-    console.error('[ERROR] GEMINI_API_KEY 가 설정되지 않았습니다.')
+  if (!groqKey && !geminiKey) {
+    console.error('[ERROR] GROQ_API_KEY 또는 GEMINI_API_KEY 중 하나가 필요합니다.')
     process.exit(1)
   }
 
@@ -157,8 +181,32 @@ async function main(): Promise<void> {
     auth: { autoRefreshToken: false, persistSession: false },
   })
 
-  const genAI = new GoogleGenerativeAI(geminiKey)
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+  // Groq 우선 (무료), Gemini fallback
+  let generate: (prompt: string) => Promise<string>
+  if (groqKey) {
+    const groq = new Groq({ apiKey: groqKey })
+    console.log('[INFO] Groq (llama-3.1-8b-instant) 사용')
+    generate = async (prompt: string) => {
+      const res = await groq.chat.completions.create({
+        model:       'llama-3.1-8b-instant',
+        messages:    [
+          { role: 'system', content: '정확히 2문장만 출력하세요. 불필요한 서두나 반복 없이 바로 분석 내용만 작성하세요.' },
+          { role: 'user',   content: prompt },
+        ],
+        max_tokens:  200,
+        temperature: 0.4,
+      })
+      return res.choices[0]?.message?.content?.trim() ?? ''
+    }
+  } else {
+    const genAI = new GoogleGenerativeAI(geminiKey!)
+    const gemini = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+    console.log('[INFO] Gemini (gemini-2.5-flash) 사용')
+    generate = async (prompt: string) => {
+      const result = await gemini.generateContent(prompt)
+      return result.response.text().trim()
+    }
+  }
 
   console.log(`[START] area_bucket=${args.areaBucket} limit=${args.limit} dry-run=${args.dryRun}`)
 
@@ -215,18 +263,22 @@ async function main(): Promise<void> {
     return
   }
 
+  // Groq: 30 RPM → concurrency 3, 300ms 간격 (분당 최대 18건)
+  // Gemini: concurrency 5, 200ms
+  const concurrency = groqKey ? 3 : 5
+  const delayMs     = groqKey ? 300 : 200
+
   const results = await runConcurrent(
     allRows,
-    5,
-    200,
+    concurrency,
+    delayMs,
     async (row) => {
       processed++
       const prompt = buildComplexPrompt(row)
 
       let commentary: string
       try {
-        const result = await model.generateContent(prompt)
-        commentary = result.response.text().trim()
+        commentary = await retryGenerate(() => generate(prompt))
       } catch (err) {
         console.error(`[FAIL] ${row.complex_name}:`, err instanceof Error ? err.message : String(err))
         failed++
