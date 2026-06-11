@@ -47,6 +47,8 @@ export interface PredictionRankingItem {
   mape:         number   // 0~1
   direction:    'up' | 'flat' | 'down'
   aiCommentary: string | null
+  urlSlug:      string | null
+  status:       string | null
 }
 
 export interface RegionalPredictionSummary {
@@ -209,6 +211,8 @@ export async function getTopPredictionComplexes(
     change_pct:    number
     avg_mape:      number
     ai_commentary: string | null
+    url_slug:      string | null
+    status:        string | null
   }>).map(r => {
     const changePct = Number(r.change_pct)
     return {
@@ -224,6 +228,8 @@ export async function getTopPredictionComplexes(
       mape:         Number(r.avg_mape),
       direction:    directionOf(changePct),
       aiCommentary: r.ai_commentary,
+      urlSlug:      r.url_slug,
+      status:       r.status,
     }
   })
 }
@@ -436,6 +442,8 @@ export interface RegionalGapItem {
   riskLevel:         string   // 'safe' | 'caution' | 'danger'
   saleCount:         number
   jeonseCount:       number
+  urlSlug:           string | null
+  status:            string | null
 }
 
 /**
@@ -452,7 +460,7 @@ export async function getRegionalGapItems(
   const { data, error } = await (supabase as any)
     .from('complex_gap_stats')
     .select(
-      'gap_amount, gap_ratio, jeonse_ratio, risk_level, sale_count, jeonse_count, median_sale_price, median_jeonse_price, complexes!inner(id, canonical_name, sgg_code)',
+      'gap_amount, gap_ratio, jeonse_ratio, risk_level, sale_count, jeonse_count, median_sale_price, median_jeonse_price, complexes!inner(id, canonical_name, sgg_code, url_slug, status)',
     )
     .eq('complexes.sgg_code', sggCode)
     .gte('sale_count', 3)
@@ -472,8 +480,8 @@ export async function getRegionalGapItems(
     median_sale_price:   number
     median_jeonse_price: number
     complexes:
-      | { id: string; canonical_name: string; sgg_code: string | null }
-      | Array<{ id: string; canonical_name: string; sgg_code: string | null }>
+      | { id: string; canonical_name: string; sgg_code: string | null; url_slug: string | null; status: string | null }
+      | Array<{ id: string; canonical_name: string; sgg_code: string | null; url_slug: string | null; status: string | null }>
       | null
   }
 
@@ -492,6 +500,8 @@ export async function getRegionalGapItems(
       riskLevel:         raw.risk_level,
       saleCount:         raw.sale_count,
       jeonseCount:       raw.jeonse_count,
+      urlSlug:           c.url_slug,
+      status:            c.status,
     })
   }
   return result

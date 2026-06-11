@@ -27,6 +27,10 @@ export function formatGap(gapWan: number): string {
   return `${abs}만원`
 }
 
+export function complexHref(id: string, urlSlug: string | null | undefined): string {
+  return urlSlug ? '/' + encodeURI(urlSlug) : '/complexes/' + id
+}
+
 export function formatPyeong(area_m2: number): string {
   return `${Math.round(area_m2 / 3.3058)}평`
 }

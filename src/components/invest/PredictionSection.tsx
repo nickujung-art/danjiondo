@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { formatPrice } from '@/lib/format'
+import { formatPrice, complexHref } from '@/lib/format'
 import type { PredictionRankingItem, RegionalPredictionSummary } from '@/lib/data/invest'
 
 const SGG_LABEL: Record<string, string> = {
@@ -233,7 +233,7 @@ export function PredictionSection({
                     </td>
                     <td style={{ padding: '10px 12px' }}>
                       <Link
-                        href={`/complexes/${item.complexId}`}
+                        href={complexHref(item.complexId, item.status === 'active' ? item.urlSlug : null)}
                         style={{
                           font:           '600 13px/1.3 var(--font-sans)',
                           color:          'var(--fg-pri)',

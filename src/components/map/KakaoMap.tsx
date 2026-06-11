@@ -23,7 +23,21 @@ interface Props {
 
 const DEFAULT_CENTER = { lat: 35.2278, lng: 128.6817 }
 const DEFAULT_LEVEL  = 8
+const MAP_STATE_KEY  = 'map_state'
 
+function readSavedState(
+  fallbackCenter: { lat: number; lng: number },
+  fallbackLevel:  number,
+): { center: { lat: number; lng: number }; level: number } {
+  try {
+    const raw = sessionStorage.getItem(MAP_STATE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw) as { center: { lat: number; lng: number }; level: number }
+      if (parsed.center?.lat && parsed.center?.lng && parsed.level) return parsed
+    }
+  } catch {}
+  return { center: fallbackCenter, level: fallbackLevel }
+}
 
 export function KakaoMap({
   complexes,
@@ -36,6 +50,12 @@ export function KakaoMap({
     appkey: process.env.NEXT_PUBLIC_KAKAO_JS_KEY!,
     libraries: ['services'],
   })
+  const [initCenter] = useState<{ lat: number; lng: number }>(() =>
+    readSavedState(initialCenter, initialLevel).center
+  )
+  const [initLevel] = useState<number>(() =>
+    readSavedState(initialCenter, initialLevel).level
+  )
   const [visibleComplexes,  setVisibleComplexes]  = useState<ComplexMapItem[]>([])
   const [visiblePresalePins, setVisiblePresalePins] = useState<PresaleMapPin[]>([])
   const [mapLevel,          setMapLevel]           = useState<number>(DEFAULT_LEVEL)
@@ -171,6 +191,13 @@ export function KakaoMap({
           p.lng >= sw.getLng() && p.lng <= ne.getLng(),
         ),
       )
+      try {
+        const center = map.getCenter()
+        sessionStorage.setItem(MAP_STATE_KEY, JSON.stringify({
+          center: { lat: center.getLat(), lng: center.getLng() },
+          level,
+        }))
+      } catch {}
     },
     [complexes, presalePins],
   )
@@ -195,8 +222,8 @@ export function KakaoMap({
   return (
     <>
       <KakaoMapView
-        center={initialCenter}
-        level={initialLevel}
+        center={initCenter}
+        level={initLevel}
         className="h-full w-full"
         onCreate={updateVisible}
         onIdle={updateVisible}

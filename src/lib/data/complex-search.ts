@@ -11,6 +11,8 @@ export interface ComplexSearchResult {
   lat:            number | null
   lng:            number | null
   similarity:     number
+  url_slug:       string | null
+  status:         string | null
 }
 
 export async function searchComplexes(

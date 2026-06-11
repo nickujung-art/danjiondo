@@ -3,6 +3,7 @@ import Link from 'next/link'
 import type { ComplexSearchResult } from '@/lib/data/complex-search'
 import { AdBanner } from '@/components/ads/AdBanner'
 import type { AdCampaign } from '@/lib/data/ads'
+import { complexHref } from '@/lib/format'
 
 interface Props {
   complexes:  ComplexSearchResult[]
@@ -96,7 +97,7 @@ export function ComplexList({ complexes, query, inFeedAds = [] }: Props) {
         return (
           <React.Fragment key={c.id}>
             <Link
-              href={`/complexes/${c.id}`}
+              href={complexHref(c.id, c.url_slug && c.status === 'active' ? c.url_slug : null)}
               className="complex-list-item"
               style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
             >

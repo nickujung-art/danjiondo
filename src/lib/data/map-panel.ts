@@ -17,6 +17,7 @@ export interface MapPanelData {
   }>
   hagwon_grade: string | null
   detail_url:   string
+  url_slug:     string | null
 }
 
 export async function getMapPanelData(
@@ -26,7 +27,7 @@ export async function getMapPanelData(
   // 단지 기본정보 조회
   const { data: complex, error: complexError } = await supabase
     .from('complexes')
-    .select('id, canonical_name, si, gu, sgg_code, avg_sale_per_pyeong, household_count, built_year, hagwon_score')
+    .select('id, canonical_name, si, gu, sgg_code, avg_sale_per_pyeong, household_count, built_year, hagwon_score, url_slug, status')
     .eq('id', complexId)
     .maybeSingle()
 
@@ -56,6 +57,8 @@ export async function getMapPanelData(
     household_count:     number | null
     built_year:          number | null
     hagwon_score:        number | null
+    url_slug:            string | null
+    status:              string | null
   }
 
   return {
@@ -77,6 +80,9 @@ export async function getMapPanelData(
     hagwon_grade: r.hagwon_score !== null
       ? ((await supabase.rpc('get_hagwon_grade', { p_complex_id: complexId })).data ?? null) as string | null
       : null,
-    detail_url:   `/complexes/${complexId}`,
+    url_slug:     r.url_slug ?? null,
+    detail_url:   r.url_slug && r.status === 'active'
+      ? '/' + encodeURI(r.url_slug)
+      : `/complexes/${complexId}`,
   }
 }

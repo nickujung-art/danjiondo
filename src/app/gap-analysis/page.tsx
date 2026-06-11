@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createReadonlyClient } from '@/lib/supabase/readonly'
 import { getGapRankings } from '@/lib/data/gap-analysis'
 import type { GapRankingRow } from '@/lib/data/gap-analysis'
+import { complexHref } from '@/lib/format'
 
 export const revalidate = 3600
 
@@ -278,7 +279,7 @@ export default async function GapAnalysisPage({ searchParams }: Props) {
                       {/* 단지명 */}
                       <td style={{ padding: '10px 12px' }}>
                         <Link
-                          href={`/complexes/${row.complexId}`}
+                          href={complexHref(row.complexId, row.status === 'active' ? row.urlSlug : null)}
                           style={{
                             font:           '600 13px/1.3 var(--font-sans)',
                             color:          'var(--fg-pri)',

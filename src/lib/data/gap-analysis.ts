@@ -22,6 +22,8 @@ export interface GapRankingRow {
   riskLevel: RiskLevel
   saleCount: number
   jeonseCount: number
+  urlSlug: string | null
+  status: string | null
 }
 
 const ALLOWED_SGG_CODES = ['48121', '48123', '48125', '48127', '48129', '48250']
@@ -40,7 +42,7 @@ export async function getGapRankings(
   let query = (supabase as any)
     .from('complex_gap_stats')
     .select(
-      'gap_ratio, gap_amount, jeonse_ratio, risk_level, sale_count, jeonse_count, complexes!inner(id, canonical_name, sgg_code, si, gu)',
+      'gap_ratio, gap_amount, jeonse_ratio, risk_level, sale_count, jeonse_count, complexes!inner(id, canonical_name, sgg_code, si, gu, url_slug, status)',
     )
     .order('gap_ratio', { ascending: false })
     .limit(200)
@@ -65,8 +67,8 @@ export async function getGapRankings(
     sale_count: number
     jeonse_count: number
     complexes:
-      | { id: string; canonical_name: string; sgg_code: string | null; si: string | null; gu: string | null }
-      | Array<{ id: string; canonical_name: string; sgg_code: string | null; si: string | null; gu: string | null }>
+      | { id: string; canonical_name: string; sgg_code: string | null; si: string | null; gu: string | null; url_slug: string | null; status: string | null }
+      | Array<{ id: string; canonical_name: string; sgg_code: string | null; si: string | null; gu: string | null; url_slug: string | null; status: string | null }>
       | null
   }
 
@@ -86,6 +88,8 @@ export async function getGapRankings(
       riskLevel:   raw.risk_level as RiskLevel,
       saleCount:   raw.sale_count,
       jeonseCount: raw.jeonse_count,
+      urlSlug:     c.url_slug,
+      status:      c.status,
     })
   }
   return result

@@ -77,7 +77,7 @@ export function buildComplexPrompt(row: ComplexCommentaryInput): string {
     '## 시장 신호',
     `- 전세가율: ${fmt(row.jeonse_ratio, v => `${v.toFixed(1)}%`)} (갭 위험도: ${gapRiskKo(row.gap_risk_level)})`,
     `- 최근 30일: 거래 ${row.tx_count_30d ?? '—'}건, 가격 ${fmt(row.price_change_30d, v => `${v > 0 ? '+' : ''}${v.toFixed(1)}`)}%`,
-    `- 평당 매매가: ${fmt(row.avg_sale_per_pyeong, v => `${v.toFixed(0)}만원`)}`,
+    `- 평당 매매가: ${fmt(row.avg_sale_per_pyeong || null, v => `${v.toFixed(0)}만원`)}`,
     '',
     '## 단지 특성',
     `- 건축: ${row.built_year ?? '—'}년 (약 ${age ?? '—'}년), ${row.household_count ?? '—'}세대`,
@@ -158,7 +158,7 @@ async function main(): Promise<void> {
   })
 
   const genAI = new GoogleGenerativeAI(geminiKey)
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
 
   console.log(`[START] area_bucket=${args.areaBucket} limit=${args.limit} dry-run=${args.dryRun}`)
 

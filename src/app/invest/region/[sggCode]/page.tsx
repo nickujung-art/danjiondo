@@ -25,7 +25,7 @@ import { RegionChartSection } from '@/components/invest/RegionChartSection'
 import { RateSparklineWrapper } from '@/components/invest/RateSparklineWrapper'
 import { PopulationChart } from '@/components/invest/PopulationChart'
 import { PriceIndexChart } from '@/components/invest/PriceIndexChart'
-import { formatPrice } from '@/lib/format'
+import { formatPrice, complexHref } from '@/lib/format'
 import { getRegionalCommentary } from '@/lib/ai/regional-commentary'
 import { fetchPriceIndexSeries } from '@/services/reb'
 
@@ -988,7 +988,7 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
                       <tr key={item.complexId} style={{ borderBottom: '1px solid var(--line-subtle)' }}>
                         <td style={{ padding: '9px 12px', font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', textAlign: 'center', width: 32 }}>{idx + 1}</td>
                         <td style={{ padding: '9px 12px' }}>
-                          <Link href={`/complexes/${item.complexId}`}
+                          <Link href={complexHref(item.complexId, item.status === 'active' ? item.urlSlug : null)}
                             style={{ font: '600 12px/1.4 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none' }}>
                             {item.complexName}
                           </Link>
@@ -1071,7 +1071,7 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
                       <tr key={`${item.complexId}-${item.areaBucket}`} style={{ borderBottom: '1px solid var(--line-subtle)' }}>
                         <td style={{ padding: '10px 12px', font: '500 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', textAlign: 'center', width: 36 }}>{idx + 1}</td>
                         <td style={{ padding: '10px 12px' }}>
-                          <Link href={`/complexes/${item.complexId}`} style={{ font: '600 13px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none' }}>
+                          <Link href={complexHref(item.complexId, item.status === 'active' ? item.urlSlug : null)} style={{ font: '600 13px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none' }}>
                             {item.complexName}
                           </Link>
                         </td>

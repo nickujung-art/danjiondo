@@ -12,6 +12,8 @@ export interface RecentHighRecord {
     si: string | null
     gu: string | null
     dong: string | null
+    url_slug: string | null
+    status: string | null
   }
 }
 
@@ -22,6 +24,8 @@ export interface ComplexRanking {
   gu: string | null
   maxPrice: number
   rank: number
+  url_slug: string | null
+  status: string | null
 }
 
 export async function getRecentHighRecords(
@@ -36,7 +40,7 @@ export async function getRecentHighRecords(
     .from('transactions')
     .select(
       `price, area_m2, floor, deal_date, deal_type,
-       complexes!inner (id, canonical_name, si, gu, dong)`,
+       complexes!inner (id, canonical_name, si, gu, dong, url_slug, status)`,
     )
     .is('cancel_date', null)
     .is('superseded_by', null)
@@ -62,6 +66,8 @@ export async function getRecentHighRecords(
         si: c.si as string | null,
         gu: c.gu as string | null,
         dong: c.dong as string | null,
+        url_slug: c.url_slug as string | null,
+        status: c.status as string | null,
       },
     })
   }
@@ -76,7 +82,7 @@ export async function getTopComplexRankings(
     .from('transactions')
     .select(
       `complex_id, price,
-       complexes!inner (id, canonical_name, si, gu)`,
+       complexes!inner (id, canonical_name, si, gu, url_slug, status)`,
     )
     .is('cancel_date', null)
     .is('superseded_by', null)
@@ -102,6 +108,8 @@ export async function getTopComplexRankings(
       gu: c.gu as string | null,
       maxPrice: r.price as number,
       rank: rankings.length + 1,
+      url_slug: c.url_slug as string | null,
+      status: c.status as string | null,
     })
     if (rankings.length >= limit) break
   }

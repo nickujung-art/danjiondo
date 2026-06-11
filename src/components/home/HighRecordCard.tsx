@@ -1,7 +1,7 @@
 // src/components/home/HighRecordCard.tsx
 import Link from 'next/link'
 import type { RecentHighRecord } from '@/lib/data/homepage'
-import { formatPrice, formatPyeong, formatDealDate } from '@/lib/format'
+import { formatPrice, formatPyeong, formatDealDate, complexHref } from '@/lib/format'
 
 interface Props {
   record: RecentHighRecord
@@ -22,7 +22,7 @@ export function HighRecordCard({ record }: Props) {
 
   return (
     <Link
-      href={`/complexes/${record.complex.id}`}
+      href={complexHref(record.complex.id, record.complex.status === 'active' ? record.complex.url_slug : null)}
       style={{ textDecoration: 'none', color: 'inherit' }}
     >
       <div className="card" style={{ padding: 20, cursor: 'pointer', height: '100%' }}>

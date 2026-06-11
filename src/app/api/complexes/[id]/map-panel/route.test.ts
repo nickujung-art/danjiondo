@@ -26,6 +26,7 @@ const MOCK_DATA = {
   recent_trades:       [],
   hagwon_grade:        'A+',
   detail_url:          `/complexes/${VALID_UUID}`,
+  url_slug:            null,
 }
 
 async function callGET(id: string) {
