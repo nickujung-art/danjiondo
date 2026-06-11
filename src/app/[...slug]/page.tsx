@@ -8,6 +8,8 @@ import {
   getGuPageData,
   getDongPageData,
   getComplexBySlug,
+  type GuPageData,
+  type DongPageData,
 } from '@/lib/data/seo-hierarchy'
 import type { ComplexDetail } from '@/lib/data/complex-detail'
 import { getComplexTransactionSummary, getComplexRawTransactions } from '@/lib/data/complex-detail'
@@ -995,11 +997,7 @@ async function SiPage({ si, slug }: { si: string; slug: string[] }) {
   )
 }
 
-async function GuPage({ si, gu, slug }: { si: string; gu: string; slug: string[] }) {
-  const supabase = createReadonlyClient()
-  const data = await getGuPageData(si, gu, supabase)
-  if (!data) notFound()
-
+function GuPage({ data, slug }: { data: GuPageData; slug: string[] }) {
   const breadcrumbJsonLd = buildBreadcrumbJsonLd(slug)
 
   return (
@@ -1008,7 +1006,7 @@ async function GuPage({ si, gu, slug }: { si: string; gu: string; slug: string[]
       <BreadcrumbNav slug={slug} />
       <section aria-labelledby="gu-heading" style={{ padding: '24px 32px', maxWidth: 960, margin: '0 auto' }}>
         <h1 id="gu-heading" style={{ font: '700 24px/1.25 var(--font-sans)', margin: '0 0 8px' }}>
-          {si} {gu} 아파트 실거래가
+          {data.si} {data.gu} 아파트 실거래가
         </h1>
         <p style={{ font: '500 14px/1.4 var(--font-sans)', color: 'var(--fg-sec)', margin: '0 0 24px' }}>
           총 {data.totalComplexes}개 단지
@@ -1030,14 +1028,10 @@ async function GuPage({ si, gu, slug }: { si: string; gu: string; slug: string[]
   )
 }
 
-async function DongPage({ si, gu, dong, slug }: { si: string; gu: string | null; dong: string; slug: string[] }) {
-  const supabase = createReadonlyClient()
-  const data = await getDongPageData(si, gu, dong, supabase)
-  if (!data) notFound()
-
+function DongPage({ data, slug }: { data: DongPageData; slug: string[] }) {
   const breadcrumbJsonLd = buildBreadcrumbJsonLd(slug)
   // D-12: 동 레벨에 FAQ JSON-LD 포함
-  const faqJsonLd = buildFaqJsonLd(dong, data.avgPrice, data.complexes.length)
+  const faqJsonLd = buildFaqJsonLd(data.dong, data.avgPrice, data.complexes.length)
 
   return (
     <main>
@@ -1046,7 +1040,7 @@ async function DongPage({ si, gu, dong, slug }: { si: string; gu: string | null;
       <BreadcrumbNav slug={slug} />
       <section aria-labelledby="dong-heading" style={{ padding: '24px 32px', maxWidth: 960, margin: '0 auto' }}>
         <h1 id="dong-heading" style={{ font: '700 24px/1.25 var(--font-sans)', margin: '0 0 8px' }}>
-          {dong} 아파트 실거래가
+          {data.dong} 아파트 실거래가
         </h1>
         <p style={{ font: '500 14px/1.4 var(--font-sans)', color: 'var(--fg-sec)', margin: '0 0 24px' }}>
           총 {data.complexes.length}개 단지{data.avgPrice ? ` · 평균 ${data.avgPrice.toLocaleString('ko-KR')}만원/평` : ''}
@@ -1158,9 +1152,9 @@ export default async function SlugPage({ params, searchParams }: Props) {
     // slug.length === 2: 창원시(gu페이지) or 김해시(dong페이지)
     // getGuPageData 시도 → 없으면 getDongPageData (D-02)
     const guData = await getGuPageData(s0, s1, supabase)
-    if (guData) return <GuPage si={s0} gu={s1} slug={slug} />
+    if (guData) return <GuPage data={guData} slug={slug} />
     const dongData = await getDongPageData(s0, null, s1, supabase)
-    if (dongData) return <DongPage si={s0} gu={null} dong={s1} slug={slug} />
+    if (dongData) return <DongPage data={dongData} slug={slug} />
     notFound()
   }
 
@@ -1171,7 +1165,7 @@ export default async function SlugPage({ params, searchParams }: Props) {
     if (complex) return <ComplexDetailPage complex={complex} searchParams={searchParams} />
     // 창원 동 페이지 (si/gu/dong)
     const dongData = await getDongPageData(s0, s1, s2, supabase)
-    if (dongData) return <DongPage si={s0} gu={s1} dong={s2} slug={slug} />
+    if (dongData) return <DongPage data={dongData} slug={slug} />
     notFound()
   }
 

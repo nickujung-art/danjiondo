@@ -54,6 +54,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = createReadonlyClient()
   const complex = await getComplexById(id, supabase)
   if (!complex) return { title: '단지를 찾을 수 없습니다' }
+  // WR-05: url_slug 있는 단지는 308 목적지가 canonical (크롤러 혼선 방지)
+  const canonicalUrl = complex.url_slug
+    ? `${SITE}/${encodeURI(complex.url_slug)}`
+    : `${SITE}/complexes/${id}`
   const title = `${complex.canonical_name} 실거래가 | 단지온도`
   const description = `${complex.canonical_name} 매매·전세·월세 실거래가 추이. ${[complex.si, complex.gu, complex.dong].filter(Boolean).join(' ')} 아파트 시세를 확인하세요.`
   return {
@@ -62,13 +66,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title,
       description,
-      url:      `${SITE}/complexes/${id}`,
+      url:      canonicalUrl,
       siteName: '단지온도',
       locale:   'ko_KR',
       type:     'website',
     },
     alternates: {
-      canonical: `${SITE}/complexes/${id}`,
+      canonical: canonicalUrl,
     },
   }
 }

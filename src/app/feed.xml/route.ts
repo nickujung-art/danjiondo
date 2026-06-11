@@ -8,6 +8,14 @@ function encodeSlug(slug: string): string {
   return slug.split('/').map(encodeURIComponent).join('/')
 }
 
+function formatPrice(manwon: number): string {
+  const uk = Math.floor(manwon / 10000)
+  const man = manwon % 10000
+  if (uk > 0 && man > 0) return `${uk}억 ${man.toLocaleString()}만`
+  if (uk > 0) return `${uk}억`
+  return `${manwon.toLocaleString()}만`
+}
+
 export async function GET(): Promise<Response> {
   const supabase = createReadonlyClient()
 
@@ -39,12 +47,12 @@ export async function GET(): Promise<Response> {
     }
 
     const location    = [c.si, c.gu, c.dong].filter(Boolean).join(' ')
-    const priceOk     = Math.floor((tx.price as number) / 10000)
+    const priceStr    = formatPrice(tx.price as number)
     const areaPy      = Math.round((tx.area_m2 as number) / 3.3058)
     const link        = c.url_slug
       ? `${SITE}/${encodeSlug(c.url_slug)}`
       : `${SITE}/complexes/${tx.complex_id}`
-    const title       = `${c.canonical_name} ${areaPy}평 ${priceOk}억 (${tx.deal_date})`
+    const title       = `${c.canonical_name} ${areaPy}평 ${priceStr} (${tx.deal_date})`
     const itemPubDate = new Date(tx.deal_date as string).toUTCString()
 
     // RSS CDATA: canonical_name에 ]]> 없음 확인됨 (RESEARCH.md Pitfall A4)
@@ -52,7 +60,7 @@ export async function GET(): Promise<Response> {
     <title><![CDATA[${title}]]></title>
     <link>${link}</link>
     <guid isPermaLink="true">${link}</guid>
-    <description><![CDATA[${location} ${c.canonical_name} 실거래: ${priceOk}억 (${areaPy}평)]]></description>
+    <description><![CDATA[${location} ${c.canonical_name} 실거래: ${priceStr} (${areaPy}평)]]></description>
     <pubDate>${itemPubDate}</pubDate>
   </item>`
   }).join('\n')
