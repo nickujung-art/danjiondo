@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { MemberActions } from '@/components/admin/MemberActions'
 
@@ -149,7 +150,7 @@ export default async function AdminMembersPage({
           </select>
           <button type="submit" className="btn btn-sm btn-orange">검색</button>
           {(q || role || status) && (
-            <a href="/admin/members" className="btn btn-sm btn-secondary">초기화</a>
+            <Link href="/admin/members" className="btn btn-sm btn-secondary">초기화</Link>
           )}
         </form>
 

@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState, useTransition } from 'react'
 import { submitComment, reportComment } from '@/lib/auth/comment-actions'
 import type { CommentWithUserInfo } from '@/lib/data/comments'
@@ -185,7 +186,7 @@ export function CommentSection({ reviewId, complexId, initialComments, currentUs
         </form>
       ) : (
         <p style={{ font: '500 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', marginTop: 12 }}>
-          <a href="/login" style={{ color: 'var(--dj-orange)', textDecoration: 'none' }}>로그인</a>
+          <Link href="/login" style={{ color: 'var(--dj-orange)', textDecoration: 'none' }}>로그인</Link>
           하면 댓글을 달 수 있어요.
         </p>
       )}

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { LoginForm } from '@/components/auth/LoginForm'
 
 export const metadata: Metadata = { title: '로그인' }
@@ -32,9 +33,9 @@ export default async function LoginPage({ searchParams }: Props) {
 
         <p className="mt-6 text-center text-xs text-gray-400">
           로그인 시{' '}
-          <a href="/terms" className="underline hover:text-gray-600">이용약관</a>
+          <Link href="/terms" className="underline hover:text-gray-600">이용약관</Link>
           {' '}및{' '}
-          <a href="/privacy" className="underline hover:text-gray-600">개인정보처리방침</a>
+          <Link href="/privacy" className="underline hover:text-gray-600">개인정보처리방침</Link>
           에 동의합니다
         </p>
       </div>

@@ -94,7 +94,7 @@ export default async function AdminRealtorsPage({
           </select>
           <button type="submit" className="btn btn-sm btn-orange">검색</button>
           {(q || active) && (
-            <a href="/admin/realtors" className="btn btn-sm btn-secondary">초기화</a>
+            <Link href="/admin/realtors" className="btn btn-sm btn-secondary">초기화</Link>
           )}
         </form>
 
