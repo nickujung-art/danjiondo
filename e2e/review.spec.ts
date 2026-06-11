@@ -39,7 +39,8 @@ test.describe('후기 작성 (인증 필요)', () => {
     }
 
     await page.goto(complexUrl, { waitUntil: 'domcontentloaded' })
-    expect(page.url()).toContain('/complexes/')
+    // Phase 23: /complexes/[uuid] → 308 → /시/구/동/단지명 이므로 URL 포맷 무관하게 확인
+    expect(page.url()).not.toContain('/login')
     await expect(page.locator('main')).toBeVisible()
     await expect(page.locator('text=Internal Server Error')).not.toBeVisible()
 
