@@ -36,6 +36,7 @@ export async function getQuadrantData(
   const regionLabel = `${si} ${gu}`
 
   // SQL RPC에서 시/구 단지별 평당가를 서버사이드 집계 (기존: 80K 행 JS 계산)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any).rpc('get_quadrant_data', {
     p_si: si,
     p_gu: gu,
