@@ -94,6 +94,7 @@ export async function getRecentlyExpiredListings(
     .select('id, pblanc_no, pblanc_nm, region, supply_region, supply_count, rcept_bgnde, rcept_endde, mvn_prearnge_ym, hssply_adres, competition_rate, complex_id')
     .eq('is_active', false)
     .not('pblanc_no', 'is', null)
+    .not('supply_count', 'is', null)
     .gte('rcept_endde', cutoff.toISOString().slice(0, 10))
     .order('rcept_endde', { ascending: false })
     .limit(limit)
