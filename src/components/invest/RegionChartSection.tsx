@@ -110,10 +110,10 @@ export function RegionChartSection({
         />
       )}
 
-      {horizon === 12 && allPredictions.length < 12 && (
+      {allPredictions.length < horizon && (
         <p style={{ font: '400 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '8px 0 0' }}>
-          ※ AI 예측은 현재 최대 6개월까지 제공됩니다 (Chronos 배치 주기).
-          &nbsp;히스토리는 최근 36개월을 표시합니다.
+          ※ AI 예측은 현재 최대 {allPredictions.length}개월까지 제공됩니다 (Chronos 배치 주기).
+          &nbsp;히스토리는 최근 {opt.historyMonths}개월을 표시합니다.
         </p>
       )}
     </div>

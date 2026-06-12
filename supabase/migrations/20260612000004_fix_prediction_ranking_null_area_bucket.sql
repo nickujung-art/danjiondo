@@ -1,49 +1,7 @@
--- search_complexes: url_slug + status 추가 (내부 링크 직접 이동용)
--- 반환 타입 변경 시 DROP 필요
-DROP FUNCTION IF EXISTS public.search_complexes(text, text[], int);
-create or replace function public.search_complexes(
-  p_query      text,
-  p_sgg_codes  text[],
-  p_limit      int default 20
-) returns table (
-  id              uuid,
-  canonical_name  text,
-  road_address    text,
-  si              text,
-  gu              text,
-  dong            text,
-  sgg_code        text,
-  lat             double precision,
-  lng             double precision,
-  similarity      real,
-  url_slug        text,
-  status          text
-) language sql stable as $$
-  select
-    c.id,
-    c.canonical_name,
-    c.road_address,
-    c.si,
-    c.gu,
-    c.dong,
-    c.sgg_code,
-    c.lat,
-    c.lng,
-    word_similarity(p_query, c.name_normalized) as similarity,
-    c.url_slug,
-    c.status::text
-  from public.complexes c
-  where
-    c.sgg_code = any(p_sgg_codes)
-    and (
-      c.name_normalized % p_query
-      or c.name_normalized ilike '%' || p_query || '%'
-    )
-  order by word_similarity(p_query, c.name_normalized) desc
-  limit p_limit
-$$;
-
--- invest_prediction_ranking: url_slug 추가
+-- invest_prediction_ranking: p_area_bucket NULL 처리 누락 수정
+-- 기존: AND p.area_bucket = p_area_bucket → NULL 전달 시 0건 (SQL NULL 비교 항상 FALSE)
+-- 수정: (p_area_bucket IS NULL OR p.area_bucket = p_area_bucket)
+-- 영향: 투자 분석 메인 페이지 "예측 상승 기대 단지" 섹션이 비어 있던 문제 해결
 DROP FUNCTION IF EXISTS public.invest_prediction_ranking(text, text, real, int);
 CREATE OR REPLACE FUNCTION public.invest_prediction_ranking(
   p_sgg_code    text    DEFAULT NULL,
