@@ -145,7 +145,8 @@ ${dataBlock}
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
     const result = await model.generateContent(prompt)
     return result.response.text().trim()
-  } catch {
+  } catch (err) {
+    console.error('[regional-commentary] Gemini 호출 실패:', err)
     return null
   }
 }
