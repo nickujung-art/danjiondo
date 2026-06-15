@@ -99,57 +99,61 @@ export async function getComplexFacilityEdu(
     ? rawSchools.filter(s => s.students_per_class != null || s.advancement_rate != null).slice(0, 5)
     : []
 
-  const percentileResults = await Promise.all(
-    schoolsWithData.map(async s => {
-      const [studentsPct, advancementPct] = await Promise.all([
-        s.students_per_class != null
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ? (supabase as any).rpc('school_quality_percentile_by_si', {
-              p_metric:       'students_per_class',
-              p_target_value: s.students_per_class,
-              p_si:           si,
-            }).then((r: { data: number | null }) => r.data as number | null)
-          : Promise.resolve(null),
-
-        s.school_type === 'middle' && s.advancement_rate != null
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ? (supabase as any).rpc('school_quality_percentile_by_si', {
-              p_metric:       'advancement_rate',
-              p_target_value: s.advancement_rate,
-              p_si:           si,
-            }).then((r: { data: number | null }) => r.data as number | null)
-          : Promise.resolve(null),
-      ])
-      return { school_name: s.school_name, studentsPct, advancementPct }
-    })
-  )
-
-  const pctMap = new Map(
-    percentileResults.map(r => [r.school_name, r])
-  )
-
-  // ─── 배정학교 학군 평당가 비교 (P2) ──────────────────────────────────────
+  // ─── Wave 2: 백분위·평당가·학원 RPC 병렬 실행 ────────────────────────────
   const assignedSchools = rawSchools.filter(s => s.is_assignment)
-  const priceResults = await Promise.all(
-    assignedSchools.map(async s => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data } = await (supabase as any).rpc('school_district_avg_price', {
-        p_school_name: s.school_name,
-        p_months:      12,
+
+  const [percentileResults, priceResults, hagwonPercentileRes] = await Promise.all([
+    // 학교 품질 백분위 (상위 5개 학교 × 최대 2 RPC — 학교 단위 병렬)
+    Promise.all(
+      schoolsWithData.map(async s => {
+        const [studentsPct, advancementPct] = await Promise.all([
+          s.students_per_class != null
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ? (supabase as any).rpc('school_quality_percentile_by_si', {
+                p_metric:       'students_per_class',
+                p_target_value: s.students_per_class,
+                p_si:           si,
+              }).then((r: { data: number | null }) => r.data as number | null)
+            : Promise.resolve(null),
+          s.school_type === 'middle' && s.advancement_rate != null
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ? (supabase as any).rpc('school_quality_percentile_by_si', {
+                p_metric:       'advancement_rate',
+                p_target_value: s.advancement_rate,
+                p_si:           si,
+              }).then((r: { data: number | null }) => r.data as number | null)
+            : Promise.resolve(null),
+        ])
+        return { school_name: s.school_name, studentsPct, advancementPct }
       })
-      const row = data?.[0] as { district_avg_py: number | null; si_avg_py: number | null } | undefined
-      const dpy = row?.district_avg_py ? Number(row.district_avg_py) : null
-      const spy = row?.si_avg_py       ? Number(row.si_avg_py)       : null
-      if (!dpy || !spy) return { school_name: s.school_name, district_avg_py: null, si_avg_py: null, price_premium: null }
-      const premium = Math.round((dpy - spy) / spy * 100)
-      return {
-        school_name:     s.school_name,
-        district_avg_py: dpy,
-        si_avg_py:       spy,
-        price_premium:   premium,
-      }
-    })
-  )
+    ),
+
+    // 배정학교 학군 평당가 비교 (배정학교 단위 병렬)
+    Promise.all(
+      assignedSchools.map(async s => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data } = await (supabase as any).rpc('school_district_avg_price', {
+          p_school_name: s.school_name,
+          p_months:      12,
+        })
+        const row = data?.[0] as { district_avg_py: number | null; si_avg_py: number | null } | undefined
+        const dpy = row?.district_avg_py ? Number(row.district_avg_py) : null
+        const spy = row?.si_avg_py       ? Number(row.si_avg_py)       : null
+        if (!dpy || !spy) return { school_name: s.school_name, district_avg_py: null, si_avg_py: null, price_premium: null }
+        const premium = Math.round((dpy - spy) / spy * 100)
+        return { school_name: s.school_name, district_avg_py: dpy, si_avg_py: spy, price_premium: premium }
+      })
+    ),
+
+    // 학원 백분위 (이전엔 Wave 4로 가장 마지막 순차 실행됐음)
+    rawScore != null
+      ? (si
+          ? supabase.rpc('hagwon_score_percentile_by_si', { target_score: rawScore, p_si: si })
+          : supabase.rpc('hagwon_score_percentile', { target_score: rawScore }))
+      : Promise.resolve({ data: null }),
+  ])
+
+  const pctMap   = new Map(percentileResults.map(r => [r.school_name, r]))
   const priceMap = new Map(priceResults.map(r => [r.school_name, r]))
 
   // ─── SchoolItem 조립 ──────────────────────────────────────────────────────
@@ -199,10 +203,7 @@ export async function getComplexFacilityEdu(
   // ─── 학원 통계 ────────────────────────────────────────────────────────────
   let hagwonStats: HagwonStats | null = null
   if (rawScore != null) {
-    const percentileRes = si
-      ? await supabase.rpc('hagwon_score_percentile_by_si', { target_score: rawScore, p_si: si })
-      : await supabase.rpc('hagwon_score_percentile', { target_score: rawScore })
-    const percentile: number = (percentileRes.data as number | null) ?? 50
+    const percentile: number = (hagwonPercentileRes.data as number | null) ?? 50
 
     hagwonStats = {
       cnt500:     hagwons.filter(h => (h.distance_m ?? 9999) <= 500).length,

@@ -1,8 +1,9 @@
 import { notFound, permanentRedirect } from 'next/navigation'
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createReadonlyClient } from '@/lib/supabase/readonly'
-import { getComplexById, getComplexTransactionSummary, getComplexRawTransactions } from '@/lib/data/complex-detail'
+import { getComplexByIdCached, getComplexTransactionSummary, getComplexRawTransactions } from '@/lib/data/complex-detail'
 import { getRealtorsByComplexId } from '@/lib/data/realtors'
 import { RealtorCard } from '@/components/realtors/RealtorCard'
 import { getComplexReviewStats } from '@/lib/data/reviews'
@@ -42,6 +43,15 @@ import { ViewCountTracker } from './ViewCountTracker'
 
 export const revalidate = 86400
 
+// EducationCard를 독립 스트림으로 분리 — N+1 RPC가 나머지 페이지를 블로킹하지 않도록
+async function FacilityEduSection({ complexId, si }: { complexId: string; si?: string }) {
+  const supabase = createReadonlyClient()
+  const data = await getComplexFacilityEdu(complexId, supabase).catch(
+    () => ({ schools: [], hagwons: [], daycares: [], kindergartens: [], hagwonStats: null, si: null })
+  )
+  return <EducationCard data={data} si={si} />
+}
+
 interface Props {
   params:       Promise<{ id: string }>
   searchParams: Promise<{ area_type?: string }>
@@ -51,8 +61,7 @@ const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://danjiondo.kr'
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
-  const supabase = createReadonlyClient()
-  const complex = await getComplexById(id, supabase)
+  const complex = await getComplexByIdCached(id)
   if (!complex) return { title: '단지를 찾을 수 없습니다' }
   // WR-05: url_slug 있는 단지는 308 목적지가 canonical (크롤러 혼선 방지)
   const canonicalUrl = complex.url_slug
@@ -217,8 +226,8 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
     ? (rawArea as AreaBucket) : undefined
   const supabase = createReadonlyClient()
 
-  // complex를 먼저 단독 fetch — si/gu로 getQuadrantData 호출에 필요
-  const complex = await getComplexById(id, supabase)
+  // complex를 먼저 단독 fetch — si/gu로 getQuadrantData 호출에 필요 (React.cache로 generateMetadata 결과 재사용)
+  const complex = await getComplexByIdCached(id)
   if (!complex) notFound()
 
   // SEO-03: url_slug 있는 단지는 한글 URL로 영구 리다이렉트 (308)
@@ -241,7 +250,6 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
     districtStats,
     cafeArticles,
     managementCostRows,
-    facilityEdu,
     rawSaleData,
     rawJeonseData,
     gapStats,
@@ -292,8 +300,6 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
     getCafeArticlesByComplex(id, supabase).catch(() => [] as CafeArticleRecord[]),
     // 관리비 (오류 시 빈 배열 fallback)
     getManagementCostMonthly(id, supabase).catch(() => []),
-    // 교육 환경 (오류 시 빈 데이터 fallback)
-    getComplexFacilityEdu(id, supabase).catch(() => ({ schools: [], hagwons: [], daycares: [], kindergartens: [], hagwonStats: null, si: null })),
     // raw 거래 데이터 (IQR + 평형 칩 클라이언트 슬라이스용)
     getComplexRawTransactions(id, 'sale', supabase).catch(() => []),
     getComplexRawTransactions(id, 'jeonse', supabase).catch(() => []),
@@ -804,8 +810,14 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
             householdCount={complex.household_count}
           />
 
-          {/* 교육 환경 */}
-          <EducationCard data={facilityEdu} si={complex.si ?? undefined} />
+          {/* 교육 환경 — Suspense로 분리 (N+1 RPC 집약 구간, 나머지 페이지 블로킹 방지) */}
+          <Suspense fallback={
+            <div className="card" style={{ padding: 20, minHeight: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>교육 환경 로딩 중…</span>
+            </div>
+          }>
+            <FacilityEduSection complexId={id} si={complex.si ?? undefined} />
+          </Suspense>
 
           {/* 재건축 타임라인 — status='in_redevelopment' 단지만 표시 */}
           {complex.status === 'in_redevelopment' && redevelopmentProject && (
@@ -881,7 +893,7 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
           rawJeonseData,
           facilityKapt: facilityKapt as Parameters<typeof buildComplexContext>[0]['facilityKapt'],
           managementCostRows,
-          facilityEdu,
+          facilityEdu: { schools: [], hagwons: [], daycares: [], kindergartens: [], hagwonStats: null, si: null },
           quadrantData,
           districtStats,
           reviewStats,

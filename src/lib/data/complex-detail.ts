@@ -1,5 +1,7 @@
 import 'server-only'
+import { cache } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { createReadonlyClient } from '@/lib/supabase/readonly'
 
 export interface ComplexDetail {
   id:              string
@@ -25,6 +27,12 @@ export interface MonthlyPriceSummary {
   count:     number
   avgArea:   number
 }
+
+// 요청 단위 캐시 — generateMetadata + page 함수에서 중복 호출 방지
+export const getComplexByIdCached = cache(async (id: string): Promise<ComplexDetail | null> => {
+  const supabase = createReadonlyClient()
+  return getComplexById(id, supabase)
+})
 
 export async function getComplexById(
   id: string,
