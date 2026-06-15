@@ -1,0 +1,5 @@
+[INFO] Groq (llama-3.1-8b-instant) 사용
+[START] area_bucket=84 limit=0 dry-run=false
+[FETCH] 21건 조회 완료
+
+[DONE] 완료: 21건 / 실패: 0건 / 건너뜀: 0건 / 전체: 21건

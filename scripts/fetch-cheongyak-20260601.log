@@ -1,0 +1,19 @@
+분양공고 수집 중...
+  → 68건 수신 (창원·김해)
+  → 분양가 조회 중 (68건)...
+
+LH 공급정보 수집 중...
+  → 13건 수신 (창원·김해)
+
+잔여세대·무순위 수집 중...
+  → 1건 수신 (창원·김해)
+
+경쟁률 수집 중... 82건
+
+결과:
+  분양공고 upserted:    68
+  잔여세대 upserted:    1
+  LH 공급정보 upserted: 13
+  competitionUpdated:  52
+  expiredDeactivated:  69
+  errors: 0

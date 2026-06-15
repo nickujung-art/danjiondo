@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createReadonlyClient } from '@/lib/supabase/readonly'
@@ -7,7 +8,7 @@ import {
   getSiPageData,
   getGuPageData,
   getDongPageData,
-  getComplexBySlug,
+  getComplexBySlugCached,
   type GuPageData,
   type DongPageData,
 } from '@/lib/data/seo-hierarchy'
@@ -265,6 +266,15 @@ function BreadcrumbNav({ slug }: { slug: string[] }) {
   )
 }
 
+// 교육환경 — 느린 RPC(학교 백분위+학군 평당가)를 Suspense로 분리
+async function FacilityEduSection({ complexId, si }: { complexId: string; si?: string }) {
+  const supabase = createReadonlyClient()
+  const data = await getComplexFacilityEdu(complexId, supabase).catch(
+    () => ({ schools: [], hagwons: [], daycares: [], kindergartens: [], hagwonStats: null, si: null }),
+  )
+  return <EducationCard data={data} si={si} />
+}
+
 // ──────────────────────────────────────────
 // 단지 상세 페이지 (ComplexDetailPage) — slug URL 기반
 // ──────────────────────────────────────────
@@ -296,7 +306,6 @@ async function ComplexDetailPage({
     districtStats,
     cafeArticles,
     managementCostRows,
-    facilityEdu,
     rawSaleData,
     rawJeonseData,
     gapStats,
@@ -343,7 +352,6 @@ async function ComplexDetailPage({
       : Promise.resolve(null),
     getCafeArticlesByComplex(id, supabase).catch(() => [] as CafeArticleRecord[]),
     getManagementCostMonthly(id, supabase).catch(() => []),
-    getComplexFacilityEdu(id, supabase).catch(() => ({ schools: [], hagwons: [], daycares: [], kindergartens: [], hagwonStats: null, si: null })),
     getComplexRawTransactions(id, 'sale', supabase).catch(() => []),
     getComplexRawTransactions(id, 'jeonse', supabase).catch(() => []),
     getComplexGapStats(id, supabase).catch(() => null),
@@ -850,7 +858,13 @@ async function ComplexDetailPage({
           />
 
           {/* 교육 환경 */}
-          <EducationCard data={facilityEdu} si={complex.si ?? undefined} />
+          <Suspense fallback={
+            <div className="card" style={{ padding: 20, minHeight: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>교육 환경 로딩 중…</span>
+            </div>
+          }>
+            <FacilityEduSection complexId={id} si={complex.si ?? undefined} />
+          </Suspense>
 
           {/* 재건축 타임라인 */}
           {complex.status === 'in_redevelopment' && redevelopmentProject && (
@@ -926,7 +940,7 @@ async function ComplexDetailPage({
           rawJeonseData,
           facilityKapt: facilityKapt as Parameters<typeof buildComplexContext>[0]['facilityKapt'],
           managementCostRows,
-          facilityEdu,
+          facilityEdu: { schools: [], hagwons: [], daycares: [], kindergartens: [], hagwonStats: null, si: null },
           quadrantData,
           districtStats,
           reviewStats,
@@ -1094,9 +1108,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   // 단지 상세 메타데이터 (length >= 3이고 DB에서 complex 발견 시)
   if (type === 'complex' || type === 'dong-or-complex') {
-    const supabase = createReadonlyClient()
     const urlSlug = slug.join('/')
-    const complex = await getComplexBySlug(urlSlug, supabase)
+    const complex = await getComplexBySlugCached(urlSlug)
     if (complex) {
       const location = slug.slice(0, -1).join(' ')
       const dong = slug[slug.length - 2] ?? ''
@@ -1161,7 +1174,7 @@ export default async function SlugPage({ params, searchParams }: Props) {
   if (type === 'dong-or-complex') {
     // slug.length === 3: 김해 단지(url_slug 3개) or 창원 동 페이지
     const urlSlug = slug.join('/')
-    const complex = await getComplexBySlug(urlSlug, supabase)
+    const complex = await getComplexBySlugCached(urlSlug)
     if (complex) return <ComplexDetailPage complex={complex} searchParams={searchParams} />
     // 창원 동 페이지 (si/gu/dong)
     const dongData = await getDongPageData(s0, s1, s2, supabase)
@@ -1171,7 +1184,7 @@ export default async function SlugPage({ params, searchParams }: Props) {
 
   // type === 'complex': slug.length === 4 → 항상 창원 단지 상세
   const urlSlug = slug.join('/')
-  const complex = await getComplexBySlug(urlSlug, supabase)
+  const complex = await getComplexBySlugCached(urlSlug)
   if (!complex) notFound()
   return <ComplexDetailPage complex={complex} searchParams={searchParams} />
 }

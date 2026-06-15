@@ -1,7 +1,9 @@
 import 'server-only'
+import { cache } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import type { ComplexDetail } from './complex-detail'
+import { createReadonlyClient } from '@/lib/supabase/readonly'
 
 // ──────────────────────────────────────────
 // Types
@@ -203,3 +205,9 @@ export async function getComplexBySlug(
   if (error || !data) return null
   return data as ComplexDetail & { url_slug: string }
 }
+
+// 요청 단위 캐시 — generateMetadata + SlugPage에서 중복 조회 방지
+export const getComplexBySlugCached = cache(async (urlSlug: string): Promise<(ComplexDetail & { url_slug: string }) | null> => {
+  const supabase = createReadonlyClient()
+  return getComplexBySlug(urlSlug, supabase)
+})

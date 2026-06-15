@@ -1041,6 +1041,19 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
                           <Link href={complexHref(item.complexId, item.status === 'active' ? item.urlSlug : null)} style={{ font: '600 13px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none' }}>
                             {item.complexName}
                           </Link>
+                          {item.aiCommentary && (
+                            <p style={{
+                              font: '400 11px/1.5 var(--font-sans)',
+                              color: 'var(--fg-tertiary)',
+                              margin: '3px 0 0',
+                              overflow: 'hidden',
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                            }}>
+                              {item.aiCommentary}
+                            </p>
+                          )}
                         </td>
                         <td style={{ padding: '10px 12px', font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
                           {item.areaBucket === '소형' || item.areaBucket === '대형' ? item.areaBucket : `${item.areaBucket}㎡`}
