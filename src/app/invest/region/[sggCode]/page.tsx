@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createReadonlyClient } from '@/lib/supabase/readonly'
@@ -26,7 +27,8 @@ import { RateSparklineWrapper } from '@/components/invest/RateSparklineWrapper'
 import { PopulationChart } from '@/components/invest/PopulationChart'
 import { PriceIndexChart } from '@/components/invest/PriceIndexChart'
 import { formatPrice, complexHref } from '@/lib/format'
-import { getRegionalCommentary } from '@/lib/ai/regional-commentary'
+import type { CommentaryInput } from '@/lib/ai/regional-commentary'
+import { AiCommentarySection } from '@/components/invest/AiCommentarySection'
 import { fetchPriceIndexSeries } from '@/services/reb'
 
 export const revalidate = 3600
@@ -290,41 +292,34 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
     ? rateSeries[rateSeries.length - 1]!.rate - rateSeries[0]!.rate
     : null
 
-  const aiCommentary = await getRegionalCommentary(sggCode, {
+  const commentaryInput: CommentaryInput = {
     label,
     areaBucket,
-    // 예측
     changePct,
     direction,
     horizon,
-    // 가격
     recentAvgPrice,
     recentJeonseAvg,
     jeonseRatio: latestJeonse?.jeonseRatio ?? null,
-    // 거래/공급
     txCount:     latestHistory?.txCount ?? null,
     unsoldCount: latestUnsold?.unsoldCount ?? null,
     unsoldChange,
-    // 부담 지수
     pir,
     jhai,
     hai,
-    // 금리
     mortgageRate,
     mortgageTrend,
-    // 인구/소득
     population:     latestPop?.population ?? null,
     populationYear: latestPop?.year ?? null,
     popYoyChange,
     pop5yChangePct,
     annualIncome,
-    incomeYear: incomeData?.year ?? null,
-    // 리스크 등급
+    incomeYear:      incomeData?.year ?? null,
     riskPriceGrade:  riskItems[0]?.grade ?? null,
     riskJeonseGrade: riskItems[1]?.grade ?? null,
     riskUnsoldGrade: riskItems[2]?.grade ?? null,
     riskTxGrade:     riskItems[3]?.grade ?? null,
-  }).catch(() => null)
+  }
 
   function tabHref(bucket: string): string {
     const p = new URLSearchParams()
@@ -492,39 +487,6 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
           </div>
         </div>
 
-        {/* AI 지역 분석 코멘트 */}
-        {aiCommentary && (
-          <div style={{
-            marginBottom: 24,
-            padding: '14px 18px',
-            borderRadius: 12,
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--line-default)',
-            display: 'flex',
-            gap: 12,
-            alignItems: 'flex-start',
-          }}>
-            <span style={{
-              flexShrink: 0,
-              width: 28, height: 28,
-              borderRadius: 6,
-              background: 'var(--bg-surface-2)',
-              border: '1px solid var(--line-subtle)',
-              display: 'grid', placeItems: 'center',
-              font: '600 11px/1 var(--font-sans)',
-              color: 'var(--fg-sec)',
-            }}>AI</span>
-            <div>
-              <p style={{ font: '500 13px/1.6 var(--font-sans)', color: 'var(--fg-pri)', margin: '0 0 6px' }}>
-                {aiCommentary}
-              </p>
-              <p style={{ font: '400 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>
-                Gemini 2.0 Flash · 참고용, 투자 조언 아님
-              </p>
-            </div>
-          </div>
-        )}
-
         {/* 리스크 평가 */}
         <section aria-labelledby="risk-heading" style={{ marginBottom: 24 }}>
           <h2 id="risk-heading" style={{ font: '600 14px/1.4 var(--font-sans)', margin: '0 0 10px' }}>
@@ -554,6 +516,11 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
             ))}
           </div>
         </section>
+
+        {/* AI 지역 분석 코멘트 — Suspense로 페이지 블로킹 없이 스트리밍 */}
+        <Suspense fallback={null}>
+          <AiCommentarySection sggCode={sggCode} input={commentaryInput} />
+        </Suspense>
 
         {/* 구입부담 지수 */}
         {(pir != null || jhai != null || hai != null) && (
