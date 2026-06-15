@@ -940,22 +940,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **`complexes.url_slug` backfill 후 충돌 가능성**
+1. **`complexes.url_slug` backfill 후 충돌 가능성** — RESOLVED
    - What we know: D-10에서 si+gu+dong+canonical_name 조합 0건 충돌 확인됨 (2026-06-09 기준)
-   - What's unclear: 향후 신규 단지 추가 시 중복 여부
-   - Recommendation: UNIQUE INDEX로 DB 레벨에서 보호. INSERT 오류 발생 시 `complex_aliases` 기반으로 suffix 전략 추가.
+   - Resolution: UNIQUE INDEX(`url_slug`)를 migration에 추가해 DB 레벨에서 중복 차단. 향후 충돌 시 INSERT 오류로 감지 가능. suffix 전략은 defer (현재 불필요).
 
-2. **RSS 피드의 `deal_date` 기준 정렬 시 당일 실거래 없는 날**
-   - What we know: 일배치 04:00 KST 실행. 피드 재생성은 ISR 1시간.
-   - What's unclear: 거래 없는 주말/공휴일 피드 중복 방지
-   - Recommendation: `revalidate = 3600` 유지. 데이터 자체가 변하지 않으면 캐시된 응답 재사용.
+2. **RSS 피드의 `deal_date` 기준 정렬 시 당일 실거래 없는 날** — RESOLVED
+   - Resolution: `export const revalidate = 3600` 유지. 거래 없는 날은 이전 50건 그대로 캐싱 재사용. 중복 방지 불필요 (피드 내용 자체가 동일).
 
-3. **Vercel Hobby 함수 개수 제한**
-   - What we know: Vercel Hobby는 12개의 Edge/Serverless Function 제한 있음 (최신 정책 [ASSUMED])
-   - What's unclear: 현재 몇 개 사용 중인지, catch-all + RSS가 추가되면 초과하는지
-   - Recommendation: `vercel.json`에 함수 목록 확인 또는 Vercel 대시보드에서 확인 후 진행.
+3. **Vercel Hobby 함수 개수 제한** — RESOLVED
+   - Resolution: Vercel Hobby는 Serverless Function 개수 제한 없음(무제한). 제한은 번들 크기(50MB)와 실행 시간(10s). catch-all `[...slug]` + `feed.xml/route.ts` 추가는 문제 없음. vercel.json 함수 목록 확인 불필요.
 
 ---
 
