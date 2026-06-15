@@ -42,7 +42,7 @@ type AreaBucket = (typeof AREA_BUCKETS)[number]
 
 const PAGE_SIZE = 1000
 const MIN_TX_COUNT = 10
-const FORECAST_HORIZON = 6
+const FORECAST_HORIZON = 12
 
 // ─── 타입 ─────────────────────────────────────────────────────────────────────
 
