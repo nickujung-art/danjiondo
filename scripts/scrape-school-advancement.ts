@@ -1,280 +1,304 @@
 /**
  * 학교알리미 「13-다. 졸업생의 진로 현황」 수집
  *
- * 공시항목: 중학교 연1회 11월 공시
- * 방법: 항목별 공시정보 페이지 → 졸업생의 진로 현황 + 경남 + 중학교 검색 → 전체 파싱
+ * 방법: 학교별 공시정보 페이지 jQuery .load() 방식 (로그인 불필요)
+ *   - pneiss_a03_s0.do 세션 유지 → gongsiInfo06.load(Pneipp_b06_s0p.do)
+ *   - JG_YEAR=2025 (2025년 11월 4차 공시, 2024년 졸업생 기준)
  *
- * 사용법:
- *   npx tsx scripts/scrape-school-advancement.ts           # 실제 DB 업데이트
- *   npx tsx scripts/scrape-school-advancement.ts --dry-run # 확인만
+ * 실행:
+ *   npx tsx scripts/scrape-school-advancement.ts                         # 중학교 전체
+ *   npx tsx scripts/scrape-school-advancement.ts --school-type=high      # 고등학교 (대학 진학률)
+ *   npx tsx scripts/scrape-school-advancement.ts --dry-run               # DB 저장 없이 확인
+ *   npx tsx scripts/scrape-school-advancement.ts --school-type=high --dry-run
  */
 
 import { chromium, type Page } from 'playwright'
 import { createClient } from '@supabase/supabase-js'
 import * as dotenv from 'dotenv'
 import path from 'path'
+import fs from 'fs'
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-)
-const DRY_RUN = process.argv.includes('--dry-run')
+const DRY_RUN     = process.argv.includes('--dry-run')
+const SCHOOL_TYPE = process.argv.includes('--school-type=high') ? 'high' : 'middle'
+const COOKIE_FILE = path.resolve(process.cwd(), '.schoolinfo-cookies.json')
 
-// ─── 로그인 감지 ──────────────────────────────────────────────────────────────
-async function isLoggedIn(page: Page): Promise<boolean> {
-  return page.evaluate(() =>
-    Array.from(document.querySelectorAll('a'))
-      .some(a => (a.textContent ?? '').trim() === '로그아웃')
-  ).catch(() => false)
+// 창원시/김해시
+const TARGETS = [
+  { name: '창원시', gugunCode: '4812000000' },
+  { name: '김해시', gugunCode: '4825000000' },
+]
+
+// hangmok_json.do?JG_YEAR=2025 에서 확인한 "06" 항목 고정 파라미터 (중/고 공통)
+const HANGMOK06_BASE = {
+  GS_HANGMOK_CD: '06',
+  GS_HANGMOK_NO: '13-다',
+  GS_HANGMOK_NM: '졸업생의 진로 현황',
+  GS_BURYU_CD:   'JG040',
+  JG_BURYU_CD:   'JG130',
+  JG_HANGMOK_CD: '52',
+  JG_GUBUN:      '1',
+  JG_YEAR2:      '2025',
+  GS_TYPE:       'Y',
+  JG_YEAR:       '2025',
+  CHOSEN_JG_YEAR:'2025',
+  PRE_JG_YEAR:   '2025',
 }
 
-async function waitForLogin(page: Page): Promise<void> {
-  await page.waitForTimeout(2000)
-  if (await isLoggedIn(page)) { console.log('이미 로그인 상태'); return }
+// HG_JONGRYU_GB: 03=중학교, 04=고등학교
+const JONGRYU_GB = SCHOOL_TYPE === 'high' ? '04' : '03'
 
-  console.log('================================================')
-  console.log(' 브라우저에서 SNS(네이버/카카오) 로그인 후')
-  console.log(' 자동으로 진행됩니다. (최대 3분 대기)')
-  console.log('================================================\n')
-  process.stdout.write('로그인 대기 중 ')
+interface School { uuid: string; name: string }
 
-  for (let i = 0; i < 180; i++) {
-    await page.waitForTimeout(1000)
-    if (await isLoggedIn(page)) { console.log('\n로그인 확인! ✓'); return }
-    if (i % 10 === 9) process.stdout.write('.')
+interface MiddleGradData {
+  advancement_rate:    number  // 진학자계 비율(%)
+  advancement_science: number  // 과학고 비율(%)
+  advancement_foreign: number  // 외고·국제고 비율(%)
+  advancement_private: number  // 자율형사립고 비율(%)
+}
+
+interface HighGradData {
+  univ_rate:       number  // 진학자 합계 비율 (전문대+4년제+국외)
+  univ_4year_rate: number  // 4년제 대학 비율
+  univ_2year_rate: number  // 전문대 비율
+}
+
+// ─── 학교 UUID 목록 수집 (공개 API) ─────────────────────────────────────────
+async function fetchSchoolList(gugunCode: string): Promise<School[]> {
+  const res = await fetch(
+    'https://www.schoolinfo.go.kr/ei/ss/pneiss_a03_s0_school_json.do',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ HG_JONGRYU_GB: JONGRYU_GB, SIDO_CODE: '4800000000', GUGUN_CODE: gugunCode }).toString(),
+    }
+  )
+  if (!res.ok) throw new Error(`학교목록 API 오류: ${res.status}`)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const data: any[] = await res.json()
+  return data.map(s => ({ uuid: s.SHL_IDF_CD, name: s.SHL_NM }))
+}
+
+// ─── 개별 학교 데이터 수집 (jQuery .load()) ──────────────────────────────────
+async function fetchGradData(page: Page, school: School): Promise<string | null> {
+  const params = { ...HANGMOK06_BASE, SHL_IDF_CD: school.uuid }
+
+  await page.evaluate((p) => {
+    return new Promise<void>((resolve) => {
+      const $ = (window as Window & { jQuery: typeof import('jquery') }).jQuery
+      if (!$) { resolve(); return }
+
+      let box = document.getElementById('gongsiInfo06')
+      if (!box) {
+        box = document.createElement('div')
+        box.id = 'gongsiInfo06'
+        document.body.appendChild(box)
+      }
+      $(box).load('/ei/pp/Pneipp_b06_s0p.do', $.param(p), () => resolve())
+    })
+  }, params)
+
+  // 내부 스크립트(goJipyo06 → pneiss_a03_s0p.do)가 실행되도록 대기
+  await page.waitForTimeout(4000)
+
+  const text = await page.evaluate(() => {
+    const el = document.getElementById('gongsiInfo06')
+    return el ? el.innerText : ''
+  })
+
+  if (!text || text.includes('서비스 일시 중단')) return null
+  return text
+}
+
+// ─── 중학교 텍스트 파싱 ───────────────────────────────────────────────────────
+// "비  율" 행: [0]='비  율' [1]=일반고 [2]=특성화고 [3]=과학고 [4]=외고국제고
+//   [5]=예고체고 [6]=마이스터고 [7]=특목소계 [8]=자율사립 [9]=자율공립
+//   [10]=자율소계 [11]=기타 [12]=진학자계 [13]=취업자 [14]=대안교육 [15]=무직자
+function parseMiddle(text: string): MiddleGradData | null {
+  const lines = text.split('\n')
+  const rateLine = lines.find(l => /^비\s+율/.test(l.trim()))
+  if (!rateLine) return null
+
+  const parts = rateLine.trim().split(/\t+/)
+  const p = (i: number) => parseFloat(parts[i] ?? '0') || 0
+
+  return {
+    advancement_rate:    p(12),
+    advancement_science: p(3),
+    advancement_foreign: p(4),
+    advancement_private: p(8),
   }
-  console.log('\n(3분 경과 — 로그인 없이 진행, 일부 데이터 제한될 수 있음)')
 }
 
-// ─── 항목별 공시정보에서 경남 졸업생 진로 현황 수집 ──────────────────────────
-interface SchoolGrad {
-  schoolName: string
-  graduates: number
-  science: number
-  foreign: number
-  privAuto: number
-  pubAuto: number
-  art: number
-  meister: number
+// ─── 고등학교 텍스트 파싱 ────────────────────────────────────────────────────
+// "비  율" 행: [0]='비  율' [1]=전문대학 [2]=대학교(4년제) [3]=국외진학
+//   [4]=? [5]=? [6]=진학자계 [7]=취업자 [8]=기타
+function parseHigh(text: string): HighGradData | null {
+  const lines = text.split('\n')
+  const rateLine = lines.find(l => /^비\s+율/.test(l.trim()))
+  if (!rateLine) return null
+
+  const parts = rateLine.trim().split(/\t+/)
+  const p = (i: number) => parseFloat(parts[i] ?? '0') || 0
+
+  return {
+    univ_2year_rate: p(1),   // 전문대학
+    univ_4year_rate: p(2),   // 대학교(4년제)
+    univ_rate:       p(6),   // 진학자 합계
+  }
 }
 
-async function fetchGraduationData(page: Page, year: string): Promise<SchoolGrad[]> {
-  console.log(`\n[항목별 공시정보] 공시년도 ${year} 조회 중...`)
+// ─── DB 저장: 중학교 ──────────────────────────────────────────────────────────
+async function saveMiddle(
+  supabase: ReturnType<typeof createClient>,
+  school: School,
+  data: MiddleGradData,
+): Promise<boolean> {
+  const { data: rows, error } = await supabase
+    .from('facility_school')
+    .update({
+      advancement_rate:    data.advancement_rate,
+      advancement_science: data.advancement_science,
+      advancement_foreign: data.advancement_foreign,
+      advancement_private: data.advancement_private,
+      data_year: 2025,
+    })
+    .eq('school_name', school.name)
+    .eq('school_type', 'middle')
+    .select('id')
 
-  await page.goto('https://www.schoolinfo.go.kr/ei/ss/pneiss_a05_s1.do', {
-    waitUntil: 'networkidle', timeout: 20_000,
+  if (error) { console.error(`    [DB오류] ${school.name}:`, error.message); return false }
+  if (!rows || rows.length === 0) { console.warn(`    [미매칭] ${school.name}`); return false }
+  return true
+}
+
+// ─── DB 저장: 고등학교 ────────────────────────────────────────────────────────
+async function saveHigh(
+  supabase: ReturnType<typeof createClient>,
+  school: School,
+  data: HighGradData,
+): Promise<boolean> {
+  const { data: rows, error } = await supabase
+    .from('facility_school')
+    .update({
+      univ_rate:       data.univ_rate,
+      univ_4year_rate: data.univ_4year_rate,
+      univ_2year_rate: data.univ_2year_rate,
+      data_year: 2025,
+    })
+    .eq('school_name', school.name)
+    .eq('school_type', 'high')
+    .select('id')
+
+  if (error) { console.error(`    [DB오류] ${school.name}:`, error.message); return false }
+  if (!rows || rows.length === 0) { console.warn(`    [미매칭] ${school.name}`); return false }
+  return true
+}
+
+// ─── 메인 ────────────────────────────────────────────────────────────────────
+async function main() {
+  const typeLabel = SCHOOL_TYPE === 'high' ? '고등학교 (대학 진학률)' : '중학교 (고교 진학률)'
+  console.log(`\n[졸업생 진로 수집] ${typeLabel} ${DRY_RUN ? '- DRY-RUN' : ''}\n`)
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+
+  // 1. 학교 목록 수집
+  const allSchools: (School & { area: string })[] = []
+  for (const { name, gugunCode } of TARGETS) {
+    const schools = await fetchSchoolList(gugunCode)
+    allSchools.push(...schools.map(s => ({ ...s, area: name })))
+    console.log(`  ${name}: ${schools.length}개 ${SCHOOL_TYPE === 'high' ? '고등학교' : '중학교'}`)
+  }
+  console.log(`\n총 ${allSchools.length}개 학교 수집 대상\n`)
+
+  // 2. Playwright 시작
+  const browser = await chromium.launch({ headless: true })
+  const context = await browser.newContext({
+    locale: 'ko-KR',
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+  })
+  if (fs.existsSync(COOKIE_FILE)) {
+    const cookies = JSON.parse(fs.readFileSync(COOKIE_FILE, 'utf-8'))
+    await context.addCookies(cookies)
+  }
+  const page = await context.newPage()
+
+  // 학교별 공시정보 페이지 로드 (세션 활성화 + jQuery 로드)
+  await page.goto('https://www.schoolinfo.go.kr/ei/ss/pneiss_a03_s0.do', {
+    waitUntil: 'networkidle', timeout: 30000,
   })
   await page.waitForTimeout(2000)
 
-  // 공시년도 선택
-  const yearSel = page.locator('select').filter({ hasText: /2026|2025|2024/ }).first()
-  if (await yearSel.isVisible({ timeout: 3000 }).catch(() => false)) {
-    await yearSel.selectOption({ label: year })
-    await page.waitForTimeout(1500)
-    console.log(`  공시년도 ${year} 선택`)
-  }
+  // 3. 각 학교 데이터 수집
+  let success = 0, failed = 0, notMatched = 0
 
-  // 공시항목 선택 — "졸업생의 진로 현황"
-  // 체크박스 또는 라디오 중 해당 항목 클릭
-  const itemLabel = page.getByText('졸업생의 진로 현황', { exact: true })
-  if (!(await itemLabel.isVisible({ timeout: 5000 }).catch(() => false))) {
-    console.log('  "졸업생의 진로 현황" 항목 미발견')
-    return []
-  }
-  await itemLabel.click()
-  await page.waitForTimeout(500)
-  console.log('  "졸업생의 진로 현황" 선택')
+  for (const school of allSchools) {
+    process.stdout.write(`  [${school.area}] ${school.name} ... `)
 
-  // 학교급: 중학교
-  const middleLabel = page.getByText('중학교', { exact: true })
-  if (await middleLabel.isVisible({ timeout: 3000 }).catch(() => false)) {
-    await middleLabel.click()
+    const text = await fetchGradData(page, school)
+    if (!text) {
+      console.log('수집 실패')
+      failed++
+      continue
+    }
+
+    if (SCHOOL_TYPE === 'high') {
+      const data = parseHigh(text)
+      if (!data) {
+        console.log('파싱 실패')
+        failed++
+        continue
+      }
+
+      if (DRY_RUN) {
+        console.log(`total=${data.univ_rate}% 4yr=${data.univ_4year_rate}% 2yr=${data.univ_2year_rate}%`)
+        success++
+        continue
+      }
+
+      const saved = await saveHigh(supabase, school, data)
+      if (saved) {
+        console.log(`OK (total=${data.univ_rate}% 4yr=${data.univ_4year_rate}%)`)
+        success++
+      } else {
+        notMatched++
+      }
+    } else {
+      const data = parseMiddle(text)
+      if (!data) {
+        console.log('파싱 실패')
+        failed++
+        continue
+      }
+
+      if (DRY_RUN) {
+        console.log(`rate=${data.advancement_rate}% sci=${data.advancement_science}% for=${data.advancement_foreign}% pri=${data.advancement_private}%`)
+        success++
+        continue
+      }
+
+      const saved = await saveMiddle(supabase, school, data)
+      if (saved) {
+        console.log(`OK (rate=${data.advancement_rate}%)`)
+        success++
+      } else {
+        notMatched++
+      }
+    }
+
     await page.waitForTimeout(500)
   }
 
-  // 지역: 경상남도
-  const sidoSel = page.locator('select').filter({ has: page.locator('option[value*="경남"], option[value*="48"]') }).first()
-  if (await sidoSel.isVisible({ timeout: 3000 }).catch(() => false)) {
-    // 경남 코드 찾기
-    const options = await sidoSel.locator('option').all()
-    for (const opt of options) {
-      const text = await opt.textContent()
-      if (text?.includes('경남') || text?.includes('경상남도')) {
-        const val = await opt.getAttribute('value')
-        await sidoSel.selectOption(val ?? '경상남도')
-        await page.waitForTimeout(500)
-        console.log('  경남 선택')
-        break
-      }
-    }
-  } else {
-    // 지역 라디오/버튼 방식
-    const gyeongnamBtn = page.getByText(/경상남도|경남/, { exact: false }).first()
-    if (await gyeongnamBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await gyeongnamBtn.click()
-      await page.waitForTimeout(500)
-    }
-  }
-
-  // 검색 버튼 클릭
-  const searchBtn = page.getByRole('button', { name: /검색|조회/ }).first()
-  if (await searchBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-    await searchBtn.click()
-    await page.waitForNetworkIdle({ timeout: 15_000 }).catch(() => {})
-    await page.waitForTimeout(2000)
-    console.log('  검색 완료')
-  }
-
-  // 현재 URL과 페이지 내용 확인
-  console.log('  현재 URL:', page.url())
-  const pageText = await page.evaluate(() => document.body?.innerText?.slice(0, 300) ?? '')
-  console.log('  페이지 미리보기:', pageText)
-
-  // 결과 테이블 파싱
-  const results: SchoolGrad[] = []
-  let pageNum = 1
-  while (true) {
-    const rows = await page.evaluate((): Array<Record<string, string>> => {
-      const tables = document.querySelectorAll('table')
-      for (const tbl of tables) {
-        const txt = tbl.textContent ?? ''
-        if (!txt.includes('졸업') && !txt.includes('학교명')) continue
-        const rows = Array.from(tbl.querySelectorAll('tr'))
-        const headers: string[] = []
-        const result: Array<Record<string, string>> = []
-        for (const row of rows) {
-          const ths = row.querySelectorAll('th')
-          if (ths.length > 0) {
-            Array.from(ths).forEach(th => headers.push((th.textContent ?? '').trim()))
-            continue
-          }
-          const tds = Array.from(row.querySelectorAll('td')).map(td => (td.textContent ?? '').trim())
-          if (tds.length > 0 && headers.length > 0) {
-            const r: Record<string, string> = {}
-            headers.forEach((h, i) => { r[h] = tds[i] ?? '' })
-            result.push(r)
-          }
-        }
-        if (result.length > 0) return result
-      }
-      return []
-    })
-
-    if (rows.length === 0) break
-
-    for (const row of rows) {
-      const schoolName = row['학교명'] ?? row['학교'] ?? ''
-      if (!schoolName) continue
-      const graduates = num(row, '졸업자수', '졸업자_수', '졸업자')
-      if (!graduates) continue
-
-      results.push({
-        schoolName,
-        graduates,
-        science:  num(row, '과학고_도내', '과학고도내', '과학고') + num(row, '과학고_도외', '과학고도외'),
-        foreign:  num(row, '외국어고·국제고_도내', '외국어고ㆍ국제고_도내', '외고국제고_도내', '외국어고_도내')
-                + num(row, '외국어고·국제고_도외', '외국어고ㆍ국제고_도외', '외고국제고_도외', '외국어고_도외'),
-        privAuto: num(row, '자율형사립고', '자율형사립', '자사고'),
-        pubAuto:  num(row, '자율형공립고', '자율형공립'),
-        art:      num(row, '예술체육고', '예고체고', '예고·체고'),
-        meister:  num(row, '마이스터고', '마이스터'),
-      })
-    }
-
-    // 다음 페이지
-    const nextBtn = page.getByRole('link', { name: String(pageNum + 1) })
-      .or(page.getByRole('button', { name: '다음' }))
-    if (!(await nextBtn.isVisible({ timeout: 2000 }).catch(() => false))) break
-    await nextBtn.click()
-    await page.waitForTimeout(2000)
-    pageNum++
-    console.log(`  페이지 ${pageNum} 로드...`)
-  }
-
-  console.log(`  수집 완료: ${results.length}개 학교`)
-  return results
-}
-
-function num(row: Record<string, string>, ...kws: string[]): number {
-  const k = Object.keys(row).find(k =>
-    kws.some(kw => k.replace(/[\s·ㆍ]/g, '').includes(kw.replace(/[\s·ㆍ]/g, '')))
-  )
-  return k ? Number((row[k] ?? '').replace(/,/g, '')) || 0 : 0
-}
-
-// ─── DB 업데이트 ──────────────────────────────────────────────────────────────
-async function saveToDb(data: SchoolGrad[]) {
-  const { data: schools, error } = await supabase
-    .from('facility_school')
-    .select('id, school_name')
-    .eq('school_type', 'middle')
-  if (error) throw error
-
-  const map = new Map(schools!.map(s => [s.school_name, s.id]))
-  let updated = 0, notFound = 0
-
-  for (const d of data) {
-    const id = map.get(d.schoolName)
-    if (!id) { notFound++; continue }
-
-    const total = d.science + d.foreign + d.privAuto + d.pubAuto + d.art + d.meister
-    const payload = {
-      advancement_rate:    Math.round(total      / d.graduates * 1000) / 10,
-      advancement_science: Math.round(d.science  / d.graduates * 1000) / 10,
-      advancement_foreign: Math.round(d.foreign  / d.graduates * 1000) / 10,
-      advancement_private: Math.round(d.privAuto / d.graduates * 1000) / 10,
-    }
-
-    if (DRY_RUN) {
-      console.log(`  [DRY] ${d.schoolName}: 졸업${d.graduates} rate=${payload.advancement_rate}% 과학${payload.advancement_science}% 외고${payload.advancement_foreign}% 자사${payload.advancement_private}%`)
-      updated++
-      continue
-    }
-    const { error: e } = await supabase.from('facility_school').update(payload).eq('id', id)
-    if (e) { console.error(`  오류 ${d.schoolName}:`, e.message); continue }
-    updated++
-  }
-
-  console.log(`\n결과: ${updated}개 업데이트 / 미매칭 ${notFound}개`)
-  if (notFound > 0) {
-    const notFoundNames = data.filter(d => !map.has(d.schoolName)).map(d => d.schoolName)
-    console.log('미매칭:', notFoundNames.slice(0, 20).join(', '))
-  }
-}
-
-// ─── 메인 ──────────────────────────────────────────────────────────────────────
-async function main() {
-  console.log(`\n${DRY_RUN ? '[DRY-RUN] ' : ''}학교알리미 졸업생 진로 현황 수집 시작\n`)
-
-  const browser = await chromium.launch({ headless: false, slowMo: 50, args: ['--start-maximized'] })
-  const context = await browser.newContext({ locale: 'ko-KR' })
-  const page = await context.newPage()
-  await page.bringToFront()
-
-  await page.goto('https://www.schoolinfo.go.kr/Main.do', { waitUntil: 'networkidle', timeout: 20_000 })
-  await waitForLogin(page)
-
-  // 2025년 공시 데이터 (2024 졸업생, 2025년 11월 공시) — 가장 최신
-  let data = await fetchGraduationData(page, '2025년')
-
-  if (data.length === 0) {
-    console.log('2025년 데이터 없음, 2024년 시도...')
-    data = await fetchGraduationData(page, '2024년')
-  }
-
-  if (data.length === 0) {
-    console.log('\n데이터 수집 실패. 현재 페이지 상태:')
-    console.log('URL:', page.url())
-    const txt = await page.evaluate(() => document.body?.innerText?.slice(0, 500) ?? '')
-    console.log(txt)
-    await browser.close()
-    return
-  }
-
-  await saveToDb(data)
   await browser.close()
+
+  console.log(`\n=== 완료 ===`)
+  console.log(`  성공: ${success}개`)
+  console.log(`  수집 실패: ${failed}개`)
+  console.log(`  DB 미매칭: ${notMatched}개`)
 }
 
-main().catch(e => { console.error(e); process.exit(1) })
+main().catch(e => { console.error('[FATAL]', e); process.exit(1) })
