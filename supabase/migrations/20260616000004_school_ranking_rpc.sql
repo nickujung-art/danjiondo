@@ -69,3 +69,5 @@ AS $$
   FROM ordered o
   ORDER BY o.rank;
 $$;
+
+GRANT EXECUTE ON FUNCTION public.school_ranking(text, text, text) TO anon, authenticated;

@@ -99,8 +99,9 @@ export function KakaoMap({
     const guMap = new Map<string, AccEntry>()
 
     for (const c of complexes) {
-      // 김해시는 gu=null이므로 si 폴백 사용
-      const key = c.gu ?? c.si ?? '기타'
+      // 김해시는 gu=null이므로 si 폴백 사용. 둘 다 없으면 구 클러스터에서 제외
+      const key = c.gu ?? c.si
+      if (!key) continue
       const priceEst = c.recent_price ?? (
         c.avg_sale_per_pyeong !== null && c.avg_sale_per_pyeong > 0
           ? Math.round(c.avg_sale_per_pyeong * 25)
