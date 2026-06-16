@@ -63,9 +63,10 @@
 - iOS Safari 16.4+ 호환, 미만은 이메일 fallback
 
 ### Auth
-- NextAuth.js v5 — Naver OAuth (1순위) + Resend Magic Link
-- Session: JWT (HttpOnly, SameSite=Lax, Secure), 7일 sliding refresh
-- Supabase JWT 동기화: NextAuth 콜백에서 Supabase JWT 발급 → RLS 컨텍스트
+- **Supabase Auth** — Naver OAuth (1순위) + 이메일 OTP (2순위)
+- Session: Supabase JWT (HttpOnly, SameSite=Lax, Secure)
+- RLS 컨텍스트: Supabase Auth UID → `auth.uid()` 자동 연동
+- 어드민 role: `raw_app_meta_data.role = 'admin'`
 - 광고주 role: `raw_app_meta_data.role = 'advertiser'`
 
 ### DB (Supabase Postgres + PostGIS)
@@ -74,14 +75,18 @@
 - RLS: 모든 사용자 데이터 테이블에 정책 명시
 
 ### 외부 API
-| API | 용도 | 한도 |
+| API | 용도 | 한도 / 갱신 주기 |
 |---|---|---|
-| 국토부 실거래가 | 매매·전세·월세 × 아파트·오피스텔 | 일 10,000회 |
+| 국토부 실거래가 (MOLIT_API_KEY) | 매매·전세·월세 × 아파트·오피스텔 | 일 10,000회 |
 | 행안부 도로명주소 | 지오코딩 1차 | 일 10,000회 |
 | 카카오 로컬 | 지오코딩 2차 + 반경 POI | 일 100,000회 |
 | 카카오맵 JS SDK | 지도 렌더링 | 무료 |
-| 학교알리미 | 학군 (배정 초·중·고) | 분기 1회 갱신 |
-| K-apt | 관리비 | 월 1회 갱신 |
+| 학교알리미 | 학군·진학률·연락처 수집 (Playwright 필요) | 연간 (11월 진학률 갱신) |
+| K-apt | 관리비 | 월 1회 |
+| Groq API | Chronos 예측 코멘터리 생성 | 토큰 과금 |
+| Google Gemini | 분양 HTML 파싱 | 토큰 과금 |
+
+> **MOLIT_API_KEY**: data.go.kr 전체 서비스 공통 사용. 별도 키 신설 금지 (ADR 참조).
 
 ### 알림
 - 이메일: Resend Free (100/일, 3k/월) + React Email 템플릿
@@ -101,76 +106,114 @@
 
 ## 디렉토리 구조
 
+> 아래는 2026-06-16 기준 실제 구조입니다.
+
 ```
 src/
 ├── app/
-│   ├── (public)/
-│   │   ├── page.tsx                  # 랜딩
-│   │   ├── search/page.tsx
-│   │   ├── danji/[id]/page.tsx
-│   │   └── map/page.tsx
-│   ├── (auth)/
-│   │   ├── favorites/page.tsx
-│   │   └── settings/page.tsx
-│   ├── (admin)/
-│   │   └── admin/...
-│   ├── api/
-│   │   ├── auth/[...nextauth]/route.ts
-│   │   ├── transactions/route.ts
-│   │   ├── ranking/[type]/route.ts
-│   │   ├── notifications/
-│   │   ├── ingest/                   # CRON_SECRET 검증 필수
-│   │   └── ads/
-│   └── layout.tsx
+│   ├── page.tsx                      # 랜딩
+│   ├── layout.tsx
+│   ├── [slug]/page.tsx               # 단지 상세 (슬러그 URL)
+│   ├── complexes/[id]/               # 단지 상세 (구 URL, 내부 리다이렉트)
+│   ├── map/                          # 지도 검색
+│   ├── compare/                      # 단지 비교
+│   ├── presale/                      # 분양 정보
+│   ├── invest/                       # 투자 분석 (사분면)
+│   ├── gap-analysis/                 # Gap 분석
+│   ├── favorites/                    # 즐겨찾기 (로그인 필요)
+│   ├── profile/                      # 내 프로필
+│   ├── auth/                         # 로그인/OAuth 콜백
+│   ├── login/
+│   ├── ads/                          # 광고 랜딩
+│   ├── consent/                      # 약관 동의
+│   ├── reactivate/                   # 휴면 계정 재활성화
+│   ├── legal/                        # 이용약관·개인정보
+│   ├── admin/                        # 어드민 (role=admin 전용)
+│   │   ├── ads/                      # 광고 검수
+│   │   ├── cardnews/                 # 카드뉴스 발행
+│   │   ├── gps-requests/             # GPS 인증 요청
+│   │   ├── listing-prices/           # 호가 관리
+│   │   ├── members/                  # 회원 관리
+│   │   ├── presale-discoveries/      # 분양 발견 관리
+│   │   ├── realtors/                 # 공인중개사 관리
+│   │   ├── redevelopment/            # 재건축 정보 입력
+│   │   ├── reports/                  # 신고 처리
+│   │   └── status/                   # 데이터 소스 현황
+│   ├── actions/                      # Server Actions
+│   │   └── education.ts              # fetchSchoolRanking
+│   └── api/
+│       ├── auth/[...nextauth]/
+│       ├── ingest/                   # CRON_SECRET 검증 필수 (Vercel Cron)
+│       ├── notifications/
+│       └── ads/
+│
 ├── components/
-│   ├── danji/
-│   ├── landing/
-│   ├── map/
-│   ├── ads/
-│   ├── ui/                           # atoms (shadcn 스타일)
-│   └── shared/
+│   ├── complex/                      # 단지 상세 컴포넌트
+│   │   ├── EducationCard.tsx         # 학군 (SchoolRankingSheet 포함)
+│   │   └── ...
+│   ├── home/                         # 랜딩 페이지
+│   ├── map/                          # 지도 컴포넌트
+│   ├── ads/                          # 광고 컴포넌트
+│   ├── invest/                       # 투자 분석 컴포넌트
+│   ├── presale/                      # 분양 컴포넌트
+│   ├── search/                       # 검색 자동완성
+│   ├── admin/                        # 어드민 UI
+│   ├── auth/                         # 로그인 UI
+│   ├── community/                    # 커뮤니티 컴포넌트
+│   ├── profile/                      # 프로필 컴포넌트
+│   ├── realtors/                     # 공인중개사 컴포넌트
+│   ├── reviews/                      # 후기 컴포넌트
+│   └── layout/                       # 공통 레이아웃
+│
 ├── lib/
 │   ├── supabase/{server,client,admin}.ts
 │   ├── auth/
-│   ├── ranking/{pool,tabs}.ts
-│   ├── notifications/{email,web-push,queue}.ts
-│   ├── data/{realprice,facility}.ts
-│   ├── api/{rate-limit,error}.ts
-│   └── validation/
+│   ├── data/                         # 도메인 데이터 레이어
+│   │   ├── facility-edu.ts           # 학교 데이터 (SchoolItem)
+│   │   ├── price-history-cache.ts
+│   │   └── ...
+│   ├── ai/                           # AI 관련 (Chronos 예측, 코멘터리)
+│   ├── notifications/
+│   ├── prediction/                   # 예측 모델
+│   ├── actions/                      # Server Action 헬퍼
+│   └── utils/
+│
 ├── services/                         # 외부 API 어댑터 (얇은 래퍼)
-│   ├── molit.ts
-│   ├── juso.ts
-│   ├── kakao-local.ts
-│   ├── school-alimi.ts
-│   └── kapt.ts
-├── types/
-│   ├── domain.ts
-│   ├── api.ts
-│   └── db.ts                         # Supabase 자동 생성
+│   ├── molit.ts                      # 국토부 실거래가
+│   ├── kakao-local.ts                # 카카오 로컬 API
+│   ├── school-alimi.ts               # 학교알리미
+│   └── kapt.ts                       # K-apt 관리비
+│
+└── types/
 
 supabase/
-├── migrations/
-│   ├── 0001_init_complexes.sql
-│   ├── 0002_transactions.sql
-│   ├── 0003_facility.sql
-│   ├── 0004_users_favorites.sql
-│   ├── 0005_notifications.sql
-│   ├── 0006_ads.sql
-│   └── 0007_indexes.sql
-└── seed/
+└── migrations/                       # 114개 (2026-06-16 기준)
+    └── ...20260616000004_school_ranking_rpc.sql  # 최신
 
-scripts/
-├── execute.py
-├── backfill-realprice.ts
-├── geocoding-batch.ts
-└── cost-report.ts
-
-phases/
-├── index.json
-├── 0-mvp/
-├── 1-launch/
-├── 2-community/
-└── 3-extras/
+scripts/                              # 82개 (1회성 배치·수집 스크립트)
+  ── 실거래 수집/백필 ──────────────────────────────
+  backfill-realprice.ts               # 국토부 실거래가 전체 백필
+  backfill-officetel.ts               # 오피스텔 실거래가
+  backfill-url-slugs.ts               # 슬러그 URL 생성
+  ── 단지 매칭/지오코딩 ───────────────────────────
+  backfill-jibun-addr.ts              # 지번주소 보완
+  enrich-apt-unmatched.ts             # 미매칭 단지 보완
+  embed-complexes.ts                  # 단지 임베딩 (벡터)
+  ── 학교알리미 ───────────────────────────────────
+  collect-school-stats.ts             # 기본 통계 (학급당 학생수 등)
+  collect-facility-edu.ts             # 단지-학교 매핑
+  scrape-school-advancement.ts        # 진학률 (중/고 --school-type=)
+  scrape-school-contact.ts            # 전화번호·홈페이지
+  scrape-school-details.ts            # 특수학급 수 (항목01, Playwright)
+  ── AI / 예측 ────────────────────────────────────
+  compute-predictions.ts              # Chronos 12개월 예측
+  compute-predictions-ai.py           # Python Chronos 실행
+  crawl-presale.ts                    # 분양 정보 크롤링
+  crawl-presale-news.ts               # 분양 뉴스 수집
+  ── 기타 ────────────────────────────────────────
+  collect-district-stats.ts           # 시군구 통계
+  fetch-cheongyak.ts                  # 청약 정보
+  execute.py                          # 배치 실행 헬퍼
 ```
 
 ## 데이터 모델 (핵심 테이블)

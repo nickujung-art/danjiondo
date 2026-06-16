@@ -1,0 +1,416 @@
+{
+  "_schema": "feature-registry/v1",
+  "_usage": "세션 시작 시 읽어서 todo/in_progress 항목 파악. done이지만 checklist 미완료 항목은 주의.",
+  "lastUpdated": "2026-06-16",
+  "summary": {
+    "done": 23,
+    "in_progress": 0,
+    "todo": 0,
+    "deferred": 5,
+    "blocked": 2
+  },
+  "features": [
+
+    {
+      "id": "complex-search",
+      "category": "단지 검색",
+      "name": "단지 검색 (자동완성 · 슬러그 URL)",
+      "status": "done",
+      "priority": "critical",
+      "notes": "[slug]/page.tsx. FTS + pg_trgm. complex_aliases 누적.",
+      "checklist": [
+        { "layer": "migration", "name": "complexes, complex_aliases 테이블", "status": "done" },
+        { "layer": "api",       "name": "검색 자동완성 API", "status": "done" },
+        { "layer": "ui",        "name": "자동완성 드롭다운 + 슬러그 URL 이동", "status": "done" },
+        { "layer": "test",      "name": "검색 Vitest 유닛", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "complex-detail",
+      "category": "단지 상세",
+      "name": "단지 상세 (10년 그래프 · 거래 내역 · 시설 요약)",
+      "status": "done",
+      "priority": "critical",
+      "notes": "cancel_date IS NULL AND superseded_by IS NULL 필터 필수. ISR 1h.",
+      "checklist": [
+        { "layer": "ui", "name": "Recharts 10년 그래프", "status": "done" },
+        { "layer": "ui", "name": "거래 내역 테이블 (취소·정정 제외)", "status": "done" },
+        { "layer": "ui", "name": "시설 섹션 (학군·관리비·편의시설)", "status": "done" },
+        { "layer": "ui", "name": "신고가 배지", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "map-search",
+      "category": "지도",
+      "name": "지도 검색 (카카오맵 · 평당가 핀 · 클러스터)",
+      "status": "done",
+      "priority": "critical",
+      "notes": "react-kakao-maps-sdk + supercluster. 모바일 GPS 핀 이동.",
+      "checklist": [
+        { "layer": "ui", "name": "카카오맵 핀 렌더 + 평당가 라벨", "status": "done" },
+        { "layer": "ui", "name": "supercluster 줌별 클러스터", "status": "done" },
+        { "layer": "ui", "name": "핀 클릭 → 단지 미리보기 카드", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "school-basic",
+      "category": "학군",
+      "name": "학군 기본 (학교알리미 · 학급당 학생수 · 교원비율)",
+      "status": "done",
+      "priority": "high",
+      "notes": "322개교 적재 완료. collect-school-stats.ts, collect-facility-edu.ts.",
+      "checklist": [
+        { "layer": "migration", "name": "facility_school 테이블 + 컬럼", "status": "done" },
+        { "layer": "script",    "name": "collect-school-stats.ts", "status": "done" },
+        { "layer": "script",    "name": "collect-facility-edu.ts (단지-학교 매핑)", "status": "done" },
+        { "layer": "ui",        "name": "EducationCard 학교 목록 + 백분위 바", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "school-contact",
+      "category": "학군",
+      "name": "학교 연락처 · 홈페이지 (학교알리미 API)",
+      "status": "done",
+      "priority": "medium",
+      "notes": "scrape-school-contact.ts. 16,941개 행 업데이트. API fetch (Playwright 불필요).",
+      "checklist": [
+        { "layer": "migration", "name": "facility_school.phone, homepage_url 컬럼", "status": "done" },
+        { "layer": "script",    "name": "scrape-school-contact.ts", "status": "done" },
+        { "layer": "ui",        "name": "SchoolDetailSheet 하단 tel:/홈페이지 링크", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "school-middle-advancement",
+      "category": "학군",
+      "name": "중학교 특목·자사고 진학률",
+      "status": "done",
+      "priority": "high",
+      "notes": "advancement_rate, advancement_science/foreign/private. 94개교 완료. 11월 갱신 필요.",
+      "checklist": [
+        { "layer": "migration", "name": "advancement 컬럼 (int2→numeric 마이그레이션)", "status": "done" },
+        { "layer": "script",    "name": "scrape-school-advancement.ts --school-type=middle", "status": "done" },
+        { "layer": "ui",        "name": "SchoolDetailSheet MiniBar (특목/자사고 진학률)", "status": "done" },
+        { "layer": "ui",        "name": "SchoolList 탭 레이블 '특목·자사고 진학률 합계'", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "school-high-univ",
+      "category": "학군",
+      "name": "고등학교 대학 진학률",
+      "status": "done",
+      "priority": "high",
+      "notes": "univ_rate, univ_4year_rate, univ_2year_rate. 60개교. 특성화고 11개는 항목코드 달라 파싱 불가.",
+      "checklist": [
+        { "layer": "migration", "name": "20260616000001 univ 컬럼 추가", "status": "done" },
+        { "layer": "migration", "name": "20260616000002 school_univ_percentile RPC", "status": "done" },
+        { "layer": "script",    "name": "scrape-school-advancement.ts --school-type=high", "status": "done" },
+        { "layer": "ui",        "name": "SchoolDetailSheet 대학 진학률 섹션", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "school-ranking",
+      "category": "학군",
+      "name": "학교 지역 순위 시트",
+      "status": "done",
+      "priority": "medium",
+      "notes": "school_ranking RPC. p_metric: students_per_class|special|univ_rate. 구별 탭(창원시).",
+      "checklist": [
+        { "layer": "migration", "name": "20260616000004 school_ranking RPC", "status": "done" },
+        { "layer": "api",       "name": "src/app/actions/education.ts fetchSchoolRanking", "status": "done" },
+        { "layer": "ui",        "name": "SchoolRankingSheet 바텀시트 + 구별 탭", "status": "done" },
+        { "layer": "ui",        "name": "SchoolList '순위 보기' 버튼", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "school-special-class",
+      "category": "학군",
+      "name": "특수학급 수 (항목01 수집 + UI 표시)",
+      "status": "done",
+      "priority": "medium",
+      "notes": "Playwright 필요 (jQuery .load). 항목08/30/73은 2025 공시 미입력 → 스킵. 344/355개 완료.",
+      "checklist": [
+        { "layer": "migration", "name": "20260616000003 special_class_count 컬럼", "status": "done" },
+        { "layer": "script",    "name": "scrape-school-details.ts 실행 완료 + DB 반영 (344/355개)", "status": "done" },
+        { "layer": "ui",        "name": "facility-edu.ts SELECT에 special_class_count 추가", "status": "done" },
+        { "layer": "ui",        "name": "SchoolDetailSheet 기본정보 칩에 특수학급 수 표시", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "school-alimi-link",
+      "category": "학군",
+      "name": "학교알리미 바로가기 링크",
+      "status": "done",
+      "priority": "low",
+      "notes": "SchoolDetailSheet 푸터 텍스트를 schoolinfo.go.kr 링크로 교체.",
+      "checklist": [
+        { "layer": "ui", "name": "SchoolDetailSheet 푸터 schoolinfo.go.kr 링크", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "kapt-management-fee",
+      "category": "관리비",
+      "name": "관리비 (K-apt)",
+      "status": "done",
+      "priority": "high",
+      "notes": "월 1회 갱신. facility_kapt 테이블.",
+      "checklist": [
+        { "layer": "migration", "name": "facility_kapt 테이블", "status": "done" },
+        { "layer": "script",    "name": "K-apt 수집 스크립트", "status": "done" },
+        { "layer": "ui",        "name": "단지 상세 관리비 섹션", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "presale",
+      "category": "분양",
+      "name": "분양 정보 (크롤링 · Gemini 파서)",
+      "status": "done",
+      "priority": "high",
+      "notes": "presale_enriched 테이블. crawl-presale.ts + Gemini HTML 파서.",
+      "checklist": [
+        { "layer": "migration", "name": "presale_enriched 테이블", "status": "done" },
+        { "layer": "script",    "name": "crawl-presale.ts + Gemini 파서", "status": "done" },
+        { "layer": "ui",        "name": "분양 목록 페이지 (/presale)", "status": "done" },
+        { "layer": "ui",        "name": "단지 상세 인근 분양 광고 연동", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "ai-commentary",
+      "category": "AI/예측",
+      "name": "AI 코멘트 (Chronos 12개월 예측 + Groq 코멘터리)",
+      "status": "done",
+      "priority": "high",
+      "notes": "964건 생성 완료. compute-predictions.ts + compute-predictions-ai.py. 월간 자동 실행.",
+      "checklist": [
+        { "layer": "migration", "name": "ai_commentary, predictions 테이블", "status": "done" },
+        { "layer": "script",    "name": "compute-predictions.ts (Chronos 12개월)", "status": "done" },
+        { "layer": "script",    "name": "compute-predictions-ai.py (Groq 코멘터리)", "status": "done" },
+        { "layer": "ui",        "name": "단지 상세 AI 코멘트 카드 + 예측 그래프", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "gap-analysis",
+      "category": "투자분석",
+      "name": "Gap 분석 (매매-전세 갭)",
+      "status": "done",
+      "priority": "medium",
+      "notes": "/gap-analysis 페이지.",
+      "checklist": [
+        { "layer": "ui", "name": "Gap 분석 페이지 + 차트", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "quadrant-analysis",
+      "category": "투자분석",
+      "name": "투자 사분면 분석 · 지역 인구",
+      "status": "done",
+      "priority": "medium",
+      "notes": "/invest 페이지. quadrant_data RPC. region_population_cache.",
+      "checklist": [
+        { "layer": "migration", "name": "20260612000003 quadrant_data_rpc", "status": "done" },
+        { "layer": "migration", "name": "20260612200000 region_population_cache", "status": "done" },
+        { "layer": "ui",        "name": "사분면 차트 + 지역 인구 표시", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "compare",
+      "category": "단지 비교",
+      "name": "단지 비교",
+      "status": "done",
+      "priority": "medium",
+      "notes": "/compare 페이지. 최대 3개 단지 비교.",
+      "checklist": [
+        { "layer": "ui", "name": "단지 비교 테이블 UI", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "auth-favorites-notification",
+      "category": "회원",
+      "name": "회원 · 즐겨찾기 · 알림 (Naver OAuth · 이메일 OTP)",
+      "status": "done",
+      "priority": "critical",
+      "notes": "Supabase Auth. Naver OAuth 1순위, 이메일 OTP 2순위. 알림 워커 GitHub Actions 5분.",
+      "checklist": [
+        { "layer": "migration", "name": "profiles, favorites, notifications, push_subscriptions", "status": "done" },
+        { "layer": "ui",        "name": "로그인 페이지 (Naver OAuth + 이메일)", "status": "done" },
+        { "layer": "ui",        "name": "즐겨찾기 페이지 + 단지 상세 토글", "status": "done" },
+        { "layer": "ui",        "name": "알림 설정 + 수신 이력", "status": "done" },
+        { "layer": "api",       "name": "알림 워커 cron (GitHub Actions 5분)", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "ads",
+      "category": "광고",
+      "name": "광고 시스템 (분양 + 중개 · 어드민 검수)",
+      "status": "done",
+      "priority": "high",
+      "notes": "now() BETWEEN starts_at AND ends_at AND status='approved' 필수. 가중치 랜덤.",
+      "checklist": [
+        { "layer": "migration", "name": "ad_campaigns, ad_events 테이블", "status": "done" },
+        { "layer": "ui",        "name": "광고 슬롯 컴포넌트 (단지 상세·지도)", "status": "done" },
+        { "layer": "ui",        "name": "어드민 광고 검수 페이지", "status": "done" },
+        { "layer": "ui",        "name": "광고주 캠페인 등록 UI", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "pwa",
+      "category": "PWA",
+      "name": "PWA (Serwist · 웹 푸시 · 오프라인)",
+      "status": "done",
+      "priority": "medium",
+      "notes": "Serwist (next-pwa 후속). iOS 16.4+ 웹 푸시. 미만 이메일 fallback.",
+      "checklist": [
+        { "layer": "migration", "name": "push_subscriptions 테이블", "status": "done" },
+        { "layer": "ui",        "name": "앱 설치 프롬프트 + 오프라인 페이지", "status": "done" },
+        { "layer": "api",       "name": "VAPID 웹 푸시 발송", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "redevelopment",
+      "category": "재건축",
+      "name": "재건축 정보 (어드민 수동 입력)",
+      "status": "done",
+      "priority": "medium",
+      "notes": "redevelopment_projects 테이블. 어드민 수동 입력 전용.",
+      "checklist": [
+        { "layer": "migration", "name": "redevelopment_projects 테이블", "status": "done" },
+        { "layer": "ui",        "name": "단지 상세 재건축 정보 섹션", "status": "done" },
+        { "layer": "ui",        "name": "어드민 재건축 입력 페이지", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "admin-console",
+      "category": "어드민",
+      "name": "어드민 콘솔 (회원 · 광고 · 카드뉴스 · 공인중개사)",
+      "status": "done",
+      "priority": "high",
+      "notes": "role=admin 전용. /admin/* 라우트.",
+      "checklist": [
+        { "layer": "ui", "name": "회원 관리 (members)", "status": "done" },
+        { "layer": "ui", "name": "광고 검수 (ads)", "status": "done" },
+        { "layer": "ui", "name": "카드뉴스 발행 (cardnews)", "status": "done" },
+        { "layer": "ui", "name": "공인중개사 관리 (realtors)", "status": "done" },
+        { "layer": "ui", "name": "분양 발견 관리 (presale-discoveries)", "status": "done" },
+        { "layer": "ui", "name": "데이터 소스 현황 (status)", "status": "done" },
+        { "layer": "ui", "name": "신고 처리 (reports)", "status": "done" },
+        { "layer": "ui", "name": "GPS 인증 요청 (gps-requests)", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "landing",
+      "category": "랜딩",
+      "name": "랜딩 (신고가 카드 · 랭킹 탭)",
+      "status": "done",
+      "priority": "high",
+      "notes": "오늘 신고가 카드 + 랭킹 4종 탭.",
+      "checklist": [
+        { "layer": "migration", "name": "ranking_pool, ranking_snapshots 테이블", "status": "done" },
+        { "layer": "ui",        "name": "신고가 카드 + 랭킹 탭", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "school-annual-refresh",
+      "category": "학군",
+      "name": "학교 진학률 연간 갱신 (2025년 공시)",
+      "status": "blocked",
+      "priority": "medium",
+      "deferredTo": "2026-11",
+      "notes": "학교알리미 진학률 공시는 11월에 업데이트. 그 전까지는 데이터 없음.",
+      "checklist": [
+        { "layer": "script", "name": "scrape-school-advancement.ts --school-type=middle 재실행", "status": "todo" },
+        { "layer": "script", "name": "scrape-school-advancement.ts --school-type=high 재실행", "status": "todo" }
+      ]
+    },
+
+    {
+      "id": "school-teacher-meal",
+      "category": "학군",
+      "name": "교원 수 · 급식 · 방과후 수업 수 (항목08/30/73)",
+      "status": "blocked",
+      "priority": "low",
+      "deferredTo": "2026-11",
+      "notes": "2025 공시 미입력 학교 대다수. 항목08(교원)/30(급식)/73(방과후) 모두 데이터 없음.",
+      "checklist": [
+        { "layer": "script", "name": "scrape-school-details.ts 항목08/30/73 파서 추가", "status": "todo" },
+        { "layer": "ui",     "name": "SchoolDetailSheet 교원·급식·방과후 표시", "status": "todo" }
+      ]
+    },
+
+    {
+      "id": "anonymous-reviews",
+      "category": "커뮤니티",
+      "name": "단지 익명 후기 (GPS 인증)",
+      "status": "deferred",
+      "priority": "medium",
+      "deferredTo": "V1.5",
+      "notes": "reviews, review_verifications 테이블 스키마만 설계됨. GPS 인증 연동 필요.",
+      "checklist": [
+        { "layer": "migration", "name": "reviews, review_verifications 테이블", "status": "todo" },
+        { "layer": "ui",        "name": "후기 작성 · 목록 UI", "status": "todo" },
+        { "layer": "ui",        "name": "GPS 인증 흐름 (gps-requests 어드민 연동)", "status": "todo" }
+      ]
+    },
+
+    {
+      "id": "listing-prices",
+      "category": "호가",
+      "name": "호가 정보 (공인중개사 등록)",
+      "status": "deferred",
+      "priority": "medium",
+      "deferredTo": "V1.5",
+      "notes": "어드민 listing-prices 페이지는 있음. 공인중개사 입력 UI · 단지 상세 표시는 미완.",
+      "checklist": [
+        { "layer": "ui", "name": "공인중개사 호가 입력 폼", "status": "todo" },
+        { "layer": "ui", "name": "단지 상세 호가 섹션", "status": "todo" }
+      ]
+    },
+
+    {
+      "id": "cafe-nlp",
+      "category": "커뮤니티",
+      "name": "카페 글 NLP 매칭 · 감성 분석",
+      "status": "deferred",
+      "priority": "low",
+      "deferredTo": "V2",
+      "notes": "카페 글 API 연동 + 단지명 NLP 매칭 + 감성 분석. V2 범위.",
+      "checklist": [
+        { "layer": "migration", "name": "cafe_posts 테이블", "status": "todo" },
+        { "layer": "script",    "name": "카페 글 수집 + NLP 파이프라인", "status": "todo" },
+        { "layer": "ui",        "name": "단지 상세 카페 의견 섹션", "status": "todo" }
+      ]
+    },
+
+    {
+      "id": "mobile-native",
+      "category": "모바일",
+      "name": "모바일 네이티브 앱 (React Native)",
+      "status": "deferred",
+      "priority": "low",
+      "deferredTo": "V2",
+      "notes": "PWA로 대체 운영 중. V2 범위.",
+      "checklist": []
+    }
+
+  ]
+}

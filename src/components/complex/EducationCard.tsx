@@ -350,7 +350,7 @@ function SchoolDetailSheet({ school, si, onClose }: {
   const typeColor = SCHOOL_TYPE_COLOR[school.school_type]
   const wc        = walkColor(school.distance_m)
 
-  const hasBasicInfo    = school.establishment_type != null || school.total_students != null
+  const hasBasicInfo    = school.establishment_type != null || school.total_students != null || school.special_class_count != null
   const hasQuality      = school.students_per_class != null || school.teachers_ratio != null
   const hasMiddleAdv    = school.school_type === 'middle' && school.advancement_rate != null
   const hasHighUniv     = school.school_type === 'high'   && school.univ_rate != null
@@ -457,6 +457,13 @@ function SchoolDetailSheet({ school, si, onClose }: {
             {school.total_students != null && (
               <InfoChip
                 label={`전교생 ${school.total_students.toLocaleString()}명`}
+                color="var(--fg-sec)"
+                bg="var(--bg-surface-2)"
+              />
+            )}
+            {school.special_class_count != null && (
+              <InfoChip
+                label={`특수학급 ${school.special_class_count}개`}
                 color="var(--fg-sec)"
                 bg="var(--bg-surface-2)"
               />
@@ -742,9 +749,14 @@ function SchoolDetailSheet({ school, si, onClose }: {
         )}
 
         <div style={{ padding: '8px 20px 8px', textAlign: 'center' }}>
-          <p style={{ font: '500 10px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>
+          <a
+            href="https://www.schoolinfo.go.kr"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ font: '500 10px/1 var(--font-sans)', color: 'var(--fg-tertiary)', textDecoration: 'underline' }}
+          >
             학교알리미 공시 데이터 · 행정안전부 인허가 기준
-          </p>
+          </a>
         </div>
       </div>
     </>,
