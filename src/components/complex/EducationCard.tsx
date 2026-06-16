@@ -804,7 +804,11 @@ function SchoolRankingSheet({ si, schoolType, onClose }: {
     ? ['전체', '의창구', '성산구', '마산합포구', '마산회원구', '진해구']
     : ['전체']
 
-  const filtered = gu === '전체' ? data : data.filter(d => d.gu === gu)
+  type DisplayItem = SchoolRankingItem & { cityRank?: number }
+  const filteredRaw = gu === '전체' ? data : data.filter(d => d.gu === gu)
+  const filtered: DisplayItem[] = gu !== '전체'
+    ? filteredRaw.map((item, idx) => ({ ...item, cityRank: item.rank, rank: idx + 1 }))
+    : filteredRaw
 
   return createPortal(
     <>
@@ -891,10 +895,18 @@ function SchoolRankingSheet({ si, schoolType, onClose }: {
                     <div style={{ font: '600 14px/1.3 var(--font-sans)', color: 'var(--fg-pri)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {item.school_name}
                     </div>
-                    {item.gu && (
-                      <div style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginTop: 2 }}>
-                        {item.gu}
-                      </div>
+                    {gu === '전체' ? (
+                      item.gu && (
+                        <div style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginTop: 2 }}>
+                          {item.gu}
+                        </div>
+                      )
+                    ) : (
+                      item.cityRank != null && (
+                        <div style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginTop: 2 }}>
+                          {si} 전체 {item.cityRank}위
+                        </div>
+                      )
                     )}
                   </div>
 
