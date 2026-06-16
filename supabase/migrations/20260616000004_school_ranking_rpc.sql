@@ -33,12 +33,9 @@ AS $$
     WHERE c.si = p_si
       AND fs.school_type = p_school_type
       AND (
-        CASE
-          WHEN p_metric = 'students_per_class' THEN fs.students_per_class IS NOT NULL
-          WHEN p_metric = 'special'            THEN (fs.advancement_science IS NOT NULL OR fs.advancement_foreign IS NOT NULL OR fs.advancement_private IS NOT NULL)
-          WHEN p_metric = 'univ_rate'          THEN fs.univ_rate IS NOT NULL
-          ELSE FALSE
-        END
+        (p_metric = 'students_per_class' AND fs.students_per_class IS NOT NULL)
+        OR (p_metric = 'special' AND (fs.advancement_science IS NOT NULL OR fs.advancement_foreign IS NOT NULL OR fs.advancement_private IS NOT NULL))
+        OR (p_metric = 'univ_rate' AND fs.univ_rate IS NOT NULL)
       )
     ORDER BY fs.school_name
   ),
@@ -47,11 +44,11 @@ AS $$
       school_name,
       road_address,
       metric_value,
-      CASE
-        WHEN p_metric = 'students_per_class'
-        THEN ROW_NUMBER() OVER (ORDER BY metric_value ASC  NULLS LAST)
-        ELSE ROW_NUMBER() OVER (ORDER BY metric_value DESC NULLS LAST)
-      END AS rank
+      ROW_NUMBER() OVER (
+        ORDER BY
+          CASE WHEN p_metric = 'students_per_class' THEN metric_value END ASC  NULLS LAST,
+          CASE WHEN p_metric != 'students_per_class' THEN metric_value END DESC NULLS LAST
+      ) AS rank
     FROM deduped
   )
   SELECT
@@ -59,11 +56,11 @@ AS $$
     o.school_name,
     o.metric_value,
     CASE
-      WHEN o.road_address LIKE '%창원시 의창구%'   THEN '의창구'
-      WHEN o.road_address LIKE '%창원시 성산구%'   THEN '성산구'
+      WHEN o.road_address LIKE '%창원시 의창구%'     THEN '의창구'
+      WHEN o.road_address LIKE '%창원시 성산구%'     THEN '성산구'
       WHEN o.road_address LIKE '%창원시 마산합포구%' THEN '마산합포구'
       WHEN o.road_address LIKE '%창원시 마산회원구%' THEN '마산회원구'
-      WHEN o.road_address LIKE '%창원시 진해구%'   THEN '진해구'
+      WHEN o.road_address LIKE '%창원시 진해구%'     THEN '진해구'
       ELSE NULL
     END AS gu
   FROM ordered o
