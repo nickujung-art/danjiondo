@@ -11,18 +11,26 @@ export interface SchoolItem {
   // 학교알리미 품질 지표 (null = 데이터 미수집)
   students_per_class:     number | null
   teachers_ratio:         number | null
-  advancement_rate:       number | null   // 특목고+자율고 진학률 % (중학교)
+  // 중학교: 고등학교 진학률 분석
+  advancement_rate:       number | null   // 전체 고교 진학률 % (중학교)
   advancement_science:    number | null   // 과학고 진학률 % (중학교)
   advancement_foreign:    number | null   // 외고·국제고 진학률 % (중학교)
   advancement_private:    number | null   // 자율형사립고(자사고) 진학률 % (중학교)
+  // 고등학교: 대학 진학률 분석
+  univ_rate:              number | null   // 대학 진학률 합계 % (고등학교)
+  univ_4year_rate:        number | null   // 4년제 대학 진학률 % (고등학교)
+  univ_2year_rate:        number | null   // 전문대 진학률 % (고등학교)
   data_year:              number | null
   // 창원/김해 내 백분위 (0.0~1.0, RPC 계산)
   students_percentile:    number | null   // 높을수록 학급당학생수 적음(좋음)
-  advancement_percentile: number | null   // 높을수록 진학률 높음(좋음)
+  advancement_percentile: number | null   // 중학교=고교 진학률, 고등학교=대학 진학률 백분위
   // 학군 평당가 비교 (P2, 배정학교 전용)
   district_avg_py:        number | null
   si_avg_py:              number | null
   price_premium:          number | null   // (district - si) / si * 100
+  // 연락처 (Wave 1 수집)
+  phone:                  string | null
+  homepage_url:           string | null
 }
 
 export interface PoiItem {
@@ -55,7 +63,7 @@ export async function getComplexFacilityEdu(
   const [schoolRes, poiRes, scoreRes] = await Promise.all([
     supabase
       .from('facility_school')
-      .select('school_name, school_type, distance_m, is_assignment, establishment_type, total_students, students_per_class, teachers_ratio, advancement_rate, advancement_science, advancement_foreign, advancement_private, data_year')
+      .select('school_name, school_type, distance_m, is_assignment, establishment_type, total_students, students_per_class, teachers_ratio, advancement_rate, advancement_science, advancement_foreign, advancement_private, univ_rate, univ_4year_rate, univ_2year_rate, data_year, phone, homepage_url')
       .eq('complex_id', complexId)
       .order('distance_m', { ascending: true, nullsFirst: false }),
 
@@ -91,12 +99,19 @@ export async function getComplexFacilityEdu(
     advancement_science: number | null
     advancement_foreign: number | null
     advancement_private: number | null
+    univ_rate:           number | null
+    univ_4year_rate:     number | null
+    univ_2year_rate:     number | null
     data_year:           number | null
+    phone:               string | null
+    homepage_url:        string | null
   }>
 
   // 백분위 RPC는 si가 있고 데이터가 있는 학교만 (상위 5개 배정학교 대상)
   const schoolsWithData = si
-    ? rawSchools.filter(s => s.students_per_class != null || s.advancement_rate != null).slice(0, 5)
+    ? rawSchools.filter(s =>
+        s.students_per_class != null || s.advancement_rate != null || s.univ_rate != null
+      ).slice(0, 5)
     : []
 
   // ─── Wave 2: 백분위·평당가·학원 RPC 병렬 실행 ────────────────────────────
@@ -122,7 +137,14 @@ export async function getComplexFacilityEdu(
                 p_target_value: s.advancement_rate,
                 p_si:           si,
               }).then((r: { data: number | null }) => r.data as number | null)
-            : Promise.resolve(null),
+            : s.school_type === 'high' && s.univ_rate != null
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ? (supabase as any).rpc('school_quality_percentile_by_si', {
+                  p_metric:       'univ_rate',
+                  p_target_value: s.univ_rate,
+                  p_si:           si,
+                }).then((r: { data: number | null }) => r.data as number | null)
+              : Promise.resolve(null),
         ])
         return { school_name: s.school_name, studentsPct, advancementPct }
       })
@@ -173,12 +195,17 @@ export async function getComplexFacilityEdu(
       advancement_science:    s.advancement_science,
       advancement_foreign:    s.advancement_foreign,
       advancement_private:    s.advancement_private,
+      univ_rate:              s.univ_rate,
+      univ_4year_rate:        s.univ_4year_rate,
+      univ_2year_rate:        s.univ_2year_rate,
       data_year:              s.data_year,
       students_percentile:    pct?.studentsPct ?? null,
       advancement_percentile: pct?.advancementPct ?? null,
       district_avg_py:        price?.district_avg_py ?? null,
       si_avg_py:              price?.si_avg_py ?? null,
       price_premium:          price?.price_premium ?? null,
+      phone:                  s.phone,
+      homepage_url:           s.homepage_url,
     }
   })
 
