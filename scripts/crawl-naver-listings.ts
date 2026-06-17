@@ -28,8 +28,8 @@ const isDryRun = process.argv.includes('--dry-run')
 const limitArg = process.argv.find(a => a.startsWith('--limit='))
 const LIMIT     = limitArg ? parseInt(limitArg.split('=')[1], 10) : Infinity
 
-const CONCURRENCY = 2
-const SLEEP_MS    = 1500
+const CONCURRENCY = 1           // 네이버 rate limit 방지 — 직렬 처리
+const SLEEP_MS    = 3000        // 요청 간 3초 대기 (1.5초에서 증가)
 const MIN_ITEMS   = 3     // 최소 매물 수 (RESEARCH.md §4.2)
 const MAX_PAGES   = 3     // 최대 페이지 수
 

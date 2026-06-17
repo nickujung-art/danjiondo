@@ -6,14 +6,22 @@ import { z } from 'zod'
 
 // ─── 헤더 ───────────────────────────────────────────────────────────
 // RESEARCH.md §1.3 VERIFIED
-const NAVER_HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  'Referer': 'https://new.land.naver.com/',
-  'Accept': 'application/json, text/plain, */*',
-  'Accept-Language': 'ko-KR,ko;q=0.9',
-  'Sec-Fetch-Site': 'same-origin',
-  'Sec-Fetch-Mode': 'cors',
-  'Sec-Fetch-Dest': 'empty',
+// NAVER_COOKIE 환경변수가 설정된 경우 Cookie 헤더 추가 (rate limit 완화)
+// 값: 브라우저 개발자 도구 → Application → Cookies에서 NID_AUT, NID_SES 복사
+function buildNaverHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Referer': 'https://new.land.naver.com/',
+    'Accept': 'application/json, text/plain, */*',
+    'Accept-Language': 'ko-KR,ko;q=0.9',
+    'Sec-Fetch-Site': 'same-origin',
+    'Sec-Fetch-Mode': 'cors',
+    'Sec-Fetch-Dest': 'empty',
+  }
+  // Node.js 환경(scripts/)에서만 읽힘 — Next.js 서버 컴포넌트는 NAVER_COOKIE 미설정
+  const cookie = typeof process !== 'undefined' ? process.env.NAVER_COOKIE : undefined
+  if (cookie) headers['Cookie'] = cookie
+  return headers
 }
 
 // ─── Zod 스키마 ──────────────────────────────────────────────────────
@@ -122,7 +130,7 @@ export async function searchNaverComplex(name: string): Promise<NaverComplexResu
   url.searchParams.set('query', name)
 
   const res = await fetch(url.toString(), {
-    headers: NAVER_HEADERS,
+    headers: buildNaverHeaders(),
     signal:  AbortSignal.timeout(10_000),
   })
   if (res.status === 429) throw new NaverRateLimitError()
@@ -164,7 +172,7 @@ export async function fetchNaverListings(complexNo: string, page = 1): Promise<{
   url.searchParams.set('page',     String(page))
 
   const res = await fetch(url.toString(), {
-    headers: NAVER_HEADERS,
+    headers: buildNaverHeaders(),
     signal:  AbortSignal.timeout(10_000),
   })
   if (res.status === 429) throw new NaverRateLimitError()

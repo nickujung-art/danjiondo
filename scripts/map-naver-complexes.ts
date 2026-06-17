@@ -20,8 +20,8 @@ import { searchNaverComplex, normalizeComplexName, haversineDistanceM, NaverRate
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
 
 const isDryRun = process.argv.includes('--dry-run')
-const CONCURRENCY = 2           // 네이버 rate limit 방지
-const SLEEP_MS    = 1500        // 요청 간 1.5초 대기
+const CONCURRENCY = 1           // 네이버 rate limit 방지 — 직렬 처리
+const SLEEP_MS    = 3000        // 요청 간 3초 대기 (1.5초에서 증가)
 const EXACT_DIST_M   = 200      // 200m 이내 → exact match
 const FUZZY_DIST_M   = 500      // 200~500m → fuzzy (skip, 로그만)
 
