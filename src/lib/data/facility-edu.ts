@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 export interface SchoolItem {
   school_name:            string
   school_type:            'elementary' | 'middle' | 'high'
+  school_code:            string | null   // 학교알리미 직접 링크용
   distance_m:             number | null
   is_assignment:          boolean
   // 학교알리미 기본정보
@@ -65,7 +66,7 @@ export async function getComplexFacilityEdu(
   const [schoolRes, poiRes, scoreRes] = await Promise.all([
     supabase
       .from('facility_school')
-      .select('school_name, school_type, distance_m, is_assignment, establishment_type, total_students, students_per_class, teachers_ratio, advancement_rate, advancement_science, advancement_foreign, advancement_private, univ_rate, univ_4year_rate, univ_2year_rate, data_year, phone, homepage_url, special_class_count')
+      .select('school_name, school_type, school_code, distance_m, is_assignment, establishment_type, total_students, students_per_class, teachers_ratio, advancement_rate, advancement_science, advancement_foreign, advancement_private, univ_rate, univ_4year_rate, univ_2year_rate, data_year, phone, homepage_url, special_class_count')
       .eq('complex_id', complexId)
       .order('distance_m', { ascending: true, nullsFirst: false }),
 
@@ -91,6 +92,7 @@ export async function getComplexFacilityEdu(
   const rawSchools = (schoolRes.data ?? []) as Array<{
     school_name:        string
     school_type:        string
+    school_code:        string | null
     distance_m:         number | null
     is_assignment:      boolean
     establishment_type: string | null
@@ -188,6 +190,7 @@ export async function getComplexFacilityEdu(
     return {
       school_name:            s.school_name,
       school_type:            s.school_type as SchoolItem['school_type'],
+      school_code:            s.school_code,
       distance_m:             s.distance_m,
       is_assignment:          s.is_assignment,
       establishment_type:     s.establishment_type,

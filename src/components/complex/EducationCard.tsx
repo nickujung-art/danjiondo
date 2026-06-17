@@ -291,17 +291,12 @@ function SectionLabel({ text }: { text: string }) {
   )
 }
 
-// ─── 인포 칩 ───────────────────────────────────────────────────────────────
-
-function InfoChip({ label, color, bg }: { label: string; color: string; bg: string }) {
+function InfoRow({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <span style={{
-      font: '500 12px/1 var(--font-sans)',
-      color, background: bg,
-      padding: '4px 10px', borderRadius: 5,
-    }}>
-      {label}
-    </span>
+    <tr>
+      <td style={{ font: '500 12px/1.8 var(--font-sans)', color: 'var(--fg-tertiary)', paddingRight: 12, whiteSpace: 'nowrap', verticalAlign: 'top' }}>{label}</td>
+      <td style={{ font: highlight ? '600 12px/1.8 var(--font-sans)' : '500 12px/1.8 var(--font-sans)', color: 'var(--fg-pri)' }}>{value}</td>
+    </tr>
   )
 }
 
@@ -440,41 +435,35 @@ function SchoolDetailSheet({ school, si, onClose }: {
           </div>
         </div>
 
-        {/* ── 기본정보 칩 ── */}
+        {/* ── 기본정보 테이블 ── */}
         {hasBasicInfo && (
-          <div style={{
-            display: 'flex', gap: 6, flexWrap: 'wrap',
-            padding: '12px 20px',
-            borderBottom: '1px solid var(--line-subtle)',
-          }}>
-            {school.establishment_type && (
-              <InfoChip
-                label={school.establishment_type}
-                color={school.establishment_type === '사립' ? '#7c3aed' : '#1d4ed8'}
-                bg={school.establishment_type === '사립' ? '#f5f3ff' : '#eff6ff'}
-              />
-            )}
-            {school.total_students != null && (
-              <InfoChip
-                label={`전교생 ${school.total_students.toLocaleString()}명`}
-                color="var(--fg-sec)"
-                bg="var(--bg-surface-2)"
-              />
-            )}
-            {school.special_class_count != null && (
-              <InfoChip
-                label={`특수학급 ${school.special_class_count}개`}
-                color="var(--fg-sec)"
-                bg="var(--bg-surface-2)"
-              />
-            )}
-            {school.data_year != null && (
-              <InfoChip
-                label={`${school.data_year}년 공시`}
-                color="var(--fg-tertiary)"
-                bg="var(--bg-surface-2)"
-              />
-            )}
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--line-subtle)' }}>
+            <div style={{ font: '600 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', letterSpacing: '0.05em', marginBottom: 10 }}>
+              기본정보{school.data_year != null ? ` · ${school.data_year}년 공시` : ''}
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <tbody>
+                {school.establishment_type && (
+                  <InfoRow label="설립구분" value={school.establishment_type} highlight={true} />
+                )}
+                {school.total_students != null && (
+                  <InfoRow label="학생 수" value={`${school.total_students.toLocaleString()}명`} />
+                )}
+                {school.special_class_count != null && (
+                  <InfoRow label="특수학급 수" value={`${school.special_class_count}개`} />
+                )}
+                {school.phone && (
+                  <tr>
+                    <td style={{ font: '500 12px/1.6 var(--font-sans)', color: 'var(--fg-tertiary)', paddingRight: 12, whiteSpace: 'nowrap', verticalAlign: 'top' }}>대표번호</td>
+                    <td>
+                      <a href={`tel:${school.phone}`} style={{ font: '500 12px/1.6 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none' }}>
+                        {school.phone}
+                      </a>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         )}
 
@@ -710,52 +699,58 @@ function SchoolDetailSheet({ school, si, onClose }: {
           </div>
         )}
 
-        {/* ── 연락처 · 바로가기 ── */}
-        {(school.phone || school.homepage_url) && (
-          <div style={{ padding: '12px 20px', borderTop: '1px solid var(--line-subtle)', display: 'flex', gap: 8 }}>
-            {school.phone && (
-              <a
-                href={`tel:${school.phone}`}
-                style={{
-                  flex: 1, padding: '9px 0', borderRadius: 8,
-                  border: '1px solid var(--line-default)',
-                  background: 'var(--bg-surface)',
-                  font: '600 13px/1 var(--font-sans)', color: 'var(--fg-sec)',
-                  textAlign: 'center', textDecoration: 'none',
-                  display: 'block',
-                }}
-              >
-                {school.phone}
-              </a>
-            )}
-            {school.homepage_url && (
-              <a
-                href={school.homepage_url.startsWith('http') ? school.homepage_url : `https://${school.homepage_url}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  flex: 1, padding: '9px 0', borderRadius: 8,
-                  border: '1px solid var(--line-default)',
-                  background: 'var(--bg-surface)',
-                  font: '600 13px/1 var(--font-sans)', color: '#2563eb',
-                  textAlign: 'center', textDecoration: 'none',
-                  display: 'block',
-                }}
-              >
-                학교 홈페이지
-              </a>
-            )}
-          </div>
-        )}
-
-        <div style={{ padding: '8px 20px 8px', textAlign: 'center' }}>
+        {/* ── 바로가기 버튼 ── */}
+        <div style={{ padding: '14px 20px', borderTop: '1px solid var(--line-subtle)', display: 'flex', gap: 8 }}>
+          {school.phone && (
+            <a
+              href={`tel:${school.phone}`}
+              style={{
+                flex: 1, padding: '10px 0', borderRadius: 8,
+                border: '1px solid var(--line-default)',
+                background: 'var(--bg-surface)',
+                font: '600 12px/1 var(--font-sans)', color: 'var(--fg-sec)',
+                textAlign: 'center', textDecoration: 'none',
+                display: 'block',
+              }}
+            >
+              {school.phone}
+            </a>
+          )}
+          {school.homepage_url && (
+            <a
+              href={school.homepage_url.startsWith('http') ? school.homepage_url : `https://${school.homepage_url}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                flex: 1, padding: '10px 0', borderRadius: 8,
+                border: '1px solid var(--line-default)',
+                background: 'var(--bg-surface)',
+                font: '600 12px/1 var(--font-sans)', color: '#2563eb',
+                textAlign: 'center', textDecoration: 'none',
+                display: 'block',
+              }}
+            >
+              학교 홈페이지
+            </a>
+          )}
           <a
-            href="https://www.schoolinfo.go.kr"
+            href={
+              school.school_code
+                ? `https://www.schoolinfo.go.kr/ei/ss/Pneiss_a_list01.do?schulCode=${school.school_code}`
+                : 'https://www.schoolinfo.go.kr'
+            }
             target="_blank"
             rel="noopener noreferrer"
-            style={{ font: '500 10px/1 var(--font-sans)', color: 'var(--fg-tertiary)', textDecoration: 'underline' }}
+            style={{
+              flex: 1, padding: '10px 0', borderRadius: 8,
+              border: '1px solid var(--line-default)',
+              background: 'var(--bg-surface)',
+              font: '600 12px/1 var(--font-sans)', color: '#2563eb',
+              textAlign: 'center', textDecoration: 'none',
+              display: 'block',
+            }}
           >
-            학교알리미 공시 데이터 · 행정안전부 인허가 기준
+            학교알리미
           </a>
         </div>
       </div>
@@ -936,7 +931,7 @@ function SchoolRankingSheet({ si, schoolType, onClose }: {
 
 // ─── SchoolList ────────────────────────────────────────────────────────────
 
-function SchoolList({ schools, si }: { schools: SchoolItem[]; si?: string }) {
+function SchoolList({ schools, si, gu }: { schools: SchoolItem[]; si?: string; gu?: string }) {
   const [schoolTab, setSchoolTab]           = useState<'elementary' | 'middle' | 'high'>('elementary')
   const [selectedSchool, setSelectedSchool] = useState<SchoolItem | null>(null)
   const [showRanking, setShowRanking]       = useState(false)
@@ -990,15 +985,15 @@ function SchoolList({ schools, si }: { schools: SchoolItem[]; si?: string }) {
               marginLeft:   'auto',
               padding:      '5px 10px',
               borderRadius: 6,
-              border:       '1px solid var(--line-default)',
-              background:   'var(--bg-surface)',
-              color:        'var(--fg-sec)',
+              border:       '1px solid var(--dj-orange)',
+              background:   '#fff5ed',
+              color:        'var(--dj-orange)',
               font:         '600 12px/1 var(--font-sans)',
               cursor:       'pointer',
               flexShrink:   0,
             }}
           >
-            순위 보기
+            {(gu ?? si)} {SCHOOL_TYPE_LABEL[schoolTab]} 순위보기
           </button>
         )}
       </div>
@@ -1300,9 +1295,10 @@ type Tab = 'school' | 'hagwon' | 'daycare'
 interface Props {
   data: FacilityEduData
   si?: string
+  gu?: string
 }
 
-export function EducationCard({ data, si }: Props) {
+export function EducationCard({ data, si, gu }: Props) {
   const [tab, setTab] = useState<Tab>('school')
   const { schools, hagwons, daycares, kindergartens, hagwonStats, si: dataSi } = data
   const effectiveSi = si ?? dataSi ?? undefined
@@ -1361,7 +1357,7 @@ export function EducationCard({ data, si }: Props) {
         <EmptyNote text="교육 환경 데이터를 수집 중입니다." />
       ) : (
         <>
-          {tab === 'school'  && <SchoolList schools={schools} si={effectiveSi} />}
+          {tab === 'school'  && <SchoolList schools={schools} si={effectiveSi} gu={gu} />}
           {tab === 'hagwon'  && <HagwonSection hagwons={hagwons} stats={hagwonStats} si={effectiveSi} />}
           {tab === 'daycare' && <DaycareSection daycares={daycares} kindergartens={kindergartens} />}
         </>

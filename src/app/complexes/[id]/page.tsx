@@ -47,12 +47,12 @@ import { ViewCountTracker } from './ViewCountTracker'
 export const revalidate = 86400
 
 // EducationCard를 독립 스트림으로 분리 — N+1 RPC가 나머지 페이지를 블로킹하지 않도록
-async function FacilityEduSection({ complexId, si }: { complexId: string; si?: string }) {
+async function FacilityEduSection({ complexId, si, gu }: { complexId: string; si?: string; gu?: string }) {
   const supabase = createReadonlyClient()
   const data = await getComplexFacilityEdu(complexId, supabase).catch(
     () => ({ schools: [], hagwons: [], daycares: [], kindergartens: [], hagwonStats: null, si: null })
   )
-  return <EducationCard data={data} si={si} />
+  return <EducationCard data={data} si={si} gu={gu} />
 }
 
 interface Props {
@@ -846,7 +846,7 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
               <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>교육 환경 로딩 중…</span>
             </div>
           }>
-            <FacilityEduSection complexId={id} si={complex.si ?? undefined} />
+            <FacilityEduSection complexId={id} si={complex.si ?? undefined} gu={complex.gu ?? undefined} />
           </Suspense>
 
           {/* 재건축 타임라인 — status='in_redevelopment' 단지만 표시 */}
