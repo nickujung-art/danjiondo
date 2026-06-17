@@ -929,6 +929,45 @@
 
 **UI hint**: yes
 
+### Phase 25: 네이버 부동산 호가 크롤링 + 단지 상세 호가 섹션
+
+**Goal:** 네이버 부동산 API에서 단지별 매물 호가 평당가를 자동 수집하고, 단지 상세 페이지에 호가 히스토리 차트(호가 vs 실거래 비교 LineChart)를 추가한다.
+
+**Version:** V4.1
+
+**Requirements:**
+- LISTING-01: `complexes.naver_complex_no` 컬럼 추가 + `listing_prices` service_role INSERT RLS 허용 (크롤러 upsert 용도)
+- LISTING-02: `scripts/map-naver-complexes.ts` — 네이버 단지 검색 API + 이름·좌표 매칭으로 `naver_complex_no` 일괄 업데이트
+- LISTING-03: `scripts/crawl-naver-listings.ts` — `naver_complex_no` 보유 단지 호가 수집 → `listing_prices` upsert (source='naver')
+- LISTING-04: `src/components/complex/ListingPriceSection.tsx` — Recharts LineChart (호가 vs 실거래 평당가) + 단지 상세 페이지 통합
+
+**Plans:** 4 plans / 3 waves
+
+**Wave 0** *(BLOCKING — autonomous: false, supabase db push 필요)*
+- [ ] 25-00-PLAN.md — DB 마이그레이션 (complexes.naver_complex_no + UNIQUE INDEX) (LISTING-01)
+
+**Wave 1** *(blocked on Wave 0; 25-01 완료 후 25-02 실행)*
+- [ ] 25-01-PLAN.md — naver-land.ts 어댑터 + map-naver-complexes.ts 매핑 스크립트 (LISTING-02)
+- [ ] 25-02-PLAN.md — crawl-naver-listings.ts 호가 수집 스크립트 (LISTING-03)
+
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 25-03-PLAN.md — listing-history.ts + ListingPriceSection + page.tsx 통합 (LISTING-04)
+
+**Cross-cutting constraints:**
+- 네이버 API 호출은 `src/services/naver-land.ts` 어댑터 전용 (CLAUDE.md 아키텍처 규칙)
+- `listing_prices` 쿼리는 서버 컴포넌트에서만 (CLAUDE.md)
+- Rate limiting: 네이버 호출 간 딜레이 필수 (ToS 준수)
+- UI: backdrop-blur·gradient·glow·보라/인디고 금지
+
+**Success Criteria:**
+1. `complexes` 테이블에 `naver_complex_no` 컬럼이 존재하고 창원·김해 단지 60% 이상이 매핑된다
+2. `crawl-naver-listings.ts` 실행 시 `listing_prices`에 오늘 날짜로 호가 데이터가 upsert된다
+3. 단지 상세 페이지에 호가 히스토리 LineChart가 렌더되고, 실거래 평당가와 호가 평당가가 함께 표시된다
+4. 호가 데이터 없는 단지는 섹션이 숨겨진다
+5. `npm run lint && npm run build && npm run test` 통과
+
+**UI hint**: yes
+
 ---
 ---
 ## Milestone Summary
