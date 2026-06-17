@@ -788,7 +788,14 @@
 - GAP-03: 단지 상세 페이지 갭투자 카드 — 갭 금액·비율 + 신호등 배지(안전/주의/위험)
 - GAP-04: /gap-analysis 전용 페이지 — 지역별 갭 비율 랭킹 테이블 (필터·정렬)
 
-**Plans:** TBD (연구 후 결정)
+**Plans:** 3 plans / 2 waves
+
+**Wave 1** *(독립 실행 가능 — 병렬)*
+- [ ] 27-01-PLAN.md — DB 마이그레이션 (complexes.all_time_high + refresh_complex_price_stats 업데이트) [BLOCKING: supabase db push] (RANK-03)
+- [ ] 27-02-PLAN.md — 랑킹 데이터 레이어 (src/lib/data/rankings-page.ts) (RANK-02, RANK-04, RANK-05, RANK-08)
+
+**Wave 2** *(Wave 1 완료 후)*
+- [ ] 27-03-PLAN.md — /rankings 페이지 + /rankings/[date] 퍼멀링크 + 홈/지도 nav 업데이트 (RANK-01~RANK-08 전체) (연구 후 결정)
 
 **Cross-cutting constraints:**
 - 거래 데이터 조회: `cancel_date IS NULL AND superseded_by IS NULL` 필수
@@ -999,6 +1006,33 @@
 3. 다음 daily 배치 실행 후 `molit_offi_trade.last_synced_at` 업데이트됨
 4. 어드민 status 페이지에 "국토부 실거래" 카테고리 그룹이 보이고 phantom 미실행 없음
 5. `npm run build && npm run lint` 통과
+
+---
+
+### Phase 27: 랭킹 페이지 — 실거래 피드·지역순위·신고가·바이럴 콘텐츠
+
+**Goal:** `/rankings` 전용 페이지를 만들어 일별 실거래 피드, 지역별 단지 순위, 신고가 갱신 마크, 대장단지 등 사람들이 공유하고 싶은 흥미로운 부동산 데이터 콘텐츠를 제공한다. 카페 공유·캡처 바이럴을 유도하여 유입을 늘린다.
+
+**Version:** V4.1
+
+**Requirements:**
+- RANK-01: `/rankings` 페이지 라우트 신설 (SSG/ISR, SEO 최적화)
+- RANK-02: 일별 실거래 피드 — 날짜별 그룹핑, 고가순 정렬, 단지명·전용면적·층·거래가 표시
+- RANK-03: 신고가 마크 (`NEW HIGH`) — 해당 단지 역대 최고가 갱신 시 표시
+- RANK-04: 지역 랭킹 — 평당가 기준 단지 순위 (구별/창원·김해 전체)
+- RANK-05: 대장단지 섹션 — 거래량·평당가 복합 기준 지역 대표 단지 카드
+- RANK-06: 공유·캡처 최적화 — OG 이미지, 개별 항목 링크, 날짜별 퍼머링크
+- RANK-07: 카페 공유 유도 UI — "카페에 공유하기" CTA, 해당 단지 상세 바로가기 링크
+- RANK-08: 흥미 지표 섹션 — 이번 주 최고가 TOP 3, 가장 많이 거래된 단지, 전주 대비 가격 급등 단지
+
+**Plans:** TBD
+
+**Success Criteria:**
+1. `/rankings` 페이지가 실거래 피드·지역순위·신고가·대장단지를 모두 표시
+2. 신고가 마크가 해당 단지 역대 최고가 갱신 시 정확히 표시됨
+3. OG 태그 완비, 카카오/네이버 미리보기 정상 렌더링
+4. `npm run build && npm run lint` 통과
+5. 모바일 스크린샷 공유 시 핵심 데이터가 한 화면에 보임
 
 ---
 ---
