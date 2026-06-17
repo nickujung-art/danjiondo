@@ -48,7 +48,7 @@ function mergeData(listingHistory: ListingPricePoint[], rawSaleData: TxPricePoin
     const py = t.area > 0 ? Math.round(t.price / (t.area / 3.3058)) : null
     if (!py || py < 100 || py > 99999) continue
     if (!txByYm[t.yearMonth]) txByYm[t.yearMonth] = []
-    txByYm[t.yearMonth].push(py)
+    txByYm[t.yearMonth]!.push(py)
   }
   const txAvgByYm: Record<string, number> = {}
   for (const [ym, prices] of Object.entries(txByYm)) {
@@ -95,7 +95,10 @@ export function ListingPriceSection({ listingHistory, rawSaleData }: Props) {
             width={60}
           />
           <Tooltip
-            formatter={(v: number) => [`${v.toLocaleString()}만원/평`]}
+            formatter={(v) => {
+              if (typeof v === 'number') return [`${v.toLocaleString()}만원/평`]
+              return [`${String(v ?? '')}만원/평`]
+            }}
             labelStyle={{ fontSize: 11 }}
             contentStyle={{ fontSize: 12, border: '1px solid var(--line-default)' }}
           />

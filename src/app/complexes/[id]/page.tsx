@@ -39,6 +39,9 @@ import { formatParkingPerUnit, formatElevatorPerBuilding } from '@/lib/utils/fac
 import { getNearbyComplexPrices } from '@/lib/data/nearby-compare'
 import { NearbyCompareCard } from '@/components/complex/NearbyCompareCard'
 import { RecentTransactionList } from '@/components/complex/RecentTransactionList'
+import { getListingPriceHistory } from '@/lib/data/listing-history'
+import type { ListingPricePoint } from '@/lib/data/listing-history'
+import { ListingPriceSectionWrapper } from '@/components/complex/ListingPriceSectionWrapper'
 import { ViewCountTracker } from './ViewCountTracker'
 
 export const revalidate = 86400
@@ -256,6 +259,7 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
     areaTypes,
     priceHistory,
     nearbyComplexes,
+    listingHistory,
   ] = await Promise.all([
     getComplexTransactionSummary(id, 'sale', supabase),
     getRealtorsByComplexId(id, supabase),
@@ -311,6 +315,8 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
     getComplexPriceByType(supabase, id, areaBucket, 24).catch((): RegionalPricePoint[] => []),
     // 주변 단지 시세 비교
     getNearbyComplexPrices(supabase, id).catch(() => []),
+    // 호가 히스토리 (source='naver', 12개월) — LISTING-04
+    getListingPriceHistory(id, supabase).catch((): ListingPricePoint[] => []),
   ])
 
   const facilityKapt = facilityKaptResult?.data ?? null
@@ -782,6 +788,30 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
               {/* 법적 면책 문구 (D-01) */}
               <p style={{ font: '400 11px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '12px 0 0' }}>
                 * 실거래 흐름 기반 참고 지수입니다. 투자 결정에 직접 활용하지 마세요.
+              </p>
+            </div>
+          )}
+
+          {/* 호가 vs 실거래 히스토리 — LISTING-04 */}
+          {/* RESEARCH.md §6 Pitfall 5: source='naver' 데이터 없으면 섹션 숨김 */}
+          {listingHistory.length > 0 && (
+            <div className="card" style={{ padding: 20 }}>
+              <h3 style={{ font: '700 15px/1.4 var(--font-sans)', margin: '0 0 12px' }}>
+                호가 vs 실거래
+              </h3>
+              <p style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '0 0 16px' }}>
+                네이버 부동산 매물 호가 중앙값(평당) vs 실거래 평균(평당)
+              </p>
+              <ListingPriceSectionWrapper
+                listingHistory={listingHistory}
+                rawSaleData={rawSaleData.map(t => ({
+                  yearMonth: t.yearMonth,
+                  price:     t.price,
+                  area:      t.area,
+                }))}
+              />
+              <p style={{ font: '400 11px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '12px 0 0' }}>
+                * 호가는 수집 시점 기준이며 실제 거래가와 다를 수 있습니다.
               </p>
             </div>
           )}

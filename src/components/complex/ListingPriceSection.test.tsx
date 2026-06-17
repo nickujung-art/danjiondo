@@ -25,7 +25,7 @@ function mergeData(
     const py = t.area > 0 ? Math.round(t.price / (t.area / 3.3058)) : null
     if (!py || py < 100 || py > 99999) continue
     if (!txByYm[t.yearMonth]) txByYm[t.yearMonth] = []
-    txByYm[t.yearMonth].push(py)
+    txByYm[t.yearMonth]!.push(py)
   }
   const txAvgByYm: Record<string, number> = {}
   for (const [ym, prices] of Object.entries(txByYm)) {
@@ -51,9 +51,9 @@ describe('ListingPriceSection mergeData', () => {
     const listing = [{ recorded_date: '2025-01-15', price_per_py: 1200 }]
     const result = mergeData(listing, [])
     expect(result).toHaveLength(1)
-    expect(result[0].yearMonth).toBe('2025-01')
-    expect(result[0].listingPy).toBe(1200)
-    expect(result[0].txPy).toBeUndefined()
+    expect(result[0]?.yearMonth).toBe('2025-01')
+    expect(result[0]?.listingPy).toBe(1200)
+    expect(result[0]?.txPy).toBeUndefined()
   })
 
   it('실거래만 있을 때 txPy만 채워짐', () => {
@@ -61,9 +61,9 @@ describe('ListingPriceSection mergeData', () => {
     const tx = [{ yearMonth: '2025-02', price: 12000, area: 33.058 }]
     const result = mergeData([], tx)
     expect(result).toHaveLength(1)
-    expect(result[0].yearMonth).toBe('2025-02')
-    expect(result[0].listingPy).toBeUndefined()
-    expect(result[0].txPy).toBeCloseTo(1200, -1)
+    expect(result[0]?.yearMonth).toBe('2025-02')
+    expect(result[0]?.listingPy).toBeUndefined()
+    expect(result[0]?.txPy).toBeCloseTo(1200, -1)
   })
 
   it('호가+실거래 병합 시 월 합집합 정렬', () => {
@@ -92,7 +92,7 @@ describe('ListingPriceSection mergeData', () => {
     ]
     const result = mergeData(listing, [])
     expect(result).toHaveLength(1)
-    expect(result[0].listingPy).toBe(1200)
+    expect(result[0]?.listingPy).toBe(1200)
   })
 })
 

@@ -36,8 +36,8 @@ describe('getListingPriceHistory', () => {
     const supabase = makeSupabaseMock(rows)
     const result = await getListingPriceHistory('complex-1', supabase)
     expect(result).toHaveLength(2)
-    expect(result[0].recorded_date).toBe('2025-01-15')
-    expect(result[0].price_per_py).toBe(1200)
+    expect(result[0]?.recorded_date).toBe('2025-01-15')
+    expect(result[0]?.price_per_py).toBe(1200)
   })
 
   it('source=naver .eq 쿼리 필터 적용 확인', async () => {
