@@ -19,7 +19,7 @@
 import { createClient } from '@supabase/supabase-js'
 import * as dotenv from 'dotenv'
 import path from 'path'
-import { fetchNaverListings } from '../src/services/naver-land'
+import { fetchNaverListings, NaverRateLimitError } from '../src/services/naver-land'
 import type { ArticleListItem } from '../src/services/naver-land'
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
@@ -93,7 +93,7 @@ interface ComplexRow {
   naver_complex_no:  string
 }
 
-async function processComplex(row: ComplexRow, today: string): Promise<'upserted' | 'skip' | 'error'> {
+async function processComplex(row: ComplexRow, today: string): Promise<'upserted' | 'skip' | 'error' | 'ratelimit'> {
   try {
     const items = await collectAllListings(row.naver_complex_no)
     const prices = toPricesPerPy(items)
@@ -127,6 +127,7 @@ async function processComplex(row: ComplexRow, today: string): Promise<'upserted
 
     return 'upserted'
   } catch (err) {
+    if (err instanceof NaverRateLimitError) return 'ratelimit'
     console.error(`[ERROR] ${row.canonical_name}: ${String(err)}`)
     return 'error'
   }
@@ -166,18 +167,30 @@ async function main() {
   console.log(`처리 대상: ${rows.length}개 단지`)
 
   const stats = { upserted: 0, skip: 0, error: 0 }
+  let rateLimited = false
 
   await processInChunks(
     rows,
     async (row) => {
+      if (rateLimited) return
       const result = await processComplex(row, today)
+      if (result === 'ratelimit') {
+        console.error('[RATE-LIMIT] 네이버 API 429 — 중단. 5~30분 후 재실행하세요.')
+        rateLimited = true
+        return
+      }
       stats[result]++
     },
     CONCURRENCY,
   )
 
   console.log(`\n=== 결과 ===`)
-  console.log(`upserted: ${stats.upserted} / skip: ${stats.skip} / error: ${stats.error}`)
+  if (rateLimited) {
+    console.log(`upserted: ${stats.upserted} / skip: ${stats.skip} / error: ${stats.error}`)
+    console.log('⚠ Rate limit으로 조기 중단됨. 5~30분 후 재실행 필요.')
+  } else {
+    console.log(`upserted: ${stats.upserted} / skip: ${stats.skip} / error: ${stats.error}`)
+  }
 }
 
 main().catch(e => {

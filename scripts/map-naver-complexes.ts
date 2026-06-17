@@ -15,7 +15,7 @@
 import { createClient } from '@supabase/supabase-js'
 import * as dotenv from 'dotenv'
 import path from 'path'
-import { searchNaverComplex, normalizeComplexName, haversineDistanceM } from '../src/services/naver-land'
+import { searchNaverComplex, normalizeComplexName, haversineDistanceM, NaverRateLimitError } from '../src/services/naver-land'
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
 
@@ -43,7 +43,10 @@ interface ComplexRow {
 }
 
 async function mapComplex(row: ComplexRow): Promise<'exact' | 'fuzzy' | 'miss'> {
-  const results = await searchNaverComplex(row.canonical_name).catch(() => [])
+  const results = await searchNaverComplex(row.canonical_name).catch((e) => {
+    if (e instanceof NaverRateLimitError) throw e
+    return [] as Awaited<ReturnType<typeof searchNaverComplex>>
+  })
   if (results.length === 0) return 'miss'
 
   const normTarget = normalizeComplexName(row.canonical_name)
@@ -124,20 +127,34 @@ async function main() {
   const total = complexes?.length ?? 0
   console.log(`처리 대상: ${total}개`)
 
-  const stats = { exact: 0, fuzzy: 0, miss: 0 }
+  const stats = { exact: 0, fuzzy: 0, miss: 0, error: 0 }
+  let rateLimited = false
 
   await processInChunks(
     (complexes ?? []) as ComplexRow[],
     async (row) => {
-      const result = await mapComplex(row)
-      stats[result]++
+      if (rateLimited) return
+      try {
+        const result = await mapComplex(row)
+        stats[result]++
+      } catch (e) {
+        if (e instanceof NaverRateLimitError) {
+          console.error('[RATE-LIMIT] 네이버 API 429 — 중단. 5~30분 후 재실행하세요.')
+          rateLimited = true
+          return
+        }
+        console.error(`[ERROR] ${row.canonical_name}: ${e instanceof Error ? e.message : e}`)
+        stats.error++
+      }
     },
     CONCURRENCY,
   )
 
   console.log(`\n=== 결과 ===`)
-  console.log(`exact: ${stats.exact} / fuzzy(skip): ${stats.fuzzy} / miss: ${stats.miss}`)
-  if (total > 0) {
+  console.log(`exact: ${stats.exact} / fuzzy(skip): ${stats.fuzzy} / miss: ${stats.miss} / error: ${stats.error}`)
+  if (rateLimited) {
+    console.log('⚠ Rate limit으로 조기 중단됨. 5~30분 후 재실행 필요.')
+  } else if (total > 0) {
     console.log(`매핑률: ${((stats.exact / total) * 100).toFixed(1)}%`)
   } else {
     console.log(`매핑률: 0.0% (처리 대상 없음)`)

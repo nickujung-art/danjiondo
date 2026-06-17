@@ -94,6 +94,15 @@ export function haversineDistanceM(
   return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x))
 }
 
+// ─── 에러 타입 ────────────────────────────────────────────────────────
+
+export class NaverRateLimitError extends Error {
+  constructor() {
+    super('Naver rate limit (429)')
+    this.name = 'NaverRateLimitError'
+  }
+}
+
 // ─── API 호출 ────────────────────────────────────────────────────────
 
 export interface NaverComplexResult {
@@ -116,6 +125,7 @@ export async function searchNaverComplex(name: string): Promise<NaverComplexResu
     headers: NAVER_HEADERS,
     signal:  AbortSignal.timeout(10_000),
   })
+  if (res.status === 429) throw new NaverRateLimitError()
   if (!res.ok) {
     throw new Error(`searchNaverComplex HTTP ${res.status} for "${name}"`)
   }
@@ -157,6 +167,7 @@ export async function fetchNaverListings(complexNo: string, page = 1): Promise<{
     headers: NAVER_HEADERS,
     signal:  AbortSignal.timeout(10_000),
   })
+  if (res.status === 429) throw new NaverRateLimitError()
   if (!res.ok) throw new Error(`fetchNaverListings HTTP ${res.status} for complexNo=${complexNo}`)
 
   const json = await res.json()
