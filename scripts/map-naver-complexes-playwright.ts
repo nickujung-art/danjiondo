@@ -26,10 +26,10 @@ const limitArg = process.argv.find(a => a.startsWith('--limit='))
 const LIMIT    = limitArg ? parseInt(limitArg.split('=')[1], 10) : Infinity
 
 // ─── 설정 (anti_bot_scraper 기본값) ─────────────────────────────────────────
-const ZOOM        = 15    // 단지 마커가 보이는 줌 레벨
-const GRID_RINGS  = 1     // gridSweep 링 수
+const ZOOM        = 14    // 단지(complex) 마커 줌 레벨 (15+ = 개별 매물 마커로 전환됨)
+const GRID_RINGS  = 2     // gridSweep 링 수 (2 = 16 포인트/center → 커버리지 확장)
 const GRID_STEP   = 480   // 그리드 스텝 (픽셀)
-const SWEEP_DWELL = 700   // 각 포인트 대기 (ms)
+const SWEEP_DWELL = 600   // 각 포인트 대기 (ms)
 const EXACT_DIST  = 200   // exact match 거리 (m)
 
 // 창원/김해 커버 BBOX
@@ -162,21 +162,29 @@ async function gridSweep(page: Page, state: MapState) {
 
 // ─── 마커 응답 파싱 ───────────────────────────────────────────────────────────
 
-function parseMarkers(json: unknown): NaverMarker[] {
-  if (!json || typeof json !== 'object') return []
-  const obj  = json as Record<string, unknown>
-  const list = (obj['complexList'] ?? obj['markerList'] ?? obj['result']) as unknown[]
-  if (!Array.isArray(list)) return []
-
+function parseMarkerList(list: unknown[]): NaverMarker[] {
   return list.flatMap(item => {
     const m         = item as Record<string, unknown>
-    const complexNo   = String(m['complexNo']   ?? m['markerId'] ?? '')
-    const complexName = String(m['complexName'] ?? m['name']     ?? '')
+    // 실제 필드: markerId (complexNo 아님), complexName, latitude, longitude
+    const complexNo   = String(m['markerId']   ?? m['complexNo'] ?? '')
+    const complexName = String(m['complexName'] ?? m['name']      ?? '')
     const lat = parseFloat(String(m['latitude']  ?? m['lat']  ?? '0'))
     const lng = parseFloat(String(m['longitude'] ?? m['lng']  ?? '0'))
     if (!complexNo || !complexName || !lat || !lng) return []
     return [{ complexNo, complexName, lat, lng }]
   })
+}
+
+function parseMarkers(json: unknown): NaverMarker[] {
+  if (!json) return []
+  // 응답이 배열 자체인 경우 (new.land.naver.com /api/complexes/single-markers/2.0)
+  if (Array.isArray(json)) return parseMarkerList(json)
+  if (typeof json !== 'object') return []
+  // 래핑된 경우 (이전 API 형식 fallback)
+  const obj  = json as Record<string, unknown>
+  const list = (obj['complexList'] ?? obj['markerList'] ?? obj['result']) as unknown[]
+  if (!Array.isArray(list)) return []
+  return parseMarkerList(list)
 }
 
 // ─── DB 단지 매칭 ─────────────────────────────────────────────────────────────
@@ -292,7 +300,7 @@ async function main() {
     if (!url.includes('single-markers')) return
 
     if (!response.ok()) {
-      if (interceptCount < 5) console.log(`\n[차단] ${status} ${url.slice(0, 100)}`)
+      console.log(`\n[차단] ${status} ${url.slice(0, 100)}`)
       return
     }
     try {
@@ -304,7 +312,7 @@ async function main() {
         for (const m of markers) {
           if (!collected.has(m.complexNo)) collected.set(m.complexNo, m)
         }
-        process.stdout.write(`\r[인터셉트 #${interceptCount}] 누적 ${collected.size}개          `)
+        process.stdout.write(`\r  누적 ${collected.size}개 (인터셉트 #${interceptCount})    `)
       }
     } catch { /* 무시 */ }
   })
@@ -362,7 +370,7 @@ async function main() {
   }
 
   await browser.close()
-  console.log(`\n\n수집된 네이버 단지: ${collected.size}개`)
+  console.log(`\n수집된 네이버 단지: ${collected.size}개`)
 
   if (collected.size === 0) {
     console.log('⚠️  마커 0개. debug-naver-init.png 확인 — 차단 or URL 패턴 문제')
