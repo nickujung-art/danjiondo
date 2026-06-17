@@ -32,7 +32,7 @@ complexes 테이블에 naver_complex_no TEXT NULLABLE 컬럼을 추가하고, �
 | Task | Name | Commit | Files |
 |------|------|--------|-------|
 | 1 | naver_complex_no 마이그레이션 작성 | 8772e05 | supabase/migrations/20260617000001_phase25_naver_complex_no.sql |
-| 2 | supabase db push 실행 | — | checkpoint:human-action (미실행) |
+| 2 | supabase db push 실행 | (db push) | complexes.naver_complex_no TEXT NULLABLE 컬럼 + UNIQUE INDEX 원격 DB 적용 완료 |
 
 ## Deviations from Plan
 
@@ -53,3 +53,4 @@ None — 마이그레이션은 DDL only, 새로운 네트워크 엔드포인트 
 - [x] ALTER TABLE ... ADD COLUMN IF NOT EXISTS naver_complex_no TEXT 포함
 - [x] UNIQUE INDEX WHERE naver_complex_no IS NOT NULL 포함
 - [x] 커밋 8772e05 존재
+- [x] supabase db push 성공 — 원격 DB에 naver_complex_no 컬럼 + UNIQUE INDEX 적용 완료 (2026-06-17)
