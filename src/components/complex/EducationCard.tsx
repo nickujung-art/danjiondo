@@ -345,8 +345,8 @@ function SchoolDetailSheet({ school, si, onClose }: {
   const typeColor = SCHOOL_TYPE_COLOR[school.school_type]
   const wc        = walkColor(school.distance_m)
 
-  const hasBasicInfo    = school.establishment_type != null || school.total_students != null || school.special_class_count != null
-  const hasQuality      = school.students_per_class != null || school.teachers_ratio != null
+  const hasBasicInfo    = school.establishment_type != null || school.total_students != null || school.special_class_count != null || school.class_count != null || school.road_address != null
+  const hasQuality      = (school.students_per_class != null && school.students_percentile != null) || school.teachers_ratio != null
   const hasMiddleAdv    = school.school_type === 'middle' && school.advancement_rate != null
   const hasHighUniv     = school.school_type === 'high'   && school.univ_rate != null
   const hasPricePremium = school.is_assignment && !!school.district_avg_py && !!school.si_avg_py
@@ -446,11 +446,20 @@ function SchoolDetailSheet({ school, si, onClose }: {
                 {school.establishment_type && (
                   <InfoRow label="설립구분" value={school.establishment_type} highlight={true} />
                 )}
+                {school.class_count != null && (
+                  <InfoRow label="학급 수" value={`${school.class_count}개`} />
+                )}
                 {school.total_students != null && (
                   <InfoRow label="학생 수" value={`${school.total_students.toLocaleString()}명`} />
                 )}
+                {school.students_per_class != null && (
+                  <InfoRow label="학급당 학생수" value={`${school.students_per_class}명`} />
+                )}
                 {school.special_class_count != null && (
                   <InfoRow label="특수학급 수" value={`${school.special_class_count}개`} />
+                )}
+                {school.road_address && (
+                  <InfoRow label="주소" value={school.road_address.replace(/^경상남도 /, '')} />
                 )}
                 {school.phone && (
                   <tr>
@@ -475,29 +484,19 @@ function SchoolDetailSheet({ school, si, onClose }: {
           }}>
             <SectionLabel text="학교 환경" />
 
-            {/* 학급당 학생수 */}
-            {school.students_per_class != null && (
+            {/* 학급당 학생수 — 지역 백분위 비교 */}
+            {school.students_per_class != null && school.students_percentile != null && (
               <div style={{ marginBottom: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
-                  <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--fg-sec)' }}>학급당 학생수</span>
-                  <span style={{ font: '800 22px/1 var(--font-sans)', color: 'var(--fg-pri)', letterSpacing: '-0.5px' }}>
-                    {school.students_per_class}
-                    <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--fg-sec)', marginLeft: 2 }}>명</span>
-                  </span>
+                <div style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--fg-sec)', marginBottom: 10 }}>
+                  학급당 학생수 지역 비교
                 </div>
-                {school.students_percentile != null ? (
-                  <PercentileBar
-                    percentile={school.students_percentile}
-                    leftLabel="소규모 (좋음)"
-                    rightLabel="과밀 (나쁨)"
-                    goodSide="left"
-                    siLabel={si}
-                  />
-                ) : (
-                  <div style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
-                    지역 비교 데이터 준비 중
-                  </div>
-                )}
+                <PercentileBar
+                  percentile={school.students_percentile}
+                  leftLabel="소규모 (좋음)"
+                  rightLabel="과밀 (나쁨)"
+                  goodSide="left"
+                  siLabel={si}
+                />
               </div>
             )}
 

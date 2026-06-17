@@ -32,8 +32,11 @@ export interface SchoolItem {
   // 연락처 (Wave 1 수집)
   phone:                  string | null
   homepage_url:           string | null
-  // 특수학급 수 (Wave 2 수집)
+  // 특수학급 수, 학급 수 (Wave 2 수집)
   special_class_count:    number | null
+  class_count:            number | null
+  // 주소
+  road_address:           string | null
 }
 
 export interface PoiItem {
@@ -66,7 +69,7 @@ export async function getComplexFacilityEdu(
   const [schoolRes, poiRes, scoreRes] = await Promise.all([
     supabase
       .from('facility_school')
-      .select('school_name, school_type, school_code, distance_m, is_assignment, establishment_type, total_students, students_per_class, teachers_ratio, advancement_rate, advancement_science, advancement_foreign, advancement_private, univ_rate, univ_4year_rate, univ_2year_rate, data_year, phone, homepage_url, special_class_count')
+      .select('school_name, school_type, school_code, distance_m, is_assignment, establishment_type, total_students, students_per_class, teachers_ratio, advancement_rate, advancement_science, advancement_foreign, advancement_private, univ_rate, univ_4year_rate, univ_2year_rate, data_year, phone, homepage_url, special_class_count, class_count, road_address')
       .eq('complex_id', complexId)
       .order('distance_m', { ascending: true, nullsFirst: false }),
 
@@ -110,6 +113,8 @@ export async function getComplexFacilityEdu(
     phone:               string | null
     homepage_url:        string | null
     special_class_count: number | null
+    class_count:         number | null
+    road_address:        string | null
   }>
 
   // 백분위 RPC는 si가 있고 데이터가 있는 학교만 (상위 5개 배정학교 대상)
@@ -213,6 +218,8 @@ export async function getComplexFacilityEdu(
       phone:                  s.phone,
       homepage_url:           s.homepage_url,
       special_class_count:    s.special_class_count,
+      class_count:            s.class_count,
+      road_address:           s.road_address,
     }
   })
 
