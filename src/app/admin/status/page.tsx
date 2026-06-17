@@ -14,7 +14,31 @@ interface DataSourceRow {
   last_synced_at: string | null
   last_status: string | null
   consecutive_failures: number
+  error_message: string | null
 }
+
+interface CronGroup {
+  title: string
+  note?: string
+  ids: string[]
+}
+
+const CRON_GROUPS: CronGroup[] = [
+  {
+    title: '국토부 실거래',
+    note: '매일 04:00 KST 수집 (GitHub Actions). 신고 익일 공개 기준.',
+    ids: ['molit_trade', 'molit_villa_trade', 'molit_offi_trade'],
+  },
+  {
+    title: 'Vercel 일배치',
+    note: '매일 04:00 KST (K-apt·분양·청약홈·오피스텔·갭통계)',
+    ids: ['daily-batch', 'gap-stats'],
+  },
+  {
+    title: 'GitHub Actions 워커',
+    ids: ['notify-worker', 'rankings', 'cafe-articles'],
+  },
+]
 
 function formatDateTime(s: string) {
   return new Date(s).toLocaleString('ko-KR', {
@@ -45,7 +69,6 @@ function cronBadge(row: DataSourceRow): { label: string; bg: string } {
   return { label: '정상', bg: '#16a34a' }
 }
 
-// 이번 주 월요일 날짜 반환 (YYYY-MM-DD, 로컬 시간 기준)
 function getMonday(date: Date): string {
   const d = new Date(date)
   const day = d.getDay()
@@ -54,8 +77,106 @@ function getMonday(date: Date): string {
   return d.toISOString().slice(0, 10)
 }
 
+function SourceRow({ row, isLast }: { row: DataSourceRow; isLast: boolean }) {
+  const badge = cronBadge(row)
+  const hasError = (row.last_status === 'failed' || row.last_status === 'partial') && row.error_message
+  return (
+    <>
+      <tr style={{ borderBottom: !isLast || hasError ? '1px solid var(--line-subtle)' : 'none' }}>
+        <td style={{ padding: '10px 16px' }}>
+          <div style={{ font: '500 13px/1.3 var(--font-sans)' }}>
+            {row.ui_label ?? row.id}
+          </div>
+          <div style={{ font: '400 11px/1.3 var(--font-mono)', color: 'var(--fg-tertiary)', marginTop: 2 }}>
+            {row.id}
+          </div>
+        </td>
+        <td style={{ padding: '10px 16px', font: '500 12px/1.4 var(--font-sans)', color: 'var(--fg-sec)', whiteSpace: 'nowrap' }}>
+          {row.last_synced_at ? formatDateTime(row.last_synced_at) : '—'}
+        </td>
+        <td style={{ padding: '10px 16px', font: '500 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', whiteSpace: 'nowrap' }}>
+          {row.last_synced_at ? formatElapsed(row.last_synced_at) : '—'}
+        </td>
+        <td style={{ padding: '10px 16px' }}>
+          <span style={{
+            display: 'inline-block',
+            padding: '3px 8px',
+            borderRadius: 4,
+            font: '600 11px/1 var(--font-sans)',
+            color: '#fff',
+            background: badge.bg,
+          }}>
+            {badge.label}
+          </span>
+        </td>
+        <td style={{ padding: '10px 16px', font: '500 12px/1 var(--font-sans)', color: row.consecutive_failures > 0 ? '#dc2626' : 'var(--fg-tertiary)' }}>
+          {row.consecutive_failures > 0 ? `${row.consecutive_failures}회` : '—'}
+        </td>
+      </tr>
+      {hasError && (
+        <tr style={{ borderBottom: isLast ? 'none' : '1px solid var(--line-subtle)' }}>
+          <td colSpan={5} style={{ padding: '0 16px 10px 32px' }}>
+            <code style={{ font: '400 11px/1.5 var(--font-mono)', color: '#dc2626' }}>
+              {row.error_message}
+            </code>
+          </td>
+        </tr>
+      )}
+    </>
+  )
+}
+
+function CronGroupTable({ group, sourceMap }: { group: CronGroup; sourceMap: Map<string, DataSourceRow> }) {
+  const rows = group.ids.map(id => sourceMap.get(id)).filter(Boolean) as DataSourceRow[]
+  if (rows.length === 0) return null
+  return (
+    <section aria-labelledby={`group-${group.title}`} style={{ marginBottom: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
+        <h3
+          id={`group-${group.title}`}
+          style={{ font: '600 13px/1.4 var(--font-sans)', margin: 0 }}
+        >
+          {group.title}
+        </h3>
+        {group.note && (
+          <span style={{ font: '400 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+            {group.note}
+          </span>
+        )}
+      </div>
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid var(--line-default)', background: 'var(--bg-surface-2)' }}>
+              {['작업', '마지막 실행', '경과', '상태', '연속실패'].map(h => (
+                <th
+                  key={h}
+                  scope="col"
+                  style={{
+                    padding: '8px 16px',
+                    font: '600 11px/1 var(--font-sans)',
+                    color: 'var(--fg-sec)',
+                    textAlign: 'left',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => (
+              <SourceRow key={row.id} row={row} isLast={i === rows.length - 1} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )
+}
+
 export default async function AdminStatusPage() {
-  // 관리자 권한 확인
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login?next=/admin/status')
@@ -97,8 +218,7 @@ export default async function AdminStatusPage() {
       .eq('status', 'approved'),
     adminClient
       .from('data_sources')
-      .select('id, ui_label, cadence, expected_freshness_hours, last_synced_at, last_status, consecutive_failures')
-      .order('cadence')
+      .select('id, ui_label, cadence, expected_freshness_hours, last_synced_at, last_status, consecutive_failures, error_message')
       .order('id'),
     adminClient
       .from('reports')
@@ -120,6 +240,7 @@ export default async function AdminStatusPage() {
   ])
 
   const dataSources = (dataSourcesRes.data ?? []) as unknown as DataSourceRow[]
+  const sourceMap = new Map(dataSources.map(s => [s.id, s]))
   const cafeCode = cafeCodeRes.data
 
   const dbStats = [
@@ -149,204 +270,143 @@ export default async function AdminStatusPage() {
 
   return (
     <main style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 32px' }}>
-        <h1
-          style={{
-            font: '700 22px/1.3 var(--font-sans)',
-            letterSpacing: '-0.02em',
-            margin: '0 0 20px',
-          }}
+      <h1
+        style={{
+          font: '700 22px/1.3 var(--font-sans)',
+          letterSpacing: '-0.02em',
+          margin: '0 0 20px',
+        }}
+      >
+        시스템 상태
+      </h1>
+
+      {/* 카페 가입 코드 섹션 */}
+      <section aria-labelledby="cafe-code-heading" style={{ marginBottom: 24 }}>
+        <h2
+          id="cafe-code-heading"
+          style={{ font: '700 14px/1.4 var(--font-sans)', margin: '0 0 12px' }}
         >
-          시스템 상태
-        </h1>
-
-        {/* 카페 가입 코드 섹션 */}
-        <section aria-labelledby="cafe-code-heading" style={{ marginBottom: 24 }}>
-          <h2
-            id="cafe-code-heading"
-            style={{ font: '700 14px/1.4 var(--font-sans)', margin: '0 0 12px' }}
-          >
-            이번 주 카페 가입 코드
-          </h2>
-          <div className="card" style={{ padding: 20 }}>
-            {cafeCode ? (
-              <div>
-                <div
-                  className="tnum"
-                  style={{
-                    font:          '700 28px/1 var(--font-mono, monospace)',
-                    color:         'var(--dj-orange)',
-                    letterSpacing: '0.1em',
-                    marginBottom:  8,
-                  }}
-                >
-                  {cafeCode.code}
-                </div>
-                <div style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
-                  {weekStart} 주 발행 · {new Date(cafeCode.created_at).toLocaleDateString('ko-KR')} 생성
-                </div>
-              </div>
-            ) : (
-              <div>
-                <p style={{ font: '500 13px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '0 0 12px' }}>
-                  이번 주 코드가 아직 생성되지 않았습니다.
-                </p>
-                <p style={{ font: '500 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>
-                  매주 월요일 09:05 KST에 자동 생성됩니다.
-                </p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        <section aria-labelledby="db-heading" style={{ marginBottom: 24 }}>
-          <h2
-            id="db-heading"
-            style={{ font: '700 14px/1.4 var(--font-sans)', margin: '0 0 12px' }}
-          >
-            DB 현황
-          </h2>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: 12,
-            }}
-          >
-            {dbStats.map(s => (
+          이번 주 카페 가입 코드
+        </h2>
+        <div className="card" style={{ padding: 20 }}>
+          {cafeCode ? (
+            <div>
               <div
-                key={s.label}
-                className="card"
-                style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 4 }}
-              >
-                <span
-                  className="tnum"
-                  style={{ font: '700 24px/1 var(--font-sans)' }}
-                >
-                  {s.value.toLocaleString('ko-KR')}
-                </span>
-                <span style={{ font: '500 12px/1.4 var(--font-sans)', color: 'var(--fg-sec)' }}>
-                  {s.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section aria-labelledby="cron-heading" style={{ marginBottom: 24 }}>
-          <h2
-            id="cron-heading"
-            style={{ font: '700 14px/1.4 var(--font-sans)', margin: '0 0 12px' }}
-          >
-            Cron / 배치 현황
-          </h2>
-          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--line-default)', background: 'var(--bg-surface-2)' }}>
-                  {['작업', '마지막 실행', '경과', '상태', '연속실패'].map(h => (
-                    <th
-                      key={h}
-                      scope="col"
-                      style={{
-                        padding: '10px 16px',
-                        font: '600 12px/1 var(--font-sans)',
-                        color: 'var(--fg-sec)',
-                        textAlign: 'left',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {dataSources.map((row, i) => {
-                  const badge = cronBadge(row)
-                  return (
-                    <tr
-                      key={row.id}
-                      style={{ borderBottom: i < dataSources.length - 1 ? '1px solid var(--line-subtle)' : 'none' }}
-                    >
-                      <td style={{ padding: '10px 16px' }}>
-                        <div style={{ font: '500 13px/1.3 var(--font-sans)' }}>
-                          {row.ui_label ?? row.id}
-                        </div>
-                        <div style={{ font: '400 11px/1.3 var(--font-mono)', color: 'var(--fg-tertiary)', marginTop: 2 }}>
-                          {row.id}
-                        </div>
-                      </td>
-                      <td style={{ padding: '10px 16px', font: '500 12px/1.4 var(--font-sans)', color: 'var(--fg-sec)', whiteSpace: 'nowrap' }}>
-                        {row.last_synced_at ? formatDateTime(row.last_synced_at) : '—'}
-                      </td>
-                      <td style={{ padding: '10px 16px', font: '500 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', whiteSpace: 'nowrap' }}>
-                        {row.last_synced_at ? formatElapsed(row.last_synced_at) : '—'}
-                      </td>
-                      <td style={{ padding: '10px 16px' }}>
-                        <span style={{
-                          display: 'inline-block',
-                          padding: '3px 8px',
-                          borderRadius: 4,
-                          font: '600 11px/1 var(--font-sans)',
-                          color: '#fff',
-                          background: badge.bg,
-                        }}>
-                          {badge.label}
-                        </span>
-                      </td>
-                      <td style={{ padding: '10px 16px', font: '500 12px/1 var(--font-sans)', color: row.consecutive_failures > 0 ? '#dc2626' : 'var(--fg-tertiary)' }}>
-                        {row.consecutive_failures > 0 ? `${row.consecutive_failures}회` : '—'}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section aria-labelledby="queue-heading" style={{ marginBottom: 24 }}>
-          <h2
-            id="queue-heading"
-            style={{ font: '700 14px/1.4 var(--font-sans)', margin: '0 0 12px' }}
-          >
-            대기 항목
-          </h2>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: 12,
-            }}
-          >
-            {queueStats.map(s => (
-              <div
-                key={s.label}
-                className="card"
+                className="tnum"
                 style={{
-                  padding: 16,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 4,
-                  border: s.alert ? '1px solid #d97706' : undefined,
+                  font:          '700 28px/1 var(--font-mono, monospace)',
+                  color:         'var(--dj-orange)',
+                  letterSpacing: '0.1em',
+                  marginBottom:  8,
                 }}
               >
-                <span
-                  className="tnum"
-                  style={{
-                    font: '700 24px/1 var(--font-sans)',
-                    color: s.alert ? '#d97706' : undefined,
-                  }}
-                >
-                  {s.value.toLocaleString('ko-KR')}
-                </span>
-                <span style={{ font: '500 12px/1.4 var(--font-sans)', color: 'var(--fg-sec)' }}>
-                  {s.label}
-                </span>
+                {cafeCode.code}
               </div>
-            ))}
-          </div>
-        </section>
-      </main>
+              <div style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                {weekStart} 주 발행 · {new Date(cafeCode.created_at).toLocaleDateString('ko-KR')} 생성
+              </div>
+            </div>
+          ) : (
+            <div>
+              <p style={{ font: '500 13px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '0 0 12px' }}>
+                이번 주 코드가 아직 생성되지 않았습니다.
+              </p>
+              <p style={{ font: '500 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>
+                매주 월요일 09:05 KST에 자동 생성됩니다.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section aria-labelledby="db-heading" style={{ marginBottom: 24 }}>
+        <h2
+          id="db-heading"
+          style={{ font: '700 14px/1.4 var(--font-sans)', margin: '0 0 12px' }}
+        >
+          DB 현황
+        </h2>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: 12,
+          }}
+        >
+          {dbStats.map(s => (
+            <div
+              key={s.label}
+              className="card"
+              style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 4 }}
+            >
+              <span
+                className="tnum"
+                style={{ font: '700 24px/1 var(--font-sans)' }}
+              >
+                {s.value.toLocaleString('ko-KR')}
+              </span>
+              <span style={{ font: '500 12px/1.4 var(--font-sans)', color: 'var(--fg-sec)' }}>
+                {s.label}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section aria-labelledby="cron-heading" style={{ marginBottom: 24 }}>
+        <h2
+          id="cron-heading"
+          style={{ font: '700 14px/1.4 var(--font-sans)', margin: '0 0 12px' }}
+        >
+          Cron / 배치 현황
+        </h2>
+        {CRON_GROUPS.map(group => (
+          <CronGroupTable key={group.title} group={group} sourceMap={sourceMap} />
+        ))}
+      </section>
+
+      <section aria-labelledby="queue-heading" style={{ marginBottom: 24 }}>
+        <h2
+          id="queue-heading"
+          style={{ font: '700 14px/1.4 var(--font-sans)', margin: '0 0 12px' }}
+        >
+          대기 항목
+        </h2>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: 12,
+          }}
+        >
+          {queueStats.map(s => (
+            <div
+              key={s.label}
+              className="card"
+              style={{
+                padding: 16,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4,
+                border: s.alert ? '1px solid #d97706' : undefined,
+              }}
+            >
+              <span
+                className="tnum"
+                style={{
+                  font: '700 24px/1 var(--font-sans)',
+                  color: s.alert ? '#d97706' : undefined,
+                }}
+              >
+                {s.value.toLocaleString('ko-KR')}
+              </span>
+              <span style={{ font: '500 12px/1.4 var(--font-sans)', color: 'var(--fg-sec)' }}>
+                {s.label}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+    </main>
   )
 }

@@ -969,6 +969,38 @@
 **UI hint**: yes
 
 ---
+
+### Phase 26: Cron 전면 정비 + 국토부 실거래 수집 최적화
+
+**Goal:** stuck ingest_runs 217건 정리, phantom data_sources 엔트리 제거, 국토부 수집 주기를 일 단위로 명확히 설정, 어드민 대시보드 카테고리 그룹 정리 — "실거래가 제일 빠른 사이트" 운영 기반 확립.
+
+**Version:** V4.1
+
+**Requirements:**
+- CRON-01: `ingest_runs` stuck running 217건 → failed 일괄 처리 + `backfill-realprice.ts` 시작 시 cleanup 추가
+- CRON-02: `data_sources` phantom 엔트리 (molit_rent, molit_villa_rent, molit_offi_rent) 제거 + 나머지 ui_label·cadence·expected_freshness_hours 전면 정비
+- CRON-03: `daily/route.ts` → offi 수집 완료 후 `markCronStatus('molit_offi_trade', ...)` 호출 추가
+- CRON-04: 어드민 status 페이지 → 카테고리별 그룹(국토부/일배치/워커) + error_message 표시 + 국토부 설명 문구
+
+**Plans:** 3 plans / 3 waves
+
+**Wave 1** *(DB 직접 수정)*
+- [ ] 26-01-PLAN.md — stuck 정리 SQL + data_sources 재구성 (CRON-01, CRON-02)
+
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 26-02-PLAN.md — daily/route.ts markCronStatus 추가 + backfill-realprice.ts cleanup (CRON-01, CRON-03)
+
+**Wave 3** *(blocked on Wave 2)*
+- [ ] 26-03-PLAN.md — 어드민 대시보드 개선 (CRON-04)
+
+**Success Criteria:**
+1. `data_sources` 에서 phantom 엔트리 3개 사라지고, molit_* cadence=daily, freshness=28
+2. `ingest_runs` 에 stuck running 0건
+3. 다음 daily 배치 실행 후 `molit_offi_trade.last_synced_at` 업데이트됨
+4. 어드민 status 페이지에 "국토부 실거래" 카테고리 그룹이 보이고 phantom 미실행 없음
+5. `npm run build && npm run lint` 통과
+
+---
 ---
 ## Milestone Summary
 

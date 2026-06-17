@@ -78,11 +78,32 @@ async function getSggCodes(): Promise<string[]> {
   return (data ?? []).map((r: { sgg_code: string }) => r.sgg_code)
 }
 
+async function cleanupStuckRuns(): Promise<number> {
+  const cutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString()
+  const sourceIds = ['molit_trade', 'molit_villa_trade']
+  let cleaned = 0
+  for (const sourceId of sourceIds) {
+    const { data } = await supabase
+      .from('ingest_runs')
+      .update({ status: 'failed', error_message: 'timeout: cleaned up by next run', completed_at: new Date().toISOString() })
+      .eq('source_id', sourceId)
+      .eq('status', 'running')
+      .lt('started_at', cutoff)
+      .select('id')
+    cleaned += (data ?? []).length
+  }
+  return cleaned
+}
+
 async function main() {
   if (!process.env.MOLIT_API_KEY) {
     console.error('❌ MOLIT_API_KEY 환경변수 필요')
     process.exit(1)
   }
+
+  // 이전 실행에서 timeout된 stuck 레코드 정리 (30분 초과)
+  const cleaned = await cleanupStuckRuns()
+  if (cleaned > 0) console.log(`🧹 stuck ingest_runs ${cleaned}건 정리`)
 
   const now = new Date()
   const defaultTo   = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`

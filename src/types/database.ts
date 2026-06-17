@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -465,6 +465,59 @@ export type Database = {
           },
         ]
       }
+      complex_gap_stats: {
+        Row: {
+          complex_id: string
+          computed_at: string
+          gap_amount: number
+          gap_ratio: number
+          id: string
+          jeonse_count: number
+          jeonse_ratio: number
+          median_jeonse_price: number
+          median_sale_price: number
+          risk_level: string
+          sale_count: number
+          window_months: number
+        }
+        Insert: {
+          complex_id: string
+          computed_at?: string
+          gap_amount: number
+          gap_ratio: number
+          id?: string
+          jeonse_count: number
+          jeonse_ratio: number
+          median_jeonse_price: number
+          median_sale_price: number
+          risk_level: string
+          sale_count: number
+          window_months?: number
+        }
+        Update: {
+          complex_id?: string
+          computed_at?: string
+          gap_amount?: number
+          gap_ratio?: number
+          id?: string
+          jeonse_count?: number
+          jeonse_ratio?: number
+          median_jeonse_price?: number
+          median_sale_price?: number
+          risk_level?: string
+          sale_count?: number
+          window_months?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complex_gap_stats_complex_id_fkey"
+            columns: ["complex_id"]
+            isOneToOne: true
+            referencedRelation: "complexes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       complex_match_queue: {
         Row: {
           candidate_ids: string[] | null
@@ -511,6 +564,62 @@ export type Database = {
             columns: ["resolved_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      complex_price_predictions: {
+        Row: {
+          ai_cached_at: string | null
+          ai_commentary: string | null
+          area_bucket: string
+          complex_id: string
+          computed_at: string
+          id: string
+          model_name: string
+          predicted_month: string
+          predicted_price_lower: number | null
+          predicted_price_mean: number
+          predicted_price_upper: number | null
+          training_count: number | null
+          training_mape: number | null
+        }
+        Insert: {
+          ai_cached_at?: string | null
+          ai_commentary?: string | null
+          area_bucket: string
+          complex_id: string
+          computed_at?: string
+          id?: string
+          model_name: string
+          predicted_month: string
+          predicted_price_lower?: number | null
+          predicted_price_mean: number
+          predicted_price_upper?: number | null
+          training_count?: number | null
+          training_mape?: number | null
+        }
+        Update: {
+          ai_cached_at?: string | null
+          ai_commentary?: string | null
+          area_bucket?: string
+          complex_id?: string
+          computed_at?: string
+          id?: string
+          model_name?: string
+          predicted_month?: string
+          predicted_price_lower?: number | null
+          predicted_price_mean?: number
+          predicted_price_upper?: number | null
+          training_count?: number | null
+          training_mape?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complex_price_predictions_complex_id_fkey"
+            columns: ["complex_id"]
+            isOneToOne: false
+            referencedRelation: "complexes"
             referencedColumns: ["id"]
           },
         ]
@@ -629,6 +738,7 @@ export type Database = {
           location: unknown
           molit_complex_code: string | null
           name_normalized: string
+          naver_complex_no: string | null
           predecessor_id: string | null
           price_change_30d: number | null
           road_address: string | null
@@ -665,6 +775,7 @@ export type Database = {
           location?: unknown
           molit_complex_code?: string | null
           name_normalized: string
+          naver_complex_no?: string | null
           predecessor_id?: string | null
           price_change_30d?: number | null
           road_address?: string | null
@@ -701,6 +812,7 @@ export type Database = {
           location?: unknown
           molit_complex_code?: string | null
           name_normalized?: string
+          naver_complex_no?: string | null
           predecessor_id?: string | null
           price_change_30d?: number | null
           road_address?: string | null
@@ -734,6 +846,7 @@ export type Database = {
         Row: {
           cadence: string
           consecutive_failures: number
+          error_message: string | null
           expected_freshness_hours: number
           id: string
           last_status: string | null
@@ -743,6 +856,7 @@ export type Database = {
         Insert: {
           cadence: string
           consecutive_failures?: number
+          error_message?: string | null
           expected_freshness_hours: number
           id: string
           last_status?: string | null
@@ -752,6 +866,7 @@ export type Database = {
         Update: {
           cadence?: string
           consecutive_failures?: number
+          error_message?: string | null
           expected_freshness_hours?: number
           id?: string
           last_status?: string | null
@@ -886,6 +1001,7 @@ export type Database = {
           lat: number | null
           lng: number | null
           poi_name: string
+          sport_type: string | null
         }
         Insert: {
           category: string
@@ -896,6 +1012,7 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           poi_name: string
+          sport_type?: string | null
         }
         Update: {
           category?: string
@@ -906,6 +1023,7 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           poi_name?: string
+          sport_type?: string | null
         }
         Relationships: [
           {
@@ -919,36 +1037,99 @@ export type Database = {
       }
       facility_school: {
         Row: {
+          advancement_foreign: number | null
+          advancement_private: number | null
+          advancement_rate: number | null
+          advancement_science: number | null
+          afterschool_count: number | null
+          class_count: number | null
           complex_id: string
           created_at: string
+          data_year: number | null
           distance_m: number | null
+          establishment_type: string | null
+          founded_date: string | null
+          homepage_url: string | null
           id: string
           is_assignment: boolean
+          meal_type: string | null
+          phone: string | null
+          road_address: string | null
           school_code: string | null
           school_name: string
           school_type: string
+          special_class_count: number | null
+          students_per_class: number | null
+          teacher_count: number | null
+          teachers_ratio: number | null
+          total_students: number | null
+          univ_2year_rate: number | null
+          univ_4year_rate: number | null
+          univ_rate: number | null
           updated_at: string
         }
         Insert: {
+          advancement_foreign?: number | null
+          advancement_private?: number | null
+          advancement_rate?: number | null
+          advancement_science?: number | null
+          afterschool_count?: number | null
+          class_count?: number | null
           complex_id: string
           created_at?: string
+          data_year?: number | null
           distance_m?: number | null
+          establishment_type?: string | null
+          founded_date?: string | null
+          homepage_url?: string | null
           id?: string
           is_assignment?: boolean
+          meal_type?: string | null
+          phone?: string | null
+          road_address?: string | null
           school_code?: string | null
           school_name: string
           school_type: string
+          special_class_count?: number | null
+          students_per_class?: number | null
+          teacher_count?: number | null
+          teachers_ratio?: number | null
+          total_students?: number | null
+          univ_2year_rate?: number | null
+          univ_4year_rate?: number | null
+          univ_rate?: number | null
           updated_at?: string
         }
         Update: {
+          advancement_foreign?: number | null
+          advancement_private?: number | null
+          advancement_rate?: number | null
+          advancement_science?: number | null
+          afterschool_count?: number | null
+          class_count?: number | null
           complex_id?: string
           created_at?: string
+          data_year?: number | null
           distance_m?: number | null
+          establishment_type?: string | null
+          founded_date?: string | null
+          homepage_url?: string | null
           id?: string
           is_assignment?: boolean
+          meal_type?: string | null
+          phone?: string | null
+          road_address?: string | null
           school_code?: string | null
           school_name?: string
           school_type?: string
+          special_class_count?: number | null
+          students_per_class?: number | null
+          teacher_count?: number | null
+          teachers_ratio?: number | null
+          total_students?: number | null
+          univ_2year_rate?: number | null
+          univ_4year_rate?: number | null
+          univ_rate?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -1493,6 +1674,140 @@ export type Database = {
           },
         ]
       }
+      presale_discoveries: {
+        Row: {
+          admin_notes: string | null
+          arch_hub_data: Json | null
+          arch_hub_id: string | null
+          arch_hub_matched_at: string | null
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          discovered_at: string
+          hssply_adres: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          name: string
+          new_listing_id: string | null
+          region: string
+          source_url: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          arch_hub_data?: Json | null
+          arch_hub_id?: string | null
+          arch_hub_matched_at?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          discovered_at?: string
+          hssply_adres?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          name: string
+          new_listing_id?: string | null
+          region: string
+          source_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          arch_hub_data?: Json | null
+          arch_hub_id?: string | null
+          arch_hub_matched_at?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          discovered_at?: string
+          hssply_adres?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          name?: string
+          new_listing_id?: string | null
+          region?: string
+          source_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presale_discoveries_new_listing_id_fkey"
+            columns: ["new_listing_id"]
+            isOneToOne: false
+            referencedRelation: "new_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presale_enriched: {
+        Row: {
+          address: string | null
+          builder: string | null
+          community: Json | null
+          contractor: string | null
+          crawled_at: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          move_in_date: string | null
+          name: string
+          sale_status: string
+          sgg_code: string | null
+          source_type: string
+          source_url: string | null
+          summary: Json | null
+          total_units: number | null
+          unit_types: Json | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          builder?: string | null
+          community?: Json | null
+          contractor?: string | null
+          crawled_at?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          move_in_date?: string | null
+          name: string
+          sale_status?: string
+          sgg_code?: string | null
+          source_type?: string
+          source_url?: string | null
+          summary?: Json | null
+          total_units?: number | null
+          unit_types?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          builder?: string | null
+          community?: Json | null
+          contractor?: string | null
+          crawled_at?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          move_in_date?: string | null
+          name?: string
+          sale_status?: string
+          sgg_code?: string | null
+          source_type?: string
+          source_url?: string | null
+          summary?: Json | null
+          total_units?: number | null
+          unit_types?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       presale_transactions: {
         Row: {
           area: number | null
@@ -1755,6 +2070,108 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      region_population_cache: {
+        Row: {
+          fetched_at: string
+          population: number
+          sgg_code: string
+          sgg_name: string
+          year: number
+        }
+        Insert: {
+          fetched_at?: string
+          population: number
+          sgg_code: string
+          sgg_name: string
+          year: number
+        }
+        Update: {
+          fetched_at?: string
+          population?: number
+          sgg_code?: string
+          sgg_name?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      regional_income: {
+        Row: {
+          avg_income: number
+          created_at: string | null
+          id: string
+          region_code: string
+          source: string
+          year: number
+        }
+        Insert: {
+          avg_income: number
+          created_at?: string | null
+          id?: string
+          region_code: string
+          source?: string
+          year: number
+        }
+        Update: {
+          avg_income?: number
+          created_at?: string | null
+          id?: string
+          region_code?: string
+          source?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      regional_population: {
+        Row: {
+          fetched_at: string
+          households: number | null
+          id: string
+          population: number
+          sgg_code: string
+          year_month: string
+        }
+        Insert: {
+          fetched_at?: string
+          households?: number | null
+          id?: string
+          population: number
+          sgg_code: string
+          year_month: string
+        }
+        Update: {
+          fetched_at?: string
+          households?: number | null
+          id?: string
+          population?: number
+          sgg_code?: string
+          year_month?: string
+        }
+        Relationships: []
+      }
+      regional_unsold: {
+        Row: {
+          fetched_at: string
+          id: string
+          sgg_code: string
+          unsold_count: number
+          year_month: string
+        }
+        Insert: {
+          fetched_at?: string
+          id?: string
+          sgg_code: string
+          unsold_count?: number
+          year_month: string
+        }
+        Update: {
+          fetched_at?: string
+          id?: string
+          sgg_code?: string
+          unsold_count?: number
+          year_month?: string
+        }
+        Relationships: []
       }
       regions: {
         Row: {
@@ -2218,6 +2635,27 @@ export type Database = {
           year_month: string
         }[]
       }
+      compute_gap_stats: {
+        Args: { p_window_months?: number }
+        Returns: {
+          complex_id: string
+          gap_amount: number
+          gap_ratio: number
+          jeonse_count: number
+          jeonse_ratio: number
+          median_jeonse_price: number
+          median_sale_price: number
+          sale_count: number
+        }[]
+      }
+      compute_predictions: {
+        Args: { p_area_bucket: string; p_complex_id: string; p_months?: number }
+        Returns: {
+          avg_price: number
+          tx_count: number
+          year_month: string
+        }[]
+      }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
         | {
@@ -2349,7 +2787,49 @@ export type Database = {
         Returns: boolean
       }
       geomfromewkt: { Args: { "": string }; Returns: unknown }
+      get_complex_commentary_batch_inputs: {
+        Args: {
+          p_area_bucket?: string
+          p_limit?: number
+          p_offset?: number
+          p_stale_days?: number
+        }
+        Returns: {
+          area_bucket: string
+          avg_mape: number
+          avg_sale_per_pyeong: number
+          built_year: number
+          change_pct: number
+          complex_id: string
+          complex_name: string
+          far_price: number
+          gap_amount: number
+          gap_risk_level: string
+          gu: string
+          hagwon_score: number
+          household_count: number
+          jeonse_ratio: number
+          management_cost_m2: number
+          model_name: string
+          near_price: number
+          price_change_30d: number
+          primary_school_name: string
+          si: string
+          students_per_class: number
+          training_count: number
+          tx_count_30d: number
+        }[]
+      }
       get_hagwon_grade: { Args: { p_complex_id: string }; Returns: string }
+      get_quadrant_data: {
+        Args: { p_gu: string; p_si: string }
+        Returns: {
+          avg_jeonse_pp: number
+          avg_sale_pp: number
+          complex_id: string
+          complex_name: string
+        }[]
+      }
       get_recent_complex_sales: {
         Args: { p_complex_ids: string[]; p_since?: string }
         Returns: {
@@ -2378,6 +2858,85 @@ export type Database = {
       increment_view_count: {
         Args: { p_complex_id: string }
         Returns: undefined
+      }
+      invest_prediction_ranking: {
+        Args: {
+          p_area_bucket?: string
+          p_limit?: number
+          p_max_mape?: number
+          p_sgg_code?: string
+        }
+        Returns: {
+          ai_commentary: string
+          area_bucket: string
+          avg_mape: number
+          change_pct: number
+          complex_id: string
+          complex_name: string
+          far_price: number
+          gu: string
+          near_price: number
+          sgg_code: string
+          si: string
+          status: string
+          url_slug: string
+        }[]
+      }
+      invest_price_history: {
+        Args: {
+          p_area_bucket?: string
+          p_complex_id: string
+          p_deal_type?: string
+          p_months?: number
+        }
+        Returns: {
+          avg_price: number
+          tx_count: number
+          year_month: string
+        }[]
+      }
+      invest_regional_jeonse_ratio: {
+        Args: { p_area_bucket?: string; p_months?: number; p_sgg_code?: string }
+        Returns: {
+          jeonse_ratio: number
+          rent_avg: number
+          rent_count: number
+          sale_avg: number
+          sale_count: number
+          year_month: string
+        }[]
+      }
+      invest_regional_prediction_summary: {
+        Args: { p_area_bucket?: string }
+        Returns: {
+          avg_far_price: number
+          avg_near_price: number
+          complex_count: number
+          median_change_pct: number
+          sgg_code: string
+        }[]
+      }
+      invest_regional_prediction_timeseries: {
+        Args: {
+          p_area_bucket?: string
+          p_max_mape?: number
+          p_sgg_code: string
+        }
+        Returns: {
+          complex_count: number
+          lower_price: number
+          median_price: number
+          predicted_month: string
+          upper_price: number
+        }[]
+      }
+      invest_regional_price_history: {
+        Args: { p_area_bucket?: string; p_months?: number; p_sgg_code?: string }
+        Returns: {
+          avg_price: number
+          tx_count: number
+          year_month: string
+        }[]
       }
       link_transactions_batch: {
         Args: { p_limit?: number }
@@ -2418,6 +2977,22 @@ export type Database = {
         }[]
       }
       name_normalize_sql: { Args: { raw: string }; Returns: string }
+      nearby_complex_price_compare: {
+        Args: {
+          p_complex_id: string
+          p_limit?: number
+          p_months?: number
+          p_radius_m?: number
+        }
+        Returns: {
+          avg_price_per_py: number
+          built_year: number
+          complex_id: string
+          complex_name: string
+          distance_m: number
+          tx_count: number
+        }[]
+      }
       populate_geometry_columns:
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
         | { Args: { use_typmod?: boolean }; Returns: string }
@@ -2459,6 +3034,29 @@ export type Database = {
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
       refresh_complex_price_stats: { Args: never; Returns: undefined }
+      school_district_avg_price: {
+        Args: { p_months?: number; p_school_name: string }
+        Returns: {
+          complex_count: number
+          district_avg_py: number
+          school_name: string
+          si: string
+          si_avg_py: number
+        }[]
+      }
+      school_quality_percentile_by_si: {
+        Args: { p_metric: string; p_si: string; p_target_value: number }
+        Returns: number
+      }
+      school_ranking: {
+        Args: { p_metric: string; p_school_type: string; p_si: string }
+        Returns: {
+          gu: string
+          metric_value: number
+          rank: number
+          school_name: string
+        }[]
+      }
       search_complexes: {
         Args: { p_limit?: number; p_query: string; p_sgg_codes: string[] }
         Returns: {
@@ -2472,6 +3070,8 @@ export type Database = {
           sgg_code: string
           si: string
           similarity: number
+          status: string
+          url_slug: string
         }[]
       }
       show_limit: { Args: never; Returns: number }

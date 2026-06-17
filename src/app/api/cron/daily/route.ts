@@ -229,18 +229,27 @@ export async function GET(request: Request): Promise<Response> {
   // ── 오피스텔 실거래 당월 수집 (OFFI-01) ──────────────────────────────────
   const offiSggCodes = ['48121', '48123', '48125', '48127', '48129', '48250']
   const offiYm = currentYearMonth()
+  let offiErrors = 0
   for (const sggCode of offiSggCodes) {
     try {
       const result = await ingestOffiMonth(sggCode, offiYm, supabase)
       offiUpserted += result.rowsUpserted
       if (result.status === 'failed') {
         errors.push(`offi ${sggCode} ${offiYm}: ${result.rowsFailed}건 실패`)
+        offiErrors++
       }
     } catch (err) {
       errors.push(`offi ${sggCode}: ${err instanceof Error ? err.message : String(err)}`)
+      offiErrors++
     }
   }
   totalUpserted += offiUpserted
+  const offiStatus = offiErrors === 0 ? 'success' : offiErrors < offiSggCodes.length ? 'partial' : 'failed'
+  const offiErrMsg = offiErrors > 0
+    ? errors.filter(e => e.startsWith('offi')).slice(-3).join('; ')
+    : undefined
+  await markCronStatus(supabase, 'molit_offi_trade', offiStatus, offiErrMsg)
+    .catch(() => { /* molit_offi_trade 미등록이면 무시 */ })
 
   // ── Phase 11: 평당가·30일 변동률·거래량 배치 집계 (MAP-02, MAP-05) ──────────
   try {
