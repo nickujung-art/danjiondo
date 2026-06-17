@@ -51,8 +51,8 @@ const ArticleListResponseSchema = z.object({
     list:        z.array(ArticleItemSchema).optional().default([]),
     moreDataYn:  z.string().optional(),
   }).optional(),
-  // PC API 응답 키 fallback
-  articleList: z.array(ArticleItemSchema).optional(),
+  articleList:  z.array(ArticleItemSchema).optional(),
+  isMoreData:   z.boolean().optional(),
 })
 
 // ─── 유틸리티 ────────────────────────────────────────────────────────
@@ -156,20 +156,20 @@ export interface ArticleListItem {
 }
 
 /**
- * 네이버 부동산 매물 목록 조회 (모바일 API 우선, 페이지 1)
- * RESEARCH.md §1.2 — tradTpCd=A1(매매)
+ * 네이버 부동산 매물 목록 조회 (PC API — m.land 모바일 엔드포인트 deprecated 이후 전환)
+ * RESEARCH.md §1.2/1.4 — tradTpCd=A1(매매)
+ * 구 모바일 URL: m.land.naver.com/complex/getComplexArticleList → 2026-06 이후 null 반환
  */
 export async function fetchNaverListings(complexNo: string, page = 1): Promise<{
   items:    ArticleListItem[]
   hasMore:  boolean
 }> {
-  // 모바일 API (VERIFIED: inasie.github.io)
-  const url = new URL('https://m.land.naver.com/complex/getComplexArticleList')
-  url.searchParams.set('hscpNo',   complexNo)
-  url.searchParams.set('tradTpCd', 'A1')       // 매매
-  url.searchParams.set('order',    'date_')
-  url.searchParams.set('showR0',   'N')
-  url.searchParams.set('page',     String(page))
+  // PC API (new.land.naver.com) — RESEARCH.md §1.4
+  const url = new URL(`https://new.land.naver.com/api/articles/complex/${complexNo}`)
+  url.searchParams.set('realEstateType', 'APT')
+  url.searchParams.set('tradeType',      'A1')   // 매매
+  url.searchParams.set('page',           String(page))
+  url.searchParams.set('pageSize',       '20')
 
   const res = await fetch(url.toString(), {
     headers: buildNaverHeaders(),
@@ -179,28 +179,30 @@ export async function fetchNaverListings(complexNo: string, page = 1): Promise<{
   if (!res.ok) throw new Error(`fetchNaverListings HTTP ${res.status} for complexNo=${complexNo}`)
 
   const json = await res.json()
+  if (json === null) return { items: [], hasMore: false }
+
   const parsed = ArticleListResponseSchema.safeParse(json)
   if (!parsed.success) return { items: [], hasMore: false }
 
-  // 모바일 result.list 우선, 없으면 articleList fallback
-  const rawList = parsed.data.result?.list ?? parsed.data.articleList ?? []
-  const hasMore = parsed.data.result?.moreDataYn === 'Y'
+  // PC API: articleList + isMoreData
+  const rawList = parsed.data.articleList ?? parsed.data.result?.list ?? []
+  const hasMore = parsed.data.isMoreData === true || parsed.data.result?.moreDataYn === 'Y'
 
   const items: ArticleListItem[] = []
   for (const row of rawList) {
-    // 모바일 API 필드
-    if (row.prcInfo && row.spc2) {
-      const priceMan = parsePrcInfo(row.prcInfo)
-      const areaM2   = parseFloat(row.spc2)
+    // PC API 필드 우선
+    if (row.dealOrWarrantPrc) {
+      const priceMan = parsePrcInfo(row.dealOrWarrantPrc)
+      const areaM2   = row.exclusiveArea ?? row.area2 ?? 0
       if (priceMan && areaM2 > 0) {
         items.push({ priceMan, areaM2 })
       }
       continue
     }
-    // PC API fallback 필드
-    if (row.dealOrWarrantPrc) {
-      const priceMan = parsePrcInfo(row.dealOrWarrantPrc)
-      const areaM2   = row.exclusiveArea ?? row.area2 ?? 0
+    // 모바일 API 필드 (fallback)
+    if (row.prcInfo && row.spc2) {
+      const priceMan = parsePrcInfo(row.prcInfo)
+      const areaM2   = parseFloat(row.spc2)
       if (priceMan && areaM2 > 0) {
         items.push({ priceMan, areaM2 })
       }
