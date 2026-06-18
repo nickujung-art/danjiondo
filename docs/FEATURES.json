@@ -3,7 +3,7 @@
   "_usage": "세션 시작 시 읽어서 todo/in_progress 항목 파악. done이지만 checklist 미완료 항목은 주의.",
   "lastUpdated": "2026-06-18",
   "summary": {
-    "done": 25,
+    "done": 26,
     "in_progress": 0,
     "todo": 0,
     "deferred": 5,
@@ -429,6 +429,28 @@
         { "layer": "migration", "name": "cafe_posts 테이블", "status": "todo" },
         { "layer": "script",    "name": "카페 글 수집 + NLP 파이프라인", "status": "todo" },
         { "layer": "ui",        "name": "단지 상세 카페 의견 섹션", "status": "todo" }
+      ]
+    },
+
+    {
+      "id": "hagwon-recommendation",
+      "category": "교육",
+      "name": "학원 추천 시스템 (NEIS + Groq AI)",
+      "status": "done",
+      "priority": "high",
+      "notes": "Phase 28. hagwon_db(NEIS 4,601건) + recommend_hagwons RPC + HagwonRecommendSheet. 데이터 수집 후 스크립트 실행 필요.",
+      "checklist": [
+        { "layer": "migration", "name": "hagwon_db + user_child_profiles + recommend_hagwons RPC", "status": "done" },
+        { "layer": "script",    "name": "fetch-hagwon-neis.ts (NEIS 전수 수집)", "status": "done" },
+        { "layer": "script",    "name": "geocode-hagwon.ts (Kakao 좌표 변환)", "status": "done" },
+        { "layer": "script",    "name": "classify-hagwon-groq.ts (Groq 분류)", "status": "done" },
+        { "layer": "script",    "name": "collect-hagwon-popularity.ts (Naver 인기도 + fee_tier)", "status": "done" },
+        { "layer": "service",   "name": "neis-hagwon.ts 타입 계약", "status": "done" },
+        { "layer": "api",       "name": "recommendHagwons + saveChildProfile + loadChildProfile Server Actions", "status": "done" },
+        { "layer": "ui",        "name": "HagwonRecommendSheet 3단계 Portal Sheet", "status": "done" },
+        { "layer": "ui",        "name": "EducationCard 학원탭 추천 버튼", "status": "done" },
+        { "layer": "test",      "name": "scoring 6개 + actions 6개 Vitest", "status": "done" },
+        { "layer": "data",      "name": "스크립트 실제 실행 (fetch→geocode→classify→popularity)", "status": "todo" }
       ]
     },
 
