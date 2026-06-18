@@ -36,9 +36,29 @@ export interface DailyFeedTransaction {
   deal_date: string       // YYYY-MM-DD
   dong: string | null
   is_new_high: boolean
+  prevPrice: number | null   // 직전 동일 면적 거래가
+  priceDelta: number | null  // price - prevPrice (만원)
   complexId: string
   complexName: string
   urlSlug: string | null
+}
+
+export interface AllTimeHighRow {
+  complexId: string
+  complexName: string
+  urlSlug: string | null
+  si: string | null
+  gu: string | null
+  price: number
+  area_m2: number
+  deal_date: string
+  floor: number | null
+}
+
+export interface RegionalHeatRow {
+  sggCode: string
+  label: string
+  txCount30d: number
 }
 
 export interface DailyFeedGroup {
@@ -162,21 +182,22 @@ export async function getRecentDailyFeed(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: histData } = await (supabase as any)
     .from('transactions')
-    .select('id, complex_id, area_m2, price')
+    .select('id, complex_id, area_m2, price, deal_date')
     .in('complex_id', feedComplexIds)
     .eq('deal_type', 'sale')
     .is('cancel_date', null)
     .is('superseded_by', null)
     .limit(10000)
 
-  const histByComplex = new Map<string, Array<{ id: string; area_m2: number; price: number }>>()
+  const histByComplex = new Map<string, Array<{ id: string; area_m2: number; price: number; deal_date: string }>>()
   for (const h of (histData ?? []) as Record<string, unknown>[]) {
     const cid = h['complex_id'] as string
     if (!histByComplex.has(cid)) histByComplex.set(cid, [])
     histByComplex.get(cid)!.push({
-      id:      String(h['id']),
-      area_m2: Number(h['area_m2']),
-      price:   Number(h['price']),
+      id:        String(h['id']),
+      area_m2:   Number(h['area_m2']),
+      price:     Number(h['price']),
+      deal_date: h['deal_date'] as string,
     })
   }
 
@@ -203,6 +224,13 @@ export async function getRecentDailyFeed(
     const maxPrice    = comparables.length > 0 ? Math.max(...comparables.map(h => h.price)) : 0
     const is_new_high = comparables.length > 0 && price >= maxPrice
 
+    // 직전 거래 (동일 면적 ±5㎡, 현재 거래 날짜보다 이전)
+    const prevTrade = comparables
+      .filter(h => h.deal_date < date)
+      .sort((a, b) => b.deal_date.localeCompare(a.deal_date))[0]
+    const prevPrice  = prevTrade?.price ?? null
+    const priceDelta = prevPrice != null ? price - prevPrice : null
+
     if (!grouped.has(date)) grouped.set(date, [])
     const group = grouped.get(date)!
     if (group.length >= maxPerDate) continue
@@ -215,6 +243,8 @@ export async function getRecentDailyFeed(
       deal_date:   date,
       dong:        c['dong'] as string | null,
       is_new_high,
+      prevPrice,
+      priceDelta,
       complexId:   cid,
       complexName: c['canonical_name'] as string,
       urlSlug:     c['url_slug'] as string | null,
@@ -476,4 +506,102 @@ export async function getWeeklyHighlights(
   }))
 
   return { topPriceRecent, topVolumeRecent, priceSurgeRecent }
+}
+
+// ── 5. 이번 달 신고가 경신 단지 수 ───────────────────────────────────────────
+export async function getNewRecordCount(
+  supabase: SupabaseClient<Database>,
+): Promise<number> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { count } = await (supabase as any)
+    .from('complexes')
+    .select('*', { count: 'exact', head: true })
+    .in('sgg_code', [...ACTIVE_SGG_CODES])
+    .eq('is_new_record_30d', true)
+    .eq('status', 'active')
+
+  return (count as number | null) ?? 0
+}
+
+// ── 6. 구별 30일 거래 온도 ───────────────────────────────────────────────────
+/** 각 구의 30일 매매 거래 건수 (tx_count_30d 합산). 거래 활발도 비교 막대에 사용. */
+export async function getRegionalTradingHeat(
+  supabase: SupabaseClient<Database>,
+): Promise<RegionalHeatRow[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
+    .from('complexes')
+    .select('sgg_code, tx_count_30d')
+    .in('sgg_code', [...ACTIVE_SGG_CODES])
+    .eq('status', 'active')
+    .not('tx_count_30d', 'is', null)
+
+  const sumMap = new Map<string, number>()
+  for (const row of (data ?? []) as Record<string, unknown>[]) {
+    const code = row['sgg_code'] as string
+    sumMap.set(code, (sumMap.get(code) ?? 0) + Number(row['tx_count_30d']))
+  }
+
+  return CHAMPION_REGIONS
+    .map(r => ({ sggCode: r.sggCode, label: r.label, txCount30d: sumMap.get(r.sggCode) ?? 0 }))
+    .sort((a, b) => b.txCount30d - a.txCount30d)
+}
+
+// ── 7. 지역 역대 최고가 (단지별 1건) ─────────────────────────────────────────
+/** 선택 지역의 단지별 역대 최고 거래가 TOP 5. */
+export async function getRegionalAllTimeHighs(
+  supabase: SupabaseClient<Database>,
+  sggCodes: string[],
+): Promise<AllTimeHighRow[]> {
+  if (sggCodes.length === 0) return []
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: txData, error } = await (supabase as any)
+    .from('transactions')
+    .select(`
+      id, price, area_m2, deal_date, floor,
+      complexes!inner (id, canonical_name, url_slug, si, gu, sgg_code)
+    `)
+    .in('complexes.sgg_code', sggCodes)
+    .eq('deal_type', 'sale')
+    .is('cancel_date', null)
+    .is('superseded_by', null)
+    .gt('area_m2', 0)
+    .order('price', { ascending: false })
+    .limit(150)
+
+  if (error) {
+    console.error('[getRegionalAllTimeHighs] failed:', error.message)
+    return []
+  }
+
+  const seen = new Set<string>()
+  const result: AllTimeHighRow[] = []
+
+  for (const row of (txData ?? []) as Record<string, unknown>[]) {
+    const c = Array.isArray(row['complexes'])
+      ? (row['complexes'] as Record<string, unknown>[])[0]
+      : row['complexes'] as Record<string, unknown>
+    if (!c) continue
+
+    const cid = c['id'] as string
+    if (seen.has(cid)) continue
+    seen.add(cid)
+
+    result.push({
+      complexId:   cid,
+      complexName: c['canonical_name'] as string,
+      urlSlug:     c['url_slug'] as string | null,
+      si:          c['si'] as string | null,
+      gu:          c['gu'] as string | null,
+      price:       Number(row['price']),
+      area_m2:     Number(row['area_m2']),
+      deal_date:   row['deal_date'] as string,
+      floor:       row['floor'] != null ? Number(row['floor']) : null,
+    })
+
+    if (result.length >= 5) break
+  }
+
+  return result
 }

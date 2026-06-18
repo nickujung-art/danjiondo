@@ -7,9 +7,12 @@ import {
   getRegionalPriceRanking,
   getChampionComplexes,
   getWeeklyHighlights,
+  getNewRecordCount,
+  getRegionalTradingHeat,
+  getRegionalAllTimeHighs,
   REGION_TABS,
 } from '@/lib/data/rankings-page'
-import type { RegionChampion, WeeklyHighlights } from '@/lib/data/rankings-page'
+import type { RegionChampion, WeeklyHighlights, RegionalHeatRow } from '@/lib/data/rankings-page'
 import { formatPrice, complexHref, formatPyeong } from '@/lib/format'
 import { UserMenu } from '@/components/auth/UserMenu'
 import { ShareButton } from '@/components/rankings/ShareButton'
@@ -65,7 +68,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   }
 }
 
-// 탭 공통 스타일
+// ── 공통 헬퍼 ────────────────────────────────────────────────────────────────
+
 function chip(active: boolean): React.CSSProperties {
   return {
     display:        'inline-block',
@@ -81,7 +85,6 @@ function chip(active: boolean): React.CSSProperties {
   }
 }
 
-// 섹션 헤더 (제목 + 공유/메모 버튼)
 function SectionHeader({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
@@ -93,31 +96,87 @@ function SectionHeader({ title, children }: { title: string; children?: React.Re
   )
 }
 
+function RankCircle({ rank }: { rank: number }) {
+  const isFirst  = rank === 1
+  const isTop3   = rank <= 3
+  return (
+    <div style={{
+      width:           22,
+      height:          22,
+      borderRadius:    '50%',
+      background:      isFirst ? 'var(--dj-orange)' : isTop3 ? 'var(--bg-surface-2)' : 'transparent',
+      border:          !isFirst && !isTop3 ? '1px solid var(--line-subtle)' : 'none',
+      color:           isFirst ? '#fff' : isTop3 ? 'var(--fg-sec)' : 'var(--fg-tertiary)',
+      font:            '700 11px/22px var(--font-sans)',
+      textAlign:       'center',
+      flexShrink:      0,
+      alignSelf:       'flex-start',
+      marginTop:       3,
+    }}>
+      {rank}
+    </div>
+  )
+}
+
+function TradingHeatBar({ heat }: { heat: RegionalHeatRow[] }) {
+  const maxCount = Math.max(...heat.map(r => r.txCount30d), 1)
+  return (
+    <div className="card" style={{ padding: '14px 16px' }}>
+      {heat.map(({ sggCode, label, txCount30d }) => (
+        <div key={sggCode} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+          <span style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--fg-sec)', minWidth: 68, flexShrink: 0 }}>
+            {label}
+          </span>
+          <div style={{ flex: 1, height: 6, background: 'var(--bg-surface-2)', borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{
+              height:     '100%',
+              width:      `${Math.round(txCount30d / maxCount * 100)}%`,
+              background: 'var(--dj-orange)',
+              borderRadius: 3,
+            }} />
+          </div>
+          <span className="tnum" style={{ font: '600 12px/1 var(--font-sans)', color: 'var(--fg-sec)', minWidth: 36, textAlign: 'right', flexShrink: 0 }}>
+            {txCount30d}건
+          </span>
+        </div>
+      ))}
+      <p style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '8px 0 0' }}>
+        30일 매매 거래 합산 기준
+      </p>
+    </div>
+  )
+}
+
+// ── 페이지 ───────────────────────────────────────────────────────────────────
+
 export default async function RankingsPage({ searchParams }: Props) {
   const { date: rawDate, region: rawRegion } = await searchParams
 
   const supabase = createReadonlyClient()
-  const [champions, feed, highlights] = await Promise.all([
+  const [champions, feed, highlights, newRecordCount, tradingHeat] = await Promise.all([
     getChampionComplexes(supabase).catch((): RegionChampion[] => []),
     getRecentDailyFeed(supabase, 60, 7, 20).catch(() => []),
     getWeeklyHighlights(supabase).catch((): WeeklyHighlights => ({ topPriceRecent: [], topVolumeRecent: [], priceSurgeRecent: [] })),
+    getNewRecordCount(supabase).catch(() => 0),
+    getRegionalTradingHeat(supabase).catch((): RegionalHeatRow[] => []),
   ])
 
-  // 날짜 탭: DB에 실제 데이터가 있는 날짜만 (신고 지연 반영)
-  const feedDates   = feed.map(g => g.date)
-  const activeDate  = feedDates.includes(rawDate ?? '')
-    ? (rawDate as string)
-    : (feedDates[0] ?? new Date().toISOString().split('T')[0]!)
+  // 날짜 탭
+  const feedDates      = feed.map(g => g.date)
+  const activeDate     = feedDates.includes(rawDate ?? '') ? (rawDate as string) : (feedDates[0] ?? new Date().toISOString().split('T')[0]!)
   const activeDateFeed = feed.find(g => g.date === activeDate)
 
   // 지역 탭
   const validRegionKeys = REGION_TABS.map(t => t.key)
-  const activeRegion = (typeof rawRegion === 'string' && validRegionKeys.includes(rawRegion as (typeof REGION_TABS)[number]['key']))
+  const activeRegion    = (typeof rawRegion === 'string' && validRegionKeys.includes(rawRegion as (typeof REGION_TABS)[number]['key']))
     ? rawRegion as (typeof REGION_TABS)[number]['key']
     : 'all'
   const activeTab = REGION_TABS.find(t => t.key === activeRegion) ?? REGION_TABS[0]!
 
-  const ranking = await getRegionalPriceRanking(supabase, [...activeTab.sggCodes]).catch(() => [])
+  const [ranking, allTimeHighs] = await Promise.all([
+    getRegionalPriceRanking(supabase, [...activeTab.sggCodes]).catch(() => []),
+    getRegionalAllTimeHighs(supabase, [...activeTab.sggCodes]).catch(() => []),
+  ])
 
   const pageUrl = `${SITE}/rankings`
 
@@ -126,26 +185,19 @@ export default async function RankingsPage({ searchParams }: Props) {
 
       {/* 헤더 */}
       <header style={{
-        height: 56,
-        background: '#fff',
-        borderBottom: '1px solid var(--line-default)',
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 16px',
-        gap: 20,
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
+        height: 56, background: '#fff', borderBottom: '1px solid var(--line-default)',
+        display: 'flex', alignItems: 'center', padding: '0 16px', gap: 20,
+        position: 'sticky', top: 0, zIndex: 50,
       }}>
         <Link href="/" className="dj-logo" style={{ flexShrink: 0 }}>
           <span className="mark">단</span>
           <span>단지온도</span>
         </Link>
         <nav style={{ display: 'flex', gap: 16, font: '600 13px/1 var(--font-sans)', overflow: 'hidden' }}>
-          <Link href="/"         style={{ color: 'var(--fg-sec)',  textDecoration: 'none', whiteSpace: 'nowrap' }}>홈</Link>
-          <Link href="/map"      style={{ color: 'var(--fg-sec)',  textDecoration: 'none', whiteSpace: 'nowrap' }}>지도</Link>
-          <Link href="/presale"  style={{ color: 'var(--fg-sec)',  textDecoration: 'none', whiteSpace: 'nowrap' }}>분양</Link>
-          <Link href="/rankings" style={{ color: 'var(--dj-orange)', textDecoration: 'none', whiteSpace: 'nowrap' }}>랭킹</Link>
+          <Link href="/"         style={{ color: 'var(--fg-sec)',     textDecoration: 'none', whiteSpace: 'nowrap' }}>홈</Link>
+          <Link href="/map"      style={{ color: 'var(--fg-sec)',     textDecoration: 'none', whiteSpace: 'nowrap' }}>지도</Link>
+          <Link href="/presale"  style={{ color: 'var(--fg-sec)',     textDecoration: 'none', whiteSpace: 'nowrap' }}>분양</Link>
+          <Link href="/rankings" style={{ color: 'var(--dj-orange)',  textDecoration: 'none', whiteSpace: 'nowrap' }}>랭킹</Link>
         </nav>
         <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
           <Suspense><UserMenu /></Suspense>
@@ -154,27 +206,43 @@ export default async function RankingsPage({ searchParams }: Props) {
 
       <main style={{ maxWidth: 680, margin: '0 auto', padding: '20px 16px 40px' }}>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 24 }}>
-          <h1 style={{ font: '800 22px/1.2 var(--font-sans)', letterSpacing: '-0.03em', margin: 0 }}>
-            실거래 랭킹
-          </h1>
-          <ShareButton url={pageUrl} title="창원·김해 실거래 랭킹 | 단지온도" text="창원·김해 아파트 실거래가 랭킹을 확인해보세요." />
+        {/* ── 히어로 ── */}
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+            <div>
+              <h1 style={{ font: '800 22px/1.2 var(--font-sans)', letterSpacing: '-0.03em', margin: '0 0 6px' }}>
+                실거래 랭킹
+              </h1>
+              {newRecordCount > 0 && (
+                <span style={{
+                  display:      'inline-flex',
+                  alignItems:   'center',
+                  gap:          5,
+                  font:         '600 12px/1 var(--font-sans)',
+                  padding:      '4px 10px',
+                  borderRadius: 20,
+                  background:   '#fff7ed',
+                  color:        '#ea580c',
+                  border:       '1px solid #fed7aa',
+                }}>
+                  <span style={{ font: '700 14px/1', color: '#ea580c' }}>{newRecordCount}</span>개 단지 신고가 경신 중
+                </span>
+              )}
+            </div>
+            <ShareButton url={pageUrl} title="창원·김해 실거래 랭킹 | 단지온도" text="창원·김해 아파트 실거래가 랭킹을 확인해보세요." />
+          </div>
         </div>
 
-        {/* ── 섹션 1: 지역 대장단지 ── */}
+        {/* ── 섹션 1: 구별 대장단지 ── */}
         <section aria-labelledby="champion-heading" style={{ marginBottom: 32 }}>
           <SectionHeader title="구별 대장단지" />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 8 }}>
             {champions.map(({ sggCode, regionLabel, data }) => (
               <div key={sggCode} className="card" style={{ padding: '12px 14px' }}>
                 <span style={{
-                  display:      'inline-block',
-                  font:         '700 10px/1 var(--font-sans)',
-                  padding:      '2px 8px',
-                  borderRadius: 10,
-                  background:   'var(--dj-orange)',
-                  color:        '#fff',
-                  marginBottom: 8,
+                  display: 'inline-block', font: '700 10px/1 var(--font-sans)',
+                  padding: '2px 8px', borderRadius: 10,
+                  background: 'var(--dj-orange)', color: '#fff', marginBottom: 8,
                 }}>
                   {regionLabel}
                 </span>
@@ -204,16 +272,22 @@ export default async function RankingsPage({ searchParams }: Props) {
                     </div>
                   </>
                 ) : (
-                  <p style={{ font: '400 12px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>
-                    데이터 없음
-                  </p>
+                  <p style={{ font: '400 12px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>데이터 없음</p>
                 )}
               </div>
             ))}
           </div>
         </section>
 
-        {/* ── 섹션 2: 일별 실거래 피드 ── */}
+        {/* ── 섹션 2: 구별 거래 온도 ── */}
+        {tradingHeat.length > 0 && (
+          <section aria-labelledby="heat-heading" style={{ marginBottom: 32 }}>
+            <SectionHeader title="구별 거래 온도" />
+            <TradingHeatBar heat={tradingHeat} />
+          </section>
+        )}
+
+        {/* ── 섹션 3: 일별 실거래 피드 ── */}
         <section aria-labelledby="feed-heading" style={{ marginBottom: 32 }}>
           <SectionHeader title="일별 실거래 피드">
             <ShareButton
@@ -224,7 +298,7 @@ export default async function RankingsPage({ searchParams }: Props) {
           </SectionHeader>
 
           {/* 날짜 탭 */}
-          {feedDates.length > 0 ? (
+          {feedDates.length > 0 && (
             <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, marginBottom: 12, scrollbarWidth: 'none' }}>
               {feedDates.map(d => (
                 <Link key={d} href={`/rankings?date=${d}&region=${activeRegion}`} scroll={false} style={chip(d === activeDate)}>
@@ -232,14 +306,12 @@ export default async function RankingsPage({ searchParams }: Props) {
                 </Link>
               ))}
             </div>
-          ) : null}
+          )}
 
-          {/* 날짜 기준 안내 */}
           <p style={{ font: '400 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '0 0 10px' }}>
-            국토부 실거래 신고일 기준 · 신고 지연으로 최근 30일 이내 거래는 추후 반영
+            국토부 실거래 신고일 기준 · 신고 지연으로 최근 거래는 추후 반영될 수 있음
           </p>
 
-          {/* 거래 목록 */}
           {!activeDateFeed || activeDateFeed.transactions.length === 0 ? (
             <div className="card" style={{ padding: 28, textAlign: 'center' }}>
               <p style={{ font: '500 13px/1.6 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>
@@ -255,18 +327,16 @@ export default async function RankingsPage({ searchParams }: Props) {
                     display:       'flex',
                     alignItems:    'center',
                     gap:           10,
-                    padding:       '12px 14px',
+                    padding:       '11px 14px',
                     borderBottom:  idx < activeDateFeed.transactions.length - 1 ? '1px solid var(--line-subtle)' : 'none',
                   }}
                 >
-                  {/* 순번 */}
-                  <span className="tnum" style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', minWidth: 20, textAlign: 'right', flexShrink: 0 }}>
+                  <span className="tnum" style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', minWidth: 18, textAlign: 'right', flexShrink: 0 }}>
                     {idx + 1}
                   </span>
 
-                  {/* 단지 정보 */}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap', marginBottom: 3 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap', marginBottom: 2 }}>
                       <Link
                         href={complexHref(tx.complexId, tx.urlSlug)}
                         style={{ font: '600 14px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none' }}
@@ -274,63 +344,49 @@ export default async function RankingsPage({ searchParams }: Props) {
                         {tx.complexName}
                       </Link>
                       {tx.is_new_high && (
-                        <span style={{
-                          font:       '700 10px/1 var(--font-sans)',
-                          padding:    '2px 6px',
-                          borderRadius: 4,
-                          background: '#ea580c',
-                          color:      '#fff',
-                          flexShrink: 0,
-                        }}>
+                        <span style={{ font: '700 10px/1 var(--font-sans)', padding: '2px 6px', borderRadius: 4, background: '#ea580c', color: '#fff', flexShrink: 0 }}>
                           신고가
                         </span>
                       )}
                     </div>
-                    <p style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>
-                      {formatPyeong(tx.area_m2)} ({tx.area_m2.toFixed(0)}㎡)
-                      {tx.floor != null ? ` · ${tx.floor}층` : ''}
-                      {tx.dong ? ` · ${tx.dong}` : ''}
+                    <p style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>
+                      {formatPyeong(tx.area_m2)}{tx.floor != null ? ` · ${tx.floor}층` : ''}{tx.dong ? ` · ${tx.dong}` : ''}
                     </p>
                   </div>
 
-                  {/* 거래가 */}
-                  <span className="tnum" style={{ font: '700 15px/1 var(--font-sans)', color: 'var(--fg-pri)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                    {formatPrice(tx.price)}
-                  </span>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <span className="tnum" style={{ font: '700 14px/1 var(--font-sans)', color: 'var(--fg-pri)', display: 'block' }}>
+                      {formatPrice(tx.price)}
+                    </span>
+                    {tx.priceDelta != null && Math.abs(tx.priceDelta) >= 100 && (
+                      <span className="tnum" style={{ font: '600 10px/1 var(--font-sans)', color: tx.priceDelta > 0 ? '#16a34a' : '#dc2626', display: 'block', marginTop: 2 }}>
+                        {tx.priceDelta > 0 ? '▲' : '▼'}{formatPrice(Math.abs(tx.priceDelta))}
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
           )}
-          {activeDateFeed && activeDateFeed.hasMore && (
+
+          {activeDateFeed?.hasMore && (
             <div style={{ marginTop: 8, textAlign: 'right' }}>
-              <Link
-                href={`/rankings/${activeDate}`}
-                style={{ font: '600 12px/1 var(--font-sans)', color: 'var(--dj-orange)', textDecoration: 'none' }}
-              >
+              <Link href={`/rankings/${activeDate}`} style={{ font: '600 12px/1 var(--font-sans)', color: 'var(--dj-orange)', textDecoration: 'none' }}>
                 이 날 전체 거래 보기 →
               </Link>
             </div>
           )}
         </section>
 
-        {/* ── 섹션 3: 지역 평당가 랭킹 ── */}
+        {/* ── 섹션 4: 지역 평당가 랭킹 ── */}
         <section aria-labelledby="ranking-heading" style={{ marginBottom: 32 }}>
           <SectionHeader title="지역 평당가 랭킹">
-            <ShareButton
-              url={`${pageUrl}?region=${activeRegion}`}
-              title={`${activeTab.label} 평당가 랭킹 | 단지온도`}
-            />
+            <ShareButton url={`${pageUrl}?region=${activeRegion}`} title={`${activeTab.label} 평당가 랭킹 | 단지온도`} />
           </SectionHeader>
 
-          {/* 지역 탭 */}
           <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, marginBottom: 12, scrollbarWidth: 'none' }}>
             {REGION_TABS.map(tab => (
-              <Link
-                key={tab.key}
-                href={`/rankings?date=${activeDate}&region=${tab.key}`}
-                scroll={false}
-                style={chip(tab.key === activeRegion)}
-              >
+              <Link key={tab.key} href={`/rankings?date=${activeDate}&region=${tab.key}`} scroll={false} style={chip(tab.key === activeRegion)}>
                 {tab.label}
               </Link>
             ))}
@@ -338,53 +394,30 @@ export default async function RankingsPage({ searchParams }: Props) {
 
           {ranking.length === 0 ? (
             <div className="card" style={{ padding: 24, textAlign: 'center' }}>
-              <p style={{ font: '500 13px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>
-                해당 지역 데이터가 없습니다
-              </p>
+              <p style={{ font: '500 13px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>해당 지역 데이터가 없습니다</p>
             </div>
           ) : (
             <div className="card" style={{ overflow: 'hidden' }}>
               {ranking.map((row, idx) => (
-                <div
-                  key={row.complexId}
-                  style={{
-                    display:      'flex',
-                    alignItems:   'center',
-                    gap:          10,
-                    padding:      '12px 14px',
-                    borderBottom: idx < ranking.length - 1 ? '1px solid var(--line-subtle)' : 'none',
-                  }}
-                >
-                  {/* 순위 */}
+                <div key={row.complexId} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: idx < ranking.length - 1 ? '1px solid var(--line-subtle)' : 'none' }}>
                   <span className="tnum" style={{
-                    font:       row.rank <= 3 ? '800 13px/1 var(--font-sans)' : '500 12px/1 var(--font-sans)',
-                    color:      row.rank === 1 ? 'var(--dj-orange)' : row.rank <= 3 ? 'var(--fg-sec)' : 'var(--fg-tertiary)',
-                    minWidth:   20,
-                    textAlign:  'right',
-                    flexShrink: 0,
+                    font: row.rank <= 3 ? '800 13px/1 var(--font-sans)' : '500 12px/1 var(--font-sans)',
+                    color: row.rank === 1 ? 'var(--dj-orange)' : row.rank <= 3 ? 'var(--fg-sec)' : 'var(--fg-tertiary)',
+                    minWidth: 20, textAlign: 'right', flexShrink: 0,
                   }}>
                     {row.rank}
                   </span>
-
-                  {/* 단지 */}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <Link
-                      href={complexHref(row.complexId, row.urlSlug)}
-                      style={{ font: '600 14px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', display: 'block' }}
-                    >
+                    <Link href={complexHref(row.complexId, row.urlSlug)} style={{ font: '600 14px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', display: 'block' }}>
                       {row.complexName}
                     </Link>
                     {(row.si ?? row.gu) && (
                       <p style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '3px 0 0' }}>
                         {[row.si, row.gu].filter(Boolean).join(' ')}
-                        {row.recentTradePrice != null && (
-                          <span style={{ marginLeft: 6 }}>최근 {formatPrice(row.recentTradePrice)}</span>
-                        )}
+                        {row.recentTradePrice != null && <span style={{ marginLeft: 6 }}>최근 {formatPrice(row.recentTradePrice)}</span>}
                       </p>
                     )}
                   </div>
-
-                  {/* 평당가 */}
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
                     <span className="tnum" style={{ font: '700 15px/1 var(--font-sans)', color: 'var(--dj-orange)', display: 'block' }}>
                       {row.avgPricePerPyeong.toLocaleString()}
@@ -397,84 +430,131 @@ export default async function RankingsPage({ searchParams }: Props) {
           )}
         </section>
 
-        {/* ── 섹션 4: 흥미 지표 ── */}
+        {/* ── 섹션 5: 지역 역대 최고가 ── */}
+        <section aria-labelledby="alltime-heading" style={{ marginBottom: 32 }}>
+          <SectionHeader title="지역 역대 최고가">
+            <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+              {activeTab.label} · 단지별 1건
+            </span>
+          </SectionHeader>
+
+          {allTimeHighs.length === 0 ? (
+            <div className="card" style={{ padding: 24, textAlign: 'center' }}>
+              <p style={{ font: '500 13px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>데이터 없음</p>
+            </div>
+          ) : (
+            <div className="card" style={{ overflow: 'hidden' }}>
+              {allTimeHighs.map((row, idx) => (
+                <div key={row.complexId} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: idx < allTimeHighs.length - 1 ? '1px solid var(--line-subtle)' : 'none' }}>
+                  <span className="tnum" style={{
+                    font:      '700 12px/1 var(--font-sans)',
+                    color:     idx === 0 ? 'var(--dj-orange)' : 'var(--fg-tertiary)',
+                    minWidth:  20, textAlign: 'right', flexShrink: 0,
+                  }}>
+                    {idx + 1}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <Link href={complexHref(row.complexId, row.urlSlug)} style={{ font: '600 14px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', display: 'block' }}>
+                      {row.complexName}
+                    </Link>
+                    <p style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '3px 0 0' }}>
+                      {formatPyeong(row.area_m2)} ({row.area_m2.toFixed(0)}㎡){row.floor != null ? ` · ${row.floor}층` : ''} · {row.deal_date.slice(0, 7)}
+                    </p>
+                  </div>
+                  <span className="tnum" style={{ font: '700 15px/1 var(--font-sans)', color: 'var(--fg-pri)', flexShrink: 0 }}>
+                    {formatPrice(row.price)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* ── 섹션 6: 흥미 지표 ── */}
         <section aria-labelledby="highlights-heading" style={{ marginBottom: 32 }}>
           <SectionHeader title="흥미 지표" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
 
             {/* 최근 최고가 거래 */}
-            <div className="card" style={{ padding: '14px 16px' }}>
-              <h3 style={{ font: '700 13px/1.3 var(--font-sans)', margin: '0 0 12px', color: 'var(--fg-pri)' }}>
-                최근 최고가 거래
-                <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 6 }}>30일 이내</span>
-              </h3>
+            <div className="card" style={{ padding: '16px' }}>
+              <div style={{ marginBottom: 14 }}>
+                <span style={{ font: '700 13px/1 var(--font-sans)', color: 'var(--fg-pri)' }}>최근 최고가 거래</span>
+                <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 8 }}>30일 이내 TOP 5</span>
+              </div>
               {highlights.topPriceRecent.length === 0 ? (
                 <p style={{ font: '400 12px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>데이터 없음</p>
               ) : highlights.topPriceRecent.map((item, idx) => (
-                <div
-                  key={item.complexId}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: idx < highlights.topPriceRecent.length - 1 ? 10 : 0 }}
-                >
-                  <span style={{ font: '700 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', minWidth: 16, flexShrink: 0 }}>{idx + 1}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <Link href={complexHref(item.complexId, item.urlSlug)} style={{ font: '600 13px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none' }}>
+                <div key={item.complexId} style={{ display: 'flex', gap: 10, paddingBottom: idx < highlights.topPriceRecent.length - 1 ? 12 : 0, marginBottom: idx < highlights.topPriceRecent.length - 1 ? 12 : 0, borderBottom: idx < highlights.topPriceRecent.length - 1 ? '1px solid var(--line-subtle)' : 'none' }}>
+                  <RankCircle rank={idx + 1} />
+                  <div style={{ minWidth: 0 }}>
+                    <Link href={complexHref(item.complexId, item.urlSlug)} style={{ font: '600 14px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', display: 'block' }}>
                       {item.complexName}
                     </Link>
-                    <p style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '3px 0 0' }}>
-                      {formatPyeong(item.area_m2)} · {item.deal_date.slice(5).replace('-', '/')}
-                    </p>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                      <span className="tnum" style={{ font: '700 17px/1 var(--font-sans)', color: 'var(--dj-orange)' }}>
+                        {formatPrice(item.price)}
+                      </span>
+                      <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                        {formatPyeong(item.area_m2)} · {item.deal_date.slice(5).replace('-', '/')}
+                      </span>
+                    </div>
                   </div>
-                  <span className="tnum" style={{ font: '700 15px/1 var(--font-sans)', color: 'var(--dj-orange)', flexShrink: 0 }}>
-                    {formatPrice(item.price)}
-                  </span>
                 </div>
               ))}
             </div>
 
             {/* 거래 활발 단지 */}
-            <div className="card" style={{ padding: '14px 16px' }}>
-              <h3 style={{ font: '700 13px/1.3 var(--font-sans)', margin: '0 0 12px', color: 'var(--fg-pri)' }}>
-                거래 활발 단지
-                <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 6 }}>90일 거래량 TOP 5</span>
-              </h3>
+            <div className="card" style={{ padding: '16px' }}>
+              <div style={{ marginBottom: 14 }}>
+                <span style={{ font: '700 13px/1 var(--font-sans)', color: 'var(--fg-pri)' }}>거래 활발 단지</span>
+                <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 8 }}>90일 거래량 TOP 5</span>
+              </div>
               {highlights.topVolumeRecent.length === 0 ? (
                 <p style={{ font: '400 12px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>데이터 없음</p>
               ) : highlights.topVolumeRecent.map((item, idx) => (
-                <div
-                  key={item.complexId}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: idx < highlights.topVolumeRecent.length - 1 ? 8 : 0 }}
-                >
-                  <span style={{ font: '700 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', minWidth: 16, flexShrink: 0 }}>{idx + 1}</span>
-                  <Link href={complexHref(item.complexId, item.urlSlug)} style={{ font: '600 13px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {item.complexName}
-                  </Link>
-                  <span className="tnum" style={{ font: '700 14px/1 var(--font-sans)', color: 'var(--dj-orange)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                    {item.txCount90d}건
-                  </span>
+                <div key={item.complexId} style={{ display: 'flex', gap: 10, paddingBottom: idx < highlights.topVolumeRecent.length - 1 ? 12 : 0, marginBottom: idx < highlights.topVolumeRecent.length - 1 ? 12 : 0, borderBottom: idx < highlights.topVolumeRecent.length - 1 ? '1px solid var(--line-subtle)' : 'none' }}>
+                  <RankCircle rank={idx + 1} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <Link href={complexHref(item.complexId, item.urlSlug)} style={{ font: '600 14px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', display: 'block' }}>
+                      {item.complexName}
+                    </Link>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 4 }}>
+                      <span className="tnum" style={{ font: '700 17px/1 var(--font-sans)', color: 'var(--dj-orange)' }}>
+                        {item.txCount90d}건
+                      </span>
+                      <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                        90일 거래
+                      </span>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
 
             {/* 가격 상승 단지 */}
-            <div className="card" style={{ padding: '14px 16px' }}>
-              <h3 style={{ font: '700 13px/1.3 var(--font-sans)', margin: '0 0 12px', color: 'var(--fg-pri)' }}>
-                가격 상승 단지
-                <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 6 }}>전월 대비 3% 이상</span>
-              </h3>
+            <div className="card" style={{ padding: '16px' }}>
+              <div style={{ marginBottom: 14 }}>
+                <span style={{ font: '700 13px/1 var(--font-sans)', color: 'var(--fg-pri)' }}>가격 상승 단지</span>
+                <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 8 }}>전월 대비 3% 이상</span>
+              </div>
               {highlights.priceSurgeRecent.length === 0 ? (
                 <p style={{ font: '400 12px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>해당 단지 없음</p>
               ) : highlights.priceSurgeRecent.map((item, idx) => (
-                <div
-                  key={item.complexId}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: idx < highlights.priceSurgeRecent.length - 1 ? 8 : 0 }}
-                >
-                  <span style={{ font: '700 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', minWidth: 16, flexShrink: 0 }}>{idx + 1}</span>
-                  <Link href={complexHref(item.complexId, item.urlSlug)} style={{ font: '600 13px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {item.complexName}
-                  </Link>
-                  <span className="tnum" style={{ font: '700 14px/1 var(--font-sans)', color: '#16a34a', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                    +{(item.changeRatio * 100).toFixed(1)}%
-                  </span>
+                <div key={item.complexId} style={{ display: 'flex', gap: 10, paddingBottom: idx < highlights.priceSurgeRecent.length - 1 ? 12 : 0, marginBottom: idx < highlights.priceSurgeRecent.length - 1 ? 12 : 0, borderBottom: idx < highlights.priceSurgeRecent.length - 1 ? '1px solid var(--line-subtle)' : 'none' }}>
+                  <RankCircle rank={idx + 1} />
+                  <div style={{ minWidth: 0 }}>
+                    <Link href={complexHref(item.complexId, item.urlSlug)} style={{ font: '600 14px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', display: 'block' }}>
+                      {item.complexName}
+                    </Link>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 4 }}>
+                      <span className="tnum" style={{ font: '700 17px/1 var(--font-sans)', color: '#16a34a' }}>
+                        +{(item.changeRatio * 100).toFixed(1)}%
+                      </span>
+                      <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                        전월 대비
+                      </span>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -494,24 +574,16 @@ export default async function RankingsPage({ searchParams }: Props) {
         <div style={{ maxWidth: 680, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>
             <p style={{ font: '700 14px/1.3 var(--font-sans)', margin: '0 0 3px' }}>창원부동산이야기</p>
-            <p style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--fg-sec)', margin: 0 }}>
-              더 많은 정보와 의견을 카페에서 나눠보세요
-            </p>
+            <p style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--fg-sec)', margin: 0 }}>더 많은 정보와 의견을 카페에서 나눠보세요</p>
           </div>
           <a
             href={CAFE_URL}
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              display:     'inline-block',
-              padding:     '10px 20px',
-              borderRadius: 8,
-              font:        '700 13px/1 var(--font-sans)',
-              color:       '#fff',
-              background:  '#03c75a',
-              textDecoration: 'none',
-              whiteSpace:  'nowrap',
-              flexShrink:  0,
+              display: 'inline-block', padding: '10px 20px', borderRadius: 8,
+              font: '700 13px/1 var(--font-sans)', color: '#fff', background: '#03c75a',
+              textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0,
             }}
           >
             카페 바로가기
