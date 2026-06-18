@@ -6,6 +6,7 @@ import type { FacilityEduData, SchoolItem, PoiItem } from '@/lib/data/facility-e
 import { classifyHagwon, walkColor, WALK_COLOR_HEX } from '@/lib/hagwon-category'
 import { fetchSchoolRanking } from '@/app/actions/education'
 import type { SchoolRankingItem } from '@/app/actions/education'
+import { HagwonRecommendSheet } from '@/components/complex/HagwonRecommendSheet'
 
 // ─── 아이콘 ────────────────────────────────────────────────────────────────
 
@@ -1121,12 +1122,15 @@ function SchoolList({ schools, si, gu }: { schools: SchoolItem[]; si?: string; g
 
 // ─── HagwonSection ────────────────────────────────────────────────────────
 
-function HagwonSection({ hagwons, stats, si }: {
+function HagwonSection({ hagwons, stats, si, lat, lng }: {
   hagwons: PoiItem[]
   stats:   FacilityEduData['hagwonStats']
   si?:     string
+  lat?:    number
+  lng?:    number
 }) {
-  const [expanded, setExpanded] = useState(false)
+  const [expanded,    setExpanded]    = useState(false)
+  const [showRecommend, setShowRecommend] = useState(false)
 
   if (!stats && hagwons.length === 0) {
     return <EmptyNote text="학원 데이터를 수집 중입니다." />
@@ -1228,6 +1232,30 @@ function HagwonSection({ hagwons, stats, si }: {
           )}
         </div>
       )}
+
+      {lat != null && lng != null && (
+        <>
+          <button
+            onClick={() => setShowRecommend(true)}
+            style={{
+              width:        '100%',
+              padding:      '11px 0',
+              borderRadius: 10,
+              border:       '1.5px solid var(--dj-orange)',
+              background:   '#fff7f0',
+              color:        'var(--dj-orange)',
+              font:         '600 13px/1 var(--font-sans)',
+              cursor:       'pointer',
+              marginTop:    16,
+            }}
+          >
+            내 아이 맞춤 학원 추천 받기
+          </button>
+          {showRecommend && (
+            <HagwonRecommendSheet lat={lat} lng={lng} onClose={() => setShowRecommend(false)} />
+          )}
+        </>
+      )}
     </div>
   )
 }
@@ -1293,11 +1321,13 @@ type Tab = 'school' | 'hagwon' | 'daycare'
 
 interface Props {
   data: FacilityEduData
-  si?: string
-  gu?: string
+  si?:  string
+  gu?:  string
+  lat?: number
+  lng?: number
 }
 
-export function EducationCard({ data, si, gu }: Props) {
+export function EducationCard({ data, si, gu, lat, lng }: Props) {
   const [tab, setTab] = useState<Tab>('school')
   const { schools, hagwons, daycares, kindergartens, hagwonStats, si: dataSi } = data
   const effectiveSi = si ?? dataSi ?? undefined
@@ -1357,7 +1387,7 @@ export function EducationCard({ data, si, gu }: Props) {
       ) : (
         <>
           {tab === 'school'  && <SchoolList schools={schools} si={effectiveSi} gu={gu} />}
-          {tab === 'hagwon'  && <HagwonSection hagwons={hagwons} stats={hagwonStats} si={effectiveSi} />}
+          {tab === 'hagwon'  && <HagwonSection hagwons={hagwons} stats={hagwonStats} si={effectiveSi} lat={lat} lng={lng} />}
           {tab === 'daycare' && <DaycareSection daycares={daycares} kindergartens={kindergartens} />}
         </>
       )}
