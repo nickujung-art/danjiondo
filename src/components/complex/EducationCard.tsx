@@ -1133,7 +1133,34 @@ function HagwonSection({ hagwons, stats, si, lat, lng }: {
   const [showRecommend, setShowRecommend] = useState(false)
 
   if (!stats && hagwons.length === 0) {
-    return <EmptyNote text="학원 데이터를 수집 중입니다." />
+    return (
+      <div>
+        <EmptyNote text="학원 데이터를 수집 중입니다." />
+        {lat != null && lng != null && (
+          <>
+            <button
+              onClick={() => setShowRecommend(true)}
+              style={{
+                width:        '100%',
+                padding:      '11px 0',
+                borderRadius: 10,
+                border:       '1.5px solid var(--dj-orange)',
+                background:   '#fff7f0',
+                color:        'var(--dj-orange)',
+                font:         '600 13px/1 var(--font-sans)',
+                cursor:       'pointer',
+                marginTop:    16,
+              }}
+            >
+              내 아이 맞춤 학원 추천 받기
+            </button>
+            {showRecommend && (
+              <HagwonRecommendSheet lat={lat} lng={lng} onClose={() => setShowRecommend(false)} />
+            )}
+          </>
+        )}
+      </div>
+    )
   }
 
   const INITIAL_LIMIT  = 8

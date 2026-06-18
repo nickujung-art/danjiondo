@@ -267,12 +267,12 @@ function BreadcrumbNav({ slug }: { slug: string[] }) {
 }
 
 // 교육환경 — 느린 RPC(학교 백분위+학군 평당가)를 Suspense로 분리
-async function FacilityEduSection({ complexId, si }: { complexId: string; si?: string }) {
+async function FacilityEduSection({ complexId, si, gu, lat, lng }: { complexId: string; si?: string; gu?: string; lat?: number; lng?: number }) {
   const supabase = createReadonlyClient()
   const data = await getComplexFacilityEdu(complexId, supabase).catch(
     () => ({ schools: [], hagwons: [], daycares: [], kindergartens: [], hagwonStats: null, si: null }),
   )
-  return <EducationCard data={data} si={si} />
+  return <EducationCard data={data} si={si} gu={gu} lat={lat} lng={lng} />
 }
 
 // ──────────────────────────────────────────
@@ -863,7 +863,7 @@ async function ComplexDetailPage({
               <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>교육 환경 로딩 중…</span>
             </div>
           }>
-            <FacilityEduSection complexId={id} si={complex.si ?? undefined} />
+            <FacilityEduSection complexId={id} si={complex.si ?? undefined} gu={complex.gu ?? undefined} lat={complex.lat ?? undefined} lng={complex.lng ?? undefined} />
           </Suspense>
 
           {/* 재건축 타임라인 */}
