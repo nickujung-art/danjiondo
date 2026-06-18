@@ -5,12 +5,12 @@ import type { Database } from '@/types/database'
 // ── 창원·김해 활성 SGG 코드 ─────────────────────────────────────────────────
 const ACTIVE_SGG_CODES = ['48121', '48123', '48125', '48127', '48129', '48250'] as const
 
-// 지역 그룹 (대장단지 champion 계산용, D-05)
+// 지역 그룹 (대장단지 champion 계산용)
 const CHANWON_SGG = ['48121', '48123'] as const           // 의창 + 성산
 const MASAN_SGG   = ['48125', '48127', '48129'] as const  // 마산합포 + 마산회원 + 진해
 const GIMHAE_SGG  = ['48250'] as const                    // 김해
 
-// ── 지역 랭킹 탭 정의 (D-04 결정사항) ──────────────────────────────────────
+// ── 지역 랭킹 탭 정의 ───────────────────────────────────────────────────────
 export const REGION_TABS = [
   { key: 'all',   label: '창원 전체',  sggCodes: ['48121', '48123', '48125', '48127', '48129'] },
   { key: '48121', label: '의창구',     sggCodes: ['48121'] },
@@ -25,19 +25,19 @@ export const REGION_TABS = [
 
 export interface DailyFeedTransaction {
   id: string
-  price: number          // 만원
+  price: number
   area_m2: number
   floor: number | null
-  deal_date: string      // YYYY-MM-DD
+  deal_date: string       // YYYY-MM-DD
   dong: string | null
-  is_new_high: boolean   // 같은 단지 ±5㎡ 면적대 역대 최고가 비교 (D-03)
+  is_new_high: boolean
   complexId: string
   complexName: string
   urlSlug: string | null
 }
 
 export interface DailyFeedGroup {
-  date: string           // YYYY-MM-DD
+  date: string
   transactions: DailyFeedTransaction[]
 }
 
@@ -48,8 +48,8 @@ export interface RegionalRankingRow {
   urlSlug: string | null
   si: string | null
   gu: string | null
-  avgPricePerPyeong: number       // 만원/평
-  recentTradePrice: number | null // 만원
+  avgPricePerPyeong: number
+  recentTradePrice: number | null
   txCount30d: number
 }
 
@@ -59,43 +59,43 @@ export interface ChampionComplex {
   urlSlug: string | null
   si: string | null
   gu: string | null
-  avgPricePerPyeong: number      // 만원/평
-  priceChange30d: number | null  // 비율 (0.105 = +10.5%)
-  txCount90d: number             // 최근 90일 거래 건수 (D-05: 3개월 기준)
+  avgPricePerPyeong: number
+  priceChange30d: number | null
+  txCount90d: number
 }
 
 export interface ChampionComplexes {
   chanwon: ChampionComplex | null
-  masan: ChampionComplex | null
-  gimhae: ChampionComplex | null
+  masan:   ChampionComplex | null
+  gimhae:  ChampionComplex | null
 }
 
 export interface WeeklyHighlights {
-  topPriceThisWeek: Array<{
+  topPriceRecent: Array<{
     complexId: string
     complexName: string
     urlSlug: string | null
     si: string | null
     gu: string | null
-    price: number      // 만원
+    price: number
     area_m2: number
     deal_date: string
   }>
-  topVolumeThisMonth: Array<{
+  topVolumeRecent: Array<{
     complexId: string
     complexName: string
     urlSlug: string | null
     si: string | null
     gu: string | null
-    txCount30d: number
+    txCount90d: number
   }>
-  priceSurgeLastMonth: Array<{
+  priceSurgeRecent: Array<{
     complexId: string
     complexName: string
     urlSlug: string | null
     si: string | null
     gu: string | null
-    changeRatio: number  // 0.20 = +20%
+    changeRatio: number
   }>
 }
 
@@ -105,23 +105,19 @@ function nDaysAgo(n: number): string {
   return new Date(Date.now() - n * 86_400_000).toISOString().split('T')[0]!
 }
 
-// ── 1. 일별 실거래 피드 (D-02, D-03) ─────────────────────────────────────────
-
+// ── 1. 일별 실거래 피드 ───────────────────────────────────────────────────────
 /**
- * 최근 N일 실거래 피드를 날짜별 그룹핑해 반환한다.
- * - deal_type='sale' 전용, 취소·정정 제외
- * - 날짜 내림차순, 각 날짜 내 price 내림차순
- * - 날짜당 최대 50건
- * - is_new_high: 같은 단지 ±5㎡ 면적대 역대 최고가와 비교 (D-03)
- *   TypeScript 2-query 방식 — complexes.all_time_high 컬럼 불필요
+ * 실제 거래 데이터가 있는 가장 최근 날짜 기준으로 최대 maxGroups개 날짜를 반환.
+ * 국토부 신고 지연(~30일) 고려 — lookbackDays=60 으로 충분한 윈도우 확보.
+ * 날짜 탭은 오늘부터 -7일이 아닌 DB에 데이터가 실제로 있는 날짜 기준.
  */
 export async function getRecentDailyFeed(
   supabase: SupabaseClient<Database>,
-  days = 7,
+  lookbackDays = 60,
+  maxGroups = 7,
 ): Promise<DailyFeedGroup[]> {
-  const since = nDaysAgo(days)
+  const since = nDaysAgo(lookbackDays)
 
-  // ── Query 1: 최근 피드 거래 ────────────────────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: feedData, error } = await (supabase as any)
     .from('transactions')
@@ -136,7 +132,7 @@ export async function getRecentDailyFeed(
     .is('superseded_by', null)
     .order('deal_date', { ascending: false })
     .order('price', { ascending: false })
-    .limit(days * 50 + 50)
+    .limit(maxGroups * 50 + 100)
 
   if (error) {
     console.error('[getRecentDailyFeed] failed:', error.message)
@@ -146,7 +142,7 @@ export async function getRecentDailyFeed(
   const feedRows = (feedData ?? []) as Record<string, unknown>[]
   if (feedRows.length === 0) return []
 
-  // ── Query 2: 역대 이력 거래 (is_new_high ±5㎡ 비교용) ──────────────────────
+  // ── is_new_high: ±5㎡ 역대 최고가 비교 ─────────────────────────────────────
   const feedComplexIds = [...new Set(
     feedRows.map(r => {
       const c = Array.isArray(r['complexes'])
@@ -166,7 +162,6 @@ export async function getRecentDailyFeed(
     .is('superseded_by', null)
     .limit(10000)
 
-  // Map<complexId, {id, area_m2, price}[]>
   const histByComplex = new Map<string, Array<{ id: string; area_m2: number; price: number }>>()
   for (const h of (histData ?? []) as Record<string, unknown>[]) {
     const cid = h['complex_id'] as string
@@ -178,7 +173,7 @@ export async function getRecentDailyFeed(
     })
   }
 
-  // ── 그룹핑 + is_new_high 계산 ───────────────────────────────────────────────
+  // ── 날짜별 그룹핑 (최대 maxGroups 날짜) ─────────────────────────────────────
   const grouped = new Map<string, DailyFeedTransaction[]>()
 
   for (const row of feedRows) {
@@ -187,19 +182,18 @@ export async function getRecentDailyFeed(
       : row['complexes'] as Record<string, unknown>
     if (!c) continue
 
-    const date      = row['deal_date'] as string
-    const price     = Number(row['price'])
-    const area_m2   = Number(row['area_m2'])
-    const txId      = String(row['id'])
-    const complexId = c['id'] as string
+    const date    = row['deal_date'] as string
+    const price   = Number(row['price'])
+    const area_m2 = Number(row['area_m2'])
+    const txId    = String(row['id'])
+    const cid     = c['id'] as string
 
-    // ±5㎡ 같은 면적대 역대 최고가 비교 (자기 자신 제외)
-    const history     = histByComplex.get(complexId) ?? []
+    // 이미 maxGroups 날짜를 넘으면 더 이상 추가 안 함
+    if (!grouped.has(date) && grouped.size >= maxGroups) continue
+
+    const history     = histByComplex.get(cid) ?? []
     const comparables = history.filter(h => h.id !== txId && Math.abs(h.area_m2 - area_m2) <= 5)
-    const maxPrice    = comparables.length > 0
-      ? Math.max(...comparables.map(h => h.price))
-      : 0
-    // 비교 대상 없으면 is_new_high = false (첫 거래는 신고가 마크 보수적 처리)
+    const maxPrice    = comparables.length > 0 ? Math.max(...comparables.map(h => h.price)) : 0
     const is_new_high = comparables.length > 0 && price >= maxPrice
 
     if (!grouped.has(date)) grouped.set(date, [])
@@ -214,23 +208,21 @@ export async function getRecentDailyFeed(
       deal_date:   date,
       dong:        c['dong'] as string | null,
       is_new_high,
-      complexId,
+      complexId:   cid,
       complexName: c['canonical_name'] as string,
       urlSlug:     c['url_slug'] as string | null,
     })
   }
 
-  // 날짜 내림차순 정렬 후 반환
   return Array.from(grouped.entries())
     .sort(([a], [b]) => b.localeCompare(a))
     .map(([date, transactions]) => ({ date, transactions }))
 }
 
-// ── 2. 대장단지 (D-05) ───────────────────────────────────────────────────────
-
+// ── 2. 대장단지 ───────────────────────────────────────────────────────────────
 /**
- * 지역별 대장단지 (창원/마산/김해) 각 1위를 반환한다.
- * 점수 = tx_count_90d × avg_sale_per_pyeong (D-05: 최근 3개월 거래량 기준)
+ * 지역별 대장단지. avg_sale_per_pyeong 기준 1위.
+ * tx_count_30d 조건 제거 — 신고 지연으로 최근 데이터 없어도 표시.
  */
 export async function getChampionComplexes(
   supabase: SupabaseClient<Database>,
@@ -251,7 +243,7 @@ export async function getChampionComplexes(
   const rows = (data ?? []) as Record<string, unknown>[]
   if (rows.length === 0) return { chanwon: null, masan: null, gimhae: null }
 
-  // ── 최근 90일 거래 건수 (D-05: 3개월 기준) ──────────────────────
+  // 90일 거래 건수 (대장단지 보조 정보로만 표시)
   const complexIds    = rows.map(r => r['id'] as string)
   const ninetyDaysAgo = nDaysAgo(90)
 
@@ -275,9 +267,8 @@ export async function getChampionComplexes(
     const candidates = rows
       .filter(r => sggList.includes(r['sgg_code'] as string))
       .map(r => {
-        const id           = r['id'] as string
-        const tx_count_90d = countMap.get(id) ?? 0
-        const avgPPyeong   = Number(r['avg_sale_per_pyeong'])
+        const id       = r['id'] as string
+        const avgPPyeong = Number(r['avg_sale_per_pyeong'])
         return {
           complexId:         id,
           complexName:       r['canonical_name'] as string,
@@ -286,16 +277,13 @@ export async function getChampionComplexes(
           gu:                r['gu'] as string | null,
           avgPricePerPyeong: avgPPyeong,
           priceChange30d:    r['price_change_30d'] != null ? Number(r['price_change_30d']) : null,
-          txCount90d:        tx_count_90d,
-          score:             tx_count_90d * avgPPyeong,
+          txCount90d:        countMap.get(id) ?? 0,
         }
       })
-      .filter(c => c.score > 0)
-      .sort((a, b) => b.score - a.score)
+      .filter(c => c.avgPricePerPyeong > 0)
+      .sort((a, b) => b.avgPricePerPyeong - a.avgPricePerPyeong)
 
-    if (candidates.length === 0) return null
-    const { score: _score, ...rest } = candidates[0]!
-    return rest
+    return candidates[0] ?? null
   }
 
   return {
@@ -305,12 +293,10 @@ export async function getChampionComplexes(
   }
 }
 
-// ── 3. 지역 랭킹 (D-04) ──────────────────────────────────────────────────────
-
+// ── 3. 지역 랭킹 ─────────────────────────────────────────────────────────────
 /**
- * 특정 sgg_code 목록 내 평당가 TOP 20 단지를 반환한다.
- * - tx_count_30d > 0 (최근 거래 있는 단지만)
- * - avg_sale_per_pyeong 내림차순
+ * 특정 지역 평당가 TOP 20.
+ * tx_count_30d 조건 제거 — 신고 지연으로 최근 거래 없는 단지도 포함.
  */
 export async function getRegionalPriceRanking(
   supabase: SupabaseClient<Database>,
@@ -323,7 +309,6 @@ export async function getRegionalPriceRanking(
     .from('complexes')
     .select('id, canonical_name, url_slug, si, gu, avg_sale_per_pyeong, tx_count_30d')
     .in('sgg_code', sggCodes)
-    .gt('tx_count_30d', 0)
     .not('avg_sale_per_pyeong', 'is', null)
     .eq('status', 'active')
     .order('avg_sale_per_pyeong', { ascending: false })
@@ -338,14 +323,15 @@ export async function getRegionalPriceRanking(
   if (rows.length === 0) return []
 
   const ids = rows.map(r => r['id'] as string)
-  const thirtyDaysAgo = nDaysAgo(30)
+  const ninetyDaysAgo = nDaysAgo(90)
 
+  // 최근 거래가 (90일 이내 가장 최근 거래)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: txData } = await (supabase as any)
     .from('transactions')
     .select('complex_id, price, deal_date')
     .in('complex_id', ids)
-    .gte('deal_date', thirtyDaysAgo)
+    .gte('deal_date', ninetyDaysAgo)
     .eq('deal_type', 'sale')
     .is('cancel_date', null)
     .is('superseded_by', null)
@@ -373,20 +359,21 @@ export async function getRegionalPriceRanking(
   }))
 }
 
-// ── 4. 이번 주 흥미 지표 (D-06) ──────────────────────────────────────────────
-
+// ── 4. 흥미 지표 ─────────────────────────────────────────────────────────────
 /**
- * 주간/월간 흥미 지표:
- * - topPriceThisWeek: 이번 주(7일) 최고가 거래 TOP 3
- * - topVolumeThisMonth: tx_count_30d 기준 TOP 5 단지
- * - priceSurgeLastMonth: price_change_30d >= 0.20 (20% 이상) TOP 3
+ * 최근 흥미 지표 (30일 최고가 / 90일 거래량 / 가격 변동 단지)
+ * - topPriceRecent: 30일 최고가 거래 TOP 3 (기존 7일 → 30일로 확장)
+ * - topVolumeRecent: 90일 직접 집계 (cached tx_count_30d 아닌 실거래 기반)
+ * - priceSurgeRecent: price_change_30d ≥ 3% (기존 20% 기준 → 3%로 완화)
  */
 export async function getWeeklyHighlights(
   supabase: SupabaseClient<Database>,
 ): Promise<WeeklyHighlights> {
-  const sevenDaysAgo = nDaysAgo(7)
+  const thirtyDaysAgo  = nDaysAgo(30)
+  const ninetyDaysAgo  = nDaysAgo(90)
 
-  const [priceResult, volumeResult, surgeResult] = await Promise.all([
+  const [priceResult, volResult, surgeResult] = await Promise.all([
+    // 최근 30일 최고가 거래 TOP 3
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .from('transactions')
@@ -395,40 +382,47 @@ export async function getWeeklyHighlights(
         complexes!inner (id, canonical_name, url_slug, si, gu, sgg_code)
       `)
       .in('complexes.sgg_code', [...ACTIVE_SGG_CODES])
-      .gte('deal_date', sevenDaysAgo)
+      .gte('deal_date', thirtyDaysAgo)
       .eq('deal_type', 'sale')
       .is('cancel_date', null)
       .is('superseded_by', null)
       .order('price', { ascending: false })
       .limit(3),
 
+    // 최근 90일 거래 건수 직접 집계
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
-      .from('complexes')
-      .select('id, canonical_name, url_slug, si, gu, tx_count_30d')
-      .in('sgg_code', [...ACTIVE_SGG_CODES])
-      .gt('tx_count_30d', 0)
-      .eq('status', 'active')
-      .order('tx_count_30d', { ascending: false })
-      .limit(5),
+      .from('transactions')
+      .select(`
+        complex_id,
+        complexes!inner (id, canonical_name, url_slug, si, gu, sgg_code)
+      `)
+      .in('complexes.sgg_code', [...ACTIVE_SGG_CODES])
+      .gte('deal_date', ninetyDaysAgo)
+      .eq('deal_type', 'sale')
+      .is('cancel_date', null)
+      .is('superseded_by', null)
+      .limit(2000),
 
+    // 가격 변동 단지 (3% 이상)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .from('complexes')
       .select('id, canonical_name, url_slug, si, gu, price_change_30d')
       .in('sgg_code', [...ACTIVE_SGG_CODES])
-      .gte('price_change_30d', 0.20)
-      .gt('tx_count_30d', 0)
+      .not('price_change_30d', 'is', null)
+      .gte('price_change_30d', 0.03)
       .eq('status', 'active')
       .order('price_change_30d', { ascending: false })
       .limit(3),
   ])
 
-  const topPriceThisWeek: WeeklyHighlights['topPriceThisWeek'] = []
+  // topPriceRecent
+  const topPriceRecent: WeeklyHighlights['topPriceRecent'] = []
   for (const row of ((priceResult.data ?? []) as Record<string, unknown>[])) {
     const c = Array.isArray(row['complexes']) ? row['complexes'][0] : row['complexes']
     if (!c) continue
-    topPriceThisWeek.push({
+    topPriceRecent.push({
       complexId:   (c as Record<string, unknown>)['id'] as string,
       complexName: (c as Record<string, unknown>)['canonical_name'] as string,
       urlSlug:     (c as Record<string, unknown>)['url_slug'] as string | null,
@@ -440,18 +434,30 @@ export async function getWeeklyHighlights(
     })
   }
 
-  const topVolumeThisMonth: WeeklyHighlights['topVolumeThisMonth'] = (
-    (volumeResult.data ?? []) as Record<string, unknown>[]
-  ).map(r => ({
-    complexId:   r['id'] as string,
-    complexName: r['canonical_name'] as string,
-    urlSlug:     r['url_slug'] as string | null,
-    si:          r['si'] as string | null,
-    gu:          r['gu'] as string | null,
-    txCount30d:  Number(r['tx_count_30d']),
-  }))
+  // topVolumeRecent: 90일 직접 집계
+  const volMap = new Map<string, { count: number; name: string; urlSlug: string | null; si: string | null; gu: string | null }>()
+  for (const row of ((volResult.data ?? []) as Record<string, unknown>[])) {
+    const c = Array.isArray(row['complexes']) ? row['complexes'][0] : row['complexes']
+    if (!c) continue
+    const cid = (c as Record<string, unknown>)['id'] as string
+    if (!volMap.has(cid)) {
+      volMap.set(cid, {
+        count:   0,
+        name:    (c as Record<string, unknown>)['canonical_name'] as string,
+        urlSlug: (c as Record<string, unknown>)['url_slug'] as string | null,
+        si:      (c as Record<string, unknown>)['si'] as string | null,
+        gu:      (c as Record<string, unknown>)['gu'] as string | null,
+      })
+    }
+    volMap.get(cid)!.count++
+  }
+  const topVolumeRecent: WeeklyHighlights['topVolumeRecent'] = [...volMap.entries()]
+    .sort(([, a], [, b]) => b.count - a.count)
+    .slice(0, 5)
+    .map(([cid, v]) => ({ complexId: cid, complexName: v.name, urlSlug: v.urlSlug, si: v.si, gu: v.gu, txCount90d: v.count }))
 
-  const priceSurgeLastMonth: WeeklyHighlights['priceSurgeLastMonth'] = (
+  // priceSurgeRecent
+  const priceSurgeRecent: WeeklyHighlights['priceSurgeRecent'] = (
     (surgeResult.data ?? []) as Record<string, unknown>[]
   ).map(r => ({
     complexId:   r['id'] as string,
@@ -462,5 +468,5 @@ export async function getWeeklyHighlights(
     changeRatio: Number(r['price_change_30d']),
   }))
 
-  return { topPriceThisWeek, topVolumeThisMonth, priceSurgeLastMonth }
+  return { topPriceRecent, topVolumeRecent, priceSurgeRecent }
 }
