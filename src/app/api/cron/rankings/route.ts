@@ -1,3 +1,4 @@
+import { verifyCronSecret } from '@/lib/cron-auth'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { computeRankings } from '@/lib/data/rankings'
 import { markCronSuccess, markCronFailed } from '@/lib/data/cron-status'
@@ -6,8 +7,7 @@ export const runtime = 'nodejs'
 
 export async function GET(request: Request): Promise<Response> {
   // CRON_SECRET 검증 (ADR: 모든 /api/cron/* 필수)
-  const authHeader = request.headers.get('authorization')
-  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!verifyCronSecret(request)) {
     return new Response('Unauthorized', { status: 401 })
   }
 

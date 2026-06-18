@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { randomBytes } from 'crypto'
+import { verifyCronSecret } from '@/lib/cron-auth'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
@@ -21,8 +22,7 @@ function generateCode(): string {
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
-  const authHeader = request.headers.get('authorization')
-  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!verifyCronSecret(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

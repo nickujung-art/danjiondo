@@ -17,7 +17,7 @@ export async function markCronFailed(supabase: Client, sourceId: string, errorMe
     .from('data_sources')
     .select('consecutive_failures')
     .eq('id', sourceId)
-    .single()
+    .maybeSingle()
   const prev = (data as { consecutive_failures: number } | null)?.consecutive_failures ?? 0
   await supabase.from('data_sources').update({
     last_synced_at: new Date().toISOString(),

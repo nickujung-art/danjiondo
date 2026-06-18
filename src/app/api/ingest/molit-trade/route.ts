@@ -1,3 +1,4 @@
+import { verifyCronSecret } from '@/lib/cron-auth'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { ingestMonth } from '@/lib/data/realprice'
 import type { IngestResult } from '@/lib/data/realprice'
@@ -17,8 +18,7 @@ function currentYearMonth(): string {
 
 export async function GET(request: Request): Promise<Response> {
   // CRON_SECRET 검증 (ADR: 모든 /api/ingest/* 필수)
-  const authHeader = request.headers.get('authorization')
-  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!verifyCronSecret(request)) {
     return new Response('Unauthorized', { status: 401 })
   }
 

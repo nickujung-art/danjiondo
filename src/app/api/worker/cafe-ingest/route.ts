@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { verifyCronSecret } from '@/lib/cron-auth'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { searchCafePosts, extractComplexNames } from '@/services/naver-cafe'
 import { ingestCafePost } from '@/lib/data/cafe-posts'
@@ -37,8 +38,7 @@ const SEARCH_QUERIES = [
 ]
 
 export async function POST(req: Request) {
-  const secret = req.headers.get('x-cron-secret')
-  if (!secret || secret !== process.env.CRON_SECRET) {
+  if (!verifyCronSecret(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

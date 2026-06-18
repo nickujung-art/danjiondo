@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import { createReadonlyClient } from '@/lib/supabase/readonly'
 import { getRecentDailyFeed } from '@/lib/data/rankings-page'
@@ -40,14 +41,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function DateRankingsPage({ params }: Props) {
   const { date } = await params
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    return (
-      <div style={{ padding: 48, textAlign: 'center', fontFamily: 'var(--font-sans)' }}>
-        <p style={{ font: '500 14px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)' }}>유효하지 않은 날짜입니다.</p>
-        <Link href="/rankings" style={{ color: 'var(--dj-orange)' }}>랭킹으로 돌아가기</Link>
-      </div>
-    )
-  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) notFound()
 
   const supabase  = createReadonlyClient()
   const feed      = await getRecentDailyFeed(supabase, 60, 7, 100).catch(() => [])

@@ -383,7 +383,7 @@ export async function getLatestRegionalIncome(
     .eq('region_code', regionCode)
     .order('year', { ascending: false })
     .limit(1)
-    .single()
+    .maybeSingle()
   if (error || !data) return null
   return { year: data.year, avgIncome: Number(data.avg_income) }
 }

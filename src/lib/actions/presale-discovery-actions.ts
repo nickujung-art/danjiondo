@@ -2,6 +2,11 @@
 
 import { revalidatePath } from 'next/cache'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+type AdminClient = ReturnType<typeof createSupabaseAdminClient>
 
 interface ArchHubData {
   totHoCnt?: number | null
@@ -18,10 +23,32 @@ interface PresaleDiscoveryRow {
   arch_hub_data: ArchHubData | null
 }
 
+async function requireAdmin(): Promise<{ error: string | null; admin: AdminClient | null }> {
+  const supabase = await createSupabaseServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: '로그인이 필요합니다.', admin: null }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (!profile || !['admin', 'superadmin'].includes(profile.role ?? '')) {
+    return { error: '권한이 없습니다.', admin: null }
+  }
+
+  return { error: null, admin: createSupabaseAdminClient() }
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export async function confirmDiscovery(id: string): Promise<{ error?: string }> {
-  const adminClient = createSupabaseAdminClient() as any
+  if (!UUID_RE.test(id)) return { error: '잘못된 요청입니다.' }
+  const { error: authErr, admin } = await requireAdmin()
+  if (authErr || !admin) return { error: authErr! }
+
+  const adminClient = admin as any
 
   const { data: discovery, error: fetchError } = await adminClient
     .from('presale_discoveries')
@@ -36,8 +63,7 @@ export async function confirmDiscovery(id: string): Promise<{ error?: string }> 
   const row = discovery as PresaleDiscoveryRow
   const archHubData = row.arch_hub_data as ArchHubData | null
 
-  const typedClient = createSupabaseAdminClient()
-  const { data: newListing, error: insertError } = await typedClient
+  const { data: newListing, error: insertError } = await admin
     .from('new_listings')
     .insert({
       name: row.name,
@@ -74,9 +100,11 @@ export async function confirmDiscovery(id: string): Promise<{ error?: string }> 
 }
 
 export async function rejectDiscovery(id: string): Promise<{ error?: string }> {
-  const adminClient = createSupabaseAdminClient() as any
+  if (!UUID_RE.test(id)) return { error: '잘못된 요청입니다.' }
+  const { error: authErr, admin } = await requireAdmin()
+  if (authErr || !admin) return { error: authErr! }
 
-  const { error } = await adminClient
+  const { error } = await (admin as any)
     .from('presale_discoveries')
     .update({ status: 'rejected' })
     .eq('id', id)
@@ -93,9 +121,11 @@ export async function updateDiscoveryNotes(
   id: string,
   notes: string
 ): Promise<{ error?: string }> {
-  const adminClient = createSupabaseAdminClient() as any
+  if (!UUID_RE.test(id)) return { error: '잘못된 요청입니다.' }
+  const { error: authErr, admin } = await requireAdmin()
+  if (authErr || !admin) return { error: authErr! }
 
-  const { error } = await adminClient
+  const { error } = await (admin as any)
     .from('presale_discoveries')
     .update({ admin_notes: notes })
     .eq('id', id)

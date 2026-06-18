@@ -1,3 +1,4 @@
+import { verifyCronSecret } from '@/lib/cron-auth'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { markCronStatus, markCronSuccess, markCronFailed } from '@/lib/data/cron-status'
 import { computeGapStats } from '@/lib/data/gap-stats'
@@ -15,8 +16,7 @@ import { ingestOffiMonth } from '@/lib/data/realprice-officetel'
 export const runtime = 'nodejs'
 
 export async function GET(request: Request): Promise<Response> {
-  const authHeader = request.headers.get('authorization')
-  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!verifyCronSecret(request)) {
     return new Response('Unauthorized', { status: 401 })
   }
 

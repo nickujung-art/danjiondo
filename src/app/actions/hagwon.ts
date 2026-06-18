@@ -114,6 +114,11 @@ export async function recommendHagwons(input: {
   const parsed = RecommendSchema.safeParse(input)
   if (!parsed.success) return { error: 'invalid_input' }
 
+  // 비인증 사용자 차단 (Groq·Kakao API 비용 보호)
+  const supabase = await createSupabaseServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'unauthorized' }
+
   const { lat, lng, ageGroup, subjects, feeTierPref, schoolAddress, schoolName } = parsed.data
 
   // 1. 학교 geocoding (선택된 경우)
@@ -127,7 +132,7 @@ export async function recommendHagwons(input: {
   const targetSubjects: Array<SubjectCategory | undefined> =
     subjects && subjects.length > 0 ? subjects : [undefined]
 
-  const supabase = await createSupabaseServerClient()
+  // supabase는 위에서 생성한 것 재사용 (중복 생성 방지)
 
   const perSubjectRaw = await Promise.all(
     targetSubjects.map(subject =>

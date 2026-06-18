@@ -4,7 +4,9 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 export async function GET(request: Request): Promise<never> {
   const { searchParams } = new URL(request.url)
   const code  = searchParams.get('code')
-  const next  = searchParams.get('next') ?? '/'
+  // 오픈 리다이렉트 방지: 내부 경로만 허용
+  const raw   = searchParams.get('next') ?? '/'
+  const next  = raw.startsWith('/') && !raw.startsWith('//') ? raw : '/'
 
   if (!code) redirect('/login')
 

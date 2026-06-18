@@ -1,3 +1,4 @@
+import { verifyCronSecret } from '@/lib/cron-auth'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { searchCafeArticles } from '@/services/naver-cafe'
 import { ingestCafeArticles } from '@/lib/data/cafe-articles'
@@ -5,8 +6,7 @@ import { ingestCafeArticles } from '@/lib/data/cafe-articles'
 export const runtime = 'nodejs'
 
 export async function GET(request: Request): Promise<Response> {
-  const authHeader = request.headers.get('authorization')
-  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!verifyCronSecret(request)) {
     return new Response('Unauthorized', { status: 401 })
   }
 
