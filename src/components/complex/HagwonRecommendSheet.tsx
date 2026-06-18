@@ -194,14 +194,15 @@ export function HagwonRecommendSheet({ lat, lng, schools, onClose }: {
   const [combo,        setCombo]        = useState<ComboResult | null>(null)
   const [comment,      setComment]      = useState('')
 
-  // 현재 나이에서 선택 가능한 학교 목록
+  // 현재 나이에서 선택 가능한 학교 목록 (road_address 없어도 포함)
   const eligibleSchoolTypes = ageGroup ? (AGE_SCHOOL_TYPE[ageGroup] ?? []) : []
+  const needsSchoolStep     = ageGroup != null && eligibleSchoolTypes.length > 0
   const eligibleSchools: SchoolOption[] = schools
-    .filter(s => eligibleSchoolTypes.includes(s.school_type) && s.road_address)
+    .filter(s => eligibleSchoolTypes.includes(s.school_type))
     .map(s => ({
       name:         s.school_name,
       school_type:  s.school_type,
-      road_address: s.road_address,
+      road_address: s.road_address ?? s.school_name,  // 주소 없으면 학교명으로 geocoding
       distance_m:   s.distance_m,
     }))
     .slice(0, 8)
@@ -215,7 +216,8 @@ export function HagwonRecommendSheet({ lat, lng, schools, onClose }: {
   }
 
   function handleAgeNext() {
-    if (ageGroup && eligibleSchools.length > 0) {
+    // 초등/중/고 선택 시 학교 선택 단계로 (학교 목록 없어도 건너뛰기 UI 제공)
+    if (needsSchoolStep) {
       setStep('school')
     } else {
       setStep('prefs')
