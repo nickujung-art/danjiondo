@@ -1,30 +1,42 @@
 // CLAUDE.md: Supabase 쿼리 → 서버 컴포넌트·API Route·Server Action 전용
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { HagwonResult, RecommendInput, ChildProfile } from '@/services/neis-hagwon'
+import type { ChildProfile } from '@/services/neis-hagwon'
+import type { RawCandidate } from '@/lib/hagwon-route'
 
-export async function fetchHagwonRecommendations(
+interface CandidateInput {
+  homeLat:    number
+  homeLng:    number
+  schoolLat?: number
+  schoolLng?: number
+  ageGroup?:  string
+  subject?:   string
+  limit?:     number
+}
+
+export async function fetchHagwonCandidates(
   supabase: SupabaseClient,
-  input: RecommendInput,
-): Promise<HagwonResult[]> {
+  input:    CandidateInput,
+): Promise<RawCandidate[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any).rpc('recommend_hagwons', {
-    p_lat:       input.lat,
-    p_lng:       input.lng,
-    p_age_group: input.ageGroup ?? null,
-    p_subjects:  input.subjects ?? null,
-    p_fee_tiers: input.feeTierPref && input.feeTierPref.length > 0 ? input.feeTierPref : null,
-    p_limit:     10,
+  const { data, error } = await (supabase as any).rpc('recommend_hagwon_candidates', {
+    p_home_lat:   input.homeLat,
+    p_home_lng:   input.homeLng,
+    p_school_lat: input.schoolLat ?? null,
+    p_school_lng: input.schoolLng ?? null,
+    p_age_group:  input.ageGroup  ?? null,
+    p_subject:    input.subject   ?? null,
+    p_limit:      input.limit     ?? 20,
   })
   if (error) {
-    console.error('[fetchHagwonRecommendations]', error)
+    console.error('[fetchHagwonCandidates]', error)
     return []
   }
-  return (data ?? []) as HagwonResult[]
+  return (data ?? []) as RawCandidate[]
 }
 
 export async function fetchChildProfile(
   supabase: SupabaseClient,
-  userId: string,
+  userId:   string,
 ): Promise<ChildProfile | null> {
   const { data, error } = await supabase
     .from('user_child_profiles')

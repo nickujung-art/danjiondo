@@ -1122,12 +1122,13 @@ function SchoolList({ schools, si, gu }: { schools: SchoolItem[]; si?: string; g
 
 // ─── HagwonSection ────────────────────────────────────────────────────────
 
-function HagwonSection({ hagwons, stats, si, lat, lng }: {
+function HagwonSection({ hagwons, stats, si, lat, lng, schools }: {
   hagwons: PoiItem[]
   stats:   FacilityEduData['hagwonStats']
   si?:     string
   lat?:    number
   lng?:    number
+  schools: SchoolItem[]
 }) {
   const [expanded,    setExpanded]    = useState(false)
   const [showRecommend, setShowRecommend] = useState(false)
@@ -1155,7 +1156,7 @@ function HagwonSection({ hagwons, stats, si, lat, lng }: {
               내 아이 맞춤 학원 추천 받기
             </button>
             {showRecommend && (
-              <HagwonRecommendSheet lat={lat} lng={lng} onClose={() => setShowRecommend(false)} />
+              <HagwonRecommendSheet lat={lat} lng={lng} schools={schools} onClose={() => setShowRecommend(false)} />
             )}
           </>
         )}
@@ -1279,7 +1280,7 @@ function HagwonSection({ hagwons, stats, si, lat, lng }: {
             내 아이 맞춤 학원 추천 받기
           </button>
           {showRecommend && (
-            <HagwonRecommendSheet lat={lat} lng={lng} onClose={() => setShowRecommend(false)} />
+            <HagwonRecommendSheet lat={lat} lng={lng} schools={schools} onClose={() => setShowRecommend(false)} />
           )}
         </>
       )}
@@ -1414,7 +1415,7 @@ export function EducationCard({ data, si, gu, lat, lng }: Props) {
       ) : (
         <>
           {tab === 'school'  && <SchoolList schools={schools} si={effectiveSi} gu={gu} />}
-          {tab === 'hagwon'  && <HagwonSection hagwons={hagwons} stats={hagwonStats} si={effectiveSi} lat={lat} lng={lng} />}
+          {tab === 'hagwon'  && <HagwonSection hagwons={hagwons} stats={hagwonStats} si={effectiveSi} lat={lat} lng={lng} schools={schools} />}
           {tab === 'daycare' && <DaycareSection daycares={daycares} kindergartens={kindergartens} />}
         </>
       )}

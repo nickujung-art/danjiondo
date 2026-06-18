@@ -28,11 +28,15 @@ export interface HagwonResult {
 }
 
 export interface RecommendInput {
-  lat:          number
-  lng:          number
-  ageGroup?:    AgeGroup
-  subjects?:    SubjectCategory[]
-  feeTierPref?: FeeTier[]
+  lat:           number
+  lng:           number
+  ageGroup?:     AgeGroup
+  subjects?:     SubjectCategory[]
+  feeTierPref?:  FeeTier[]
+  schoolLat?:    number
+  schoolLng?:    number
+  schoolName?:   string
+  schoolAddress?: string
 }
 
 export interface ChildProfile {
@@ -44,4 +48,28 @@ export interface ChildProfile {
   fee_tier_pref: FeeTier[] | null
   created_at:    string
   updated_at:    string
+}
+
+// UI에서 학교 선택용 (SchoolItem에서 파생)
+export interface SchoolOption {
+  name:         string
+  school_type:  'elementary' | 'middle' | 'high'
+  road_address: string | null
+  distance_m:   number | null
+}
+
+export const SUBJECT_LABELS: Record<SubjectCategory, string> = {
+  exam_prep:      '입시',
+  korean:         '국어',
+  math:           '수학',
+  english:        '영어',
+  arts:           '미술·예체능',
+  sports:         '스포츠·운동',
+  other_language: '기타 외국어',
+}
+
+export const FEE_LABELS: Record<FeeTier, string> = {
+  premium:  '프리미엄',
+  standard: '보통',
+  budget:   '합리적',
 }
