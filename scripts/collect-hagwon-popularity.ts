@@ -65,7 +65,7 @@ async function main() {
     while (true) {
       const { data, error } = await supabase.from('hagwon_db').select('id, name')
         .eq('is_active', true).is('naver_blog_count', null)
-        .range(navOffset, navOffset + PAGE - 1)
+        .order('id').range(navOffset, navOffset + PAGE - 1)
       if (error) { console.error('hagwon_db 조회 실패:', error.message); process.exit(1) }
       if (!data?.length) break
       allNaverRows.push(...(data as NaverRow[]))

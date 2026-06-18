@@ -113,7 +113,7 @@ async function main() {
   while (true) {
     let q = supabase.from('hagwon_db').select('id, name, realm_sc_nm, le_crse_nm').eq('is_active', true)
     if (MISSING_ONLY) q = q.is('subject_category', null)
-    const { data, error } = await q.range(offset, offset + PAGE - 1)
+    const { data, error } = await q.order('id').range(offset, offset + PAGE - 1)
     if (error) { console.error('hagwon_db 조회 실패:', error.message); process.exit(1) }
     if (!data?.length) break
     rows.push(...(data as Row[]))
