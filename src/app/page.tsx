@@ -140,6 +140,9 @@ export default async function HomePage() {
           <Link href="/favorites" style={{ color: 'var(--fg-sec)', textDecoration: 'none' }}>
             관심단지
           </Link>
+          <Link href="/rankings" style={{ color: 'var(--fg-sec)', textDecoration: 'none' }}>
+            랭킹
+          </Link>
         </nav>
 
         {/* Centered search → navigates to /map?q=... */}

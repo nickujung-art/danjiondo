@@ -66,11 +66,14 @@ export default async function MapPage({ searchParams }: Props) {
           >
             지도
           </Link>
-          <Link href="#" style={{ color: 'var(--fg-sec)', textDecoration: 'none' }}>
+          <Link href="/presale" style={{ color: 'var(--fg-sec)', textDecoration: 'none' }}>
             분양
           </Link>
           <Link href="/favorites" style={{ color: 'var(--fg-sec)', textDecoration: 'none' }}>
             관심단지
+          </Link>
+          <Link href="/rankings" style={{ color: 'var(--fg-sec)', textDecoration: 'none' }}>
+            랭킹
           </Link>
         </nav>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
