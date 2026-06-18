@@ -39,19 +39,20 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'invalid body' }, { status: 400 })
   }
 
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   const b = body as Record<string, unknown>
-  const complexId = typeof b.complexId === 'string' ? b.complexId : null
-  const contextData = typeof b.contextData === 'string' ? b.contextData : null
+  const complexId = typeof b.complexId === 'string' && UUID_RE.test(b.complexId) ? b.complexId : null
+  const contextData = typeof b.contextData === 'string' ? b.contextData.slice(0, 8000) : null
   const messages = Array.isArray(b.messages)
-    ? (b.messages as Array<{ role: string; content: string }>)
+    ? (b.messages as Array<{ role: string; content: string }>).slice(0, 20)
     : null
 
   if (!complexId || !messages) {
     return NextResponse.json({ error: 'complexId and messages required' }, { status: 400 })
   }
 
-  // 마지막 user 메시지 추출
-  const lastUserMsg = [...messages].reverse().find(m => m.role === 'user')?.content ?? ''
+  // 마지막 user 메시지 추출 + 길이 제한
+  const lastUserMsg = ([...messages].reverse().find(m => m.role === 'user')?.content ?? '').slice(0, 2000)
   if (!lastUserMsg) {
     return NextResponse.json({ error: 'no user message' }, { status: 400 })
   }

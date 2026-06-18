@@ -47,15 +47,17 @@ export async function submitAdInquiry(
 
   // 3. Resend 이메일 발송
   const { company, contact, period, message } = parsed.data
+  // HTML 이스케이프 — 운영자 메일 클라이언트 XSS 방지
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
   const from = process.env.RESEND_FROM_EMAIL ?? 'danjiondo <onboarding@resend.dev>'
-  const subject = `[단지온도] 광고 문의 — ${company}`
+  const subject = `[단지온도] 광고 문의 — ${esc(company)}`
   const html = `
 <h2>단지온도 광고 문의</h2>
 <table style="border-collapse:collapse;width:100%">
-  <tr><th style="text-align:left;padding:8px;border:1px solid #e5e7eb">업체명</th><td style="padding:8px;border:1px solid #e5e7eb">${company}</td></tr>
-  <tr><th style="text-align:left;padding:8px;border:1px solid #e5e7eb">연락처</th><td style="padding:8px;border:1px solid #e5e7eb">${contact}</td></tr>
-  <tr><th style="text-align:left;padding:8px;border:1px solid #e5e7eb">광고 기간</th><td style="padding:8px;border:1px solid #e5e7eb">${PERIOD_LABEL[period] ?? period}</td></tr>
-  <tr><th style="text-align:left;padding:8px;border:1px solid #e5e7eb">문의 내용</th><td style="padding:8px;border:1px solid #e5e7eb">${message.replace(/\n/g, '<br>')}</td></tr>
+  <tr><th style="text-align:left;padding:8px;border:1px solid #e5e7eb">업체명</th><td style="padding:8px;border:1px solid #e5e7eb">${esc(company)}</td></tr>
+  <tr><th style="text-align:left;padding:8px;border:1px solid #e5e7eb">연락처</th><td style="padding:8px;border:1px solid #e5e7eb">${esc(contact)}</td></tr>
+  <tr><th style="text-align:left;padding:8px;border:1px solid #e5e7eb">광고 기간</th><td style="padding:8px;border:1px solid #e5e7eb">${esc(PERIOD_LABEL[period] ?? period)}</td></tr>
+  <tr><th style="text-align:left;padding:8px;border:1px solid #e5e7eb">문의 내용</th><td style="padding:8px;border:1px solid #e5e7eb">${esc(message).replace(/\n/g, '<br>')}</td></tr>
 </table>
 <p style="color:#6b7280;font-size:12px">단지온도 광고 문의 시스템</p>
 `
