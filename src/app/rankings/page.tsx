@@ -213,7 +213,7 @@ export default async function RankingsPage({ searchParams }: Props) {
           {/* 카페 공유 버튼 (D-08) */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
             <a
-              href="https://cafe.naver.com/chanwonbds"
+              href="https://cafe.naver.com/xxdkd"
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -471,12 +471,12 @@ export default async function RankingsPage({ searchParams }: Props) {
       {/* 하단 카페 CTA (D-08) */}
       <footer style={{ borderTop: '1px solid var(--line-default)', background: '#fff', padding: '16px 32px', textAlign: 'center' }}>
         <a
-          href="https://cafe.naver.com/chanwonbds"
+          href="https://cafe.naver.com/xxdkd"
           target="_blank"
           rel="noopener noreferrer"
           style={{ font: '600 14px/1 var(--font-sans)', color: 'var(--dj-orange)', textDecoration: 'none' }}
         >
-          단지온도 카페에서 더 많은 정보 보기
+          창원부동산이야기 카페에서 더 많은 정보 보기
         </a>
       </footer>
 

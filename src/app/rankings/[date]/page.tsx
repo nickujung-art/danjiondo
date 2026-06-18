@@ -97,7 +97,7 @@ export default async function DateRankingsPage({ params }: Props) {
         {/* 카페 공유 버튼 */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
           <a
-            href="https://cafe.naver.com/chanwonbds"
+            href="https://cafe.naver.com/xxdkd"
             target="_blank"
             rel="noopener noreferrer"
             style={{
