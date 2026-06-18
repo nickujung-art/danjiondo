@@ -95,11 +95,11 @@ function SectionHeader({ title, children }: { title: string; children?: React.Re
 /** 캡처/공유 시 출처 표시용 브랜드 워터마크 */
 function BrandMark() {
   return (
-    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 4, padding: '7px 20px 9px', borderTop: '1px solid var(--line-subtle)', marginTop: 4, opacity: 0.45 }}>
-      <span style={{ width: 14, height: 14, borderRadius: 3, background: 'var(--dj-orange)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <span style={{ font: '800 8px/1 var(--font-sans)', color: '#fff' }}>단</span>
+    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 6, padding: '9px 20px 11px', borderTop: '1px solid var(--line-subtle)', marginTop: 4 }}>
+      <span style={{ width: 22, height: 22, borderRadius: 5, background: 'var(--dj-orange)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <span style={{ font: '800 12px/1 var(--font-sans)', color: '#fff' }}>단</span>
       </span>
-      <span style={{ font: '700 10px/1 var(--font-sans)', color: 'var(--fg-tertiary)', letterSpacing: '0.04em' }}>단지온도</span>
+      <span style={{ font: '700 13px/1 var(--font-sans)', color: 'var(--fg-sec)', letterSpacing: '0.03em' }}>단지온도</span>
     </div>
   )
 }
@@ -214,50 +214,55 @@ export default async function RankingsPage({ searchParams }: Props) {
 
         {/* ── 섹션 1: 구별 대장단지 ── */}
         <section aria-labelledby="champion-heading" style={{ marginBottom: 32 }}>
-          <SectionHeader title="구별 대장단지" />
+          <SectionHeader title="구별 대장단지">
+            <ShareButton url={pageUrl} title="구별 대장단지 | 단지온도" captureId="capture-champions" />
+          </SectionHeader>
           {/* 2열 그리드: 가격을 상단에 배치해 캡처 시 숫자가 눈에 들어오도록 */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-            {champions.map(({ sggCode, regionLabel, data }) => (
-              <div key={sggCode} className="card" style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column' }}>
-                {/* 구 뱃지 */}
-                <span style={{ display: 'inline-block', font: '700 10px/1 var(--font-sans)', padding: '3px 9px', borderRadius: 10, background: 'var(--dj-orange)', color: '#fff', alignSelf: 'flex-start', marginBottom: 10 }}>
-                  {regionLabel}
-                </span>
-                {data ? (
-                  <>
-                    {/* 가격 — 히어로 수치 */}
-                    <p style={{ font: '800 22px/1 var(--font-sans)', color: 'var(--dj-orange)', margin: '0 0 2px', letterSpacing: '-0.02em' }}>
-                      {data.avgPricePerPyeong.toLocaleString()}
-                    </p>
-                    <p style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '0 0 8px' }}>
-                      만원/평
-                    </p>
-                    {/* 단지명 */}
-                    <Link
-                      href={complexHref(data.complexId, data.urlSlug)}
-                      style={{ font: '600 13px/1.4 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block', marginBottom: 5 }}
-                    >
-                      {data.complexName}
-                    </Link>
-                    {/* 변동률 + 거래건수 */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {data.priceChange30d != null && (
-                        <span style={{ font: '600 12px/1 var(--font-sans)', color: data.priceChange30d >= 0 ? '#16a34a' : '#dc2626' }}>
-                          {data.priceChange30d >= 0 ? '▲' : '▼'}{Math.abs(data.priceChange30d * 100).toFixed(1)}%
-                        </span>
-                      )}
-                      {data.txCount90d > 0 && (
-                        <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
-                          90일 {data.txCount90d}건
-                        </span>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <p style={{ font: '400 12px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>데이터 없음</p>
-                )}
-              </div>
-            ))}
+          <div id="capture-champions" style={{ background: '#fff', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, padding: 8 }}>
+              {champions.map(({ sggCode, regionLabel, data }) => (
+                <div key={sggCode} style={{ background: 'var(--bg-surface-1)', borderRadius: 8, padding: '14px 14px', display: 'flex', flexDirection: 'column', border: '1px solid var(--line-subtle)' }}>
+                  {/* 구 뱃지 */}
+                  <span style={{ display: 'inline-block', font: '700 10px/1 var(--font-sans)', padding: '3px 9px', borderRadius: 10, background: 'var(--dj-orange)', color: '#fff', alignSelf: 'flex-start', marginBottom: 10 }}>
+                    {regionLabel}
+                  </span>
+                  {data ? (
+                    <>
+                      {/* 가격 — 히어로 수치 */}
+                      <p style={{ font: '800 22px/1 var(--font-sans)', color: 'var(--dj-orange)', margin: '0 0 2px', letterSpacing: '-0.02em' }}>
+                        {data.avgPricePerPyeong.toLocaleString()}
+                      </p>
+                      <p style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '0 0 8px' }}>
+                        만원/평
+                      </p>
+                      {/* 단지명 */}
+                      <Link
+                        href={complexHref(data.complexId, data.urlSlug)}
+                        style={{ font: '600 13px/1.4 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block', marginBottom: 5 }}
+                      >
+                        {data.complexName}
+                      </Link>
+                      {/* 변동률 + 거래건수 */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {data.priceChange30d != null && (
+                          <span style={{ font: '600 12px/1 var(--font-sans)', color: data.priceChange30d >= 0 ? '#16a34a' : '#dc2626' }}>
+                            {data.priceChange30d >= 0 ? '▲' : '▼'}{Math.abs(data.priceChange30d * 100).toFixed(1)}%
+                          </span>
+                        )}
+                        {data.txCount90d > 0 && (
+                          <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                            90일 {data.txCount90d}건
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <p style={{ font: '400 12px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>데이터 없음</p>
+                  )}
+                </div>
+              ))}
+            </div>
+            <BrandMark />
           </div>
         </section>
 
@@ -276,6 +281,7 @@ export default async function RankingsPage({ searchParams }: Props) {
               url={`${pageUrl}?date=${activeDate}`}
               title={`${activeDate} 창원·김해 실거래 | 단지온도`}
               text={activeDateFeed ? `${activeDate} 거래 ${activeDateFeed.transactions.length}건` : undefined}
+              captureId="capture-feed"
             />
           </SectionHeader>
 
@@ -300,7 +306,7 @@ export default async function RankingsPage({ searchParams }: Props) {
               </p>
             </div>
           ) : (
-            <div className="card" style={{ overflow: 'hidden' }}>
+            <div id="capture-feed" className="card" style={{ overflow: 'hidden' }}>
               {activeDateFeed.transactions.map((tx, idx) => (
                 <div
                   key={tx.id}
@@ -361,7 +367,7 @@ export default async function RankingsPage({ searchParams }: Props) {
         {/* ── 섹션 4: 지역 평당가 랭킹 ── */}
         <section aria-labelledby="ranking-heading" style={{ marginBottom: 32 }}>
           <SectionHeader title="지역 평당가 랭킹">
-            <ShareButton url={`${pageUrl}?region=${activeRegion}`} title={`${activeTab.label} 평당가 랭킹 | 단지온도`} />
+            <ShareButton url={`${pageUrl}?region=${activeRegion}`} title={`${activeTab.label} 평당가 랭킹 | 단지온도`} captureId="capture-ranking" />
           </SectionHeader>
 
           <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, marginBottom: 12, scrollbarWidth: 'none' }}>
@@ -377,7 +383,7 @@ export default async function RankingsPage({ searchParams }: Props) {
               <p style={{ font: '500 13px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>해당 지역 데이터가 없습니다</p>
             </div>
           ) : (
-            <div className="card" style={{ overflow: 'hidden' }}>
+            <div id="capture-ranking" className="card" style={{ overflow: 'hidden' }}>
               {ranking.map((row, idx) => (
                 <div
                   key={row.complexId}
@@ -401,12 +407,12 @@ export default async function RankingsPage({ searchParams }: Props) {
                     <Link href={complexHref(row.complexId, row.urlSlug)} style={{ font: '600 15px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', display: 'block' }}>
                       {row.complexName}
                     </Link>
-                    {(row.si ?? row.gu) && (
-                      <p style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '3px 0 0' }}>
-                        {[row.si, row.gu].filter(Boolean).join(' ')}
-                        {row.recentTradePrice != null && <span style={{ marginLeft: 6 }}>최근 {formatPrice(row.recentTradePrice)}</span>}
-                      </p>
-                    )}
+                    <p style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '3px 0 0' }}>
+                      {[row.dong, row.gu].filter(Boolean).join(' ')}
+                      {row.recentTradePrice != null && (
+                        <span style={{ marginLeft: 6 }}>최근 {formatPrice(row.recentTradePrice)}</span>
+                      )}
+                    </p>
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
                     <span className="tnum" style={{ font: '800 18px/1 var(--font-sans)', color: 'var(--dj-orange)', display: 'block' }}>
@@ -434,7 +440,7 @@ export default async function RankingsPage({ searchParams }: Props) {
               <p style={{ font: '500 13px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>데이터 없음</p>
             </div>
           ) : (
-            <div className="card" style={{ overflow: 'hidden' }}>
+            <div id="capture-alltime" className="card" style={{ overflow: 'hidden' }}>
               {allTimeHighs.map((row, idx) => (
                 <div
                   key={row.complexId}
@@ -478,12 +484,15 @@ export default async function RankingsPage({ searchParams }: Props) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
 
             {/* 최근 최고가 거래 */}
-            <div className="card" style={{ overflow: 'hidden' }}>
+            <div id="capture-top-price" className="card" style={{ overflow: 'hidden' }}>
               <div style={{ padding: '16px 20px 14px' }}>
-                <p style={{ font: '700 13px/1 var(--font-sans)', margin: '0 0 14px', color: 'var(--fg-pri)' }}>
-                  최근 최고가 거래
-                  <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 8 }}>30일 이내 TOP 5</span>
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <p style={{ font: '700 16px/1.2 var(--font-sans)', margin: 0, color: 'var(--fg-pri)' }}>
+                    최근 최고가 거래
+                    <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 8 }}>30일 이내 TOP 5</span>
+                  </p>
+                  <ShareButton url={pageUrl} title="최근 최고가 거래 | 단지온도" captureId="capture-top-price" />
+                </div>
                 {highlights.topPriceRecent.length === 0 ? (
                   <p style={{ font: '400 12px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>데이터 없음</p>
                 ) : highlights.topPriceRecent.map((item, idx) => (
@@ -509,12 +518,15 @@ export default async function RankingsPage({ searchParams }: Props) {
             </div>
 
             {/* 거래 활발 단지 */}
-            <div className="card" style={{ overflow: 'hidden' }}>
+            <div id="capture-top-volume" className="card" style={{ overflow: 'hidden' }}>
               <div style={{ padding: '16px 20px 14px' }}>
-                <p style={{ font: '700 13px/1 var(--font-sans)', margin: '0 0 14px', color: 'var(--fg-pri)' }}>
-                  거래 활발 단지
-                  <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 8 }}>90일 거래량 TOP 5</span>
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <p style={{ font: '700 16px/1.2 var(--font-sans)', margin: 0, color: 'var(--fg-pri)' }}>
+                    거래 활발 단지
+                    <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 8 }}>90일 거래량 TOP 5</span>
+                  </p>
+                  <ShareButton url={pageUrl} title="거래 활발 단지 | 단지온도" captureId="capture-top-volume" />
+                </div>
                 {highlights.topVolumeRecent.length === 0 ? (
                   <p style={{ font: '400 12px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>데이터 없음</p>
                 ) : highlights.topVolumeRecent.map((item, idx) => (
@@ -538,12 +550,15 @@ export default async function RankingsPage({ searchParams }: Props) {
             </div>
 
             {/* 가격 상승 단지 */}
-            <div className="card" style={{ overflow: 'hidden' }}>
+            <div id="capture-price-surge" className="card" style={{ overflow: 'hidden' }}>
               <div style={{ padding: '16px 20px 14px' }}>
-                <p style={{ font: '700 13px/1 var(--font-sans)', margin: '0 0 14px', color: 'var(--fg-pri)' }}>
-                  가격 상승 단지
-                  <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 8 }}>전월 대비 3% 이상</span>
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <p style={{ font: '700 16px/1.2 var(--font-sans)', margin: 0, color: 'var(--fg-pri)' }}>
+                    가격 상승 단지
+                    <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 8 }}>전월 대비 3% 이상</span>
+                  </p>
+                  <ShareButton url={pageUrl} title="가격 상승 단지 | 단지온도" captureId="capture-price-surge" />
+                </div>
                 {highlights.priceSurgeRecent.length === 0 ? (
                   <p style={{ font: '400 12px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>해당 단지 없음</p>
                 ) : highlights.priceSurgeRecent.map((item, idx) => (

@@ -74,6 +74,7 @@ export interface RegionalRankingRow {
   urlSlug: string | null
   si: string | null
   gu: string | null
+  dong: string | null
   avgPricePerPyeong: number
   recentTradePrice: number | null
   txCount30d: number
@@ -344,7 +345,7 @@ export async function getRegionalPriceRanking(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: complexList, error: e1 } = await (supabase as any)
     .from('complexes')
-    .select('id, canonical_name, url_slug, si, gu, avg_sale_per_pyeong, tx_count_30d')
+    .select('id, canonical_name, url_slug, si, gu, dong, avg_sale_per_pyeong, tx_count_30d')
     .in('sgg_code', sggCodes)
     .not('avg_sale_per_pyeong', 'is', null)
     .eq('status', 'active')
@@ -390,6 +391,7 @@ export async function getRegionalPriceRanking(
     urlSlug:           r['url_slug'] as string | null,
     si:                r['si'] as string | null,
     gu:                r['gu'] as string | null,
+    dong:              r['dong'] as string | null,
     avgPricePerPyeong: Number(r['avg_sale_per_pyeong']),
     recentTradePrice:  latestPriceMap.get(r['id'] as string) ?? null,
     txCount30d:        Number(r['tx_count_30d']),
