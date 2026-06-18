@@ -79,15 +79,17 @@ export async function getComplexTransactionSummary(
 }
 
 export interface RawTransaction {
-  dealDate:  string  // "YYYY-MM-DD"
-  yearMonth: string  // "YYYY-MM"
-  price:     number  // 만원
-  area:      number  // m2 (numeric → number)
+  dealDate:    string       // "YYYY-MM-DD"
+  yearMonth:   string       // "YYYY-MM"
+  price:       number       // 만원
+  area:        number       // m2 (numeric → number)
+  areaTypeId:  string | null  // complex_area_types.id (네이버 평형 canonical)
+  pyeongName:  string | null  // "34A", "34B" 등 (null이면 Math.round fallback)
 }
 
 /**
  * UX-01/UX-02 — 개별 거래 행 fetch (IQR 계산 + 평형 그룹화 + 기간 slice 원천)
- * complex_transactions_for_chart RPC 호출 — Phase 9 Wave 0 신규
+ * complex_transactions_for_chart RPC 호출 — area_type_id/pyeong_name 포함
  */
 export async function getComplexRawTransactions(
   complexId: string,
@@ -103,12 +105,19 @@ export async function getComplexRawTransactions(
   })
   if (error) throw new Error(`getComplexRawTransactions failed: ${error.message}`)
   if (!data) return []
-  return (data as Array<{ deal_date: string; year_month: string; price: number | string; area_m2: number | string }>).map(
-    (row) => ({
-      dealDate:  row.deal_date,
-      yearMonth: row.year_month,
-      price:     Number(row.price),
-      area:      Number(row.area_m2),
-    }),
-  )
+  return (data as Array<{
+    deal_date:    string
+    year_month:   string
+    price:        number | string
+    area_m2:      number | string
+    area_type_id: string | null
+    pyeong_name:  string | null
+  }>).map((row) => ({
+    dealDate:   row.deal_date,
+    yearMonth:  row.year_month,
+    price:      Number(row.price),
+    area:       Number(row.area_m2),
+    areaTypeId: row.area_type_id ?? null,
+    pyeongName: row.pyeong_name ?? null,
+  }))
 }

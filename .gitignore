@@ -22,6 +22,7 @@ coverage/
 # misc
 .DS_Store
 *.pem
+debug-*.png
 
 # Claude Code local settings (may contain API keys)
 .claude/
@@ -55,3 +56,6 @@ data/school-assignment/
 
 # 시설 교육 적재용 SQL 덤프 (재생성 가능)
 data/facility_edu.sql
+
+# 학교알리미 세션 쿠키 (민감 정보)
+.schoolinfo-cookies.json

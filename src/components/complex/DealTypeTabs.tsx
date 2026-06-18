@@ -5,7 +5,7 @@ import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs'
 import { TransactionChart } from './TransactionChart'
 import type { RawTransaction } from '@/lib/data/complex-detail'
 import { filterByPeriod, type PeriodKey } from '@/lib/utils/period-filter'
-import { extractAreaGroups, filterByArea } from '@/lib/utils/area-groups'
+import { extractTypedAreaGroups, filterByTypedArea } from '@/lib/utils/area-groups'
 import { computeIqrOutliers } from '@/lib/utils/iqr'
 
 interface Props {
@@ -43,38 +43,37 @@ export function DealTypeTabs({ rawSaleData, rawJeonseData }: Props) {
   // 활성 탭의 raw 데이터
   const rawActive = active === 'sale' ? rawSaleData : rawJeonseData
 
-  // 평형 그룹 추출 (전체 거래 기준 — 기간 무관)
-  const areaGroups = useMemo(() => extractAreaGroups(rawActive), [rawActive])
-  const defaultArea = areaGroups[0] ?? null  // 최다 거래 평형
+  // 평형 그룹 추출 — pyeong_name 있으면 "34A"/"34B", 없으면 "84㎡" (Math.round fallback)
+  const areaGroups = useMemo(() => extractTypedAreaGroups(rawActive), [rawActive])
+  const defaultAreaKey = areaGroups[0]?.key ?? null
 
   // D-04: 평형 필터 nuqs URL 상태 (기본값 = 최다 거래 평형)
   const [area, setArea] = useQueryState(
     'area',
     parseAsString
-      .withDefault(defaultArea != null ? String(defaultArea) : '')
+      .withDefault(defaultAreaKey ?? '')
       .withOptions({ shallow: true, history: 'replace' }),
   )
 
-  // 현재 선택된 평형 (URL에 없거나 빈 값이면 default)
-  const selectedArea = useMemo(() => {
-    const parsed = parseInt(area, 10)
-    if (!Number.isFinite(parsed)) return defaultArea
-    if (!areaGroups.includes(parsed)) return defaultArea
-    return parsed
-  }, [area, areaGroups, defaultArea])
+  // 현재 선택된 평형 key (URL에 없거나 유효하지 않으면 default)
+  const selectedAreaKey = useMemo(() => {
+    if (!area) return defaultAreaKey
+    if (!areaGroups.some(g => g.key === area)) return defaultAreaKey
+    return area
+  }, [area, areaGroups, defaultAreaKey])
 
   // 평형 + 기간 slice → IQR
   const { normal, outliers } = useMemo(() => {
-    if (selectedArea == null) return { normal: [], outliers: [] }
-    const byArea   = filterByArea(rawActive, selectedArea)
+    if (selectedAreaKey == null) return { normal: [], outliers: [] }
+    const byArea   = filterByTypedArea(rawActive, selectedAreaKey)
     const byPeriod = filterByPeriod(byArea, period)
-    const points = byPeriod.map(r => ({
+    const points   = byPeriod.map(r => ({
       yearMonth: r.yearMonth,
       price:     r.price,
       area:      r.area,
     }))
     return computeIqrOutliers(points)
-  }, [rawActive, selectedArea, period])
+  }, [rawActive, selectedAreaKey, period])
 
   return (
     <div>
@@ -111,20 +110,20 @@ export function DealTypeTabs({ rawSaleData, rawJeonseData }: Props) {
               거래 없음
             </span>
           ) : (
-            areaGroups.map((m2) => {
-              const isActive = selectedArea === m2
+            areaGroups.map((group) => {
+              const isActive = selectedAreaKey === group.key
               return (
                 <button
-                  key={m2}
+                  key={group.key}
                   type="button"
                   role="radio"
                   aria-checked={isActive}
-                  onClick={() => void setArea(String(m2))}
+                  onClick={() => void setArea(group.key)}
                   className={`btn btn-sm ${isActive ? 'btn-orange' : 'btn-secondary'}`}
                   style={{ minHeight: 32, padding: '4px 12px' }}
-                  title={`약 ${Math.round(m2 / 3.3058)}평`}
+                  title={group.isNamed ? `네이버 공식 평형: ${group.label}` : `약 ${Math.round(parseInt(group.key) / 3.3058)}평`}
                 >
-                  {m2}㎡
+                  {group.label}
                 </button>
               )
             })

@@ -1,9 +1,9 @@
 {
   "_schema": "feature-registry/v1",
   "_usage": "세션 시작 시 읽어서 todo/in_progress 항목 파악. done이지만 checklist 미완료 항목은 주의.",
-  "lastUpdated": "2026-06-16",
+  "lastUpdated": "2026-06-18",
   "summary": {
-    "done": 23,
+    "done": 25,
     "in_progress": 0,
     "todo": 0,
     "deferred": 5,
@@ -326,6 +326,37 @@
       "checklist": [
         { "layer": "migration", "name": "ranking_pool, ranking_snapshots 테이블", "status": "done" },
         { "layer": "ui",        "name": "신고가 카드 + 랭킹 탭", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "rankings-page",
+      "category": "랭킹",
+      "name": "랭킹 페이지 (/rankings · 일별 피드 · 대장단지 · 지역 순위)",
+      "status": "done",
+      "priority": "high",
+      "notes": "Phase 27. ISR(revalidate=3600). /rankings/[date] SSG 30일. is_new_high ±5㎡ TypeScript 비교.",
+      "checklist": [
+        { "layer": "data",  "name": "rankings-page.ts (4개 함수 + REGION_TABS)", "status": "done" },
+        { "layer": "ui",    "name": "/rankings ISR 메인 페이지 (대장단지·피드·지역랭킹·흥미지표)", "status": "done" },
+        { "layer": "ui",    "name": "/rankings/[date] SSG 퍼머링크 (generateStaticParams 30일)", "status": "done" },
+        { "layer": "ui",    "name": "홈·지도 nav에 랭킹 링크 추가", "status": "done" }
+      ]
+    },
+
+    {
+      "id": "area-type-normalization",
+      "category": "데이터",
+      "name": "평형 정규화 (complex_area_types · 네이버 공식 평형)",
+      "status": "done",
+      "priority": "high",
+      "notes": "Phase 27 병행. 842단지 3018평형. transactions.area_type_id ±2㎡ nearest 백필 102,057건(51.7%). 차트 칩 84㎡→34A형 표시.",
+      "checklist": [
+        { "layer": "migration", "name": "complex_area_types 테이블 + transactions.area_type_id FK", "status": "done" },
+        { "layer": "script",    "name": "crawl-naver-area-types.ts (842/843 단지 upsert)", "status": "done" },
+        { "layer": "migration", "name": "area_type_id backfill SQL (102,057건 ±2㎡ nearest)", "status": "done" },
+        { "layer": "migration", "name": "complex_transactions_for_chart RPC에 area_type_id/pyeong_name 추가", "status": "done" },
+        { "layer": "ui",        "name": "DealTypeTabs 평형 칩 pyeong_name 기반 표시 (extractTypedAreaGroups)", "status": "done" }
       ]
     },
 
