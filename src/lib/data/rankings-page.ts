@@ -49,6 +49,7 @@ export interface AllTimeHighRow {
   urlSlug: string | null
   si: string | null
   gu: string | null
+  dong: string | null
   price: number
   area_m2: number
   deal_date: string
@@ -104,6 +105,7 @@ export interface WeeklyHighlights {
     urlSlug: string | null
     si: string | null
     gu: string | null
+    dong: string | null
     price: number
     area_m2: number
     deal_date: string
@@ -114,6 +116,7 @@ export interface WeeklyHighlights {
     urlSlug: string | null
     si: string | null
     gu: string | null
+    dong: string | null
     txCount90d: number
   }>
   priceSurgeRecent: Array<{
@@ -122,6 +125,7 @@ export interface WeeklyHighlights {
     urlSlug: string | null
     si: string | null
     gu: string | null
+    dong: string | null
     changeRatio: number
   }>
 }
@@ -418,7 +422,7 @@ export async function getWeeklyHighlights(
       .from('transactions')
       .select(`
         price, area_m2, deal_date,
-        complexes!inner (id, canonical_name, url_slug, si, gu, sgg_code)
+        complexes!inner (id, canonical_name, url_slug, si, gu, dong, sgg_code)
       `)
       .in('complexes.sgg_code', [...ACTIVE_SGG_CODES])
       .gte('deal_date', thirtyDaysAgo)
@@ -434,7 +438,7 @@ export async function getWeeklyHighlights(
       .from('transactions')
       .select(`
         complex_id,
-        complexes!inner (id, canonical_name, url_slug, si, gu, sgg_code)
+        complexes!inner (id, canonical_name, url_slug, si, gu, dong, sgg_code)
       `)
       .in('complexes.sgg_code', [...ACTIVE_SGG_CODES])
       .gte('deal_date', ninetyDaysAgo)
@@ -447,7 +451,7 @@ export async function getWeeklyHighlights(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .from('complexes')
-      .select('id, canonical_name, url_slug, si, gu, price_change_30d')
+      .select('id, canonical_name, url_slug, si, gu, dong, price_change_30d')
       .in('sgg_code', [...ACTIVE_SGG_CODES])
       .not('price_change_30d', 'is', null)
       .gte('price_change_30d', 0.03)
@@ -467,6 +471,7 @@ export async function getWeeklyHighlights(
       urlSlug:     (c as Record<string, unknown>)['url_slug'] as string | null,
       si:          (c as Record<string, unknown>)['si'] as string | null,
       gu:          (c as Record<string, unknown>)['gu'] as string | null,
+      dong:        (c as Record<string, unknown>)['dong'] as string | null,
       price:       Number(row['price']),
       area_m2:     Number(row['area_m2']),
       deal_date:   row['deal_date'] as string,
@@ -474,7 +479,7 @@ export async function getWeeklyHighlights(
   }
 
   // topVolumeRecent: 90일 직접 집계
-  const volMap = new Map<string, { count: number; name: string; urlSlug: string | null; si: string | null; gu: string | null }>()
+  const volMap = new Map<string, { count: number; name: string; urlSlug: string | null; si: string | null; gu: string | null; dong: string | null }>()
   for (const row of ((volResult.data ?? []) as Record<string, unknown>[])) {
     const c = Array.isArray(row['complexes']) ? row['complexes'][0] : row['complexes']
     if (!c) continue
@@ -486,6 +491,7 @@ export async function getWeeklyHighlights(
         urlSlug: (c as Record<string, unknown>)['url_slug'] as string | null,
         si:      (c as Record<string, unknown>)['si'] as string | null,
         gu:      (c as Record<string, unknown>)['gu'] as string | null,
+        dong:    (c as Record<string, unknown>)['dong'] as string | null,
       })
     }
     volMap.get(cid)!.count++
@@ -493,7 +499,7 @@ export async function getWeeklyHighlights(
   const topVolumeRecent: WeeklyHighlights['topVolumeRecent'] = [...volMap.entries()]
     .sort(([, a], [, b]) => b.count - a.count)
     .slice(0, 5)
-    .map(([cid, v]) => ({ complexId: cid, complexName: v.name, urlSlug: v.urlSlug, si: v.si, gu: v.gu, txCount90d: v.count }))
+    .map(([cid, v]) => ({ complexId: cid, complexName: v.name, urlSlug: v.urlSlug, si: v.si, gu: v.gu, dong: v.dong, txCount90d: v.count }))
 
   // priceSurgeRecent
   const priceSurgeRecent: WeeklyHighlights['priceSurgeRecent'] = (
@@ -504,6 +510,7 @@ export async function getWeeklyHighlights(
     urlSlug:     r['url_slug'] as string | null,
     si:          r['si'] as string | null,
     gu:          r['gu'] as string | null,
+    dong:        r['dong'] as string | null,
     changeRatio: Number(r['price_change_30d']),
   }))
 
@@ -562,13 +569,13 @@ export async function getRegionalAllTimeHighs(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: complexData, error: e1 } = await (supabase as any)
     .from('complexes')
-    .select('id, canonical_name, url_slug, si, gu')
+    .select('id, canonical_name, url_slug, si, gu, dong')
     .in('sgg_code', sggCodes)
     .eq('status', 'active')
 
   if (e1 || !complexData?.length) return []
 
-  type ComplexMeta = { canonical_name: string; url_slug: string | null; si: string | null; gu: string | null }
+  type ComplexMeta = { canonical_name: string; url_slug: string | null; si: string | null; gu: string | null; dong: string | null }
   const complexMap = new Map<string, ComplexMeta>()
   for (const c of complexData as Record<string, unknown>[]) {
     complexMap.set(c['id'] as string, {
@@ -576,6 +583,7 @@ export async function getRegionalAllTimeHighs(
       url_slug:       c['url_slug'] as string | null,
       si:             c['si'] as string | null,
       gu:             c['gu'] as string | null,
+      dong:           c['dong'] as string | null,
     })
   }
 
@@ -615,6 +623,7 @@ export async function getRegionalAllTimeHighs(
       urlSlug:     c.url_slug,
       si:          c.si,
       gu:          c.gu,
+      dong:        c.dong,
       price:       Number(row['price']),
       area_m2:     Number(row['area_m2']),
       deal_date:   row['deal_date'] as string,

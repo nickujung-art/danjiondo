@@ -464,8 +464,9 @@ export default async function RankingsPage({ searchParams }: Props) {
                     <Link href={complexHref(row.complexId, row.urlSlug)} style={{ font: '600 15px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', display: 'block' }}>
                       {row.complexName}
                     </Link>
-                    <p style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '3px 0 0' }}>
-                      {formatPyeong(row.area_m2)} ({row.area_m2.toFixed(0)}㎡){row.floor != null ? ` · ${row.floor}층` : ''} · {row.deal_date.slice(0, 7)}
+                    <p style={{ font: '400 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '3px 0 0' }}>
+                      {[row.dong, row.gu].filter(Boolean).join(' ')}
+                      {' · '}{formatPyeong(row.area_m2)}{row.floor != null ? ` · ${row.floor}층` : ''} · {row.deal_date.slice(0, 7)}
                     </p>
                   </div>
                   <span className="tnum" style={{ font: '800 17px/1 var(--font-sans)', color: 'var(--fg-pri)', flexShrink: 0 }}>
@@ -502,11 +503,16 @@ export default async function RankingsPage({ searchParams }: Props) {
                       <Link href={complexHref(item.complexId, item.urlSlug)} style={{ font: '600 15px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', display: 'block' }}>
                         {item.complexName}
                       </Link>
+                      {(item.dong ?? item.gu) && (
+                        <p style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '2px 0 0' }}>
+                          {[item.dong, item.gu].filter(Boolean).join(' ')}
+                        </p>
+                      )}
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 5, flexWrap: 'wrap' }}>
                         <span className="tnum" style={{ font: '800 20px/1 var(--font-sans)', color: 'var(--dj-orange)' }}>
                           {formatPrice(item.price)}
                         </span>
-                        <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                        <span style={{ font: '400 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
                           {formatPyeong(item.area_m2)} · {item.deal_date.slice(5).replace('-', '/')}
                         </span>
                       </div>
@@ -536,6 +542,11 @@ export default async function RankingsPage({ searchParams }: Props) {
                       <Link href={complexHref(item.complexId, item.urlSlug)} style={{ font: '600 15px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', display: 'block' }}>
                         {item.complexName}
                       </Link>
+                      {(item.dong ?? item.gu) && (
+                        <p style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '2px 0 0' }}>
+                          {[item.dong, item.gu].filter(Boolean).join(' ')}
+                        </p>
+                      )}
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 5 }}>
                         <span className="tnum" style={{ font: '800 20px/1 var(--font-sans)', color: 'var(--dj-orange)' }}>
                           {item.txCount90d}건
@@ -568,6 +579,11 @@ export default async function RankingsPage({ searchParams }: Props) {
                       <Link href={complexHref(item.complexId, item.urlSlug)} style={{ font: '600 15px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', display: 'block' }}>
                         {item.complexName}
                       </Link>
+                      {(item.dong ?? item.gu) && (
+                        <p style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '2px 0 0' }}>
+                          {[item.dong, item.gu].filter(Boolean).join(' ')}
+                        </p>
+                      )}
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 5 }}>
                         <span className="tnum" style={{ font: '800 20px/1 var(--font-sans)', color: '#16a34a' }}>
                           +{(item.changeRatio * 100).toFixed(1)}%
