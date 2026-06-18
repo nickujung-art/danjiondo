@@ -29,6 +29,7 @@
 | 21 | 투자 분석 통합 페이지 | V3.3 | 실거래 2년 시세 흐름 차트 + 갭투자 랭킹을 /invest 페이지로 통합 | INVEST-01~04 | ✅ Completed 2026-05-29 |
 | 22 | AI 가격 예측 | V3.4 | Holt-Winters 통계 엔진 + Claude Haiku 해설로 단지별 평형별 6개월 예측선 구현 | PRED-01~04 | ✅ Completed 2026-05-29 |
 | 23 | SEO URL 구조 최적화 | V4.0 | 한글 디렉토리 URL + 계층별 페이지 + BreadcrumbList + 사이트맵·RSS — 네이버 검색 노출 최대화 | SEO-01~06 | ✅ Complete (4/4 plans) |
+| 28 | 학원 추천 시스템 | V4.2 | 교육 탭 "내 아이에 맞는 학원 추천" — NEIS 학원 DB + Groq AI 분류 + 맞춤 추천 팝업 + 자녀 프로필 저장 | HAGWON-01~09 | 🔲 Not started |
 
 ---
 
@@ -1025,7 +1026,20 @@
 - RANK-07: 카페 공유 유도 UI — "카페에 공유하기" CTA, 해당 단지 상세 바로가기 링크
 - RANK-08: 흥미 지표 섹션 — 이번 주 최고가 TOP 3, 가장 많이 거래된 단지, 전주 대비 가격 급등 단지
 
-**Plans:** TBD
+**Plans:** 5 plans / 4 waves
+
+**Wave 1** *(선행 작업 + DB 마이그레이션, autonomous: false)*
+- [ ] 28-01-PLAN.md -- DB 마이그레이션 (hagwon_db + user_child_profiles + recommend_hagwons RPC) + NEIS 키 선행 + 테스트 스캐폴드 (HAGWON-01, HAGWON-02, HAGWON-06, HAGWON-07)
+
+**Wave 2** *(blocked on Wave 1; 28-02/28-03 병렬 실행 가능 -- files_modified 무중복)*
+- [ ] 28-02-PLAN.md -- NEIS 학원 전수 수집 + 카카오 지오코딩 스크립트 (HAGWON-01, HAGWON-02)
+- [ ] 28-03-PLAN.md -- Groq 분류 배치 + fee_tier + Naver 블로그 스크립트 (HAGWON-03, HAGWON-04, HAGWON-05)
+
+**Wave 3** *(blocked on Wave 1)*
+- [ ] 28-04-PLAN.md -- Server Actions (recommend + profile + Groq comment) + 테스트 (HAGWON-06, HAGWON-07, HAGWON-09)
+
+**Wave 4** *(blocked on Wave 3, autonomous: false)*
+- [ ] 28-05-PLAN.md -- HagwonRecommendSheet UI + EducationCard 버튼 + UI 검증 (HAGWON-08)
 
 **Success Criteria:**
 1. `/rankings` 페이지가 실거래 피드·지역순위·신고가·대장단지를 모두 표시
@@ -1033,6 +1047,36 @@
 3. OG 태그 완비, 카카오/네이버 미리보기 정상 렌더링
 4. `npm run build && npm run lint` 통과
 5. 모바일 스크린샷 공유 시 핵심 데이터가 한 화면에 보임
+
+---
+
+### Phase 28: 학원 추천 시스템
+
+**Goal:** 아파트 상세 교육 탭에 "내 아이에 맞는 학원 추천" 팝업 서비스 구축 — NEIS API로 창원/김해 학원 DB를 구築하고, Groq AI로 나이대·과목·수강료 tier를 분류한 뒤, 거리+인기도+tier 추천 알고리즘으로 맞춤 학원 리스트와 AI 코멘트를 제공한다. 자녀 프로필 저장으로 재방문 UX를 개선한다.
+
+**Version:** V4.2
+
+**Requirements:**
+- HAGWON-01: NEIS API 창원/김해 학원 전수 수집 → `hagwon_db` 테이블 구축
+- HAGWON-02: 카카오 주소 API geocoding + 카카오 로컬 API 폐원 필터링 (`is_active`)
+- HAGWON-03: Groq AI 1회성 배치 — 나이대(유아/유치/초등저/초등고/중등/고등) + 교습 카테고리 + 교습 스타일 태깅
+- HAGWON-04: 수강료 분위 기반 tier 분류 (premium/standard/budget)
+- HAGWON-05: 네이버 블로그 검색 API → `naver_blog_count` + `popularity_score`
+- HAGWON-06: 추천 API Route — 거리(40%) + 인기도(30%) + tier(30%) 가중치, 상위 10개 반환
+- HAGWON-07: `user_child_profiles` 테이블 + RLS + 자녀 프로필 저장/로드
+- HAGWON-08: EducationCard "내 아이에 맞는 학원 추천" 버튼 + Sheet 팝업 UI
+- HAGWON-09: Groq 추천 코멘트 생성 (3~4문장 한국어)
+
+**Plans:** TBD
+
+**Success Criteria:**
+1. `hagwon_db` 테이블에 창원/김해 학원 1,000개 이상, `is_active=true`, 위경도 필드 NULL 50% 미만
+2. Groq 배치 실행 후 `age_groups`, `subject_category`, `fee_tier` 90% 이상 채워짐
+3. 추천 API `/api/hagwon/recommend` 호출 시 200ms 이내 결과 반환
+4. 자녀 프로필 저장 → 페이지 재방문 시 자동 로드 (로그인 사용자)
+5. `npm run build && npm run lint && npm run test` 통과
+
+**UI hint**: yes
 
 ---
 ---
