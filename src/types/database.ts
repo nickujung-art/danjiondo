@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       activity_logs: {
@@ -423,6 +448,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "complex_aliases_complex_id_fkey"
+            columns: ["complex_id"]
+            isOneToOne: false
+            referencedRelation: "complexes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      complex_area_types: {
+        Row: {
+          complex_id: string
+          created_at: string | null
+          exclusive_area_m2: number
+          exclusive_pyeong: number | null
+          id: string
+          naver_pyeong_no: number
+          pyeong_name: string
+          supply_area_m2: number | null
+        }
+        Insert: {
+          complex_id: string
+          created_at?: string | null
+          exclusive_area_m2: number
+          exclusive_pyeong?: number | null
+          id?: string
+          naver_pyeong_no: number
+          pyeong_name: string
+          supply_area_m2?: number | null
+        }
+        Update: {
+          complex_id?: string
+          created_at?: string | null
+          exclusive_area_m2?: number
+          exclusive_pyeong?: number | null
+          id?: string
+          naver_pyeong_no?: number
+          pyeong_name?: string
+          supply_area_m2?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complex_area_types_complex_id_fkey"
             columns: ["complex_id"]
             isOneToOne: false
             referencedRelation: "complexes"
@@ -1283,6 +1349,93 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      hagwon_db: {
+        Row: {
+          aca_asnum: string
+          address: string | null
+          address_detail: string | null
+          admst_zone_nm: string | null
+          age_groups: string[] | null
+          capacity: number | null
+          created_at: string
+          established_at: string | null
+          fee_amount: number | null
+          fee_text: string | null
+          fee_tier: string | null
+          id: string
+          instructor_count: number | null
+          is_active: boolean
+          le_crse_nm: string | null
+          le_ord_nm: string | null
+          location: unknown
+          name: string
+          naver_blog_count: number | null
+          phone: string | null
+          popularity_score: number | null
+          realm_sc_nm: string | null
+          subject_category: string | null
+          teaching_style: string | null
+          updated_at: string
+          zipcode: string | null
+        }
+        Insert: {
+          aca_asnum: string
+          address?: string | null
+          address_detail?: string | null
+          admst_zone_nm?: string | null
+          age_groups?: string[] | null
+          capacity?: number | null
+          created_at?: string
+          established_at?: string | null
+          fee_amount?: number | null
+          fee_text?: string | null
+          fee_tier?: string | null
+          id?: string
+          instructor_count?: number | null
+          is_active?: boolean
+          le_crse_nm?: string | null
+          le_ord_nm?: string | null
+          location?: unknown
+          name: string
+          naver_blog_count?: number | null
+          phone?: string | null
+          popularity_score?: number | null
+          realm_sc_nm?: string | null
+          subject_category?: string | null
+          teaching_style?: string | null
+          updated_at?: string
+          zipcode?: string | null
+        }
+        Update: {
+          aca_asnum?: string
+          address?: string | null
+          address_detail?: string | null
+          admst_zone_nm?: string | null
+          age_groups?: string[] | null
+          capacity?: number | null
+          created_at?: string
+          established_at?: string | null
+          fee_amount?: number | null
+          fee_text?: string | null
+          fee_tier?: string | null
+          id?: string
+          instructor_count?: number | null
+          is_active?: boolean
+          le_crse_nm?: string | null
+          le_ord_nm?: string | null
+          location?: unknown
+          name?: string
+          naver_blog_count?: number | null
+          phone?: string | null
+          popularity_score?: number | null
+          realm_sc_nm?: string | null
+          subject_category?: string | null
+          teaching_style?: string | null
+          updated_at?: string
+          zipcode?: string | null
+        }
+        Relationships: []
       }
       ingest_runs: {
         Row: {
@@ -2331,6 +2484,7 @@ export type Database = {
       transactions: {
         Row: {
           area_m2: number
+          area_type_id: string | null
           building_name: string | null
           cancel_date: string | null
           complex_id: string | null
@@ -2354,6 +2508,7 @@ export type Database = {
         }
         Insert: {
           area_m2: number
+          area_type_id?: string | null
           building_name?: string | null
           cancel_date?: string | null
           complex_id?: string | null
@@ -2377,6 +2532,7 @@ export type Database = {
         }
         Update: {
           area_m2?: number
+          area_type_id?: string | null
           building_name?: string | null
           cancel_date?: string | null
           complex_id?: string | null
@@ -2400,6 +2556,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "transactions_area_type_id_fkey"
+            columns: ["area_type_id"]
+            isOneToOne: false
+            referencedRelation: "complex_area_types"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "transactions_complex_id_fkey"
             columns: ["complex_id"]
             isOneToOne: false
@@ -2421,6 +2584,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_child_profiles: {
+        Row: {
+          age_group: string
+          created_at: string
+          fee_tier_pref: string | null
+          id: string
+          nickname: string
+          subject_prefs: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age_group: string
+          created_at?: string
+          fee_tier_pref?: string | null
+          id?: string
+          nickname?: string
+          subject_prefs?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age_group?: string
+          created_at?: string
+          fee_tier_pref?: string | null
+          id?: string
+          nickname?: string
+          subject_prefs?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
@@ -2630,8 +2826,10 @@ export type Database = {
         }
         Returns: {
           area_m2: number
+          area_type_id: string
           deal_date: string
           price: number
+          pyeong_name: string
           year_month: string
         }[]
       }
@@ -3033,6 +3231,29 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      recommend_hagwons: {
+        Args: {
+          p_age_group?: string
+          p_fee_tier?: string
+          p_lat: number
+          p_limit?: number
+          p_lng: number
+          p_subjects?: string[]
+        }
+        Returns: {
+          address: string
+          age_groups: string[]
+          distance_m: number
+          fee_tier: string
+          id: string
+          le_crse_nm: string
+          name: string
+          popularity_score: number
+          realm_sc_nm: string
+          score: number
+          subject_category: string
+        }[]
+      }
       refresh_complex_price_stats: { Args: never; Returns: undefined }
       school_district_avg_price: {
         Args: { p_months?: number; p_school_name: string }
@@ -3839,6 +4060,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       ad_status: [
