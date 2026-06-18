@@ -380,7 +380,7 @@ export async function getWeeklyHighlights(
   const ninetyDaysAgo  = nDaysAgo(90)
 
   const [priceResult, volResult, surgeResult] = await Promise.all([
-    // 최근 30일 최고가 거래 TOP 3
+    // 최근 30일 최고가 거래 TOP 5
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .from('transactions')
@@ -394,7 +394,7 @@ export async function getWeeklyHighlights(
       .is('cancel_date', null)
       .is('superseded_by', null)
       .order('price', { ascending: false })
-      .limit(3),
+      .limit(5),
 
     // 최근 90일 거래 건수 직접 집계
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -421,7 +421,7 @@ export async function getWeeklyHighlights(
       .gte('price_change_30d', 0.03)
       .eq('status', 'active')
       .order('price_change_30d', { ascending: false })
-      .limit(3),
+      .limit(5),
   ])
 
   // topPriceRecent

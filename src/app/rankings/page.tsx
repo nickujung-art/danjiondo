@@ -227,7 +227,7 @@ export default async function RankingsPage({ searchParams }: Props) {
           {feedDates.length > 0 ? (
             <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, marginBottom: 12, scrollbarWidth: 'none' }}>
               {feedDates.map(d => (
-                <Link key={d} href={`/rankings?date=${d}&region=${activeRegion}`} style={chip(d === activeDate)}>
+                <Link key={d} href={`/rankings?date=${d}&region=${activeRegion}`} scroll={false} style={chip(d === activeDate)}>
                   {d.slice(5).replace('-', '/')}
                 </Link>
               ))}
@@ -328,6 +328,7 @@ export default async function RankingsPage({ searchParams }: Props) {
               <Link
                 key={tab.key}
                 href={`/rankings?date=${activeDate}&region=${tab.key}`}
+                scroll={false}
                 style={chip(tab.key === activeRegion)}
               >
                 {tab.label}
@@ -399,32 +400,33 @@ export default async function RankingsPage({ searchParams }: Props) {
         {/* ── 섹션 4: 흥미 지표 ── */}
         <section aria-labelledby="highlights-heading" style={{ marginBottom: 32 }}>
           <SectionHeader title="흥미 지표" />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
 
             {/* 최근 최고가 거래 */}
             <div className="card" style={{ padding: '14px 16px' }}>
               <h3 style={{ font: '700 13px/1.3 var(--font-sans)', margin: '0 0 12px', color: 'var(--fg-pri)' }}>
                 최근 최고가 거래
-                <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', display: 'block', marginTop: 2 }}>30일 이내</span>
+                <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 6 }}>30일 이내</span>
               </h3>
               {highlights.topPriceRecent.length === 0 ? (
                 <p style={{ font: '400 12px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>데이터 없음</p>
               ) : highlights.topPriceRecent.map((item, idx) => (
-                <div key={item.complexId} style={{ marginBottom: idx < highlights.topPriceRecent.length - 1 ? 10 : 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
-                    <span style={{ font: '700 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>{idx + 1}</span>
+                <div
+                  key={item.complexId}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: idx < highlights.topPriceRecent.length - 1 ? 10 : 0 }}
+                >
+                  <span style={{ font: '700 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', minWidth: 16, flexShrink: 0 }}>{idx + 1}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <Link href={complexHref(item.complexId, item.urlSlug)} style={{ font: '600 13px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none' }}>
                       {item.complexName}
                     </Link>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 3 }}>
-                    <span className="tnum" style={{ font: '700 15px/1 var(--font-sans)', color: 'var(--dj-orange)' }}>
-                      {formatPrice(item.price)}
-                    </span>
-                    <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                    <p style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '3px 0 0' }}>
                       {formatPyeong(item.area_m2)} · {item.deal_date.slice(5).replace('-', '/')}
-                    </span>
+                    </p>
                   </div>
+                  <span className="tnum" style={{ font: '700 15px/1 var(--font-sans)', color: 'var(--dj-orange)', flexShrink: 0 }}>
+                    {formatPrice(item.price)}
+                  </span>
                 </div>
               ))}
             </div>
@@ -433,43 +435,44 @@ export default async function RankingsPage({ searchParams }: Props) {
             <div className="card" style={{ padding: '14px 16px' }}>
               <h3 style={{ font: '700 13px/1.3 var(--font-sans)', margin: '0 0 12px', color: 'var(--fg-pri)' }}>
                 거래 활발 단지
-                <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', display: 'block', marginTop: 2 }}>90일 거래량 TOP 5</span>
+                <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 6 }}>90일 거래량 TOP 5</span>
               </h3>
               {highlights.topVolumeRecent.length === 0 ? (
                 <p style={{ font: '400 12px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>데이터 없음</p>
               ) : highlights.topVolumeRecent.map((item, idx) => (
                 <div
                   key={item.complexId}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: idx < highlights.topVolumeRecent.length - 1 ? 8 : 0 }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: idx < highlights.topVolumeRecent.length - 1 ? 8 : 0 }}
                 >
-                  <span style={{ font: '700 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', minWidth: 14 }}>{idx + 1}</span>
+                  <span style={{ font: '700 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', minWidth: 16, flexShrink: 0 }}>{idx + 1}</span>
                   <Link href={complexHref(item.complexId, item.urlSlug)} style={{ font: '600 13px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {item.complexName}
                   </Link>
-                  <span className="tnum" style={{ font: '700 13px/1 var(--font-sans)', color: 'var(--dj-orange)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  <span className="tnum" style={{ font: '700 14px/1 var(--font-sans)', color: 'var(--dj-orange)', whiteSpace: 'nowrap', flexShrink: 0 }}>
                     {item.txCount90d}건
                   </span>
                 </div>
               ))}
             </div>
 
-            {/* 가격 변동 단지 */}
+            {/* 가격 상승 단지 */}
             <div className="card" style={{ padding: '14px 16px' }}>
               <h3 style={{ font: '700 13px/1.3 var(--font-sans)', margin: '0 0 12px', color: 'var(--fg-pri)' }}>
-                가격 변동 단지
-                <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', display: 'block', marginTop: 2 }}>전월 대비 3% 이상 상승</span>
+                가격 상승 단지
+                <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 6 }}>전월 대비 3% 이상</span>
               </h3>
               {highlights.priceSurgeRecent.length === 0 ? (
                 <p style={{ font: '400 12px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>해당 단지 없음</p>
               ) : highlights.priceSurgeRecent.map((item, idx) => (
-                <div key={item.complexId} style={{ marginBottom: idx < highlights.priceSurgeRecent.length - 1 ? 10 : 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
-                    <span style={{ font: '700 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>{idx + 1}</span>
-                    <Link href={complexHref(item.complexId, item.urlSlug)} style={{ font: '600 13px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none' }}>
-                      {item.complexName}
-                    </Link>
-                  </div>
-                  <span className="tnum" style={{ font: '700 15px/1 var(--font-sans)', color: '#16a34a', display: 'block', marginTop: 3 }}>
+                <div
+                  key={item.complexId}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: idx < highlights.priceSurgeRecent.length - 1 ? 8 : 0 }}
+                >
+                  <span style={{ font: '700 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', minWidth: 16, flexShrink: 0 }}>{idx + 1}</span>
+                  <Link href={complexHref(item.complexId, item.urlSlug)} style={{ font: '600 13px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {item.complexName}
+                  </Link>
+                  <span className="tnum" style={{ font: '700 14px/1 var(--font-sans)', color: '#16a34a', whiteSpace: 'nowrap', flexShrink: 0 }}>
                     +{(item.changeRatio * 100).toFixed(1)}%
                   </span>
                 </div>
