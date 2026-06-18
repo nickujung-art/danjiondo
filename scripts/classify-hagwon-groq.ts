@@ -105,27 +105,23 @@ async function main() {
     process.exit(1)
   }
 
-  let query = supabase
-    .from('hagwon_db')
-    .select('id, name, realm_sc_nm, le_crse_nm')
-    .eq('is_active', true)
-
-  if (MISSING_ONLY) {
-    query = query.eq('age_groups', '{}')
+  // PostgREST max_rows=1000 → 페이지네이션으로 전수 수집
+  type Row = { id: string; name: string; realm_sc_nm: string | null; le_crse_nm: string | null }
+  const rows: Row[] = []
+  const PAGE = 1000
+  let offset = 0
+  while (true) {
+    let q = supabase.from('hagwon_db').select('id, name, realm_sc_nm, le_crse_nm').eq('is_active', true)
+    if (MISSING_ONLY) q = q.is('subject_category', null)
+    const { data, error } = await q.range(offset, offset + PAGE - 1)
+    if (error) { console.error('hagwon_db 조회 실패:', error.message); process.exit(1) }
+    if (!data?.length) break
+    rows.push(...(data as Row[]))
+    if (data.length < PAGE || (LIMIT > 0 && rows.length >= LIMIT)) break
+    offset += PAGE
   }
-  if (LIMIT > 0) {
-    query = query.limit(LIMIT)
-  }
-
-  const { data: rows, error } = await query
-  if (error) {
-    console.error('hagwon_db 조회 실패:', error.message)
-    process.exit(1)
-  }
-  if (!rows?.length) {
-    console.log('분류할 학원 없음')
-    return
-  }
+  if (LIMIT > 0 && rows.length > LIMIT) rows.length = LIMIT
+  if (!rows.length) { console.log('분류할 학원 없음'); return }
 
   const total = rows.length
   console.log(`분류 시작: ${total}건 (concurrency=${CONCURRENCY})`)
@@ -165,14 +161,16 @@ async function main() {
     failed += settled.filter(r => r.status === 'rejected').length
 
     if (upsertData.length > 0) {
-      const { error: upsertErr } = await supabase
-        .from('hagwon_db')
-        .upsert(upsertData, { onConflict: 'id' })
-      if (upsertErr) {
-        console.error('upsert 오류:', upsertErr.message)
-      } else {
-        success += upsertData.length
-      }
+      // upsert는 NOT NULL 컬럼 INSERT 오류 발생 → 개별 update 사용
+      await Promise.all(upsertData.map(async r => {
+        const { error: updErr } = await supabase.from('hagwon_db').update({
+          age_groups:       r.age_groups,
+          subject_category: r.subject_category,
+          teaching_style:   r.teaching_style,
+        }).eq('id', r.id)
+        if (updErr) { failed++; console.error('update 오류:', updErr.message) }
+        else success++
+      }))
     }
 
     if ((batchStart + BATCH) % 100 === 0 || batchStart + BATCH >= rows.length) {

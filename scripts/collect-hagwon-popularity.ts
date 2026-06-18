@@ -57,19 +57,23 @@ async function main() {
       process.exit(1)
     }
 
-    let query = supabase
-      .from('hagwon_db')
-      .select('id, name')
-      .eq('is_active', true)
-      .is('naver_blog_count', null)
-
-    if (LIMIT > 0) query = query.limit(LIMIT)
-
-    const { data: rows, error } = await query
-    if (error) {
-      console.error('hagwon_db 조회 실패:', error.message)
-      process.exit(1)
+    // PostgREST max_rows=1000 → 페이지네이션
+    type NaverRow = { id: string; name: string }
+    const allNaverRows: NaverRow[] = []
+    const PAGE = 1000
+    let navOffset = 0
+    while (true) {
+      const { data, error } = await supabase.from('hagwon_db').select('id, name')
+        .eq('is_active', true).is('naver_blog_count', null)
+        .range(navOffset, navOffset + PAGE - 1)
+      if (error) { console.error('hagwon_db 조회 실패:', error.message); process.exit(1) }
+      if (!data?.length) break
+      allNaverRows.push(...(data as NaverRow[]))
+      if (data.length < PAGE || (LIMIT > 0 && allNaverRows.length >= LIMIT)) break
+      navOffset += PAGE
     }
+    if (LIMIT > 0 && allNaverRows.length > LIMIT) allNaverRows.length = LIMIT
+    const rows = allNaverRows
 
     const total = rows?.length ?? 0
     console.log(`[Step 1] Naver 블로그 수집 시작: ${total}건`)
@@ -98,23 +102,17 @@ async function main() {
         const maxCount = Math.max(...counts.map(r => r.count), 1)
         const avgCount = counts.reduce((s, r) => s + r.count, 0) / counts.length
 
-        const upsertData = counts.map(r => ({
-          id:               r.id,
-          naver_blog_count: r.count,
-          popularity_score: parseFloat((Math.log1p(r.count) / Math.log1p(maxCount)).toFixed(4)),
-        }))
-
-        // 50건씩 upsert
-        for (let i = 0; i < upsertData.length; i += 50) {
-          const batch = upsertData.slice(i, i + 50)
-          const { error: upsertErr } = await supabase
-            .from('hagwon_db')
-            .upsert(batch, { onConflict: 'id' })
-          if (upsertErr) {
-            console.error('popularity upsert 오류:', upsertErr.message)
-          }
+        // 50건씩 id IN (...) update — upsert는 NOT NULL 컬럼 때문에 INSERT 시도 발생
+        for (let i = 0; i < counts.length; i += 50) {
+          const batch = counts.slice(i, i + 50)
+          // 각 행을 개별 update (id가 항상 존재하므로 안전)
+          await Promise.all(batch.map(r =>
+            supabase.from('hagwon_db').update({
+              naver_blog_count: r.count,
+              popularity_score: parseFloat((Math.log1p(r.count) / Math.log1p(maxCount)).toFixed(4)),
+            }).eq('id', r.id)
+          ))
         }
-
         console.log(`[Step 1] 완료: ${counts.length}건 수집 (avg count: ${avgCount.toFixed(0)})`)
       } else if (DRY_RUN) {
         console.log(`[Step 1] dry-run 완료`)
@@ -150,16 +148,13 @@ async function main() {
       else budget++
     }
 
-    // 50건씩 upsert
-    for (let i = 0; i < withTier.length; i += 50) {
-      const batch = withTier.slice(i, i + 50)
-      const { error: upsertErr } = await supabase
-        .from('hagwon_db')
-        .upsert(batch, { onConflict: 'id' })
-      if (upsertErr) {
-        console.error('fee_tier upsert 오류:', upsertErr.message)
-      }
-    }
+    // tier별 3회 update (upsert는 NOT NULL 컬럼 INSERT 오류 발생)
+    const premiumIds  = withTier.filter(r => r.fee_tier === 'premium').map(r => r.id)
+    const standardIds = withTier.filter(r => r.fee_tier === 'standard').map(r => r.id)
+    const budgetIds   = withTier.filter(r => r.fee_tier === 'budget').map(r => r.id)
+    if (premiumIds.length)  { const { error: e } = await supabase.from('hagwon_db').update({ fee_tier: 'premium'  }).in('id', premiumIds);  if (e) console.error('premium update 오류:', e.message) }
+    if (standardIds.length) { const { error: e } = await supabase.from('hagwon_db').update({ fee_tier: 'standard' }).in('id', standardIds); if (e) console.error('standard update 오류:', e.message) }
+    if (budgetIds.length)   { const { error: e } = await supabase.from('hagwon_db').update({ fee_tier: 'budget'   }).in('id', budgetIds);   if (e) console.error('budget update 오류:', e.message) }
 
     console.log(`[Step 2] premium: ${premium}건, standard: ${standard}건, budget: ${budget}건`)
   } else if (DRY_RUN) {

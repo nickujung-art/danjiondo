@@ -142,7 +142,7 @@ async function collectZone(zoneName: string): Promise<number> {
     fee_amount:     parseFeeAmount(row.PSNBY_THCC_CNTNT),
     capacity:       row.TOFOR_SMTOT ? parseInt(row.TOFOR_SMTOT, 10) || null : null,
     established_at: parseEstablishedAt(row.ESTBL_YMD),
-    is_active:      row.REG_STTUS_NM === '등록',
+    is_active:      !['폐원', '말소', '취소'].includes(row.REG_STTUS_NM),
     admst_zone_nm:  row.ADMST_ZONE_NM || null,
   }))
 

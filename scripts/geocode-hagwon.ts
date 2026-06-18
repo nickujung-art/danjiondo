@@ -54,24 +54,23 @@ async function main() {
     process.exit(1)
   }
 
-  let query = supabase
-    .from('hagwon_db')
-    .select('id, name, address, address_detail')
-
-  if (MISSING_ONLY) {
-    query = query.is('location', null)
+  // PostgREST max_rows=1000 → 페이지네이션으로 전수 수집
+  type Row = { id: string; name: string; address: string | null; address_detail: string | null }
+  const rows: Row[] = []
+  const PAGE = 1000
+  let offset = 0
+  while (true) {
+    let q = supabase.from('hagwon_db').select('id, name, address, address_detail')
+    if (MISSING_ONLY) q = q.is('location', null)
+    const { data, error } = await q.range(offset, offset + PAGE - 1)
+    if (error) { console.error('hagwon_db 조회 실패:', error.message); process.exit(1) }
+    if (!data?.length) break
+    rows.push(...(data as Row[]))
+    if (data.length < PAGE || (LIMIT > 0 && rows.length >= LIMIT)) break
+    offset += PAGE
   }
-  query = query.limit(LIMIT)
-
-  const { data: rows, error } = await query
-  if (error) {
-    console.error('hagwon_db 조회 실패:', error.message)
-    process.exit(1)
-  }
-  if (!rows?.length) {
-    console.log('처리할 행 없음')
-    return
-  }
+  if (LIMIT > 0 && rows.length > LIMIT) rows.length = LIMIT
+  if (!rows.length) { console.log('처리할 행 없음'); return }
 
   const total = rows.length
   let geocoded = 0
