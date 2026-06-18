@@ -5,10 +5,15 @@ import type { Database } from '@/types/database'
 // ── 창원·김해 활성 SGG 코드 ─────────────────────────────────────────────────
 const ACTIVE_SGG_CODES = ['48121', '48123', '48125', '48127', '48129', '48250'] as const
 
-// 지역 그룹 (대장단지 champion 계산용)
-const CHANWON_SGG = ['48121', '48123'] as const           // 의창 + 성산
-const MASAN_SGG   = ['48125', '48127', '48129'] as const  // 마산합포 + 마산회원 + 진해
-const GIMHAE_SGG  = ['48250'] as const                    // 김해
+// 대장단지 구별 정의 (6개 sub-region)
+export const CHAMPION_REGIONS = [
+  { sggCode: '48121', label: '의창구' },
+  { sggCode: '48123', label: '성산구' },
+  { sggCode: '48125', label: '마산합포구' },
+  { sggCode: '48127', label: '마산회원구' },
+  { sggCode: '48129', label: '진해구' },
+  { sggCode: '48250', label: '김해시' },
+] as const
 
 // ── 지역 랭킹 탭 정의 ───────────────────────────────────────────────────────
 export const REGION_TABS = [
@@ -39,6 +44,7 @@ export interface DailyFeedTransaction {
 export interface DailyFeedGroup {
   date: string
   transactions: DailyFeedTransaction[]
+  hasMore: boolean  // maxPerDate에 의해 잘렸을 때 true
 }
 
 export interface RegionalRankingRow {
@@ -64,10 +70,10 @@ export interface ChampionComplex {
   txCount90d: number
 }
 
-export interface ChampionComplexes {
-  chanwon: ChampionComplex | null
-  masan:   ChampionComplex | null
-  gimhae:  ChampionComplex | null
+export interface RegionChampion {
+  sggCode: string
+  regionLabel: string
+  data: ChampionComplex | null
 }
 
 export interface WeeklyHighlights {
@@ -115,6 +121,7 @@ export async function getRecentDailyFeed(
   supabase: SupabaseClient<Database>,
   lookbackDays = 60,
   maxGroups = 7,
+  maxPerDate = 20,  // 날짜당 최대 표시 건수 (초과 시 hasMore=true)
 ): Promise<DailyFeedGroup[]> {
   const since = nDaysAgo(lookbackDays)
 
@@ -198,7 +205,7 @@ export async function getRecentDailyFeed(
 
     if (!grouped.has(date)) grouped.set(date, [])
     const group = grouped.get(date)!
-    if (group.length >= 50) continue
+    if (group.length >= maxPerDate) continue
 
     group.push({
       id:          txId,
@@ -216,36 +223,40 @@ export async function getRecentDailyFeed(
 
   return Array.from(grouped.entries())
     .sort(([a], [b]) => b.localeCompare(a))
-    .map(([date, transactions]) => ({ date, transactions }))
+    .map(([date, transactions]) => ({
+      date,
+      transactions,
+      hasMore: transactions.length >= maxPerDate,
+    }))
 }
 
-// ── 2. 대장단지 ───────────────────────────────────────────────────────────────
+// ── 2. 대장단지 (구별 6개) ────────────────────────────────────────────────────
 /**
- * 지역별 대장단지. avg_sale_per_pyeong 기준 1위.
- * tx_count_30d 조건 제거 — 신고 지연으로 최근 데이터 없어도 표시.
+ * 구별 대장단지. avg_sale_per_pyeong 기준 각 구 1위.
+ * 6개 sub-region: 의창구, 성산구, 마산합포구, 마산회원구, 진해구, 김해시
  */
 export async function getChampionComplexes(
   supabase: SupabaseClient<Database>,
-): Promise<ChampionComplexes> {
+): Promise<RegionChampion[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('complexes')
     .select('id, canonical_name, url_slug, si, gu, sgg_code, avg_sale_per_pyeong, price_change_30d')
     .in('sgg_code', [...ACTIVE_SGG_CODES])
     .not('avg_sale_per_pyeong', 'is', null)
+    .gt('avg_sale_per_pyeong', 0)
     .eq('status', 'active')
 
   if (error) {
     console.error('[getChampionComplexes] failed:', error.message)
-    return { chanwon: null, masan: null, gimhae: null }
+    return CHAMPION_REGIONS.map(r => ({ sggCode: r.sggCode, regionLabel: r.label, data: null }))
   }
 
   const rows = (data ?? []) as Record<string, unknown>[]
-  if (rows.length === 0) return { chanwon: null, masan: null, gimhae: null }
 
-  // 90일 거래 건수 (대장단지 보조 정보로만 표시)
-  const complexIds    = rows.map(r => r['id'] as string)
-  const ninetyDaysAgo = nDaysAgo(90)
+  // 90일 거래 건수 (보조 정보)
+  const complexIds     = rows.map(r => r['id'] as string)
+  const ninetyDaysAgo  = nDaysAgo(90)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: txData } = await (supabase as any)
@@ -263,34 +274,30 @@ export async function getChampionComplexes(
     countMap.set(cid, (countMap.get(cid) ?? 0) + 1)
   }
 
-  function bestInGroup(sggList: readonly string[]): ChampionComplex | null {
-    const candidates = rows
-      .filter(r => sggList.includes(r['sgg_code'] as string))
+  return CHAMPION_REGIONS.map(region => {
+    const best = rows
+      .filter(r => r['sgg_code'] === region.sggCode)
       .map(r => {
-        const id       = r['id'] as string
-        const avgPPyeong = Number(r['avg_sale_per_pyeong'])
+        const id = r['id'] as string
         return {
           complexId:         id,
           complexName:       r['canonical_name'] as string,
           urlSlug:           r['url_slug'] as string | null,
           si:                r['si'] as string | null,
           gu:                r['gu'] as string | null,
-          avgPricePerPyeong: avgPPyeong,
+          avgPricePerPyeong: Number(r['avg_sale_per_pyeong']),
           priceChange30d:    r['price_change_30d'] != null ? Number(r['price_change_30d']) : null,
           txCount90d:        countMap.get(id) ?? 0,
         }
       })
-      .filter(c => c.avgPricePerPyeong > 0)
       .sort((a, b) => b.avgPricePerPyeong - a.avgPricePerPyeong)
 
-    return candidates[0] ?? null
-  }
-
-  return {
-    chanwon: bestInGroup(CHANWON_SGG),
-    masan:   bestInGroup(MASAN_SGG),
-    gimhae:  bestInGroup(GIMHAE_SGG),
-  }
+    return {
+      sggCode:     region.sggCode,
+      regionLabel: region.label,
+      data:        best[0] ?? null,
+    }
+  })
 }
 
 // ── 3. 지역 랭킹 ─────────────────────────────────────────────────────────────
@@ -312,7 +319,7 @@ export async function getRegionalPriceRanking(
     .not('avg_sale_per_pyeong', 'is', null)
     .eq('status', 'active')
     .order('avg_sale_per_pyeong', { ascending: false })
-    .limit(20)
+    .limit(5)
 
   if (e1) {
     console.error('[getRegionalPriceRanking] complexes query failed:', e1.message)

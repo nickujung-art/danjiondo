@@ -1,10 +1,7 @@
--- Phase 12b: 신고가 갱신 배지 — is_new_record_30d 컬럼 + refresh_complex_price_stats 업데이트
+-- avg_sale_per_pyeong 수식 버그 수정
+-- 기존: (avg(price / pyeong) / 10000)::integer → 4153 / 10000 = 0 (integer 버그)
+-- 수정: avg(price / pyeong)::integer             → 4153 (만원/평 단위)
 
-ALTER TABLE public.complexes
-  ADD COLUMN IF NOT EXISTS is_new_record_30d boolean NOT NULL DEFAULT false;
-
--- refresh_complex_price_stats: is_new_record_30d 집계 추가
--- 최근 30일 최고 단가(원/m²) > 과거 최고 단가 × 1.03 이면 true
 CREATE OR REPLACE FUNCTION public.refresh_complex_price_stats()
 RETURNS void
 LANGUAGE sql

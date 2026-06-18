@@ -50,7 +50,7 @@ export default async function DateRankingsPage({ params }: Props) {
   }
 
   const supabase  = createReadonlyClient()
-  const feed      = await getRecentDailyFeed(supabase, 60, 7).catch(() => [])
+  const feed      = await getRecentDailyFeed(supabase, 60, 7, 100).catch(() => [])
   const dateGroup = feed.find(g => g.date === date)
   const pageUrl   = `${SITE}/rankings/${date}`
 

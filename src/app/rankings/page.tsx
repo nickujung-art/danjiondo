@@ -9,7 +9,7 @@ import {
   getWeeklyHighlights,
   REGION_TABS,
 } from '@/lib/data/rankings-page'
-import type { ChampionComplexes, WeeklyHighlights } from '@/lib/data/rankings-page'
+import type { RegionChampion, WeeklyHighlights } from '@/lib/data/rankings-page'
 import { formatPrice, complexHref, formatPyeong } from '@/lib/format'
 import { UserMenu } from '@/components/auth/UserMenu'
 import { ShareButton } from '@/components/rankings/ShareButton'
@@ -98,8 +98,8 @@ export default async function RankingsPage({ searchParams }: Props) {
 
   const supabase = createReadonlyClient()
   const [champions, feed, highlights] = await Promise.all([
-    getChampionComplexes(supabase).catch((): ChampionComplexes => ({ chanwon: null, masan: null, gimhae: null })),
-    getRecentDailyFeed(supabase, 60, 7).catch(() => []),
+    getChampionComplexes(supabase).catch((): RegionChampion[] => []),
+    getRecentDailyFeed(supabase, 60, 7, 20).catch(() => []),
     getWeeklyHighlights(supabase).catch((): WeeklyHighlights => ({ topPriceRecent: [], topVolumeRecent: [], priceSurgeRecent: [] })),
   ])
 
@@ -163,52 +163,42 @@ export default async function RankingsPage({ searchParams }: Props) {
 
         {/* ── 섹션 1: 지역 대장단지 ── */}
         <section aria-labelledby="champion-heading" style={{ marginBottom: 32 }}>
-          <SectionHeader title="지역 대장단지" />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
-            {([
-              { label: '창원',  data: champions.chanwon, tag: '의창·성산' },
-              { label: '마산',  data: champions.masan,   tag: '합포·회원·진해' },
-              { label: '김해',  data: champions.gimhae,  tag: '김해시' },
-            ] as const).map(({ label, data, tag }) => (
-              <div key={label} className="card" style={{ padding: '14px 16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                  <span style={{
-                    font: '700 10px/1 var(--font-sans)',
-                    padding: '2px 7px',
-                    borderRadius: 10,
-                    background: 'var(--dj-orange)',
-                    color: '#fff',
-                  }}>
-                    {label} 대장
-                  </span>
-                  <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
-                    {tag}
-                  </span>
-                </div>
+          <SectionHeader title="구별 대장단지" />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 8 }}>
+            {champions.map(({ sggCode, regionLabel, data }) => (
+              <div key={sggCode} className="card" style={{ padding: '12px 14px' }}>
+                <span style={{
+                  display:      'inline-block',
+                  font:         '700 10px/1 var(--font-sans)',
+                  padding:      '2px 8px',
+                  borderRadius: 10,
+                  background:   'var(--dj-orange)',
+                  color:        '#fff',
+                  marginBottom: 8,
+                }}>
+                  {regionLabel}
+                </span>
                 {data ? (
                   <>
                     <Link
                       href={complexHref(data.complexId, data.urlSlug)}
-                      style={{ font: '700 14px/1.4 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', display: 'block', marginBottom: 6 }}
+                      style={{ font: '600 13px/1.4 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', display: 'block', marginBottom: 6 }}
                     >
                       {data.complexName}
                     </Link>
-                    <p style={{ font: '800 18px/1 var(--font-sans)', color: 'var(--dj-orange)', margin: '0 0 5px' }}>
+                    <p style={{ font: '800 17px/1 var(--font-sans)', color: 'var(--dj-orange)', margin: '0 0 4px' }}>
                       {data.avgPricePerPyeong.toLocaleString()}
-                      <span style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-sec)', marginLeft: 3 }}>만/평</span>
+                      <span style={{ font: '500 10px/1 var(--font-sans)', color: 'var(--fg-sec)', marginLeft: 2 }}>만/평</span>
                     </p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       {data.priceChange30d != null && (
-                        <span style={{
-                          font:  '600 11px/1 var(--font-sans)',
-                          color: data.priceChange30d >= 0 ? '#16a34a' : '#dc2626',
-                        }}>
+                        <span style={{ font: '600 11px/1 var(--font-sans)', color: data.priceChange30d >= 0 ? '#16a34a' : '#dc2626' }}>
                           {data.priceChange30d >= 0 ? '▲' : '▼'}{Math.abs(data.priceChange30d * 100).toFixed(1)}%
                         </span>
                       )}
                       {data.txCount90d > 0 && (
                         <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
-                          90일 {data.txCount90d}건
+                          {data.txCount90d}건
                         </span>
                       )}
                     </div>
@@ -309,6 +299,16 @@ export default async function RankingsPage({ searchParams }: Props) {
                   </span>
                 </div>
               ))}
+            </div>
+          )}
+          {activeDateFeed && activeDateFeed.hasMore && (
+            <div style={{ marginTop: 8, textAlign: 'right' }}>
+              <Link
+                href={`/rankings/${activeDate}`}
+                style={{ font: '600 12px/1 var(--font-sans)', color: 'var(--dj-orange)', textDecoration: 'none' }}
+              >
+                이 날 전체 거래 보기 →
+              </Link>
             </div>
           )}
         </section>
