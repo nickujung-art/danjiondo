@@ -548,52 +548,71 @@ export async function getRegionalTradingHeat(
 }
 
 // ── 7. 지역 역대 최고가 (단지별 1건) ─────────────────────────────────────────
-/** 선택 지역의 단지별 역대 최고 거래가 TOP 5. */
+/** 선택 지역의 단지별 역대 최고 거래가 TOP 5.
+ *  complexes!inner join 필터 방식 대신 2-step 쿼리 사용 (PostgREST 호환성) */
 export async function getRegionalAllTimeHighs(
   supabase: SupabaseClient<Database>,
   sggCodes: string[],
 ): Promise<AllTimeHighRow[]> {
   if (sggCodes.length === 0) return []
 
+  // Step 1: 지역 내 active 단지 ID + 메타 조회
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: txData, error } = await (supabase as any)
+  const { data: complexData, error: e1 } = await (supabase as any)
+    .from('complexes')
+    .select('id, canonical_name, url_slug, si, gu')
+    .in('sgg_code', sggCodes)
+    .eq('status', 'active')
+
+  if (e1 || !complexData?.length) return []
+
+  type ComplexMeta = { canonical_name: string; url_slug: string | null; si: string | null; gu: string | null }
+  const complexMap = new Map<string, ComplexMeta>()
+  for (const c of complexData as Record<string, unknown>[]) {
+    complexMap.set(c['id'] as string, {
+      canonical_name: c['canonical_name'] as string,
+      url_slug:       c['url_slug'] as string | null,
+      si:             c['si'] as string | null,
+      gu:             c['gu'] as string | null,
+    })
+  }
+
+  // Step 2: 해당 단지들의 역대 최고가 거래 조회
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: txData, error: e2 } = await (supabase as any)
     .from('transactions')
-    .select(`
-      id, price, area_m2, deal_date, floor,
-      complexes!inner (id, canonical_name, url_slug, si, gu, sgg_code)
-    `)
-    .in('complexes.sgg_code', sggCodes)
+    .select('complex_id, price, area_m2, deal_date, floor')
+    .in('complex_id', [...complexMap.keys()])
     .eq('deal_type', 'sale')
     .is('cancel_date', null)
     .is('superseded_by', null)
     .gt('area_m2', 0)
     .order('price', { ascending: false })
-    .limit(150)
+    .limit(200)
 
-  if (error) {
-    console.error('[getRegionalAllTimeHighs] failed:', error.message)
+  if (e2) {
+    console.error('[getRegionalAllTimeHighs] tx query failed:', e2.message)
     return []
   }
 
+  // 단지별 최고가 1건만 추출
   const seen = new Set<string>()
   const result: AllTimeHighRow[] = []
 
   for (const row of (txData ?? []) as Record<string, unknown>[]) {
-    const c = Array.isArray(row['complexes'])
-      ? (row['complexes'] as Record<string, unknown>[])[0]
-      : row['complexes'] as Record<string, unknown>
-    if (!c) continue
-
-    const cid = c['id'] as string
+    const cid = row['complex_id'] as string
     if (seen.has(cid)) continue
     seen.add(cid)
 
+    const c = complexMap.get(cid)
+    if (!c) continue
+
     result.push({
       complexId:   cid,
-      complexName: c['canonical_name'] as string,
-      urlSlug:     c['url_slug'] as string | null,
-      si:          c['si'] as string | null,
-      gu:          c['gu'] as string | null,
+      complexName: c.canonical_name,
+      urlSlug:     c.url_slug,
+      si:          c.si,
+      gu:          c.gu,
       price:       Number(row['price']),
       area_m2:     Number(row['area_m2']),
       deal_date:   row['deal_date'] as string,
