@@ -7,19 +7,22 @@ import { fetchHagwonRecommendations, fetchChildProfile } from '@/lib/data/hagwon
 import type { HagwonResult, AgeGroup, SubjectCategory, FeeTier } from '@/services/neis-hagwon'
 
 // ── 입력 검증 스키마 (HAGWON-06 + 보안 T-28-10) ────────────────────────────
+const SUBJECT_ENUM = ['exam_prep','korean','math','english','arts','sports','other_language'] as const
+const FEE_TIER_ENUM = ['premium','standard','budget'] as const
+
 const RecommendSchema = z.object({
   lat:         z.number().min(-90).max(90),
   lng:         z.number().min(-180).max(180),
   ageGroup:    z.enum(['유아','유치','초등저','초등고','중등','고등']).optional(),
-  subjects:    z.array(z.enum(['academic','arts','sports','language'])).optional(),
-  feeTierPref: z.enum(['premium','standard','budget']).nullable().optional(),
+  subjects:    z.array(z.enum(SUBJECT_ENUM)).optional(),
+  feeTierPref: z.array(z.enum(FEE_TIER_ENUM)).optional(),
 })
 
 const ChildProfileSchema = z.object({
   nickname:      z.string().min(1).max(20),
   age_group:     z.enum(['유아','유치','초등저','초등고','중등','고등']),
   subject_prefs: z.array(z.string()).max(5),
-  fee_tier_pref: z.enum(['premium','standard','budget']).nullable().optional(),
+  fee_tier_pref: z.array(z.enum(FEE_TIER_ENUM)).optional(),
 })
 
 // ── Groq 코멘트 생성 (HAGWON-09) ──────────────────────────────────────────
@@ -52,7 +55,7 @@ async function generateHagwonComment(
 export async function recommendHagwons(input: {
   lat: number; lng: number
   ageGroup?: AgeGroup; subjects?: SubjectCategory[]
-  feeTierPref?: FeeTier | null
+  feeTierPref?: FeeTier[]
 }): Promise<{ results: HagwonResult[]; comment: string } | { error: string }> {
   const parsed = RecommendSchema.safeParse(input)
   if (!parsed.success) return { error: 'invalid_input' }
@@ -67,7 +70,7 @@ export async function recommendHagwons(input: {
 // ── saveChildProfile (HAGWON-07) ────────────────────────────────────────
 export async function saveChildProfile(input: {
   nickname: string; age_group: AgeGroup
-  subject_prefs: string[]; fee_tier_pref?: FeeTier | null
+  subject_prefs: string[]; fee_tier_pref?: FeeTier[]
 }): Promise<{ ok: true; id: string } | { error: string }> {
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -96,7 +99,7 @@ export async function saveChildProfile(input: {
 // ── loadChildProfile (HAGWON-07) ────────────────────────────────────────
 export async function loadChildProfile(): Promise<{
   nickname: string; age_group: AgeGroup
-  subject_prefs: string[]; fee_tier_pref: FeeTier | null
+  subject_prefs: string[]; fee_tier_pref: FeeTier[]
 } | null> {
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -107,6 +110,6 @@ export async function loadChildProfile(): Promise<{
     nickname:      profile.nickname,
     age_group:     profile.age_group,
     subject_prefs: profile.subject_prefs,
-    fee_tier_pref: profile.fee_tier_pref,
+    fee_tier_pref: (profile.fee_tier_pref as FeeTier[] | null) ?? [],
   }
 }

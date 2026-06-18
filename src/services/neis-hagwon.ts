@@ -1,10 +1,17 @@
 // NEIS 학원 추천 시스템 타입 계약
 // CLAUDE.md: 외부 API 타입은 src/services/ 어댑터에 정의
 
-export type AgeGroup       = '유아' | '유치' | '초등저' | '초등고' | '중등' | '고등'
-export type SubjectCategory = 'academic' | 'arts' | 'sports' | 'language'
-export type TeachingStyle  = 'exam_prep' | 'enrichment' | 'tutoring'
-export type FeeTier        = 'premium' | 'standard' | 'budget'
+export type AgeGroup = '유아' | '유치' | '초등저' | '초등고' | '중등' | '고등'
+export type SubjectCategory =
+  | 'exam_prep'      // 입시
+  | 'korean'         // 국어
+  | 'math'           // 수학
+  | 'english'        // 영어
+  | 'arts'           // 미술·예체능
+  | 'sports'         // 스포츠·운동
+  | 'other_language' // 기타 외국어
+export type TeachingStyle = 'exam_prep' | 'enrichment' | 'tutoring'
+export type FeeTier = 'premium' | 'standard' | 'budget'
 
 export interface HagwonResult {
   id:               string
@@ -25,7 +32,7 @@ export interface RecommendInput {
   lng:          number
   ageGroup?:    AgeGroup
   subjects?:    SubjectCategory[]
-  feeTierPref?: FeeTier | null
+  feeTierPref?: FeeTier[]
 }
 
 export interface ChildProfile {
@@ -34,7 +41,7 @@ export interface ChildProfile {
   nickname:      string
   age_group:     AgeGroup
   subject_prefs: string[]
-  fee_tier_pref: FeeTier | null
+  fee_tier_pref: FeeTier[] | null
   created_at:    string
   updated_at:    string
 }

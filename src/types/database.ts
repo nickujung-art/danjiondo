@@ -2589,7 +2589,7 @@ export type Database = {
         Row: {
           age_group: string
           created_at: string
-          fee_tier_pref: string | null
+          fee_tier_pref: string[] | null
           id: string
           nickname: string
           subject_prefs: string[]
@@ -2599,7 +2599,7 @@ export type Database = {
         Insert: {
           age_group: string
           created_at?: string
-          fee_tier_pref?: string | null
+          fee_tier_pref?: string[] | null
           id?: string
           nickname?: string
           subject_prefs?: string[]
@@ -2609,7 +2609,7 @@ export type Database = {
         Update: {
           age_group?: string
           created_at?: string
-          fee_tier_pref?: string | null
+          fee_tier_pref?: string[] | null
           id?: string
           nickname?: string
           subject_prefs?: string[]
@@ -3231,29 +3231,53 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
-      recommend_hagwons: {
-        Args: {
-          p_age_group?: string
-          p_fee_tier?: string
-          p_lat: number
-          p_limit?: number
-          p_lng: number
-          p_subjects?: string[]
-        }
-        Returns: {
-          address: string
-          age_groups: string[]
-          distance_m: number
-          fee_tier: string
-          id: string
-          le_crse_nm: string
-          name: string
-          popularity_score: number
-          realm_sc_nm: string
-          score: number
-          subject_category: string
-        }[]
-      }
+      recommend_hagwons:
+        | {
+            Args: {
+              p_age_group?: string
+              p_fee_tier?: string
+              p_lat: number
+              p_limit?: number
+              p_lng: number
+              p_subjects?: string[]
+            }
+            Returns: {
+              address: string
+              age_groups: string[]
+              distance_m: number
+              fee_tier: string
+              id: string
+              le_crse_nm: string
+              name: string
+              popularity_score: number
+              realm_sc_nm: string
+              score: number
+              subject_category: string
+            }[]
+          }
+        | {
+            Args: {
+              p_age_group?: string
+              p_fee_tiers?: string[]
+              p_lat: number
+              p_limit?: number
+              p_lng: number
+              p_subjects?: string[]
+            }
+            Returns: {
+              address: string
+              age_groups: string[]
+              distance_m: number
+              fee_tier: string
+              id: string
+              le_crse_nm: string
+              name: string
+              popularity_score: number
+              realm_sc_nm: string
+              score: number
+              subject_category: string
+            }[]
+          }
       refresh_complex_price_stats: { Args: never; Returns: undefined }
       school_district_avg_price: {
         Args: { p_months?: number; p_school_name: string }

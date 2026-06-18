@@ -12,7 +12,7 @@ export async function fetchHagwonRecommendations(
     p_lng:       input.lng,
     p_age_group: input.ageGroup ?? null,
     p_subjects:  input.subjects ?? null,
-    p_fee_tier:  input.feeTierPref ?? null,
+    p_fee_tiers: input.feeTierPref && input.feeTierPref.length > 0 ? input.feeTierPref : null,
     p_limit:     10,
   })
   if (error) {

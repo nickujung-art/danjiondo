@@ -26,7 +26,7 @@ const CONCURRENCY = 3
 const DELAY_MS    = 300
 
 const VALID_AGE = ['유아', '유치', '초등저', '초등고', '중등', '고등'] as const
-const VALID_CAT = ['academic', 'arts', 'sports', 'language'] as const
+const VALID_CAT = ['exam_prep', 'korean', 'math', 'english', 'arts', 'sports', 'other_language'] as const
 const VALID_STY = ['exam_prep', 'enrichment', 'tutoring'] as const
 
 type AgeGroup       = typeof VALID_AGE[number]
@@ -52,7 +52,7 @@ function buildClassifyPrompt(name: string, realm: string | null, crse: string | 
 교습과정: ${crse ?? '알 수 없음'}
 
 아래 JSON만 출력 (설명 없음):
-{"age_groups":["유아","유치","초등저","초등고","중등","고등"] 중 해당 항목만 배열로,"subject_category":"academic" | "arts" | "sports" | "language" 중 하나,"teaching_style":"exam_prep" | "enrichment" | "tutoring" 중 하나}`
+{"age_groups":["유아","유치","초등저","초등고","중등","고등"] 중 해당 항목만 배열로,"subject_category":"exam_prep"(입시) | "korean"(국어) | "math"(수학) | "english"(영어) | "arts"(미술·예체능) | "sports"(스포츠·운동) | "other_language"(기타외국어) 중 하나,"teaching_style":"exam_prep" | "enrichment" | "tutoring" 중 하나}`
 }
 
 const DEFAULT_RESULT: ClassifyResult = { age_groups: [], subject_category: null, teaching_style: null }

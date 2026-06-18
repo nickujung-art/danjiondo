@@ -16,15 +16,18 @@ const AGE_OPTIONS: Array<{ value: AgeGroup; label: string }> = [
 ]
 
 const SUBJECT_OPTIONS: Array<{ value: SubjectCategory; label: string }> = [
-  { value: 'academic',  label: '교과·입시' },
-  { value: 'arts',      label: '예체능·미술' },
-  { value: 'sports',    label: '스포츠·운동' },
-  { value: 'language',  label: '외국어·영어' },
+  { value: 'exam_prep',      label: '입시' },
+  { value: 'korean',         label: '국어' },
+  { value: 'math',           label: '수학' },
+  { value: 'english',        label: '영어' },
+  { value: 'arts',           label: '미술·예체능' },
+  { value: 'sports',         label: '스포츠·운동' },
+  { value: 'other_language', label: '기타 외국어' },
 ]
 
 const FEE_OPTIONS: Array<{ value: FeeTier; label: string; desc: string }> = [
-  { value: 'budget',   label: '합리적', desc: '수강료 하위 20%' },
-  { value: 'standard', label: '보통',   desc: '중간 수강료' },
+  { value: 'budget',   label: '합리적',   desc: '수강료 하위 20%' },
+  { value: 'standard', label: '보통',     desc: '중간 수강료' },
   { value: 'premium',  label: '프리미엄', desc: '수강료 상위 30%' },
 ]
 
@@ -129,11 +132,15 @@ export function HagwonRecommendSheet({ lat, lng, onClose }: {
   const [step,        setStep]        = useState<1 | 2 | 3>(1)
   const [ageGroup,    setAgeGroup]    = useState<AgeGroup | undefined>(undefined)
   const [subjects,    setSubjects]    = useState<SubjectCategory[]>([])
-  const [feeTierPref, setFeeTierPref] = useState<FeeTier | null>(null)
+  const [feeTierPref, setFeeTierPref] = useState<FeeTier[]>([])
   const [results,     setResults]     = useState<HagwonResult[]>([])
   const [comment,     setComment]     = useState('')
   function toggleSubject(s: SubjectCategory) {
     setSubjects(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])
+  }
+
+  function toggleFeeTier(t: FeeTier) {
+    setFeeTierPref(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
   }
 
   function handleSubmit() {
@@ -259,32 +266,51 @@ export function HagwonRecommendSheet({ lat, lng, onClose }: {
 
             <section aria-labelledby="fee-section">
               <h3 id="fee-section" style={{ font: '600 14px/1 var(--font-sans)', margin: '0 0 10px', color: 'var(--fg-pri)' }}>
-                수강료 선호 <span style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>(선택)</span>
+                수강료 선호 <span style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>(복수 선택)</span>
               </h3>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-                {FEE_OPTIONS.map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setFeeTierPref(feeTierPref === opt.value ? null : opt.value)}
-                    style={{
-                      flex:         1,
-                      padding:      '10px 8px',
-                      borderRadius: 12,
-                      border:       `1.5px solid ${feeTierPref === opt.value ? 'var(--dj-orange)' : 'var(--line-default)'}`,
-                      background:   feeTierPref === opt.value ? '#fff7f0' : 'var(--bg-surface)',
-                      cursor:       'pointer',
-                      textAlign:    'center',
-                    }}
-                  >
-                    <div style={{ font: '600 13px/1.3 var(--font-sans)', color: feeTierPref === opt.value ? 'var(--dj-orange)' : 'var(--fg-pri)' }}>
-                      {opt.label}
-                    </div>
-                    <div style={{ font: '500 10px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginTop: 3 }}>
-                      {opt.desc}
-                    </div>
-                  </button>
-                ))}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                {FEE_OPTIONS.map(opt => {
+                  const active = feeTierPref.includes(opt.value)
+                  return (
+                    <button
+                      key={opt.value}
+                      onClick={() => toggleFeeTier(opt.value)}
+                      style={{
+                        flex:         1,
+                        padding:      '10px 8px',
+                        borderRadius: 12,
+                        border:       `1.5px solid ${active ? 'var(--dj-orange)' : 'var(--line-default)'}`,
+                        background:   active ? '#fff7f0' : 'var(--bg-surface)',
+                        cursor:       'pointer',
+                        textAlign:    'center',
+                      }}
+                    >
+                      <div style={{ font: '600 13px/1.3 var(--font-sans)', color: active ? 'var(--dj-orange)' : 'var(--fg-pri)' }}>
+                        {opt.label}
+                      </div>
+                      <div style={{ font: '500 10px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginTop: 3 }}>
+                        {opt.desc}
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
+              <button
+                onClick={() => setFeeTierPref([])}
+                style={{
+                  width:        '100%',
+                  padding:      '8px 0',
+                  borderRadius: 10,
+                  border:       `1.5px solid ${feeTierPref.length === 0 ? 'var(--dj-orange)' : 'var(--line-default)'}`,
+                  background:   feeTierPref.length === 0 ? '#fff7f0' : 'var(--bg-surface)',
+                  color:        feeTierPref.length === 0 ? 'var(--dj-orange)' : 'var(--fg-sec)',
+                  font:         '500 13px/1 var(--font-sans)',
+                  cursor:       'pointer',
+                  marginBottom: 24,
+                }}
+              >
+                상관없음
+              </button>
             </section>
 
             <button
