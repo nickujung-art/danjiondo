@@ -560,29 +560,51 @@ export async function getRegionalPricePredictions(
   // ids.length × 6 (예측 개월) + 버퍼; PostgREST 기본 1000행 한도 방지 (CR-02)
   const rowLimit = Math.min(ids.length * 6 + 100, 6000)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
-    .from('complex_price_predictions')
-    .select('predicted_month, predicted_price_mean, predicted_price_lower, predicted_price_upper, model_name, training_mape')
-    .in('complex_id', ids)
-    .eq('area_bucket', areaBucket)
-    .gte('computed_at', twoDaysAgo)
-    .limit(rowLimit)
-    .order('predicted_month', { ascending: true })
-
-  if (error || !data) return []
-
-  // 3) 같은 predicted_month끼리 mean/lower/upper 각각 중위값 집계
-  type MonthBucket = { means: number[]; lowers: number[]; uppers: number[] }
-  const byMonth = new Map<string, MonthBucket>()
-  for (const row of (data as Array<{
+  // 모델 우선순위: chronos-bolt-small > holt-winters > double-exp > linear
+  // 단지별 단일 모델 사용 → near/far 모델 혼재 차단
+  type PredRow = {
+    complex_id:            string
     predicted_month:       string
     predicted_price_mean:  number
     predicted_price_lower: number
     predicted_price_upper: number
     model_name:            string
     training_mape:         number
-  }>)) {
+  }
+  const MODEL_PRIORITY: Record<string, number> = {
+    'chronos-bolt-small': 0,
+    'holt-winters':        1,
+    'double-exp':          2,
+    'linear':              3,
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('complex_price_predictions')
+    .select('complex_id, predicted_month, predicted_price_mean, predicted_price_lower, predicted_price_upper, model_name, training_mape')
+    .in('complex_id', ids)
+    .eq('area_bucket', areaBucket)
+    .gte('computed_at', twoDaysAgo)
+    .gt('predicted_price_mean', 0)   // 음수 가격 제외
+    .limit(rowLimit * 4)             // 모델 수 감안해 여유 있게 조회
+    .order('predicted_month', { ascending: true })
+
+  if (error || !data) return []
+
+  // 3-a) 단지별 우선 모델 결정
+  const complexModel = new Map<string, string>()
+  for (const row of data as PredRow[]) {
+    const cur = complexModel.get(row.complex_id)
+    const curPriority = cur !== undefined ? (MODEL_PRIORITY[cur] ?? 99) : 99
+    const newPriority = MODEL_PRIORITY[row.model_name] ?? 99
+    if (newPriority < curPriority) complexModel.set(row.complex_id, row.model_name)
+  }
+
+  // 3-b) 우선 모델 행만 남기고 month별 집계
+  type MonthBucket = { means: number[]; lowers: number[]; uppers: number[] }
+  const byMonth = new Map<string, MonthBucket>()
+  for (const row of data as PredRow[]) {
+    if (complexModel.get(row.complex_id) !== row.model_name) continue
     const ym = row.predicted_month.slice(0, 7) // 'YYYY-MM'
     if (!byMonth.has(ym)) byMonth.set(ym, { means: [], lowers: [], uppers: [] })
     const b = byMonth.get(ym)!
