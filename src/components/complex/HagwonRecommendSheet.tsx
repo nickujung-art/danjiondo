@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { recommendHagwons, saveChildProfile } from '@/app/actions/hagwon'
 import type { AgeGroup, SubjectCategory, FeeTier, HagwonResult } from '@/services/neis-hagwon'
@@ -132,36 +132,39 @@ export function HagwonRecommendSheet({ lat, lng, onClose }: {
   const [feeTierPref, setFeeTierPref] = useState<FeeTier | null>(null)
   const [results,     setResults]     = useState<HagwonResult[]>([])
   const [comment,     setComment]     = useState('')
-  const [,   startTransition] = useTransition()
-
   function toggleSubject(s: SubjectCategory) {
     setSubjects(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])
   }
 
   function handleSubmit() {
     setStep(2)
-    startTransition(async () => {
-      const res = await recommendHagwons({
-        lat, lng, ageGroup, subjects, feeTierPref,
-      })
-      if ('error' in res) {
+    void (async () => {
+      try {
+        const res = await recommendHagwons({
+          lat, lng, ageGroup, subjects, feeTierPref,
+        })
+        if ('error' in res) {
+          setResults([])
+          setComment('추천 결과를 불러오는 중 오류가 발생했습니다.')
+        } else {
+          setResults(res.results)
+          setComment(res.comment)
+          if (ageGroup) {
+            saveChildProfile({
+              nickname:      '내 자녀',
+              age_group:     ageGroup,
+              subject_prefs: subjects,
+              fee_tier_pref: feeTierPref,
+            }).catch(() => {})
+          }
+        }
+      } catch {
         setResults([])
         setComment('추천 결과를 불러오는 중 오류가 발생했습니다.')
-      } else {
-        setResults(res.results)
-        setComment(res.comment)
-        // 자녀 프로필 저장 (비동기, 실패해도 UX 방해 안 함)
-        if (ageGroup) {
-          saveChildProfile({
-            nickname:      '내 자녀',
-            age_group:     ageGroup,
-            subject_prefs: subjects,
-            fee_tier_pref: feeTierPref,
-          }).catch(() => {})
-        }
+      } finally {
+        setStep(3)
       }
-      setStep(3)
-    })
+    })()
   }
 
   return createPortal(
