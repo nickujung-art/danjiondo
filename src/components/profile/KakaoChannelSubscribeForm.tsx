@@ -147,7 +147,7 @@ export function KakaoChannelSubscribeForm() {
             }}
           >
             <Link
-              href="/privacy"
+              href="/legal/privacy"
               style={{
                 color:          'var(--fg-brand)',
                 textDecoration: 'none',

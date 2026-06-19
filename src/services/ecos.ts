@@ -46,7 +46,7 @@ export async function fetchMortgageRateSeries(months = 24): Promise<MortgageRate
   const url = `${ECOS_BASE}/StatisticSearch/${key}/json/kr/1/${limit}/${STAT_CODE}/M/${start}/${end}/${ITEM_CODE}`
 
   try {
-    const res = await fetch(url, { next: { revalidate: 86400 } })
+    const res = await fetch(url, { next: { revalidate: 86400 }, signal: AbortSignal.timeout(10_000) })
     if (!res.ok) return []
     const json = await res.json()
     const rows: EcosRow[] = json?.StatisticSearch?.row ?? []

@@ -27,7 +27,7 @@ async function fetchOneIdx(clsId: number, statblId: string, ym: string): Promise
     `${REB_BASE}?STATBL_ID=${statblId}&DTACYCLE_CD=MM` +
     `&WRTTIME_IDTFR_ID=${ym}&Type=json&CLS_ID=${clsId}`
   try {
-    const res = await fetch(url, { next: { revalidate: 86400 } })
+    const res = await fetch(url, { next: { revalidate: 86400 }, signal: AbortSignal.timeout(10_000) })
     if (!res.ok) return null
     const j = await res.json()
     const row = (j.SttsApiTblData?.[1]?.row ?? [])[0]

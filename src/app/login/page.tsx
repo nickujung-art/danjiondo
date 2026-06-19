@@ -33,9 +33,9 @@ export default async function LoginPage({ searchParams }: Props) {
 
         <p className="mt-6 text-center text-xs text-gray-400">
           로그인 시{' '}
-          <Link href="/terms" className="underline hover:text-gray-600">이용약관</Link>
+          <Link href="/legal/terms" className="underline hover:text-gray-600">이용약관</Link>
           {' '}및{' '}
-          <Link href="/privacy" className="underline hover:text-gray-600">개인정보처리방침</Link>
+          <Link href="/legal/privacy" className="underline hover:text-gray-600">개인정보처리방침</Link>
           에 동의합니다
         </p>
       </div>
