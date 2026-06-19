@@ -306,7 +306,7 @@ async function main() {
   console.log(`\n[crawl-naver-realtrade] 실거래 탭 탐색 + area_type_id 재매핑`)
   console.log(`대상: ${rows.length}개 단지 | dry-run: ${isDryRun} | ab-only: ${abOnly}\n`)
 
-  const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] })
+  const browser = await chromium.launch({ headless: false, args: ['--no-sandbox', '--disable-setuid-sandbox'] })
   const ctx     = await buildContext(browser)
   const tabPool = await Promise.all(Array.from({ length: DETAIL_WORKERS }, () => ctx.newPage()))
 
