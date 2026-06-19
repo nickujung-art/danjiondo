@@ -16,7 +16,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
-import Groq from 'groq-sdk'
+import OpenAI from 'openai'
 import * as dotenv from 'dotenv'
 import path from 'path'
 
@@ -27,8 +27,8 @@ const MISSING_ONLY = !process.argv.includes('--all')
 const LIMIT_ARG    = process.argv.find(a => a.startsWith('--limit='))?.split('=')[1]
 const LIMIT        = LIMIT_ARG ? parseInt(LIMIT_ARG, 10) : 0
 
-const CONCURRENCY = 3
-const DELAY_MS    = 300
+const CONCURRENCY = 8   // Cerebras 30 RPM → 배치 8개씩
+const DELAY_MS    = 1500 // 8req / 1.5s = 5.3 RPS → 분당 320req (한도 내)
 
 const VALID_AGE = ['유아', '유치', '초등저', '초등고', '중등', '고등'] as const
 const VALID_CAT = ['exam_prep', 'korean', 'math', 'english', 'arts', 'sports', 'other_language'] as const
@@ -240,7 +240,11 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 )
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! })
+// Cerebras — OpenAI 호환 API (base URL만 다름)
+const cerebras = new OpenAI({
+  apiKey:  process.env.CEREBRAS_API_KEY!,
+  baseURL: 'https://api.cerebras.ai/v1',
+})
 
 function buildClassifyPrompt(name: string, realm: string | null, crse: string | null): string {
   return `학원명: ${name}
@@ -255,11 +259,12 @@ const DEFAULT_RESULT: ClassifyResult = { age_groups: [], subject_category: null,
 
 async function classifyByLLM(name: string, realm: string | null, crse: string | null): Promise<ClassifyResult> {
   try {
-    const res = await groq.chat.completions.create({
-      model:           'llama-3.1-8b-instant',
-      messages:        [{ role: 'user', content: buildClassifyPrompt(name, realm, crse) }],
-      max_tokens:      120,
-      temperature:     0.2,
+    const res = await cerebras.chat.completions.create({
+      model:       'llama-3.3-70b',
+      messages:    [{ role: 'user', content: buildClassifyPrompt(name, realm, crse) }],
+      max_tokens:  120,
+      temperature: 0.2,
+      // @ts-expect-error cerebras supports json_object but openai types may differ
       response_format: { type: 'json_object' },
     })
     const parsed = JSON.parse(res.choices[0]?.message?.content ?? '{}') as {
@@ -316,8 +321,8 @@ async function runConcurrent<T, R>(
 // ─── 메인 ─────────────────────────────────────────────────────────────────────
 
 async function main() {
-  if (!process.env.GROQ_API_KEY) {
-    console.error('GROQ_API_KEY 환경변수가 없습니다.')
+  if (!process.env.CEREBRAS_API_KEY) {
+    console.error('CEREBRAS_API_KEY 환경변수가 없습니다.')
     process.exit(1)
   }
 
