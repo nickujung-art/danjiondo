@@ -24,6 +24,10 @@ const PHASE_LABEL_MAP: Record<string, string> = Object.fromEntries(
   PHASE_OPTIONS.map(p => [p.value, p.label])
 )
 
+function safeDecodeURIComponent(s: string): string {
+  try { return decodeURIComponent(s) } catch { return s }
+}
+
 function formatDateTime(s: string) {
   return new Date(s).toLocaleString('ko-KR', {
     year: 'numeric',
@@ -352,7 +356,7 @@ export default async function AdminRedevelopmentPage({
                 )}
                 {formError && (
                   <span style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-negative)' }}>
-                    {decodeURIComponent(formError)}
+                    {safeDecodeURIComponent(formError)}
                   </span>
                 )}
               </div>
