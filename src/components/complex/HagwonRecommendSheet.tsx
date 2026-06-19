@@ -57,11 +57,30 @@ function splitAIComment(text: string): string[] {
   return sentences.map(s => s.trim()).filter(s => s.length > 5)
 }
 
-// 블로그 스니펫에서 실제 리뷰 문장 추출
-// 우선순위: "후기·리뷰·방문" 제목 섹션 → 리뷰 키워드 포함 문장
+// 블로그 스니펫에서 실제 사용자 후기 문장 추출 — 점수 기반 선택
 const REVIEW_TITLE_RE = /후기|리뷰|방문|다녀온|다닌|수강/
-const REVIEW_KEYWORDS = ['선생님', '수업', '아이', '성적', '학생', '실력', '공부', '추천', '만족', '결과', '좋아', '꼼꼼', '체계', '집중', '관리', '친절', '열심', '도움']
-const PROMO_RE = /문의|연락주|상담받|전화주|주소:|영업시간|등록번호|수강료|수강생|\d{2,3}-\d{3,4}|http|@/
+const REVIEW_KW = ['선생님', '수업', '아이', '성적', '학생', '실력', '공부', '추천', '만족', '결과', '좋아', '꼼꼼', '체계', '집중', '관리', '친절', '열심', '도움', '덕분']
+
+// 홍보/정보성 패턴 (마스킹된 전화·층수·주소·주소 리스트 포함)
+const PROMO_RE = /문의|연락주|상담|전화주|주소:|영업시간|등록번호|수강료|\d{2,3}-[\d*]{3,6}|\d+층\b|\d+호\b|아파트\s*\d|번\s*길\s*\d|http|@\w/
+
+// 진짜 사용자 후기 신호로 점수 매기기
+function scoreQuote(s: string): number {
+  let score = 0
+  // 1인칭/가족 시점 — 진짜 체험 후기의 가장 강한 신호
+  if (/저는|저도|제가|저한테|우리\s*아이|저희\s*아이|딸이|딸아이|아들이|아이가\s/.test(s)) score += 4
+  // 긍정 평가 표현 ("너무 좋아요", "꼼꼼해요" 등)
+  if (/너무\s*(좋|꼼꼼|친절|열정|만족)|정말\s*(좋|꼼꼼|친절)|강추|꼼꼼해|친절해|열정적|만족스/.test(s)) score += 3
+  // 결과·경험 언급
+  if (/올랐|늘었|향상|도움이\s*됐|덕분에|좋아졌|이해됐/.test(s)) score += 3
+  // 선생님/원장님 언급 (구체적 정보)
+  if (/선생님|원장님|강사님/.test(s)) score += 1
+  // 한국어 종결 어미 — 완결된 문장 신호
+  if (/[요]$/.test(s)) score += 1
+  // 짧은 문장 패널티
+  if (s.length < 18) score -= 2
+  return score
+}
 
 function extractReviewQuote(snippet: string | null): string | null {
   if (!snippet) return null
@@ -72,14 +91,14 @@ function extractReviewQuote(snippet: string | null): string | null {
     const title   = m?.[1] ?? ''
     const content = s.slice(m?.[0].length ?? 0)
       .replace(/https?:\/\/\S+/g, '')
-      .replace(/#\S+/g, '')
-      .replace(/[✔️☎✅▶◆●■□◦•⭐]/g, '')
+      .replace(/#\S+/g, ' ')
+      .replace(/[✔️☎✅▶◆●■□◦•⭐○◆]/g, '')
       .trim()
     return { isReview: REVIEW_TITLE_RE.test(title), content }
   })
 
-  // 리뷰 섹션 우선 탐색
   const ordered = [...sections.filter(s => s.isReview), ...sections.filter(s => !s.isReview)]
+  const candidates: { sentence: string; score: number }[] = []
 
   for (const { content, isReview } of ordered) {
     const parts = content.split(/[.\n]/).map(s => s.trim()).filter(Boolean)
@@ -87,14 +106,21 @@ function extractReviewQuote(snippet: string | null): string | null {
       if (part.length < 15 || part.length > 100) continue
       if (PROMO_RE.test(part)) continue
       if (!/[가-힣]/.test(part)) continue
-      if (/^\d/.test(part)) continue
-      // 리뷰 섹션이면 깨끗한 문장이면 OK, 아니면 키워드 필수
-      if (isReview || REVIEW_KEYWORDS.some(kw => part.includes(kw))) {
-        return part.length > 58 ? part.slice(0, 58) + '…' : part
+      if (/^[-\d]/.test(part)) continue  // 주소 리스트("-로 시작") 또는 숫자 시작 제외
+      if (isReview || REVIEW_KW.some(kw => part.includes(kw))) {
+        const s = scoreQuote(part) + (isReview ? 1 : 0)
+        candidates.push({ sentence: part, score: s })
       }
     }
+    if (candidates.length >= 15) break  // 충분히 모으면 탐색 중단
   }
-  return null
+
+  if (candidates.length === 0) return null
+
+  candidates.sort((a, b) => b.score - a.score)
+  const best = candidates[0]?.sentence
+  if (!best) return null
+  return best.length > 60 ? best.slice(0, 60) + '…' : best
 }
 
 const SCHOOL_TYPE_LABEL: Record<string, string> = {
