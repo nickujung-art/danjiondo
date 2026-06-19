@@ -1,3 +1,5 @@
+import 'server-only'
+
 /**
  * SGIS 통계지리정보서비스 API 어댑터 (얇은 래퍼 — 비즈니스 로직 없음)
  * 패턴: src/services/molit.ts 준수 (Zod 스키마 → fetch + AbortSignal.timeout → parse → typed return)

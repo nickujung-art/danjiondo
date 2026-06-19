@@ -59,3 +59,6 @@ data/facility_edu.sql
 
 # 학교알리미 세션 쿠키 (민감 정보)
 .schoolinfo-cookies.json
+
+# 스크립트 실행 로그
+scripts/*.log

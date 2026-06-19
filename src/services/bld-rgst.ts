@@ -1,3 +1,5 @@
+import 'server-only'
+
 /**
  * 국토부 건축물대장 API 어댑터
  * Base URL: https://apis.data.go.kr/1613000/BldRgstHubService

@@ -1,3 +1,4 @@
+import 'server-only'
 import { z } from 'zod/v4'
 
 // 국토교통부_공동주택 단지 목록제공 서비스 (data.go.kr 승인 API)
