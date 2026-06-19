@@ -194,8 +194,9 @@ function matchComplex(marker: NaverMarker, complexes: ComplexRow[]): { row: Comp
   let best: { row: ComplexRow; dist: number } | null = null
 
   for (const row of complexes) {
-    const nameMatch =
-      row.name_normalized.includes(normMarker) || normMarker.includes(row.name_normalized)
+    // canonical_name을 즉석 정규화 — DB name_normalized 값이 잘못된 경우 방지
+    const normRow = normalizeComplexName(row.canonical_name)
+    const nameMatch = normRow.includes(normMarker) || normMarker.includes(normRow)
     if (!nameMatch) continue
 
     const dist = haversineDistanceM(

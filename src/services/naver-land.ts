@@ -79,8 +79,10 @@ export function parsePrcInfo(prcInfo: string): number | null {
  */
 export function normalizeComplexName(name: string): string {
   return name
-    .replace(/아파트$/, '')
-    .replace(/^(창원|김해|마산|진해|진영|장유)\s*/, '')
+    .replace(/아파트\s*\d*(단지)?$/, '') // "아파트" "아파트1단지" 제거
+    .replace(/\s*\d+단지$/, '')          // "1단지" "2단지" 접미어 제거
+    .replace(/\s*\d+차$/, '')            // "1차" "2차" 접미어 제거
+    .replace(/^(창원|김해|마산|진해|진영|장유|율하|삼계|내서|장유|진영)\s*/u, '')
     .replace(/\s+/g, '')
     .replace(/[^가-힣a-zA-Z0-9]/g, '')
     .toLowerCase()

@@ -450,7 +450,7 @@
         { "layer": "ui",        "name": "HagwonRecommendSheet 3단계 Portal Sheet", "status": "done" },
         { "layer": "ui",        "name": "EducationCard 학원탭 추천 버튼", "status": "done" },
         { "layer": "test",      "name": "scoring 6개 + actions 6개 Vitest", "status": "done" },
-        { "layer": "data",      "name": "스크립트 실제 실행 (fetch→geocode→classify→popularity)", "status": "todo" }
+        { "layer": "data",      "name": "스크립트 실제 실행 (fetch→geocode→classify→popularity)", "status": "done" }
       ]
     },
 
