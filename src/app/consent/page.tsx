@@ -12,7 +12,8 @@ interface ConsentPageProps {
 }
 
 export default async function ConsentPage({ searchParams }: ConsentPageProps) {
-  const { next = '/' } = await searchParams
+  const { next: rawNext = '/' } = await searchParams
+  const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/'
 
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()

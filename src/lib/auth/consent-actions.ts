@@ -19,7 +19,8 @@ export async function agreeToTerms(
 ): Promise<{ error: string | null }> {
   const terms   = formData.get('terms')   === 'on'
   const privacy = formData.get('privacy') === 'on'
-  const next    = (formData.get('next')   as string | null) ?? '/'
+  const rawNext = (formData.get('next') as string | null) ?? '/'
+  const next    = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/'
 
   if (!terms || !privacy) {
     return { error: '이용약관과 개인정보처리방침에 모두 동의해야 합니다.' }
