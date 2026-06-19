@@ -36,10 +36,11 @@ export async function getRecentHighRecords(
     .toISOString()
     .split('T')[0]!
 
+  // 후보를 넉넉히 가져와 역대 최고가 검증 후 top N 선택
   const { data } = await supabase
     .from('transactions')
     .select(
-      `price, area_m2, floor, deal_date, deal_type,
+      `id, complex_id, price, area_m2, floor, deal_date,
        complexes!inner (id, canonical_name, si, gu, dong, url_slug, status)`,
     )
     .is('cancel_date', null)
@@ -47,19 +48,58 @@ export async function getRecentHighRecords(
     .gte('deal_date', thirtyDaysAgo)
     .eq('deal_type', 'sale')
     .order('price', { ascending: false })
-    .limit(limit)
+    .limit(limit * 10)
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows = (data ?? []) as any[]
+  if (!rows.length) return []
+
+  const complexIds = [...new Set(rows.map((r: { complex_id: string }) => r.complex_id))]
+
+  // 각 단지 역대 거래 (±5㎡ 최고가 비교용)
+  const { data: histData } = await supabase
+    .from('transactions')
+    .select('id, complex_id, area_m2, price')
+    .in('complex_id', complexIds)
+    .eq('deal_type', 'sale')
+    .is('cancel_date', null)
+    .is('superseded_by', null)
+    .limit(5000)
+
+  const histByComplex = new Map<string, Array<{ id: string; area_m2: number; price: number }>>()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const h of (histData ?? []) as any[]) {
+    const cid = h.complex_id as string
+    if (!histByComplex.has(cid)) histByComplex.set(cid, [])
+    histByComplex.get(cid)!.push({ id: String(h.id), area_m2: Number(h.area_m2), price: Number(h.price) })
+  }
 
   const records: RecentHighRecord[] = []
-  for (const row of data ?? []) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const r = row as any
-    const c = Array.isArray(r.complexes) ? r.complexes[0] : r.complexes
-    if (!c || r.price == null) continue
+  const seen = new Set<string>()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const row of rows as any[]) {
+    const c = Array.isArray(row.complexes) ? row.complexes[0] : row.complexes
+    if (!c || row.price == null) continue
+
+    const cid = row.complex_id as string
+    const txId = String(row.id)
+    const price = Number(row.price)
+    const area_m2 = Number(row.area_m2)
+
+    if (seen.has(cid)) continue
+
+    // 역대 최고가 갱신 여부: ±5㎡ 비교 거래보다 높아야 함
+    const history = histByComplex.get(cid) ?? []
+    const comparables = history.filter(h => h.id !== txId && Math.abs(h.area_m2 - area_m2) <= 5)
+    if (comparables.length > 0 && price <= Math.max(...comparables.map(h => h.price))) continue
+
+    seen.add(cid)
     records.push({
-      price: r.price as number,
-      area_m2: r.area_m2 as number,
-      floor: r.floor as number | null,
-      deal_date: r.deal_date as string,
+      price,
+      area_m2,
+      floor: row.floor as number | null,
+      deal_date: row.deal_date as string,
       complex: {
         id: c.id as string,
         canonical_name: c.canonical_name as string,
@@ -70,7 +110,9 @@ export async function getRecentHighRecords(
         status: c.status as string | null,
       },
     })
+    if (records.length >= limit) break
   }
+
   return records
 }
 

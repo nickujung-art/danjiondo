@@ -227,7 +227,7 @@ export async function getRecentDailyFeed(
     const history     = histByComplex.get(cid) ?? []
     const comparables = history.filter(h => h.id !== txId && Math.abs(h.area_m2 - area_m2) <= 5)
     const maxPrice    = comparables.length > 0 ? Math.max(...comparables.map(h => h.price)) : 0
-    const is_new_high = comparables.length > 0 && price >= maxPrice
+    const is_new_high = comparables.length > 0 && price > maxPrice
 
     // 직전 거래 (동일 면적 ±5㎡, 현재 거래 날짜보다 이전)
     const prevTrade = comparables

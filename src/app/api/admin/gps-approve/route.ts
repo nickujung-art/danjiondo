@@ -69,6 +69,13 @@ export async function POST(request: Request): Promise<NextResponse> {
       .eq('id', userId)
 
     if (profileErr) {
+      // profile 업데이트 실패 시 request를 pending으로 롤백 (재시도 가능하게)
+      try {
+        await adminClient
+          .from('gps_verification_requests')
+          .update({ status: 'pending', reviewed_by: null, reviewed_at: null })
+          .eq('id', requestId)
+      } catch { /* 롤백 실패는 무시 */ }
       console.error('[gps-approve] profile update error:', profileErr)
       return NextResponse.json({ error: 'profile update failed' }, { status: 500 })
     }
