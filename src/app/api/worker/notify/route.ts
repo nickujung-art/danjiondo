@@ -21,7 +21,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     await markCronSuccess(supabase, 'notify-worker')
     return NextResponse.json({ generated, sent, failed, kakaoSent, kakaoFailed })
   } catch (err) {
-    await markCronFailed(supabase, 'notify-worker')
-    throw err
+    await markCronFailed(supabase, 'notify-worker').catch(() => {})
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('[notify-worker]', message)
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

@@ -72,13 +72,20 @@ export function AiChatPanel({ complexId, complexName, contextData }: AiPanelProp
   const closeRef = useRef<HTMLButtonElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const messageListRef = useRef<HTMLDivElement>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
-  // 패널 열릴 때 close 버튼으로 포커스 이동 (ARIA)
+  // 언마운트 시 진행 중인 SSE 스트림 취소
+  useEffect(() => {
+    return () => { abortRef.current?.abort() }
+  }, [])
+
+  // 패널 열릴 때 close 버튼으로 포커스 이동 (ARIA), 닫힐 때 스트림 취소
   useEffect(() => {
     if (isOpen) {
       closeRef.current?.focus()
       document.body.style.overflow = 'hidden'
     } else {
+      abortRef.current?.abort()
       triggerRef.current?.focus()
       document.body.style.overflow = ''
     }
@@ -120,6 +127,11 @@ export function AiChatPanel({ complexId, complexName, contextData }: AiPanelProp
       { role: 'assistant', content: '응답 중...', isPending: true },
     ])
 
+    // 이전 요청 취소 후 새 컨트롤러 생성
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
     try {
       const res = await fetch('/api/chat/complex', {
         method: 'POST',
@@ -129,6 +141,7 @@ export function AiChatPanel({ complexId, complexName, contextData }: AiPanelProp
           contextData,
           messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
         }),
+        signal: controller.signal,
       })
 
       if (!res.ok || !res.body) {
@@ -187,6 +200,11 @@ export function AiChatPanel({ complexId, complexName, contextData }: AiPanelProp
         return updated
       })
     } catch (err) {
+      // 패널 닫기 / 새 질문 전송에 의한 abort는 에러로 표시하지 않음
+      if (err instanceof Error && err.name === 'AbortError') {
+        setMessages((prev) => prev.filter((m) => !m.isPending))
+        return
+      }
       const errContent = err instanceof Error ? err.message : '요청 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'
       setMessages((prev) => {
         const updated = [...prev]
