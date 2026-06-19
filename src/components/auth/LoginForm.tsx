@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { signInWithEmail, signInWithNaver } from '@/lib/auth/actions'
+import { signInWithEmail, signInWithNaver, devSignIn } from '@/lib/auth/actions'
 
 export function LoginForm() {
   const [email,   setEmail]   = useState('')
@@ -64,6 +64,39 @@ export function LoginForm() {
         <p className={`text-sm ${message.includes('보내드렸') ? 'text-green-600' : 'text-red-500'}`}>
           {message}
         </p>
+      )}
+
+      {/* 개발 모드 전용 빠른 로그인 */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-2 rounded-lg border border-dashed border-amber-300 bg-amber-50 p-3">
+          <p className="mb-2 text-xs font-semibold text-amber-700">개발 모드 빠른 로그인</p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                startTransition(async () => {
+                  const res = await devSignIn('user')
+                  if (res && 'error' in res) setMessage(res.error)
+                })
+              }}
+              disabled={isPending}
+              className="flex-1 rounded-md border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50 transition-colors"
+            >
+              일반 회원
+            </button>
+            <button
+              onClick={() => {
+                startTransition(async () => {
+                  const res = await devSignIn('admin')
+                  if (res && 'error' in res) setMessage(res.error)
+                })
+              }}
+              disabled={isPending}
+              className="flex-1 rounded-md border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50 transition-colors"
+            >
+              관리자
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )

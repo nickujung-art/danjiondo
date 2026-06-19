@@ -40,3 +40,23 @@ export async function signOut(): Promise<void> {
   await supabase.auth.signOut()
   redirect('/')
 }
+
+// ── 개발 전용: 테스트 계정 빠른 로그인 ──────────────────────────────────────
+// NODE_ENV=development 에서만 동작. 프로덕션 빌드에서는 즉시 에러 반환.
+export async function devSignIn(
+  role: 'user' | 'admin',
+): Promise<{ error: string } | never> {
+  if (process.env.NODE_ENV !== 'development') {
+    return { error: 'dev only' }
+  }
+
+  const CREDENTIALS = {
+    user:  { email: 'test@danjiondo.com',  password: 'Test1234!' },
+    admin: { email: 'admin@danjiondo.com', password: 'Admin1234!' },
+  } as const
+
+  const supabase = await createSupabaseServerClient()
+  const { error } = await supabase.auth.signInWithPassword(CREDENTIALS[role])
+  if (error) return { error: error.message }
+  redirect('/')
+}
