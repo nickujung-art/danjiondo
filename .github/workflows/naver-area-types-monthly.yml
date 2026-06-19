@@ -1,0 +1,49 @@
+name: Naver Area Types Monthly Sync
+
+on:
+  schedule:
+    - cron: '0 1 1 * *'  # 매월 1일 10:00 KST (UTC 01:00)
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: '처리할 단지 수 (기본: 전체)'
+        default: ''
+
+jobs:
+  sync:
+    name: 네이버 평형 데이터 동기화
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium + system deps
+        run: npx playwright install chromium --with-deps
+
+      - name: Sync naver area types
+        run: >-
+          xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24"
+          npx tsx scripts/crawl-naver-area-types.ts
+          ${{ github.event.inputs.limit && format('--limit={0}', github.event.inputs.limit) || '' }}
+          2>&1 | tee area-types-run.log
+        env:
+          NEXT_PUBLIC_SUPABASE_URL:  ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NAVER_COOKIE:              ${{ secrets.NAVER_COOKIE }}
+
+      - name: Upload run log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: area-types-run-log-${{ github.run_id }}
+          path: area-types-run.log
+          retention-days: 14

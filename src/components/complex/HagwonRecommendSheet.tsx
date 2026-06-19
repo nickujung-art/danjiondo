@@ -235,7 +235,11 @@ export function HagwonRecommendSheet({ lat, lng, schools, onClose }: {
         })
         if ('error' in res) {
           setCombo({ hagwons: [], visitOrder: [], route: [], totalRouteDist: 0 })
-          setComment('추천 결과를 불러오는 중 오류가 발생했습니다.')
+          setComment(
+            res.error === 'unauthorized'
+              ? '로그인 후 이용할 수 있어요. 오른쪽 상단 메뉴에서 로그인해 주세요.'
+              : '추천 결과를 불러오는 중 오류가 발생했습니다.',
+          )
         } else {
           setCombo(res.combo)
           setComment(res.comment)
@@ -248,7 +252,8 @@ export function HagwonRecommendSheet({ lat, lng, schools, onClose }: {
             }).catch(() => {})
           }
         }
-      } catch {
+      } catch (err) {
+        console.error('[HagwonRecommendSheet] 추천 오류:', err)
         setCombo({ hagwons: [], visitOrder: [], route: [], totalRouteDist: 0 })
         setComment('추천 결과를 불러오는 중 오류가 발생했습니다.')
       } finally {

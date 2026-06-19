@@ -1,0 +1,54 @@
+name: Naver Listings Biweekly
+
+on:
+  schedule:
+    - cron: '0 1 * * 2'  # 화요일 10:00 KST (UTC 01:00)
+    - cron: '0 1 * * 5'  # 금요일 10:00 KST (UTC 01:00)
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: '처리 단지 수'
+        default: '200'
+      dry_run:
+        description: 'Dry run (DB 미저장)'
+        type: boolean
+        default: false
+
+jobs:
+  collect:
+    name: 호가 데이터 수집
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium + system deps
+        run: npx playwright install chromium --with-deps
+
+      - name: Collect naver listings
+        run: >-
+          npx tsx scripts/crawl-naver-listings.ts
+          --limit=${{ github.event.inputs.limit || '200' }}
+          ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
+          2>&1 | tee listings-run.log
+        env:
+          NEXT_PUBLIC_SUPABASE_URL:  ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NAVER_COOKIE:              ${{ secrets.NAVER_COOKIE }}
+
+      - name: Upload run log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: listings-run-log-${{ github.run_id }}
+          path: listings-run.log
+          retention-days: 14
