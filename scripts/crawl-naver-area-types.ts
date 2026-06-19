@@ -104,7 +104,12 @@ async function main() {
 
   console.log(`[crawl-naver-area-types] 시작 (dry-run: ${isDryRun})`)
 
-  // 네이버 매핑된 단지 조회
+  // 네이버 매핑된 단지 중 complex_area_types 없는 단지만 조회
+  const { data: existingIds } = await supabase
+    .from('complex_area_types')
+    .select('complex_id')
+  const alreadyHas = new Set((existingIds ?? []).map((r: { complex_id: string }) => r.complex_id))
+
   const { data: complexes, error } = await supabase
     .from('complexes')
     .select('id, canonical_name, naver_complex_no')
@@ -115,7 +120,7 @@ async function main() {
   if (error || !complexes) { console.error('조회 실패:', error?.message); process.exit(1) }
 
   type Row = { id: string; canonical_name: string; naver_complex_no: string }
-  const rows = complexes as Row[]
+  const rows = (complexes as Row[]).filter(r => !alreadyHas.has(r.id))
   console.log(`처리 대상: ${rows.length}개 단지, 워커: ${DETAIL_WORKERS}개 탭\n`)
 
   // Playwright 초기화
