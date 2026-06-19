@@ -9,11 +9,17 @@ export interface SchoolRankingItem {
   gu:           string | null
 }
 
+const ALLOWED_METRICS = ['students_per_class', 'special', 'univ_rate'] as const
+
 export async function fetchSchoolRanking(
   si:         string,
   schoolType: 'elementary' | 'middle' | 'high',
   metric:     string,
 ): Promise<SchoolRankingItem[]> {
+  if (!(ALLOWED_METRICS as readonly string[]).includes(metric)) {
+    console.error('[fetchSchoolRanking] invalid metric:', metric)
+    return []
+  }
   const supabase = await createSupabaseServerClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any).rpc('school_ranking', {
