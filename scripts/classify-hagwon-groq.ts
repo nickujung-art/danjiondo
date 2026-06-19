@@ -246,10 +246,18 @@ const cerebras = new OpenAI({
   baseURL: 'https://api.cerebras.ai/v1',
 })
 
-function buildClassifyPrompt(name: string, realm: string | null, crse: string | null): string {
+function buildClassifyPrompt(
+  name:    string,
+  realm:   string | null,
+  crse:    string | null,
+  snippet: string | null,
+): string {
+  const blogSection = snippet
+    ? `\n블로그 후기 스니펫 (참고용):\n${snippet.slice(0, 400)}`
+    : ''
   return `학원명: ${name}
 교습계열: ${realm ?? '알 수 없음'}
-교습과정: ${crse ?? '알 수 없음'}
+교습과정: ${crse ?? '알 수 없음'}${blogSection}
 
 아래 JSON만 출력 (설명 없음):
 {"age_groups":["유아","유치","초등저","초등고","중등","고등"] 중 해당 항목만 배열로,"subject_category":"exam_prep"(입시) | "korean"(국어) | "math"(수학) | "english"(영어) | "arts"(미술·예체능) | "sports"(스포츠·운동) | "other_language"(기타외국어·IT) 중 하나,"teaching_style":"exam_prep" | "enrichment" | "tutoring" 중 하나}`
@@ -257,11 +265,16 @@ function buildClassifyPrompt(name: string, realm: string | null, crse: string | 
 
 const DEFAULT_RESULT: ClassifyResult = { age_groups: [], subject_category: null, teaching_style: null }
 
-async function classifyByLLM(name: string, realm: string | null, crse: string | null): Promise<ClassifyResult> {
+async function classifyByLLM(
+  name:    string,
+  realm:   string | null,
+  crse:    string | null,
+  snippet: string | null,
+): Promise<ClassifyResult> {
   try {
     const res = await cerebras.chat.completions.create({
       model:       'llama-3.3-70b',
-      messages:    [{ role: 'user', content: buildClassifyPrompt(name, realm, crse) }],
+      messages:    [{ role: 'user', content: buildClassifyPrompt(name, realm, crse, snippet) }],
       max_tokens:  120,
       temperature: 0.2,
       // @ts-expect-error cerebras supports json_object but openai types may differ
@@ -286,15 +299,16 @@ async function classifyByLLM(name: string, realm: string | null, crse: string | 
  * 규칙 기반 시도 → undefined이면 LLM 호출 (하이브리드).
  */
 async function classify(
-  name: string,
-  realm: string | null,
-  crse: string | null,
+  name:    string,
+  realm:   string | null,
+  crse:    string | null,
+  snippet: string | null,
 ): Promise<ClassifyResult & { source: 'rule' | 'llm' }> {
   const ruleResult = ruleBasedClassify(name, realm, crse)
   if (ruleResult !== undefined) {
     return { ...ruleResult, source: 'rule' }
   }
-  const llmResult = await classifyByLLM(name, realm, crse)
+  const llmResult = await classifyByLLM(name, realm, crse, snippet)
   return { ...llmResult, source: 'llm' }
 }
 
@@ -326,14 +340,14 @@ async function main() {
     process.exit(1)
   }
 
-  type Row = { id: string; name: string; realm_sc_nm: string | null; le_crse_nm: string | null }
+  type Row = { id: string; name: string; realm_sc_nm: string | null; le_crse_nm: string | null; blog_snippet: string | null }
   const rows: Row[] = []
   const PAGE = 1000
   let offset = 0
 
   // PostgREST max_rows=1000 → 페이지네이션으로 전수 수집
   while (true) {
-    let q = supabase.from('hagwon_db').select('id, name, realm_sc_nm, le_crse_nm').eq('is_active', true)
+    let q = supabase.from('hagwon_db').select('id, name, realm_sc_nm, le_crse_nm, blog_snippet').eq('is_active', true)
     if (MISSING_ONLY) q = q.is('subject_category', null)
     const { data, error } = await q.order('id').range(offset, offset + PAGE - 1)
     if (error) { console.error('hagwon_db 조회 실패:', error.message); process.exit(1) }
@@ -354,7 +368,7 @@ async function main() {
     let ruleCount = 0; let llmCount = 0
     console.log(`\n=== dry-run: 처음 ${sampleSize}건 ===`)
     for (const row of rows.slice(0, sampleSize)) {
-      const result = await classify(row.name, row.realm_sc_nm, row.le_crse_nm)
+      const result = await classify(row.name, row.realm_sc_nm, row.le_crse_nm, row.blog_snippet ?? null)
       const { source, ...classifyResult } = result
       if (source === 'rule') ruleCount++; else llmCount++
       console.log(`[${source.padEnd(4)}] ${row.name.padEnd(24)} realm=${(row.realm_sc_nm ?? '-').padEnd(16)} crse=${row.le_crse_nm ?? '-'}`)
@@ -372,7 +386,7 @@ async function main() {
   type ClassifyPayload = { id: string; result: ClassifyResult & { source: 'rule' | 'llm' } }
 
   const classifyRow = async (row: Row): Promise<ClassifyPayload> => {
-    const result = await classify(row.name, row.realm_sc_nm, row.le_crse_nm)
+    const result = await classify(row.name, row.realm_sc_nm, row.le_crse_nm, row.blog_snippet ?? null)
     return { id: row.id, result }
   }
 
