@@ -58,8 +58,6 @@ Next.js 15 App Router · TypeScript strict · Tailwind 3.4 · Supabase (Postgres
 | 어드민 콘솔 (회원·광고·카드뉴스·공인중개사) | ✅ |
 
 ### 진행 중 / 예정
-- 특수학급 수 UI 표시: `facility-edu.ts` SELECT 추가 + SchoolDetailSheet 칩 표시 (Wave 2 스크립트는 완료 344/355개)
-- 학교알리미 바로가기 링크: SchoolDetailSheet 푸터 추가
 - 11월: 학교 진학률 데이터 갱신 (`scrape-school-advancement.ts` 중/고 재실행)
 
 ## 아키텍처 규칙

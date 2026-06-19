@@ -408,6 +408,15 @@ function SchoolDetailSheet({ school, si, onClose }: {
                     배정학교
                   </span>
                 )}
+                {school.special_class_count != null && school.special_class_count > 0 && (
+                  <span style={{
+                    font: '600 11px/1 var(--font-sans)',
+                    color: '#7c3aed', background: '#f5f3ff',
+                    padding: '3px 7px', borderRadius: 4,
+                  }}>
+                    특수학급 {school.special_class_count}개
+                  </span>
+                )}
                 {school.distance_m != null && (
                   <span style={{
                     display: 'flex', alignItems: 'center', gap: 4,
