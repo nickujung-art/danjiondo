@@ -1162,7 +1162,7 @@ function HagwonSection({ hagwons, stats, si, lat, lng, schools }: {
                 marginTop:    16,
               }}
             >
-              내 아이 맞춤 학원 추천 받기
+              AI 맞춤 학원 추천받기
             </button>
             {showRecommend && (
               <HagwonRecommendSheet lat={lat} lng={lng} schools={schools} onClose={() => setShowRecommend(false)} />

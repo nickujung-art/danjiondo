@@ -26,6 +26,9 @@ function makeCandidate(overrides: Partial<RawCandidate> = {}): RawCandidate {
     age_groups:       ['초등저'],
     subject_category: 'math',
     dist_home:        500,
+    blog_tags:        [],
+    blog_snippet:     null,
+    naver_blog_count: 0,
     ...overrides,
   }
 }

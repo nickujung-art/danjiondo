@@ -16,6 +16,9 @@ export interface RawCandidate {
   age_groups:       string[]
   subject_category: string | null
   dist_home:        number
+  blog_tags:        string[]
+  blog_snippet:     string | null
+  naver_blog_count: number
 }
 
 export interface ScoredCandidate extends RawCandidate {
@@ -221,5 +224,11 @@ export function selectBestCombo(
   }
 
   search(0)
-  return bestResult!
+
+  // 조합이 하나도 완성되지 않은 경우 (pools 중 하나라도 빈 배열일 때)
+  if (!bestResult) {
+    return { hagwons: [], visitOrder: [], route: [], totalRouteDist: 0 }
+  }
+
+  return bestResult
 }

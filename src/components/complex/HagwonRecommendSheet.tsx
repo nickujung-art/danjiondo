@@ -47,6 +47,56 @@ function fmtDist(m: number): string {
   return m >= 1000 ? `${(m / 1000).toFixed(1)}km` : `${Math.round(m)}m`
 }
 
+// AI 코멘트를 문장 단위로 분리
+function splitAIComment(text: string): string[] {
+  const trimmed = text.trim()
+  const byLine = trimmed.split('\n').map(s => s.trim()).filter(Boolean)
+  if (byLine.length > 1) return byLine
+  // 마침표·느낌표·물음표 기준 분리 (한국어 포함)
+  const sentences = trimmed.match(/[^.!?！？]+[.!?！？]+/g) ?? [trimmed]
+  return sentences.map(s => s.trim()).filter(s => s.length > 5)
+}
+
+// 블로그 스니펫에서 실제 리뷰 문장 추출
+// 우선순위: "후기·리뷰·방문" 제목 섹션 → 리뷰 키워드 포함 문장
+const REVIEW_TITLE_RE = /후기|리뷰|방문|다녀온|다닌|수강/
+const REVIEW_KEYWORDS = ['선생님', '수업', '아이', '성적', '학생', '실력', '공부', '추천', '만족', '결과', '좋아', '꼼꼼', '체계', '집중', '관리', '친절', '열심', '도움']
+const PROMO_RE = /문의|연락주|상담받|전화주|주소:|영업시간|등록번호|수강료|수강생|\d{2,3}-\d{3,4}|http|@/
+
+function extractReviewQuote(snippet: string | null): string | null {
+  if (!snippet) return null
+
+  // [제목] 기준으로 블로그 포스트 섹션 분리
+  const sections = snippet.split(/(?=\[)/).filter(Boolean).map(s => {
+    const m = s.match(/^\[([^\]]*)\]/)
+    const title   = m?.[1] ?? ''
+    const content = s.slice(m?.[0].length ?? 0)
+      .replace(/https?:\/\/\S+/g, '')
+      .replace(/#\S+/g, '')
+      .replace(/[✔️☎✅▶◆●■□◦•⭐]/g, '')
+      .trim()
+    return { isReview: REVIEW_TITLE_RE.test(title), content }
+  })
+
+  // 리뷰 섹션 우선 탐색
+  const ordered = [...sections.filter(s => s.isReview), ...sections.filter(s => !s.isReview)]
+
+  for (const { content, isReview } of ordered) {
+    const parts = content.split(/[.\n]/).map(s => s.trim()).filter(Boolean)
+    for (const part of parts) {
+      if (part.length < 15 || part.length > 100) continue
+      if (PROMO_RE.test(part)) continue
+      if (!/[가-힣]/.test(part)) continue
+      if (/^\d/.test(part)) continue
+      // 리뷰 섹션이면 깨끗한 문장이면 OK, 아니면 키워드 필수
+      if (isReview || REVIEW_KEYWORDS.some(kw => part.includes(kw))) {
+        return part.length > 58 ? part.slice(0, 58) + '…' : part
+      }
+    }
+  }
+  return null
+}
+
 const SCHOOL_TYPE_LABEL: Record<string, string> = {
   elementary: '초등학교',
   middle:     '중학교',
@@ -119,6 +169,9 @@ function RouteBar({ route }: { route: RouteStep[] }) {
 function HagwonCard({ item, rank }: { item: ComboResult['hagwons'][number]; rank: number }) {
   const subjectLabel = item.subject ? SUBJECT_LABELS[item.subject as SubjectCategory] : null
   const feeLabel     = item.fee_tier ? FEE_LABELS[item.fee_tier as FeeTier] : null
+  const strengthTags = (item.blog_tags ?? []).slice(0, 3).map(t => t.replace(/^#/, ''))
+  const reviewQuote  = extractReviewQuote(item.blog_snippet)
+  const blogCount    = item.naver_blog_count ?? 0
 
   return (
     <div style={{
@@ -137,9 +190,11 @@ function HagwonCard({ item, rank }: { item: ComboResult['hagwons'][number]; rank
         {rank}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ font: '600 14px/1.3 var(--font-sans)', color: 'var(--fg-pri)', marginBottom: 4 }}>
+        <div style={{ font: '600 14px/1.3 var(--font-sans)', color: 'var(--fg-pri)', marginBottom: 5 }}>
           {item.name}
         </div>
+
+        {/* 기본 태그 행: 과목·분야·수강료·거리 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
           {subjectLabel && (
             <span style={{
@@ -169,6 +224,55 @@ function HagwonCard({ item, rank }: { item: ComboResult['hagwons'][number]; rank
             {fmtDist(item.dist_home)}
           </span>
         </div>
+
+        {/* 강점 태그 — 네이버 블로그 분석 기반 */}
+        {strengthTags.length > 0 && (
+          <div style={{ marginTop: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+              <span style={{ font: '500 10px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                강점
+              </span>
+              {blogCount > 0 && (
+                <span style={{ font: '500 10px/1 var(--font-sans)', color: '#059669' }}>
+                  · 네이버 블로그 {blogCount >= 1000 ? '1000+' : blogCount}개 분석
+                </span>
+              )}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+              {strengthTags.map(tag => (
+                <span key={tag} style={{
+                  font:         '500 10px/1 var(--font-sans)',
+                  color:        '#059669',
+                  background:   '#d1fae5',
+                  padding:      '2px 6px',
+                  borderRadius: 4,
+                }}>
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 리뷰 한마디 — 네이버 블로그 원문 */}
+        {reviewQuote && (
+          <p style={{
+            font:   '500 11px/1.4 var(--font-sans)',
+            color:  'var(--fg-tertiary)',
+            margin: '6px 0 0',
+          }}>
+            <span style={{ fontStyle: 'italic' }}>"{reviewQuote}"</span>
+            <span style={{
+              fontStyle:   'normal',
+              marginLeft:  5,
+              color:       '#059669',
+              font:        '500 10px/1 var(--font-sans)',
+              whiteSpace:  'nowrap',
+            }}>
+              — 네이버 블로그
+            </span>
+          </p>
+        )}
       </div>
       <div style={{ font: '700 13px/1 var(--font-sans)', color: 'var(--dj-orange)', flexShrink: 0 }}>
         {(item.individual_score * 100).toFixed(0)}점
@@ -308,7 +412,7 @@ export function HagwonRecommendSheet({ lat, lng, schools, onClose }: {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
               <h2 style={{ font: '700 17px/1.3 var(--font-sans)', margin: 0, color: 'var(--fg-pri)' }}>
-                내 아이 맞춤 학원 추천
+                AI 맞춤 학원 추천
               </h2>
               {stepLabel && (
                 <span style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
@@ -516,7 +620,7 @@ export function HagwonRecommendSheet({ lat, lng, schools, onClose }: {
                 marginBottom: 20,
               }}
             >
-              학원 추천받기
+              AI로 추천받기
             </button>
           </div>
         )}
@@ -545,15 +649,26 @@ export function HagwonRecommendSheet({ lat, lng, schools, onClose }: {
         {/* ── Step: 결과 ── */}
         {step === 'result' && combo && (
           <div style={{ padding: '16px 20px 0' }}>
-            {/* AI 코멘트 */}
+            {/* 분석 코멘트 */}
             {comment && (
               <div style={{
-                padding: '14px 16px', background: 'var(--bg-surface-2)',
-                borderRadius: 12, marginBottom: 16,
+                padding:    '14px 16px',
+                background: 'var(--bg-surface-2)',
+                borderRadius: 12,
+                marginBottom: 16,
+                borderLeft: '3px solid var(--dj-orange)',
               }}>
-                <p style={{ font: '500 13px/1.6 var(--font-sans)', color: 'var(--fg-pri)', margin: 0 }}>
-                  {comment}
-                </p>
+                {splitAIComment(comment).map((sentence, i) => (
+                  <p key={i} style={{
+                    font:   i === 0
+                      ? '600 13px/1.55 var(--font-sans)'
+                      : '500 13px/1.6 var(--font-sans)',
+                    color:  i === 0 ? 'var(--fg-pri)' : 'var(--fg-sec)',
+                    margin: i === 0 ? '0' : '6px 0 0',
+                  }}>
+                    {sentence}
+                  </p>
+                ))}
               </div>
             )}
 

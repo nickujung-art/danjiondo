@@ -170,6 +170,11 @@ export async function recommendHagwons(input: {
   // 4. 루트 최적화 (Greedy TSP + 콤보 선택)
   const combo = selectBestCombo(perSubjectScored, lat, lng, schoolLat, schoolLng, schoolName)
 
+  // selectBestCombo가 빈 결과를 반환한 경우 (pools 중 빈 배열이 있을 때)
+  if (combo.hagwons.length === 0) {
+    return { combo, comment: FALLBACK_COMMENT }
+  }
+
   // 5. Groq 루트 코멘트
   const comment = await generateRouteComment(combo, { ageGroup, schoolName })
 
