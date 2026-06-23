@@ -423,13 +423,13 @@ async function ComplexDetailPage({
       {/* Nav */}
       <header
         style={{
-          height: 60,
+          height: 56,
           background: '#fff',
           borderBottom: '1px solid var(--line-default)',
           display: 'flex',
           alignItems: 'center',
-          padding: '0 32px',
-          gap: 24,
+          padding: '0 16px',
+          gap: 12,
           position: 'sticky',
           top: 0,
           zIndex: 50,
@@ -437,115 +437,98 @@ async function ComplexDetailPage({
       >
         <Link href="/" className="dj-logo">
           <span className="mark">단</span>
-          <span>단지온도</span>
+          <span className="hidden sm:inline">단지온도</span>
         </Link>
-        <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+        <span
+          className="hidden lg:block"
+          style={{
+            font: '500 13px/1 var(--font-sans)',
+            color: 'var(--fg-tertiary)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            flex: 1,
+          }}
+        >
           {breadcrumb.join(' › ')} › {complex.canonical_name}
         </span>
         <div style={{ flex: 1 }} />
-        <ShareButton
-          complexId={id}
-          complexName={complex.canonical_name}
-          location={[complex.si, complex.gu, complex.dong].filter(Boolean).join(' ')}
-        />
-        <FavoriteButton complexId={id} />
-        <CompareAddButton complexId={id} complexName={complex.canonical_name} />
-        <Link
-          href={`/login?next=/complexes/${id}`}
-          className="btn btn-md btn-orange"
-          style={{ textDecoration: 'none', gap: 6 }}
-        >
-          <BellIcon />
-          알림 설정
-        </Link>
+        <div className="hidden lg:flex items-center gap-4">
+          <ShareButton
+            complexId={id}
+            complexName={complex.canonical_name}
+            location={[complex.si, complex.gu, complex.dong].filter(Boolean).join(' ')}
+          />
+          <FavoriteButton complexId={id} />
+          <CompareAddButton complexId={id} complexName={complex.canonical_name} />
+          <Link
+            href={`/login?next=/complexes/${id}`}
+            className="btn btn-md btn-orange"
+            style={{ textDecoration: 'none', gap: 6 }}
+          >
+            <BellIcon />
+            알림 설정
+          </Link>
+        </div>
       </header>
 
       {/* Body */}
-      <main
-        style={{
-          padding: '24px 32px',
-          display: 'grid',
-          gridTemplateColumns: '1fr 360px',
-          gap: 24,
-          maxWidth: 1280,
-          margin: '0 auto',
-        }}
-      >
+      <main className="px-4 py-4 sm:px-6 sm:py-6 max-w-screen-xl mx-auto">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
         {/* Main column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Header card */}
-          <div className="card" style={{ padding: 28 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-                  <span className="badge orange">
-                    <FireIcon />
-                    신고가
-                  </span>
-                  {complex.built_year && (
-                    <span className="badge neutral">{complex.built_year}년 입주</span>
-                  )}
-                  {complex.household_count && (
-                    <span className="badge neutral">
-                      {complex.household_count.toLocaleString()}세대
-                    </span>
-                  )}
-                </div>
-                <h1
-                  style={{
-                    font: '700 28px/1.25 var(--font-sans)',
-                    letterSpacing: '-0.024em',
-                    margin: '0 0 4px',
-                  }}
-                >
-                  {complex.canonical_name}
-                </h1>
-                <div
-                  style={{
-                    font: '500 14px/1.4 var(--font-sans)',
-                    color: 'var(--fg-sec)',
-                  }}
-                >
-                  {address}
-                  {complex.floors_above && ` · ${complex.floors_above}층`}
-                </div>
-              </div>
-              {latestSale && (
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <div
-                    style={{
-                      font: '500 12px/1 var(--font-sans)',
-                      color: 'var(--fg-tertiary)',
-                      marginBottom: 4,
-                    }}
-                  >
-                    최근 실거래 (평균 {Math.round((latestSale.avgArea ?? 0) / 3.3058)}평)
-                  </div>
-                  <div
-                    className="tnum"
-                    style={{
-                      font: '700 32px/1 var(--font-sans)',
-                      letterSpacing: '-0.024em',
-                    }}
-                  >
+        <div className="flex flex-col gap-4 min-w-0 lg:flex-1">
+          {/* Header card — mobile-first vertical stack */}
+          <div className="card" style={{ padding: 16 }}>
+            {/* 1. Badges */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+              <span className="badge orange"><FireIcon />신고가</span>
+              {complex.built_year && <span className="badge neutral">{complex.built_year}년 입주</span>}
+              {complex.household_count && <span className="badge neutral">{complex.household_count.toLocaleString()}세대</span>}
+            </div>
+            {/* 2. Name */}
+            <h1 style={{ font: '700 22px/1.3 var(--font-sans)', letterSpacing: '-0.02em', margin: '0 0 6px' }}>
+              {complex.canonical_name}
+            </h1>
+            {/* 3. Address */}
+            <p style={{ font: '500 13px/1.5 var(--font-sans)', color: 'var(--fg-sec)', margin: 0 }}>
+              {address}{complex.floors_above && ` · ${complex.floors_above}층`}
+            </p>
+            {/* 4. Price block */}
+            {latestSale && (
+              <div style={{ borderTop: '1px solid var(--line-default)', marginTop: 16, paddingTop: 14, marginBottom: 16 }}>
+                <p style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '0 0 8px' }}>
+                  최근 실거래 (평균 {Math.round((latestSale.avgArea ?? 0) / 3.3058)}평)
+                </p>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                  <span className="tnum" style={{ font: '700 28px/1 var(--font-sans)', letterSpacing: '-0.02em' }}>
                     {formatPrice(Math.round(latestSale.avgPrice))}
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'flex-end',
-                      gap: 4,
-                      marginTop: 4,
-                      color: 'var(--dj-orange)',
-                      font: '600 13px/1 var(--font-sans)',
-                    }}
-                  >
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: 'var(--dj-orange)', font: '600 12px/1 var(--font-sans)' }}>
                     <ArrUpIcon />
                     <span className="tnum">{latestSale.yearMonth}</span>
-                  </div>
+                  </span>
                 </div>
-              )}
+              </div>
+            )}
+            {/* 5. Action buttons — visible on mobile (desktop uses sticky header) */}
+            <div
+              className="grid grid-cols-2 gap-2 lg:hidden"
+              style={{ marginTop: latestSale ? 0 : 16 }}
+            >
+              <ShareButton
+                complexId={id}
+                complexName={complex.canonical_name}
+                location={[complex.si, complex.gu, complex.dong].filter(Boolean).join(' ')}
+              />
+              <FavoriteButton complexId={id} />
+              <CompareAddButton complexId={id} complexName={complex.canonical_name} />
+              <Link
+                href={`/login?next=/complexes/${id}`}
+                className="btn btn-md btn-orange"
+                style={{ textDecoration: 'none', gap: 6, minHeight: 44, justifyContent: 'center', display: 'flex', alignItems: 'center' }}
+              >
+                <BellIcon />알림 설정
+              </Link>
             </div>
           </div>
 
@@ -895,8 +878,8 @@ async function ComplexDetailPage({
           <CafeArticlesSection articles={cafeArticles} />
         </div>
 
-        {/* Right rail */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Right rail — desktop only */}
+        <div className="hidden lg:flex flex-col gap-4 lg:w-[360px] lg:flex-shrink-0">
           <div className="card" style={{ padding: 20 }}>
             <h3 style={{ font: '700 15px/1.4 var(--font-sans)', margin: '0 0 12px' }}>
               최근 실거래 내역
@@ -927,6 +910,7 @@ async function ComplexDetailPage({
               </div>
             </section>
           )}
+        </div>
         </div>
       </main>
 
