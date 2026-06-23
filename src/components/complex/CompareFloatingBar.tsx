@@ -46,7 +46,7 @@ export function CompareFloatingBar() {
       className="btn btn-md btn-orange"
       style={{
         position:   'fixed',
-        bottom:     80,
+        bottom:     'calc(64px + env(safe-area-inset-bottom, 0px) + 16px)',
         right:      24,
         zIndex:     50,
         minHeight:  44,

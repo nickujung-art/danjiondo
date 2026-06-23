@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from 'next'
 import localFont from 'next/font/local'
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import { Footer } from '@/components/layout/Footer'
+import { AppHeader } from '@/components/layout/AppHeader'
+import { BottomTabBar } from '@/components/layout/BottomTabBar'
 import './globals.css'
 
 const pretendard = localFont({
@@ -31,6 +33,7 @@ export const viewport: Viewport = {
   themeColor: '#ea580c',
   width: 'device-width',
   initialScale: 1,
+  viewportFit: 'cover',  // iOS env(safe-area-inset-bottom) 활성화
 }
 
 export default function RootLayout({
@@ -51,11 +54,15 @@ export default function RootLayout({
           href="/feed.xml"
         />
       </head>
-      <body className="font-sans antialiased">
+      <body className="font-sans antialiased pb-[calc(64px+env(safe-area-inset-bottom,0px))]">
+        <AppHeader />
         <NuqsAdapter>
           {children}
         </NuqsAdapter>
-        <Footer />
+        <div className="hidden sm:block">
+          <Footer />
+        </div>
+        <BottomTabBar />
       </body>
     </html>
   )
