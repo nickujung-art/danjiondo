@@ -100,7 +100,7 @@ export function ShareButton({ url, title, text, captureId }: Props) {
             if (s.includes('display: inline-block')) {
               const fsMatch = s.match(/(\d+)px\/1(?!\.\d)/)
               if (fsMatch) {
-                const fs = parseInt(fsMatch[1])
+                const fs = parseInt(fsMatch[1]!)
                 if (fs <= 13) {
                   // lh=1 → 1.4 (받침 클리핑 방지, font-size 유지)
                   s = s.replace(/(\d+px\/)1(\s)/, '$11.4$2')
