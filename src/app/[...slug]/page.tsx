@@ -431,6 +431,11 @@ async function ComplexDetailPage({
   const latestSale = saleData.at(-1)
   const address = complex.road_address ?? breadcrumb.join(' ')
 
+  // 헤더 카드용: 가장 최근 개별 거래 (평형 표시에 사용)
+  const latestRawTx = rawSaleData.length > 0
+    ? [...rawSaleData].sort((a, b) => b.dealDate.localeCompare(a.dealDate))[0] ?? null
+    : null
+
   // 스파크라인: rawSaleData에서 최근 12개월 월별 평균 계산
   const sparklinePoints: MonthlyPoint[] = (() => {
     const byMonth: Record<string, { sum: number; count: number }> = {}
@@ -593,7 +598,12 @@ async function ComplexDetailPage({
                 {/* Header row: label + YoY */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                   <span style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
-                    최근 실거래 · 평균 {Math.round((latestSale.avgArea ?? 0) / 3.3058)}평
+                    최근 실거래
+                    {latestRawTx && (
+                      <> · {latestRawTx.pyeongName
+                        ? `${latestRawTx.pyeongName}형`
+                        : `${Math.round(latestRawTx.area / 3.3058)}평`}</>
+                    )}
                   </span>
                   {yoyChange !== null && (
                     <span style={{
