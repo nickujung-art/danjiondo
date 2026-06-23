@@ -294,7 +294,11 @@ body {
 .tabs {
   display: flex;
   border-bottom: 1px solid var(--line-default);
+  overflow-x: auto;
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* IE */
 }
+.tabs::-webkit-scrollbar { display: none; }  /* Chrome/Safari */
 .tab {
   padding: 12px 16px;
   font: 600 14px/1 var(--font-sans);
@@ -307,6 +311,11 @@ body {
   border-top: none;
   border-left: none;
   border-right: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+@media (max-width: 640px) {
+  .tab { padding: 10px 12px; font-size: 13px; }
 }
 .tab.active,
 .tab[data-active='true'] {
