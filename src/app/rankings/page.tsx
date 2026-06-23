@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Suspense } from 'react'
 import { createReadonlyClient } from '@/lib/supabase/readonly'
 import {
   getRecentDailyFeed,
@@ -14,7 +13,6 @@ import {
 } from '@/lib/data/rankings-page'
 import type { RegionChampion, WeeklyHighlights, RegionalHeatRow } from '@/lib/data/rankings-page'
 import { formatPrice, complexHref, formatPyeong } from '@/lib/format'
-import { UserMenu } from '@/components/auth/UserMenu'
 import { ShareButton } from '@/components/rankings/ShareButton'
 
 export const revalidate = 3600
@@ -70,21 +68,23 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
 // ── 공통 컴포넌트 ─────────────────────────────────────────────────────────────
 
-function chip(active: boolean): React.CSSProperties {
+/** 칩 공통 Tailwind 클래스 — 레이아웃/타이포 (44px 터치 타겟 포함) */
+const CHIP_CLASS = 'inline-flex items-center px-3 rounded-full text-xs font-bold whitespace-nowrap shrink-0 min-h-[44px]'
+
+/** 칩 색상 inline style — CSS 변수는 Tailwind로 표현 불가 */
+function chipStyle(active: boolean): React.CSSProperties {
   return {
-    display: 'inline-block', padding: '6px 12px', borderRadius: 20,
-    font: '600 12px/1 var(--font-sans)', textDecoration: 'none',
-    background: active ? 'var(--dj-orange)' : 'var(--bg-surface-2)',
-    color:      active ? '#fff' : 'var(--fg-sec)',
-    border:     `1px solid ${active ? 'transparent' : 'var(--line-subtle)'}`,
-    whiteSpace: 'nowrap' as const, flexShrink: 0,
+    background:     active ? 'var(--dj-orange)' : 'var(--bg-surface-2)',
+    color:          active ? '#fff' : 'var(--fg-sec)',
+    border:         `1px solid ${active ? 'transparent' : 'var(--line-subtle)'}`,
+    textDecoration: 'none',
   }
 }
 
 function SectionHeader({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
-      <h2 style={{ font: '700 17px/1.3 var(--font-sans)', margin: 0, letterSpacing: '-0.02em' }}>
+    <div className="flex items-center justify-between gap-2 mb-3">
+      <h2 className="m-0" style={{ font: '700 17px/1.3 var(--font-sans)', letterSpacing: '-0.02em' }}>
         {title}
       </h2>
       {children}
@@ -92,14 +92,35 @@ function SectionHeader({ title, children }: { title: string; children?: React.Re
   )
 }
 
+/** 캡처 카드 상단 헤더 — 커뮤니티 공유 시 섹션 제목·날짜 포함 */
+function CaptureCardHeader({ title, meta, emoji }: { title: string; meta?: string; emoji: string }) {
+  return (
+    <div style={{ background: 'var(--dj-orange)', padding: '12px 16px 11px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{ fontSize: 22, lineHeight: 1, flexShrink: 0 }}>{emoji}</span>
+        <div>
+          <p style={{ font: '900 18px/1.2 var(--font-sans)', color: '#fff', margin: 0, letterSpacing: '-0.03em' }}>
+            {title}
+          </p>
+          {meta && (
+            <p style={{ font: '500 11px/1 var(--font-sans)', color: 'rgba(255,255,255,0.85)', margin: '4px 0 0' }}>
+              {meta}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /** 캡처/공유 시 출처 표시용 브랜드 워터마크 */
 function BrandMark() {
   return (
-    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 6, padding: '9px 20px 11px', borderTop: '1px solid var(--line-subtle)', marginTop: 4 }}>
-      <span style={{ width: 22, height: 22, borderRadius: 5, background: 'var(--dj-orange)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <span style={{ font: '800 12px/1 var(--font-sans)', color: '#fff' }}>단</span>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 7, padding: '8px 20px 10px', borderTop: '2px solid #f97316', background: '#fff7ed' }}>
+      <span style={{ width: 20, height: 20, borderRadius: 4, background: 'var(--dj-orange)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <span style={{ font: '800 11px/1 var(--font-sans)', color: '#fff' }}>단</span>
       </span>
-      <span style={{ font: '700 13px/1 var(--font-sans)', color: 'var(--fg-sec)', letterSpacing: '0.03em' }}>단지온도</span>
+      <span style={{ font: '700 12px/1 var(--font-sans)', color: '#ea580c', letterSpacing: '0.04em' }}>단지온도 · danjiondo.kr</span>
     </div>
   )
 }
@@ -107,11 +128,14 @@ function BrandMark() {
 function RankCircle({ rank }: { rank: number }) {
   return (
     <div style={{
-      width: 24, height: 24, borderRadius: '50%', flexShrink: 0, alignSelf: 'flex-start', marginTop: 2,
-      background: rank === 1 ? 'var(--dj-orange)' : rank <= 3 ? 'var(--bg-surface-2)' : 'transparent',
-      border:     rank > 3  ? '1px solid var(--line-subtle)' : 'none',
-      color:      rank === 1 ? '#fff' : rank <= 3 ? 'var(--fg-sec)' : 'var(--fg-tertiary)',
-      font:       '700 11px/24px var(--font-sans)', textAlign: 'center',
+      width: 24, height: 24, borderRadius: '50%', flexShrink: 0, alignSelf: 'flex-start',
+      // flex 가운데 정렬 (line-height 트릭은 html2canvas에서 불안정)
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      // CSS 변수 미사용 — html2canvas 렌더링 일관성을 위해 정적 값으로
+      background: rank === 1 ? '#ea580c' : rank <= 3 ? '#f4f4f5' : 'transparent',
+      border:     rank > 3  ? '1px solid rgba(112,115,124,0.12)' : 'none',
+      color:      rank === 1 ? '#fff' : rank <= 3 ? 'rgba(55,56,60,0.61)' : 'rgba(55,56,60,0.35)',
+      fontSize: 11, fontWeight: 700,
     }}>
       {rank}
     </div>
@@ -175,28 +199,11 @@ export default async function RankingsPage({ searchParams }: Props) {
   const pageUrl = `${SITE}/rankings`
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-canvas)', fontFamily: 'var(--font-sans)' }}>
-
-      {/* 헤더 */}
-      <header style={{ height: 56, background: '#fff', borderBottom: '1px solid var(--line-default)', display: 'flex', alignItems: 'center', padding: '0 16px', gap: 20, position: 'sticky', top: 0, zIndex: 50 }}>
-        <Link href="/" className="dj-logo" style={{ flexShrink: 0 }}>
-          <span className="mark">단</span><span>단지온도</span>
-        </Link>
-        <nav style={{ display: 'flex', gap: 16, font: '600 13px/1 var(--font-sans)', overflow: 'hidden' }}>
-          <Link href="/"         style={{ color: 'var(--fg-sec)',    textDecoration: 'none', whiteSpace: 'nowrap' }}>홈</Link>
-          <Link href="/map"      style={{ color: 'var(--fg-sec)',    textDecoration: 'none', whiteSpace: 'nowrap' }}>지도</Link>
-          <Link href="/presale"  style={{ color: 'var(--fg-sec)',    textDecoration: 'none', whiteSpace: 'nowrap' }}>분양</Link>
-          <Link href="/rankings" style={{ color: 'var(--dj-orange)', textDecoration: 'none', whiteSpace: 'nowrap' }}>랭킹</Link>
-        </nav>
-        <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
-          <Suspense><UserMenu /></Suspense>
-        </div>
-      </header>
-
-      <main style={{ maxWidth: 680, margin: '0 auto', padding: '20px 16px 40px' }}>
+    <>
+      <main className="px-4 py-5 pb-10 sm:max-w-3xl sm:mx-auto">
 
         {/* ── 히어로 ── */}
-        <div style={{ marginBottom: 28 }}>
+        <div className="mb-7">
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
             <div>
               <h1 style={{ font: '800 24px/1.2 var(--font-sans)', letterSpacing: '-0.03em', margin: '0 0 8px' }}>
@@ -213,17 +220,18 @@ export default async function RankingsPage({ searchParams }: Props) {
         </div>
 
         {/* ── 섹션 1: 구별 대장단지 ── */}
-        <section aria-labelledby="champion-heading" style={{ marginBottom: 32 }}>
+        <section aria-labelledby="champion-heading" className="mb-8">
           <SectionHeader title="구별 대장단지">
             <ShareButton url={pageUrl} title="구별 대장단지 | 단지온도" captureId="capture-champions" />
           </SectionHeader>
           {/* 2열 그리드: 가격을 상단에 배치해 캡처 시 숫자가 눈에 들어오도록 */}
           <div id="capture-champions" style={{ background: '#fff', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+            <CaptureCardHeader title="구별 대장단지" emoji="🏆" meta={`창원·김해 구별 평당가 1위 · ${new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}`} />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, padding: 8 }}>
               {champions.map(({ sggCode, regionLabel, data }) => (
-                <div key={sggCode} style={{ background: 'var(--bg-surface-1)', borderRadius: 8, padding: '14px 14px', display: 'flex', flexDirection: 'column', border: '1px solid var(--line-subtle)' }}>
+                <div key={sggCode} style={{ background: '#fff', borderRadius: 8, padding: '14px 14px', display: 'flex', flexDirection: 'column', border: '1px solid rgba(112,115,124,0.12)' }}>
                   {/* 구 뱃지 */}
-                  <span style={{ display: 'inline-block', font: '700 10px/1 var(--font-sans)', padding: '3px 9px', borderRadius: 10, background: 'var(--dj-orange)', color: '#fff', alignSelf: 'flex-start', marginBottom: 10 }}>
+                  <span style={{ display: 'inline-block', font: '700 12px/1 var(--font-sans)', padding: '3px 9px', borderRadius: 10, background: 'var(--dj-orange)', color: '#fff', alignSelf: 'flex-start', marginBottom: 10 }}>
                     {regionLabel}
                   </span>
                   {data ? (
@@ -268,14 +276,14 @@ export default async function RankingsPage({ searchParams }: Props) {
 
         {/* ── 섹션 2: 구별 거래 온도 ── */}
         {tradingHeat.length > 0 && (
-          <section aria-labelledby="heat-heading" style={{ marginBottom: 32 }}>
+          <section aria-labelledby="heat-heading" className="mb-8">
             <SectionHeader title="구별 거래 온도" />
             <TradingHeatBar heat={tradingHeat} />
           </section>
         )}
 
         {/* ── 섹션 3: 일별 실거래 피드 ── */}
-        <section aria-labelledby="feed-heading" style={{ marginBottom: 32 }}>
+        <section aria-labelledby="feed-heading" className="mb-8">
           <SectionHeader title="일별 실거래 피드">
             <ShareButton
               url={`${pageUrl}?date=${activeDate}`}
@@ -286,16 +294,22 @@ export default async function RankingsPage({ searchParams }: Props) {
           </SectionHeader>
 
           {feedDates.length > 0 && (
-            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, marginBottom: 12, scrollbarWidth: 'none' }}>
+            <div className="flex gap-1.5 overflow-x-auto pb-1 mb-3 -mx-4 px-4" style={{ scrollbarWidth: 'none' }}>
               {feedDates.map(d => (
-                <Link key={d} href={`/rankings?date=${d}&region=${activeRegion}`} scroll={false} style={chip(d === activeDate)}>
+                <Link
+                  key={d}
+                  href={`/rankings?date=${d}&region=${activeRegion}`}
+                  scroll={false}
+                  className={CHIP_CLASS}
+                  style={chipStyle(d === activeDate)}
+                >
                   {d.slice(5).replace('-', '/')}
                 </Link>
               ))}
             </div>
           )}
 
-          <p style={{ font: '400 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '0 0 10px' }}>
+          <p style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '0 0 10px' }}>
             국토부 실거래 신고일 기준 · 신고 지연으로 최근 거래는 추후 반영될 수 있음
           </p>
 
@@ -306,7 +320,8 @@ export default async function RankingsPage({ searchParams }: Props) {
               </p>
             </div>
           ) : (
-            <div id="capture-feed" className="card" style={{ overflow: 'hidden' }}>
+            <div id="capture-feed" style={{ background: '#fff', border: '1px solid rgba(112,115,124,0.22)', borderRadius: 24, overflow: 'hidden' }}>
+              <CaptureCardHeader title={`${activeDate} 실거래 피드`} emoji="📋" meta={`창원·김해 아파트 매매 · 국토부 실거래 기준`} />
               {activeDateFeed.transactions.map((tx, idx) => (
                 <div
                   key={tx.id}
@@ -329,7 +344,7 @@ export default async function RankingsPage({ searchParams }: Props) {
                         {tx.complexName}
                       </Link>
                       {tx.is_new_high && (
-                        <span style={{ font: '700 10px/1 var(--font-sans)', padding: '2px 6px', borderRadius: 4, background: '#ea580c', color: '#fff', flexShrink: 0 }}>
+                        <span style={{ font: '700 12px/1 var(--font-sans)', padding: '2px 6px', borderRadius: 4, background: '#ea580c', color: '#fff', flexShrink: 0 }}>
                           신고가
                         </span>
                       )}
@@ -356,7 +371,7 @@ export default async function RankingsPage({ searchParams }: Props) {
           )}
 
           {activeDateFeed?.hasMore && (
-            <div style={{ marginTop: 8, textAlign: 'right' }}>
+            <div className="mt-2 text-right">
               <Link href={`/rankings/${activeDate}`} style={{ font: '600 12px/1 var(--font-sans)', color: 'var(--dj-orange)', textDecoration: 'none' }}>
                 이 날 전체 거래 보기 →
               </Link>
@@ -365,14 +380,20 @@ export default async function RankingsPage({ searchParams }: Props) {
         </section>
 
         {/* ── 섹션 4: 지역 평당가 랭킹 ── */}
-        <section aria-labelledby="ranking-heading" style={{ marginBottom: 32 }}>
+        <section aria-labelledby="ranking-heading" className="mb-8">
           <SectionHeader title="지역 평당가 랭킹">
             <ShareButton url={`${pageUrl}?region=${activeRegion}`} title={`${activeTab.label} 평당가 랭킹 | 단지온도`} captureId="capture-ranking" />
           </SectionHeader>
 
-          <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, marginBottom: 12, scrollbarWidth: 'none' }}>
+          <div className="flex gap-1.5 overflow-x-auto pb-1 mb-3 -mx-4 px-4" style={{ scrollbarWidth: 'none' }}>
             {REGION_TABS.map(tab => (
-              <Link key={tab.key} href={`/rankings?date=${activeDate}&region=${tab.key}`} scroll={false} style={chip(tab.key === activeRegion)}>
+              <Link
+                key={tab.key}
+                href={`/rankings?date=${activeDate}&region=${tab.key}`}
+                scroll={false}
+                className={CHIP_CLASS}
+                style={chipStyle(tab.key === activeRegion)}
+              >
                 {tab.label}
               </Link>
             ))}
@@ -383,7 +404,8 @@ export default async function RankingsPage({ searchParams }: Props) {
               <p style={{ font: '500 13px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>해당 지역 데이터가 없습니다</p>
             </div>
           ) : (
-            <div id="capture-ranking" className="card" style={{ overflow: 'hidden' }}>
+            <div id="capture-ranking" style={{ background: '#fff', border: '1px solid rgba(112,115,124,0.22)', borderRadius: 24, overflow: 'hidden' }}>
+              <CaptureCardHeader title={`${activeTab.label} 평당가 랭킹`} emoji="📊" meta={`창원·김해 아파트 · ${new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })} 기준`} />
               {ranking.map((row, idx) => (
                 <div
                   key={row.complexId}
@@ -428,7 +450,7 @@ export default async function RankingsPage({ searchParams }: Props) {
         </section>
 
         {/* ── 섹션 5: 지역 역대 최고가 ── */}
-        <section aria-labelledby="alltime-heading" style={{ marginBottom: 32 }}>
+        <section aria-labelledby="alltime-heading" className="mb-8">
           <SectionHeader title="지역 역대 최고가">
             <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
               {activeTab.label} · 단지별 최고 거래
@@ -440,7 +462,8 @@ export default async function RankingsPage({ searchParams }: Props) {
               <p style={{ font: '500 13px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>데이터 없음</p>
             </div>
           ) : (
-            <div id="capture-alltime" className="card" style={{ overflow: 'hidden' }}>
+            <div id="capture-alltime" style={{ background: '#fff', border: '1px solid rgba(112,115,124,0.22)', borderRadius: 24, overflow: 'hidden' }}>
+              <CaptureCardHeader title="역대 최고가" emoji="⭐" meta={`${activeTab.label} · 단지별 역대 최고 실거래`} />
               {allTimeHighs.map((row, idx) => (
                 <div
                   key={row.complexId}
@@ -464,7 +487,7 @@ export default async function RankingsPage({ searchParams }: Props) {
                     <Link href={complexHref(row.complexId, row.urlSlug)} style={{ font: '600 15px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', display: 'block' }}>
                       {row.complexName}
                     </Link>
-                    <p style={{ font: '400 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '3px 0 0' }}>
+                    <p style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '3px 0 0' }}>
                       {[row.dong, row.gu].filter(Boolean).join(' ')}
                       {' · '}{formatPyeong(row.area_m2)}{row.floor != null ? ` · ${row.floor}층` : ''} · {row.deal_date.slice(0, 7)}
                     </p>
@@ -480,24 +503,21 @@ export default async function RankingsPage({ searchParams }: Props) {
         </section>
 
         {/* ── 섹션 6: 흥미 지표 ── */}
-        <section aria-labelledby="highlights-heading" style={{ marginBottom: 32 }}>
+        <section aria-labelledby="highlights-heading" className="mb-8">
           <SectionHeader title="흥미 지표" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
 
             {/* 최근 최고가 거래 */}
-            <div id="capture-top-price" className="card" style={{ overflow: 'hidden' }}>
-              <div style={{ padding: '16px 20px 14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                  <p style={{ font: '700 16px/1.2 var(--font-sans)', margin: 0, color: 'var(--fg-pri)' }}>
-                    최근 최고가 거래
-                    <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 8 }}>30일 이내 TOP 5</span>
-                  </p>
-                  <ShareButton url={pageUrl} title="최근 최고가 거래 | 단지온도" captureId="capture-top-price" />
-                </div>
+            <div id="capture-top-price" style={{ background: '#fff', border: '1px solid rgba(112,115,124,0.22)', borderRadius: 24, overflow: 'hidden' }}>
+              <CaptureCardHeader title="최근 최고가 거래" emoji="💰" meta={`창원·김해 · 30일 이내 TOP 5`} />
+              <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '10px 20px 0' }}>
+                <ShareButton url={pageUrl} title="최근 최고가 거래 | 단지온도" captureId="capture-top-price" />
+              </div>
+              <div style={{ padding: '12px 20px 14px' }}>
                 {highlights.topPriceRecent.length === 0 ? (
                   <p style={{ font: '400 12px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>데이터 없음</p>
                 ) : highlights.topPriceRecent.map((item, idx) => (
-                  <div key={item.complexId} style={{ display: 'flex', gap: 12, paddingBottom: idx < highlights.topPriceRecent.length - 1 ? 14 : 0, marginBottom: idx < highlights.topPriceRecent.length - 1 ? 14 : 0, borderBottom: idx < highlights.topPriceRecent.length - 1 ? '1px solid var(--line-subtle)' : 'none' }}>
+                  <div key={item.complexId} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, paddingBottom: idx < highlights.topPriceRecent.length - 1 ? 14 : 0, marginBottom: idx < highlights.topPriceRecent.length - 1 ? 14 : 0, borderBottom: idx < highlights.topPriceRecent.length - 1 ? '1px solid var(--line-subtle)' : 'none' }}>
                     <RankCircle rank={idx + 1} />
                     <div style={{ minWidth: 0 }}>
                       <Link href={complexHref(item.complexId, item.urlSlug)} style={{ font: '600 15px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', display: 'block' }}>
@@ -508,11 +528,11 @@ export default async function RankingsPage({ searchParams }: Props) {
                           {[item.dong, item.gu].filter(Boolean).join(' ')}
                         </p>
                       )}
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 5, flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginTop: 5, flexWrap: 'wrap' }}>
                         <span className="tnum" style={{ font: '800 20px/1 var(--font-sans)', color: 'var(--dj-orange)' }}>
                           {formatPrice(item.price)}
                         </span>
-                        <span style={{ font: '400 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                        <span style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
                           {formatPyeong(item.area_m2)} · {item.deal_date.slice(5).replace('-', '/')}
                         </span>
                       </div>
@@ -524,19 +544,16 @@ export default async function RankingsPage({ searchParams }: Props) {
             </div>
 
             {/* 거래 활발 단지 */}
-            <div id="capture-top-volume" className="card" style={{ overflow: 'hidden' }}>
-              <div style={{ padding: '16px 20px 14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                  <p style={{ font: '700 16px/1.2 var(--font-sans)', margin: 0, color: 'var(--fg-pri)' }}>
-                    거래 활발 단지
-                    <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 8 }}>90일 거래량 TOP 5</span>
-                  </p>
-                  <ShareButton url={pageUrl} title="거래 활발 단지 | 단지온도" captureId="capture-top-volume" />
-                </div>
+            <div id="capture-top-volume" style={{ background: '#fff', border: '1px solid rgba(112,115,124,0.22)', borderRadius: 24, overflow: 'hidden' }}>
+              <CaptureCardHeader title="거래 활발 단지" emoji="🔥" meta={`창원·김해 · 90일 거래량 TOP 5`} />
+              <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '10px 20px 0' }}>
+                <ShareButton url={pageUrl} title="거래 활발 단지 | 단지온도" captureId="capture-top-volume" />
+              </div>
+              <div style={{ padding: '12px 20px 14px' }}>
                 {highlights.topVolumeRecent.length === 0 ? (
                   <p style={{ font: '400 12px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>데이터 없음</p>
                 ) : highlights.topVolumeRecent.map((item, idx) => (
-                  <div key={item.complexId} style={{ display: 'flex', gap: 12, paddingBottom: idx < highlights.topVolumeRecent.length - 1 ? 14 : 0, marginBottom: idx < highlights.topVolumeRecent.length - 1 ? 14 : 0, borderBottom: idx < highlights.topVolumeRecent.length - 1 ? '1px solid var(--line-subtle)' : 'none' }}>
+                  <div key={item.complexId} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, paddingBottom: idx < highlights.topVolumeRecent.length - 1 ? 14 : 0, marginBottom: idx < highlights.topVolumeRecent.length - 1 ? 14 : 0, borderBottom: idx < highlights.topVolumeRecent.length - 1 ? '1px solid var(--line-subtle)' : 'none' }}>
                     <RankCircle rank={idx + 1} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <Link href={complexHref(item.complexId, item.urlSlug)} style={{ font: '600 15px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', display: 'block' }}>
@@ -547,7 +564,7 @@ export default async function RankingsPage({ searchParams }: Props) {
                           {[item.dong, item.gu].filter(Boolean).join(' ')}
                         </p>
                       )}
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 5 }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginTop: 5 }}>
                         <span className="tnum" style={{ font: '800 20px/1 var(--font-sans)', color: 'var(--dj-orange)' }}>
                           {item.txCount90d}건
                         </span>
@@ -561,19 +578,16 @@ export default async function RankingsPage({ searchParams }: Props) {
             </div>
 
             {/* 가격 상승 단지 */}
-            <div id="capture-price-surge" className="card" style={{ overflow: 'hidden' }}>
-              <div style={{ padding: '16px 20px 14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                  <p style={{ font: '700 16px/1.2 var(--font-sans)', margin: 0, color: 'var(--fg-pri)' }}>
-                    가격 상승 단지
-                    <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginLeft: 8 }}>전월 대비 3% 이상</span>
-                  </p>
-                  <ShareButton url={pageUrl} title="가격 상승 단지 | 단지온도" captureId="capture-price-surge" />
-                </div>
+            <div id="capture-price-surge" style={{ background: '#fff', border: '1px solid rgba(112,115,124,0.22)', borderRadius: 24, overflow: 'hidden' }}>
+              <CaptureCardHeader title="가격 상승 단지" emoji="📈" meta={`창원·김해 · 전월 대비 3% 이상 상승`} />
+              <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '10px 20px 0' }}>
+                <ShareButton url={pageUrl} title="가격 상승 단지 | 단지온도" captureId="capture-price-surge" />
+              </div>
+              <div style={{ padding: '12px 20px 14px' }}>
                 {highlights.priceSurgeRecent.length === 0 ? (
                   <p style={{ font: '400 12px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>해당 단지 없음</p>
                 ) : highlights.priceSurgeRecent.map((item, idx) => (
-                  <div key={item.complexId} style={{ display: 'flex', gap: 12, paddingBottom: idx < highlights.priceSurgeRecent.length - 1 ? 14 : 0, marginBottom: idx < highlights.priceSurgeRecent.length - 1 ? 14 : 0, borderBottom: idx < highlights.priceSurgeRecent.length - 1 ? '1px solid var(--line-subtle)' : 'none' }}>
+                  <div key={item.complexId} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, paddingBottom: idx < highlights.priceSurgeRecent.length - 1 ? 14 : 0, marginBottom: idx < highlights.priceSurgeRecent.length - 1 ? 14 : 0, borderBottom: idx < highlights.priceSurgeRecent.length - 1 ? '1px solid var(--line-subtle)' : 'none' }}>
                     <RankCircle rank={idx + 1} />
                     <div style={{ minWidth: 0 }}>
                       <Link href={complexHref(item.complexId, item.urlSlug)} style={{ font: '600 15px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', display: 'block' }}>
@@ -584,7 +598,7 @@ export default async function RankingsPage({ searchParams }: Props) {
                           {[item.dong, item.gu].filter(Boolean).join(' ')}
                         </p>
                       )}
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 5 }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginTop: 5 }}>
                         <span className="tnum" style={{ font: '800 20px/1 var(--font-sans)', color: '#16a34a' }}>
                           +{(item.changeRatio * 100).toFixed(1)}%
                         </span>
@@ -607,23 +621,23 @@ export default async function RankingsPage({ searchParams }: Props) {
       </main>
 
       {/* 카페 CTA 푸터 */}
-      <footer style={{ borderTop: '1px solid var(--line-default)', background: '#fff', padding: '20px 16px' }}>
-        <div style={{ maxWidth: 680, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+      <footer className="border-t py-5 px-4" style={{ borderColor: 'var(--line-default)', background: '#fff' }}>
+        <div className="sm:max-w-3xl sm:mx-auto flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <p style={{ font: '700 14px/1.3 var(--font-sans)', margin: '0 0 3px' }}>창원부동산이야기</p>
-            <p style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--fg-sec)', margin: 0 }}>더 많은 정보와 의견을 카페에서 나눠보세요</p>
+            <p className="mb-1" style={{ font: '700 14px/1.3 var(--font-sans)', margin: '0 0 3px' }}>창원부동산이야기</p>
+            <p className="m-0" style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--fg-sec)' }}>더 많은 정보와 의견을 카페에서 나눠보세요</p>
           </div>
           <a
             href={CAFE_URL}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ display: 'inline-block', padding: '10px 20px', borderRadius: 8, font: '700 13px/1 var(--font-sans)', color: '#fff', background: '#03c75a', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}
+            className="inline-flex items-center min-h-[44px] px-5 rounded-lg font-bold text-sm whitespace-nowrap shrink-0"
+            style={{ color: '#fff', background: '#03c75a', textDecoration: 'none' }}
           >
             카페 바로가기
           </a>
         </div>
       </footer>
-
-    </div>
+    </>
   )
 }
