@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-06-11T06:25:00Z"
-last_activity: 2026-06-11 — Phase 24 완료: 단지별 AI 코멘트 배치 (Gemini 2.0 Flash) + 투자 랭킹 UI 표시 + 월간 Actions
+last_updated: "2026-06-23T00:00:00Z"
+last_activity: 2026-06-23 — Phase 29 플래닝 완료 (commit f0f1c6d): 5개 플랜(Wave 0~3) 검증 완료. 다음: /gsd-execute 29
 progress:
-  total_phases: 24
+  total_phases: 25
   completed_phases: 24
   total_plans: 66
   completed_plans: 66
-  percent: 100
+  percent: 96
 ---
 
 # Project State — 단지온도
