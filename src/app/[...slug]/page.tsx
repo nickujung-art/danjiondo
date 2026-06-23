@@ -73,13 +73,7 @@ function FireIcon() {
   )
 }
 
-function ArrUpIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-      <path d="m6 14 6-6 6 6" />
-    </svg>
-  )
-}
+
 
 function SchoolIcon() {
   return (
@@ -121,6 +115,63 @@ function formatPrice(price: number): string {
   if (uk > 0 && man > 0) return `${uk}억 ${man.toLocaleString()}`
   if (uk > 0) return `${uk}억`
   return `${price.toLocaleString()}만`
+}
+
+// ──────────────────────────────────────────
+// 스파크라인 (헤더 카드용)
+// ──────────────────────────────────────────
+
+type MonthlyPoint = { month: string; avg: number }
+
+function SparklineSvg({ points, height = 52 }: { points: MonthlyPoint[]; height?: number }) {
+  if (points.length < 2) return null
+  const width = 340
+  const prices = points.map((p) => p.avg)
+  const minP = Math.min(...prices)
+  const maxP = Math.max(...prices)
+  const range = maxP - minP || 1
+
+  const toX = (i: number) => (i / (points.length - 1)) * width
+  const toY = (p: number) => height - ((p - minP) / range) * (height - 8) - 4
+
+  const pathD = points
+    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${toX(i).toFixed(1)} ${toY(p.avg).toFixed(1)}`)
+    .join(' ')
+
+  const areaD = `${pathD} L ${width} ${height} L 0 ${height} Z`
+
+  return (
+    <svg
+      width="100%"
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="none"
+      style={{ display: 'block' }}
+    >
+      <defs>
+        <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--dj-orange)" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="var(--dj-orange)" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={areaD} fill="url(#sparkGrad)" />
+      <path
+        d={pathD}
+        fill="none"
+        stroke="var(--dj-orange)"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function formatSparkLabel(month: string): string {
+  const parts = month.split('-')
+  const yr = parts[0] ?? ''
+  const mo = parts[1] ?? '1'
+  return `${yr.slice(2)}년${parseInt(mo, 10)}월`
 }
 
 function CafeArticlesSection({ articles }: { articles: CafeArticleRecord[] }) {
@@ -380,6 +431,33 @@ async function ComplexDetailPage({
   const latestSale = saleData.at(-1)
   const address = complex.road_address ?? breadcrumb.join(' ')
 
+  // 스파크라인: rawSaleData에서 최근 12개월 월별 평균 계산
+  const sparklinePoints: MonthlyPoint[] = (() => {
+    const byMonth: Record<string, { sum: number; count: number }> = {}
+    for (const tx of rawSaleData) {
+      const key = tx.yearMonth
+      if (!byMonth[key]) byMonth[key] = { sum: 0, count: 0 }
+      byMonth[key].sum += tx.price
+      byMonth[key].count += 1
+    }
+    return Object.entries(byMonth)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-12)
+      .map(([month, { sum, count }]) => ({ month, avg: count > 0 ? sum / count : 0 }))
+  })()
+
+  // YoY 변화율: 최신 월 vs 12개월 전 (또는 가장 오래된 월)
+  const yoyChange: number | null = (() => {
+    if (sparklinePoints.length < 2) return null
+    const latestPoint = sparklinePoints.at(-1)
+    const oldestPoint = sparklinePoints.at(0)
+    if (!latestPoint || !oldestPoint) return null
+    const latest = latestPoint.avg
+    const oldest = oldestPoint.avg
+    if (oldest === 0) return null
+    return ((latest - oldest) / oldest) * 100
+  })()
+
   // 단지 URL (slug 기반 canonical)
   const slugParts = complex.url_slug.split('/')
   const complexHref = buildCanonicalUrl('', slugParts)
@@ -420,14 +498,13 @@ async function ComplexDetailPage({
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <BreadcrumbNav slug={slugParts} />
       <ViewCountTracker complexId={id} />
-      {/* Nav */}
+      {/* Nav — desktop only (mobile uses global AppHeader) */}
       <header
+        className="hidden lg:flex items-center"
         style={{
           height: 56,
           background: '#fff',
           borderBottom: '1px solid var(--line-default)',
-          display: 'flex',
-          alignItems: 'center',
           padding: '0 16px',
           gap: 12,
           position: 'sticky',
@@ -477,50 +554,92 @@ async function ComplexDetailPage({
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
         {/* Main column */}
         <div className="flex flex-col gap-4 min-w-0 lg:flex-1">
-          {/* Header card — mobile-first vertical stack */}
-          <div className="card" style={{ padding: 16 }}>
-            {/* 1. Badges */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-              <span className="badge orange"><FireIcon />신고가</span>
-              {complex.built_year && <span className="badge neutral">{complex.built_year}년 입주</span>}
-              {complex.household_count && <span className="badge neutral">{complex.household_count.toLocaleString()}세대</span>}
+          {/* Header card — viral shareworthy design */}
+          <div className="card" style={{ padding: 16, position: 'relative' }}>
+            {/* Row 1: Badges + icon buttons (top-right) */}
+            <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, flex: 1 }}>
+                <span className="badge orange"><FireIcon />신고가</span>
+                {complex.built_year && <span className="badge neutral">{complex.built_year}년 입주</span>}
+                {complex.household_count && <span className="badge neutral">{complex.household_count.toLocaleString()}세대</span>}
+              </div>
+              {/* Icon-only action buttons — top right corner */}
+              <div style={{ display: 'flex', gap: 4, marginLeft: 8, flexShrink: 0 }}>
+                <ShareButton
+                  complexId={id}
+                  complexName={complex.canonical_name}
+                  location={[complex.si, complex.gu, complex.dong].filter(Boolean).join(' ')}
+                  iconOnly
+                />
+                <FavoriteButton complexId={id} iconOnly />
+              </div>
             </div>
-            {/* 2. Name */}
-            <h1 style={{ font: '700 22px/1.3 var(--font-sans)', letterSpacing: '-0.02em', margin: '0 0 6px' }}>
+
+            {/* Row 2: Complex name */}
+            <h1 style={{ font: '700 22px/1.3 var(--font-sans)', letterSpacing: '-0.02em', margin: '12px 0 4px' }}>
               {complex.canonical_name}
             </h1>
-            {/* 3. Address */}
-            <p style={{ font: '500 13px/1.5 var(--font-sans)', color: 'var(--fg-sec)', margin: 0 }}>
-              {address}{complex.floors_above && ` · ${complex.floors_above}층`}
+
+            {/* Row 3: Location + specs */}
+            <p style={{ font: '500 12px/1.4 var(--font-sans)', color: 'var(--fg-sec)', margin: '0 0 14px' }}>
+              {[complex.gu ?? complex.si, complex.dong].filter(Boolean).join(' ')}
+              {complex.floors_above && ` · ${complex.floors_above}층`}
+              {address && address !== ([complex.gu ?? complex.si, complex.dong].filter(Boolean).join(' ')) && ` · ${address}`}
             </p>
-            {/* 4. Price block */}
+
+            {/* Price + sparkline block */}
             {latestSale && (
-              <div style={{ borderTop: '1px solid var(--line-default)', marginTop: 16, paddingTop: 14, marginBottom: 16 }}>
-                <p style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '0 0 8px' }}>
-                  최근 실거래 (평균 {Math.round((latestSale.avgArea ?? 0) / 3.3058)}평)
-                </p>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                  <span className="tnum" style={{ font: '700 28px/1 var(--font-sans)', letterSpacing: '-0.02em' }}>
+              <div style={{ background: 'var(--bg-surface-2, #f8f8f8)', borderRadius: 10, padding: '12px 14px' }}>
+                {/* Header row: label + YoY */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                    최근 실거래 · 평균 {Math.round((latestSale.avgArea ?? 0) / 3.3058)}평
+                  </span>
+                  {yoyChange !== null && (
+                    <span style={{
+                      font: '600 12px/1 var(--font-sans)',
+                      color: yoyChange >= 0 ? 'var(--dj-orange)' : '#3b82f6',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                    }}>
+                      {yoyChange >= 0 ? '▲' : '▼'} {Math.abs(yoyChange).toFixed(1)}%
+                    </span>
+                  )}
+                </div>
+
+                {/* Price + date */}
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: sparklinePoints.length >= 3 ? 10 : 0 }}>
+                  <span className="tnum" style={{ font: '700 26px/1 var(--font-sans)', letterSpacing: '-0.02em' }}>
                     {formatPrice(Math.round(latestSale.avgPrice))}
                   </span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: 'var(--dj-orange)', font: '600 12px/1 var(--font-sans)' }}>
-                    <ArrUpIcon />
-                    <span className="tnum">{latestSale.yearMonth}</span>
+                  <span style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                    {latestSale.yearMonth}
                   </span>
                 </div>
+
+                {/* Sparkline chart */}
+                {sparklinePoints.length >= 3 && (
+                  <div>
+                    <SparklineSvg points={sparklinePoints} height={52} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 3 }}>
+                      <span style={{ font: '500 10px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                        {formatSparkLabel(sparklinePoints.at(0)?.month ?? '')}
+                      </span>
+                      <span style={{ font: '500 10px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                        {formatSparkLabel(sparklinePoints.at(-1)?.month ?? '')}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
-            {/* 5. Action buttons — visible on mobile (desktop uses sticky header) */}
+
+            {/* Compare + Alert buttons — mobile only (desktop uses sticky header) */}
             <div
               className="grid grid-cols-2 gap-2 lg:hidden"
-              style={{ marginTop: latestSale ? 0 : 16 }}
+              style={{ marginTop: 10 }}
             >
-              <ShareButton
-                complexId={id}
-                complexName={complex.canonical_name}
-                location={[complex.si, complex.gu, complex.dong].filter(Boolean).join(' ')}
-              />
-              <FavoriteButton complexId={id} />
               <CompareAddButton complexId={id} complexName={complex.canonical_name} />
               <Link
                 href={`/login?next=/complexes/${id}`}

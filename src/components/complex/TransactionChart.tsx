@@ -62,6 +62,10 @@ function movingAverage(series: Array<{ yearMonth: string; avgPrice: number }>, w
   })
 }
 
+// 모바일 차트: 데이터 포인트당 최소 픽셀 폭 (Galaxy S20 Ultra 기준 ~380px content)
+const MIN_PX_PER_POINT = 28
+const MIN_CHART_WIDTH  = 380
+
 export function TransactionChart({ normal, outliers, dealType }: Props) {
   const [smooth, setSmooth] = useState(false)
 
@@ -69,7 +73,7 @@ export function TransactionChart({ normal, outliers, dealType }: Props) {
     return (
       <div
         style={{
-          minHeight: 300,
+          minHeight: 240,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -87,6 +91,71 @@ export function TransactionChart({ normal, outliers, dealType }: Props) {
 
   const normalDots  = normal.map(p => ({ yearMonth: p.yearMonth, price: p.price }))
   const outlierDots = outliers.map(p => ({ yearMonth: p.yearMonth, price: p.price }))
+
+  // 데이터 포인트 수 기준으로 모바일 스크롤 폭 계산
+  const dataPointCount = avgSeries.length
+  const chartMinWidth  = Math.max(MIN_CHART_WIDTH, dataPointCount * MIN_PX_PER_POINT)
+  const needsScroll    = dataPointCount > 12
+
+  const chartContent = (
+    <ComposedChart margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
+      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+      <XAxis
+        dataKey="yearMonth"
+        type="category"
+        allowDuplicatedCategory={false}
+        tick={{ fontSize: 11 }}
+        tickFormatter={(v: string) => (typeof v === 'string' ? v.slice(2) : '')}
+        interval={needsScroll ? 2 : 'preserveStartEnd'}
+      />
+      <YAxis
+        tick={{ fontSize: 11 }}
+        tickFormatter={formatPrice}
+        width={60}
+      />
+      <Tooltip
+        formatter={tooltipPrice}
+        labelFormatter={(label) => String(label)}
+        contentStyle={{ fontSize: 12, maxWidth: 180 }}
+      />
+
+      {/* 일반 보기: 정상 거래 점 */}
+      {!smooth && (
+        <Scatter
+          name={LABEL[dealType]}
+          data={normalDots}
+          dataKey="price"
+          fill="#1d4ed8"
+          shape="circle"
+        />
+      )}
+
+      {/* 일반 보기: 이상치 점 */}
+      {!smooth && (
+        <Scatter
+          name="이상 거래 의심 (분기 IQR 기준)"
+          data={outlierDots}
+          dataKey="price"
+          fill="transparent"
+          stroke="#9ca3af"
+          opacity={0.4}
+          shape="circle"
+        />
+      )}
+
+      {/* 평균/추세선 */}
+      <Line
+        type="monotone"
+        dataKey="avgPrice"
+        data={avgSeries}
+        stroke="#1d4ed8"
+        strokeWidth={smooth ? 2.5 : 2}
+        dot={{ r: 2, fill: '#1d4ed8' }}
+        activeDot={{ r: 5 }}
+        name={smooth ? '이동평균 추세선' : '월평균 (이상치 제외)'}
+      />
+    </ComposedChart>
+  )
 
   return (
     <div style={{ position: 'relative' }}>
@@ -122,65 +191,14 @@ export function TransactionChart({ normal, outliers, dealType }: Props) {
         </button>
       </div>
 
-      <ResponsiveContainer width="100%" height={300}>
-        <ComposedChart margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis
-            dataKey="yearMonth"
-            type="category"
-            allowDuplicatedCategory={false}
-            tick={{ fontSize: 11 }}
-            tickFormatter={(v: string) => (typeof v === 'string' ? v.slice(2) : '')}
-            interval="preserveStartEnd"
-          />
-          <YAxis
-            tick={{ fontSize: 11 }}
-            tickFormatter={formatPrice}
-            width={56}
-          />
-          <Tooltip
-            formatter={tooltipPrice}
-            labelFormatter={(label) => String(label)}
-            contentStyle={{ fontSize: 12 }}
-          />
-
-          {/* 일반 보기: 정상 거래 점 */}
-          {!smooth && (
-            <Scatter
-              name={LABEL[dealType]}
-              data={normalDots}
-              dataKey="price"
-              fill="#1d4ed8"
-              shape="circle"
-            />
-          )}
-
-          {/* 일반 보기: 이상치 점 */}
-          {!smooth && (
-            <Scatter
-              name="이상 거래 의심 (분기 IQR 기준)"
-              data={outlierDots}
-              dataKey="price"
-              fill="transparent"
-              stroke="#9ca3af"
-              opacity={0.4}
-              shape="circle"
-            />
-          )}
-
-          {/* 평균/추세선 */}
-          <Line
-            type="monotone"
-            dataKey="avgPrice"
-            data={avgSeries}
-            stroke="#1d4ed8"
-            strokeWidth={smooth ? 2.5 : 2}
-            dot={false}
-            activeDot={{ r: 4 }}
-            name={smooth ? '이동평균 추세선' : '월평균 (이상치 제외)'}
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
+      {/* 모바일 수평 스크롤: 12개 초과 데이터 포인트 시 활성화 */}
+      <div className="chart-scroll">
+        <div style={{ minWidth: needsScroll ? chartMinWidth : undefined }}>
+          <ResponsiveContainer width="100%" height={240}>
+            {chartContent}
+          </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   )
 }

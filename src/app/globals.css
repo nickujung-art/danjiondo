@@ -355,6 +355,21 @@ body {
   background: var(--bg-surface-2);
 }
 
+/* ─── Mobile chart scroll container ─── */
+.chart-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -4px;
+  padding: 0 4px;
+  /* 스크롤바 숨김 — 터치 스크롤은 유지 */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.chart-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* ─── Admin layout — sidebar responsive ─── */
 .admin-sidebar {
   display: flex;

@@ -6,6 +6,7 @@ import { addFavorite, removeFavorite } from '@/lib/auth/favorite-actions'
 interface Props {
   complexId:        string
   initialFavorited?: boolean
+  iconOnly?:        boolean
 }
 
 function BookmarkIcon({ filled }: { filled: boolean }) {
@@ -16,7 +17,7 @@ function BookmarkIcon({ filled }: { filled: boolean }) {
   )
 }
 
-export function FavoriteButton({ complexId, initialFavorited = false }: Props) {
+export function FavoriteButton({ complexId, initialFavorited = false, iconOnly = false }: Props) {
   const [favorited, setFavorited] = useState(initialFavorited)
   const [isPending, startTransition] = useTransition()
 
@@ -34,6 +35,32 @@ export function FavoriteButton({ complexId, initialFavorited = false }: Props) {
         if (!error) setFavorited(true)
       }
     })
+  }
+
+  if (iconOnly) {
+    return (
+      <button
+        onClick={toggle}
+        disabled={isPending}
+        aria-label={favorited ? '관심단지 해제' : '관심단지 추가'}
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 8,
+          border: `1px solid ${favorited ? 'var(--dj-orange)' : 'var(--line-default)'}`,
+          background: favorited ? 'rgba(255,120,50,0.08)' : 'var(--bg-surface)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          color: favorited ? 'var(--dj-orange)' : 'var(--fg-sec)',
+          opacity: isPending ? 0.7 : 1,
+          flexShrink: 0,
+        }}
+      >
+        <BookmarkIcon filled={favorited} />
+      </button>
+    )
   }
 
   return (

@@ -34,6 +34,7 @@ interface Props {
   complexName: string
   location?: string
   price?: number
+  iconOnly?: boolean
 }
 
 interface KakaoShareParams {
@@ -161,7 +162,7 @@ function formatPriceBrief(price: number): string {
   return uk > 0 ? `${uk}억` : `${price.toLocaleString()}만`
 }
 
-export function ShareButton({ complexId, complexName, location, price }: Props) {
+export function ShareButton({ complexId, complexName, location, price, iconOnly = false }: Props) {
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
 
@@ -202,18 +203,43 @@ export function ShareButton({ complexId, complexName, location, price }: Props) 
   // description은 Kakao 공유 시 활용 (현재 handleKakaoShare에 포함)
   void description
 
+  const triggerButton = iconOnly ? (
+    <button
+      style={{
+        width: 36,
+        height: 36,
+        borderRadius: 8,
+        border: '1px solid var(--line-default)',
+        background: 'var(--bg-surface)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        color: 'var(--fg-sec)',
+        flexShrink: 0,
+      }}
+      aria-label="공유"
+      aria-expanded={open}
+      onClick={() => setOpen((v) => !v)}
+    >
+      <ShareIcon />
+    </button>
+  ) : (
+    <button
+      className="btn btn-md btn-ghost"
+      style={{ color: 'var(--fg-sec)', gap: 6 }}
+      aria-label="공유"
+      aria-expanded={open}
+      onClick={() => setOpen((v) => !v)}
+    >
+      <ShareIcon />
+      공유
+    </button>
+  )
+
   return (
     <div style={{ position: 'relative' }}>
-      <button
-        className="btn btn-md btn-ghost"
-        style={{ color: 'var(--fg-sec)', gap: 6 }}
-        aria-label="공유"
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-      >
-        <ShareIcon />
-        공유
-      </button>
+      {triggerButton}
 
       {open && (
         <>
