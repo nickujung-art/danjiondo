@@ -382,9 +382,10 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
         }}
       />
       {/* Body */}
-      <main className="px-4 py-4 sm:px-6 sm:py-6 max-w-screen-xl mx-auto grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px] lg:gap-6">
+      <main className="px-4 py-4 sm:px-6 sm:py-6 max-w-screen-xl mx-auto">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
         {/* Main column */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 min-w-0 lg:flex-1">
           {/* Breadcrumb */}
           <nav
             aria-label="위치"
@@ -894,8 +895,8 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
           <CafeArticlesSection articles={cafeArticles} />
         </div>
 
-        {/* Right rail */}
-        <div className="flex flex-col gap-4">
+        {/* Right rail — desktop only */}
+        <div className="hidden lg:flex flex-col gap-4 lg:w-[360px] lg:flex-shrink-0">
           <div className="card" style={{ padding: 20 }}>
             <h3 style={{ font: '700 15px/1.4 var(--font-sans)', margin: '0 0 12px' }}>
               최근 실거래 내역
@@ -928,6 +929,7 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
               </div>
             </section>
           )}
+        </div>
         </div>
       </main>
 
