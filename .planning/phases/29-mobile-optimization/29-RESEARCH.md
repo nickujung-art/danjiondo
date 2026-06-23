@@ -514,21 +514,24 @@ const myHref = isLoggedIn ? '/profile' : '/login?next=/profile'
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **BottomSheet: Vaul vs 자체 구현 (createPortal)**
    - What we know: `HagwonRecommendSheet`는 이미 createPortal 방식으로 구현되어 작동함. Vaul은 드래그 기능과 접근성을 추가로 제공하나 번들 +15KB.
    - What's unclear: 단지상세에서 몇 개의 바텀시트가 필요한지 최종 확정 필요 (교육 팝업, 재건축 타임라인 = 최소 2개). HagwonRecommendSheet는 기존 유지(D-11).
    - Recommendation: 3개 이상 바텀시트 → Vaul 도입. 2개 이하 → createPortal 패턴 추출로 충분. 플래너가 MOB-04 scope 확정 후 결정.
+   - **RESOLVED:** Vaul 도입 (4개 이상 바텀시트 — EducationCard×2 + HagwonRecommendSheet + RedevelopmentTimeline). Plan 01 Task 2에서 `vaul` 설치 및 공유 `BottomSheet.tsx` 생성.
 
 2. **DealTypeTabs 탭 구성 확인 필요**
    - What we know: 단지상세 탭은 여러 섹션(거래내역/시설/관리비/AI코멘트 등)으로 구성됨.
    - What's unclear: 현재 DealTypeTabs.tsx가 어떤 구조인지 확인 필요 (거래 타입 탭인지, 섹션 탭인지).
    - Recommendation: 플래너가 `src/components/complex/DealTypeTabs.tsx` 확인 후 스와이프 범위 결정.
+   - **RESOLVED:** Plan 03 Task 2a에서 DealTypeTabs.tsx 전체 파악 후 Embla 적용. 탭 콘텐츠 영역만 Embla 래핑, 탭 버튼 행은 외부 유지.
 
 3. **Footer 처리**
    - What we know: 현재 `src/app/layout.tsx`에 `<Footer />`가 있음. BottomTabBar 추가 시 푸터가 탭바 위에 보이는지, 숨겨야 하는지 미결.
    - Recommendation: 모바일에서 푸터 숨김 (`hidden sm:block`) 또는 탭바 위에 표시. 플래너 결정 필요.
+   - **RESOLVED:** `<Footer className="hidden sm:block" />` — 모바일에서 숨김, 데스크탑에서만 표시. Plan 01 Task 3에 반영.
 
 ---
 
