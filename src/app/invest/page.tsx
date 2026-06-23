@@ -85,6 +85,19 @@ function filterTab(
   return `/invest${s ? `?${s}` : ''}`
 }
 
+// ─── tab className helper ─────────────────────────────────────────────────────
+const TAB_BASE_CLASS =
+  'inline-flex items-center px-3 rounded-[6px] text-xs font-medium whitespace-nowrap min-h-[44px]'
+
+function tabStyle(active: boolean): React.CSSProperties {
+  return {
+    background:     active ? 'var(--dj-orange)' : 'var(--bg-surface-2)',
+    color:          active ? '#fff' : 'var(--fg-sec)',
+    border:         '1px solid var(--line-subtle)',
+    textDecoration: 'none',
+  }
+}
+
 // ─── component ───────────────────────────────────────────────────────────────
 export default async function InvestPage({ searchParams }: Props) {
   const params    = await searchParams
@@ -127,73 +140,32 @@ export default async function InvestPage({ searchParams }: Props) {
     return value === '' ? !riskLevel : riskLevel === value
   }
 
-  const tabStyle = (active: boolean): React.CSSProperties => ({
-    display:        'inline-block',
-    padding:        '5px 12px',
-    borderRadius:   6,
-    font:           '500 12px/1 var(--font-sans)',
-    textDecoration: 'none',
-    background:     active ? 'var(--dj-orange)' : 'var(--bg-surface-2)',
-    color:          active ? '#fff' : 'var(--fg-sec)',
-    border:         '1px solid var(--line-subtle)',
-    whiteSpace:     'nowrap' as const,
-  })
-
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-canvas)', fontFamily: 'var(--font-sans)' }}>
-      {/* Header */}
-      <header
-        style={{
-          height:       60,
-          background:   '#fff',
-          borderBottom: '1px solid var(--line-default)',
-          display:      'flex',
-          alignItems:   'center',
-          padding:      '0 32px',
-          gap:          16,
-          position:     'sticky',
-          top:          0,
-          zIndex:       50,
-        }}
-      >
-        <Link href="/" className="dj-logo">
-          <span className="mark">단</span>
-          <span>단지온도</span>
-        </Link>
-        <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
-          투자 분석
-        </span>
-      </header>
-
-      <main style={{ maxWidth: 1040, margin: '0 auto', padding: '24px 32px' }}>
+    <div className="min-h-screen" style={{ background: 'var(--bg-canvas)' }}>
+      <main className="px-4 py-6 sm:max-w-screen-lg sm:mx-auto">
         {/* Page title */}
-        <div style={{ marginBottom: 20 }}>
+        <div className="mb-5">
           <h1
-            style={{
-              font:          '700 22px/1.3 var(--font-sans)',
-              letterSpacing: '-0.02em',
-              margin:        '0 0 6px',
-            }}
+            className="text-2xl font-bold tracking-tight mb-1.5"
+            style={{ color: 'var(--fg-pri)' }}
           >
             투자 분석
           </h1>
           <p
-            style={{
-              font:   '500 13px/1.5 var(--font-sans)',
-              color:  'var(--fg-tertiary)',
-              margin: 0,
-            }}
+            className="text-sm font-medium"
+            style={{ color: 'var(--fg-tertiary)' }}
           >
             실거래 흐름 기반 참고 지수 — 창원·김해 아파트 시세 흐름 + 갭투자 위험도
           </p>
         </div>
 
         {/* ─── 지역 필터 탭 ──────────────────────────────────────────────────── */}
-        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
+        <div className="flex gap-1 overflow-x-auto pb-1 -mx-4 px-4 mb-2">
           {REGION_OPTIONS.map((opt) => (
             <Link
               key={`sgg-${opt.value}`}
               href={filterTab('sgg_code', opt.value, sggCode, riskLevel, areaBucket)}
+              className={TAB_BASE_CLASS}
               style={tabStyle(isSggActive(opt.value))}
             >
               {opt.label}
@@ -210,22 +182,20 @@ export default async function InvestPage({ searchParams }: Props) {
         />
 
         {/* ─── 갭투자 랭킹 섹션 ──────────────────────────────────────────────── */}
-        <div style={{ marginBottom: 16 }}>
+        <div className="mb-4">
           <h2
-            style={{
-              font:          '700 18px/1.3 var(--font-sans)',
-              letterSpacing: '-0.01em',
-              margin:        '0 0 12px',
-            }}
+            className="text-lg font-bold tracking-tight mb-3"
+            style={{ color: 'var(--fg-pri)' }}
           >
             갭투자 랭킹
           </h2>
           {/* 위험도 필터 */}
-          <div style={{ display: 'flex', gap: 4 }}>
+          <div className="flex gap-1 overflow-x-auto pb-1 -mx-4 px-4">
             {RISK_OPTIONS.map((opt) => (
               <Link
                 key={`risk-${opt.value}`}
                 href={filterTab('risk_level', opt.value, sggCode, riskLevel, areaBucket)}
+                className={TAB_BASE_CLASS}
                 style={tabStyle(isRiskActive(opt.value))}
               >
                 {opt.label}
@@ -236,11 +206,8 @@ export default async function InvestPage({ searchParams }: Props) {
 
         {/* Result count */}
         <p
-          style={{
-            font:         '500 12px/1 var(--font-sans)',
-            color:        'var(--fg-tertiary)',
-            marginBottom: 12,
-          }}
+          className="text-xs font-medium mb-3"
+          style={{ color: 'var(--fg-tertiary)' }}
         >
           {rows.length}개 단지
         </p>
@@ -421,11 +388,8 @@ export default async function InvestPage({ searchParams }: Props) {
 
         {/* Data footnote */}
         <p
-          style={{
-            font:      '400 11px/1.5 var(--font-sans)',
-            color:     'var(--fg-tertiary)',
-            marginTop: 12,
-          }}
+          className="text-xs mt-3"
+          style={{ color: 'var(--fg-tertiary)', lineHeight: 1.5 }}
         >
           국토부 실거래 기준 · 매매·전세 각 3건 이상 단지만 표시 · 매일 새벽 갱신
         </p>
