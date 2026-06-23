@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useTransition } from 'react'
-import { createPortal } from 'react-dom'
+import { BottomSheet } from '@/components/ui/BottomSheet'
 import type { FacilityEduData, SchoolItem, PoiItem } from '@/lib/data/facility-edu'
 import { classifyHagwon, walkColor, WALK_COLOR_HEX } from '@/lib/hagwon-category'
 import { fetchSchoolRanking } from '@/app/actions/education'
@@ -352,100 +352,57 @@ function SchoolDetailSheet({ school, si, onClose }: {
   const hasHighUniv     = school.school_type === 'high'   && school.univ_rate != null
   const hasPricePremium = school.is_assignment && !!school.district_avg_py && !!school.si_avg_py
 
-  return createPortal(
-    <>
-      <div
-        onClick={onClose}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 200 }}
-      />
-
-      <div style={{
-        position:      'fixed',
-        bottom:        0, left: 0, right: 0,
-        background:    'var(--bg-surface)',
-        borderRadius:  '20px 20px 0 0',
-        zIndex:        201,
-        maxHeight:     '90vh',
-        overflowY:     'auto',
-        boxShadow:     '0 -8px 40px rgba(0,0,0,0.15)',
-        paddingBottom: 'env(safe-area-inset-bottom, 20px)',
-      }}>
-        {/* 드래그 핸들 */}
-        <div style={{ padding: '12px 0 0', display: 'flex', justifyContent: 'center' }}>
-          <div style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--line-default)' }} />
-        </div>
-
-        {/* ── 헤더 ── */}
-        <div style={{ padding: '12px 20px 16px', borderBottom: '1px solid var(--line-subtle)' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-            <div style={{
-              width: 46, height: 46, borderRadius: 13, flexShrink: 0,
-              background: typeColor?.bg ?? 'var(--bg-surface-2)',
-              display: 'grid', placeItems: 'center',
-              color: typeColor?.color ?? 'var(--fg-sec)',
-            }}>
-              <SchoolIcon color={typeColor?.color} />
-            </div>
-
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h2 style={{ font: '700 18px/1.3 var(--font-sans)', margin: '0 0 6px', color: 'var(--fg-pri)' }}>
-                {school.school_name}
-              </h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <span style={{
-                  font: '600 11px/1 var(--font-sans)',
-                  color: typeColor?.color, background: typeColor?.bg,
-                  padding: '3px 7px', borderRadius: 4,
-                }}>
-                  {typeLabel}
-                </span>
-                {school.is_assignment && (
-                  <span style={{
-                    font: '600 11px/1 var(--font-sans)',
-                    color: '#2563eb', background: '#eff6ff',
-                    padding: '3px 7px', borderRadius: 4,
-                  }}>
-                    배정학교
-                  </span>
-                )}
-                {school.special_class_count != null && school.special_class_count > 0 && (
-                  <span style={{
-                    font: '600 11px/1 var(--font-sans)',
-                    color: '#7c3aed', background: '#f5f3ff',
-                    padding: '3px 7px', borderRadius: 4,
-                  }}>
-                    특수학급 {school.special_class_count}개
-                  </span>
-                )}
-                {school.distance_m != null && (
-                  <span style={{
-                    display: 'flex', alignItems: 'center', gap: 4,
-                    font: '500 11px/1 var(--font-sans)', color: WALK_COLOR_HEX[wc],
-                  }}>
-                    <WalkIcon color={WALK_COLOR_HEX[wc]} />
-                    {fmtDist(school.distance_m)} · {fmtWalk(school.distance_m)}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <button
-              onClick={onClose}
-              style={{
-                width: 32, height: 32, flexShrink: 0,
-                display: 'grid', placeItems: 'center',
-                border: 'none', background: 'var(--bg-surface-2)',
-                borderRadius: 8, cursor: 'pointer',
-                color: 'var(--fg-sec)', font: '500 18px/1 var(--font-sans)',
-              }}
-              aria-label="닫기"
-            >
-              ×
-            </button>
+  return (
+    <BottomSheet open={true} onClose={onClose} title={school.school_name}>
+      {/* 학교 타입 배지 + 거리 */}
+      <div style={{ padding: '8px 20px 14px', borderBottom: '1px solid var(--line-subtle)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+            background: typeColor?.bg ?? 'var(--bg-surface-2)',
+            display: 'grid', placeItems: 'center',
+            color: typeColor?.color ?? 'var(--fg-sec)',
+          }}>
+            <SchoolIcon color={typeColor?.color} />
           </div>
+          <span style={{
+            font: '600 11px/1 var(--font-sans)',
+            color: typeColor?.color, background: typeColor?.bg,
+            padding: '3px 7px', borderRadius: 4,
+          }}>
+            {typeLabel}
+          </span>
+          {school.is_assignment && (
+            <span style={{
+              font: '600 11px/1 var(--font-sans)',
+              color: '#2563eb', background: '#eff6ff',
+              padding: '3px 7px', borderRadius: 4,
+            }}>
+              배정학교
+            </span>
+          )}
+          {school.special_class_count != null && school.special_class_count > 0 && (
+            <span style={{
+              font: '600 11px/1 var(--font-sans)',
+              color: '#7c3aed', background: '#f5f3ff',
+              padding: '3px 7px', borderRadius: 4,
+            }}>
+              특수학급 {school.special_class_count}개
+            </span>
+          )}
+          {school.distance_m != null && (
+            <span style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              font: '500 11px/1 var(--font-sans)', color: WALK_COLOR_HEX[wc],
+            }}>
+              <WalkIcon color={WALK_COLOR_HEX[wc]} />
+              {fmtDist(school.distance_m)} · {fmtWalk(school.distance_m)}
+            </span>
+          )}
         </div>
+      </div>
 
-        {/* ── 기본정보 테이블 ── */}
+      {/* ── 기본정보 테이블 ── */}
         {hasBasicInfo && (
           <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--line-subtle)' }}>
             <div style={{ font: '600 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', letterSpacing: '0.05em', marginBottom: 10 }}>
@@ -708,46 +665,26 @@ function SchoolDetailSheet({ school, si, onClose }: {
           </div>
         )}
 
-        {/* ── 바로가기 버튼 ── */}
-        <div style={{ padding: '14px 20px', borderTop: '1px solid var(--line-subtle)', display: 'flex', gap: 8 }}>
-          {school.phone && (
-            <a
-              href={`tel:${school.phone}`}
-              style={{
-                flex: 1, padding: '10px 0', borderRadius: 8,
-                border: '1px solid var(--line-default)',
-                background: 'var(--bg-surface)',
-                font: '600 12px/1 var(--font-sans)', color: 'var(--fg-sec)',
-                textAlign: 'center', textDecoration: 'none',
-                display: 'block',
-              }}
-            >
-              {school.phone}
-            </a>
-          )}
-          {school.homepage_url && (
-            <a
-              href={school.homepage_url.startsWith('http') ? school.homepage_url : `https://${school.homepage_url}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                flex: 1, padding: '10px 0', borderRadius: 8,
-                border: '1px solid var(--line-default)',
-                background: 'var(--bg-surface)',
-                font: '600 12px/1 var(--font-sans)', color: '#2563eb',
-                textAlign: 'center', textDecoration: 'none',
-                display: 'block',
-              }}
-            >
-              학교 홈페이지
-            </a>
-          )}
+      {/* ── 바로가기 버튼 ── */}
+      <div style={{ padding: '14px 20px', borderTop: '1px solid var(--line-subtle)', display: 'flex', gap: 8 }}>
+        {school.phone && (
           <a
-            href={
-              school.school_code
-                ? `https://www.schoolinfo.go.kr/ei/ss/Pneiss_a_list01.do?schulCode=${school.school_code}`
-                : 'https://www.schoolinfo.go.kr'
-            }
+            href={`tel:${school.phone}`}
+            style={{
+              flex: 1, padding: '10px 0', borderRadius: 8,
+              border: '1px solid var(--line-default)',
+              background: 'var(--bg-surface)',
+              font: '600 12px/1 var(--font-sans)', color: 'var(--fg-sec)',
+              textAlign: 'center', textDecoration: 'none',
+              display: 'block',
+            }}
+          >
+            {school.phone}
+          </a>
+        )}
+        {school.homepage_url && (
+          <a
+            href={school.homepage_url.startsWith('http') ? school.homepage_url : `https://${school.homepage_url}`}
             target="_blank"
             rel="noopener noreferrer"
             style={{
@@ -759,12 +696,30 @@ function SchoolDetailSheet({ school, si, onClose }: {
               display: 'block',
             }}
           >
-            학교알리미
+            학교 홈페이지
           </a>
-        </div>
+        )}
+        <a
+          href={
+            school.school_code
+              ? `https://www.schoolinfo.go.kr/ei/ss/Pneiss_a_list01.do?schulCode=${school.school_code}`
+              : 'https://www.schoolinfo.go.kr'
+          }
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            flex: 1, padding: '10px 0', borderRadius: 8,
+            border: '1px solid var(--line-default)',
+            background: 'var(--bg-surface)',
+            font: '600 12px/1 var(--font-sans)', color: '#2563eb',
+            textAlign: 'center', textDecoration: 'none',
+            display: 'block',
+          }}
+        >
+          학교알리미
+        </a>
       </div>
-    </>,
-    document.body
+    </BottomSheet>
   )
 }
 
@@ -814,38 +769,16 @@ function SchoolRankingSheet({ si, schoolType, onClose }: {
     ? filteredRaw.map((item, idx) => ({ ...item, cityRank: item.rank, rank: idx + 1 }))
     : filteredRaw
 
-  return createPortal(
-    <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 200 }} />
-      <div style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0,
-        background: 'var(--bg-surface)',
-        borderRadius: '20px 20px 0 0',
-        zIndex: 201, maxHeight: '90vh', overflowY: 'auto',
-        boxShadow: '0 -8px 40px rgba(0,0,0,0.15)',
-        paddingBottom: 'env(safe-area-inset-bottom, 20px)',
-      }}>
-        <div style={{ padding: '12px 0 0', display: 'flex', justifyContent: 'center' }}>
-          <div style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--line-default)' }} />
-        </div>
+  return (
+    <BottomSheet open={true} onClose={onClose} title={`${si} ${SCHOOL_TYPE_LABEL[schoolType]} 순위`}>
+      {/* 순위 기준 설명 */}
+      <div style={{ padding: '4px 20px 10px', borderBottom: '1px solid var(--line-subtle)' }}>
+        <p style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>
+          {metricLabel} · 2025년 학교알리미 공시
+        </p>
+      </div>
 
-        <div style={{ padding: '12px 20px 14px', borderBottom: '1px solid var(--line-subtle)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-          <div>
-            <h2 style={{ font: '700 17px/1.3 var(--font-sans)', margin: '0 0 4px', color: 'var(--fg-pri)' }}>
-              {si} {SCHOOL_TYPE_LABEL[schoolType]} 순위
-            </h2>
-            <p style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>
-              {metricLabel} · 2025년 학교알리미 공시
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            style={{ width: 32, height: 32, border: 'none', background: 'var(--bg-surface-2)', borderRadius: 8, cursor: 'pointer', color: 'var(--fg-sec)', font: '500 18px/1 var(--font-sans)', display: 'grid', placeItems: 'center', flexShrink: 0 }}
-            aria-label="닫기"
-          >×</button>
-        </div>
-
-        {si === '창원시' && (
+      {si === '창원시' && (
           <div style={{ display: 'flex', gap: 4, padding: '10px 20px', overflowX: 'auto', borderBottom: '1px solid var(--line-subtle)' }}>
             {GU_LIST.map(g => (
               <button
@@ -927,14 +860,12 @@ function SchoolRankingSheet({ si, schoolType, onClose }: {
           )}
         </div>
 
-        <div style={{ padding: '0 20px 8px', textAlign: 'center' }}>
-          <p style={{ font: '500 10px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>
-            학교알리미 공시 데이터 기준 · 단지온도 집계
-          </p>
-        </div>
+      <div style={{ padding: '0 20px 8px', textAlign: 'center' }}>
+        <p style={{ font: '500 10px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>
+          학교알리미 공시 데이터 기준 · 단지온도 집계
+        </p>
       </div>
-    </>,
-    document.body
+    </BottomSheet>
   )
 }
 
