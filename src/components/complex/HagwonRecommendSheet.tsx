@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { createPortal } from 'react-dom'
+import { BottomSheet } from '@/components/ui/BottomSheet'
 import { recommendHagwons, saveChildProfile } from '@/app/actions/hagwon'
 import type { AgeGroup, SubjectCategory, FeeTier, SchoolOption } from '@/services/neis-hagwon'
 import { SUBJECT_LABELS, FEE_LABELS } from '@/services/neis-hagwon'
@@ -404,69 +404,25 @@ export function HagwonRecommendSheet({ lat, lng, schools, onClose }: {
 
   const stepLabel = { age: '1/3', school: '2/3', prefs: '3/3', loading: '', result: '' }[step]
 
-  return createPortal(
-    <>
-      {/* 딤 배경 */}
-      <div
-        onClick={onClose}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 200 }}
-      />
-
-      {/* 시트 */}
-      <div style={{
-        position:      'fixed',
-        bottom:        0, left: 0, right: 0,
-        background:    'var(--bg-surface)',
-        borderRadius:  '20px 20px 0 0',
-        zIndex:        201,
-        maxHeight:     '90vh',
-        overflowY:     'auto',
-        boxShadow:     '0 -8px 40px rgba(0,0,0,0.15)',
-        paddingBottom: 'env(safe-area-inset-bottom, 20px)',
-      }}>
-        {/* 드래그 핸들 */}
-        <div style={{ padding: '12px 0 0', display: 'flex', justifyContent: 'center' }}>
-          <div style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--line-default)' }} />
+  return (
+    <BottomSheet open={true} onClose={onClose} title="AI 맞춤 학원 추천">
+      {/* 스텝 인디케이터 + 설명 */}
+      {(stepLabel || step === 'age') && (
+        <div style={{ padding: '4px 20px 12px', borderBottom: '1px solid var(--line-subtle)' }}>
+          {stepLabel && (
+            <span style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+              {stepLabel}
+            </span>
+          )}
+          {step === 'age' && (
+            <p style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '4px 0 0' }}>
+              자녀 연령을 선택하면 최적 등원 루트로 추천해 드려요
+            </p>
+          )}
         </div>
+      )}
 
-        {/* 헤더 */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '10px 20px 14px',
-          borderBottom: (step === 'loading' || step === 'result') ? 'none' : '1px solid var(--line-subtle)',
-        }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-              <h2 style={{ font: '700 17px/1.3 var(--font-sans)', margin: 0, color: 'var(--fg-pri)' }}>
-                AI 맞춤 학원 추천
-              </h2>
-              {stepLabel && (
-                <span style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
-                  {stepLabel}
-                </span>
-              )}
-            </div>
-            {step === 'age' && (
-              <p style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>
-                자녀 연령을 선택하면 최적 등원 루트로 추천해 드려요
-              </p>
-            )}
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="닫기"
-            style={{
-              width: 32, height: 32, borderRadius: '50%',
-              background: 'var(--bg-surface-2)', border: 'none', cursor: 'pointer',
-              display: 'grid', placeItems: 'center',
-              color: 'var(--fg-sec)', font: '500 15px/1 var(--font-sans)',
-            }}
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* ── Step: 나이 선택 ── */}
+      {/* ── Step: 나이 선택 ── */}
         {step === 'age' && (
           <div style={{ padding: '20px 20px 0' }}>
             <h3 style={{ font: '600 14px/1 var(--font-sans)', margin: '0 0 10px', color: 'var(--fg-pri)' }}>
@@ -743,8 +699,6 @@ export function HagwonRecommendSheet({ lat, lng, schools, onClose }: {
             </button>
           </div>
         )}
-      </div>
-    </>,
-    document.body,
+    </BottomSheet>
   )
 }
