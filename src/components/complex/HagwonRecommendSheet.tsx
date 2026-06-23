@@ -287,7 +287,7 @@ function HagwonCard({ item, rank }: { item: ComboResult['hagwons'][number]; rank
             color:  'var(--fg-tertiary)',
             margin: '6px 0 0',
           }}>
-            <span style={{ fontStyle: 'italic' }}>"{reviewQuote}"</span>
+            <span style={{ fontStyle: 'italic' }}>&ldquo;{reviewQuote}&rdquo;</span>
             <span style={{
               fontStyle:   'normal',
               marginLeft:  5,
