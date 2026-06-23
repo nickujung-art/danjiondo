@@ -30,6 +30,7 @@
 | 22 | AI 가격 예측 | V3.4 | Holt-Winters 통계 엔진 + Claude Haiku 해설로 단지별 평형별 6개월 예측선 구현 | PRED-01~04 | ✅ Completed 2026-05-29 |
 | 23 | SEO URL 구조 최적화 | V4.0 | 한글 디렉토리 URL + 계층별 페이지 + BreadcrumbList + 사이트맵·RSS — 네이버 검색 노출 최대화 | SEO-01~06 | ✅ Complete (4/4 plans) |
 | 28 | 학원 추천 시스템 | V4.2 | 교육 탭 "내 아이에 맞는 학원 추천" — NEIS 학원 DB + Groq AI 분류 + 맞춤 추천 팝업 + 자녀 프로필 저장 | HAGWON-01~09 | 🔲 Not started |
+| 29 | 모바일 최적화 | V4.3 | 하단 탭바 + Tailwind mobile-first + 44px 터치 타겟 + 바텀시트로 진짜 mobile-first UX 구현 | MOB-01~06 | 🔲 Not started |
 
 ---
 
@@ -1075,6 +1076,48 @@
 3. 추천 API `/api/hagwon/recommend` 호출 시 200ms 이내 결과 반환
 4. 자녀 프로필 저장 → 페이지 재방문 시 자동 로드 (로그인 사용자)
 5. `npm run build && npm run lint && npm run test` 통과
+
+**UI hint**: yes
+
+### Phase 29: 모바일 최적화 (Mobile-First UX)
+
+**Goal:** 진짜 mobile-first UX — 하단 탭바 네비게이션 + Tailwind mobile-first 레이아웃 + 44px 터치 타겟 + 바텀시트 패턴으로 모든 주요 페이지를 모바일 기준으로 재설계. 기존 데스크탑 레이아웃이 바뀌어도 무방.
+
+**Version:** V4.3
+
+**Requirements:**
+- MOB-01: 공유 레이아웃 — `AppHeader`(로고+알림) + `BottomTabBar`(홈/랭킹/분양/MY 4탭) → `src/app/layout.tsx` 통합. 기존 인라인 헤더 제거.
+- MOB-02: 홈 페이지 mobile-first 재작성 — Tailwind responsive, 44px 터치 타겟
+- MOB-03: 랭킹 페이지 mobile-first 재작성 — 칩 필터 44px, 공유 캡처 영역 safe-area 대응
+- MOB-04: 단지 상세 페이지 mobile-first 재작성 — 탭 스와이프, 팝업 섹션 바텀시트 전환
+- MOB-05: 분양·투자 페이지 mobile-first 재작성
+- MOB-06: 공유 `BottomSheet` 컴포넌트 — HagwonRecommendSheet 패턴 추출, 재사용 가능 컴포넌트화
+
+**Plans:** 4 plans / 3 waves
+
+**Wave 1** *(독립 실행 가능)*
+- [ ] 29-01-PLAN.md — vaul+embla 설치 + AppHeader + BottomTabBar + BottomSheet + layout.tsx 통합 + CompareFloatingBar 보정 (MOB-01, MOB-06)
+
+**Wave 2** *(blocked on Wave 1; 29-02/29-03 병렬 실행 가능 — files_modified 무중복)*
+- [ ] 29-02-PLAN.md — 홈·랭킹 페이지 mobile-first 재작성 (MOB-02, MOB-03)
+- [ ] 29-03-PLAN.md — 단지상세 mobile-first + 탭 스와이프 + HagwonRecommendSheet BottomSheet 전환 (MOB-04, MOB-06)
+
+**Wave 3** *(blocked on Wave 1)*
+- [ ] 29-04-PLAN.md — 분양·투자 페이지 mobile-first 재작성 (MOB-05)
+
+**Cross-cutting constraints:**
+- ISR 페이지(revalidate export 있는 page.tsx)에 'use client' 추가 절대 금지
+- max-sm: Tailwind 패턴 사용 금지 (D-06)
+- CSS 변수 색상(--dj-orange 등)은 inline style 유지 (D-08)
+- AppHeader, BottomTabBar에 data-capture-hide="true" 필수 (ShareButton html2canvas)
+- layout.tsx viewport에 viewportFit: 'cover' 필수 (iOS safe-area)
+
+**Success Criteria:**
+1. AppHeader(로고+알림) + BottomTabBar(4탭)가 모든 페이지에 표시된다
+2. 모든 버튼·링크·칩의 터치 영역이 44px 이상이다
+3. 단지상세 탭을 좌우 스와이프로 전환할 수 있다
+4. 모바일(375px)에서 홈·랭킹·단지상세·분양·투자 페이지가 가로 스크롤 없이 정상 표시된다
+5. `npm run lint && npm run build && npm run test` 통과
 
 **UI hint**: yes
 
