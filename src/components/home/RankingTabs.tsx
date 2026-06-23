@@ -47,14 +47,7 @@ export function RankingTabs({ initialData }: Props) {
   return (
     <div>
       {/* 탭 헤더 */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 12,
-        }}
-      >
+      <div className="flex flex-col gap-1 mb-3">
         <div className="tabs" style={{ border: 'none' }}>
           {(Object.keys(TAB_LABELS) as RankType[]).map((tab) => (
             <button

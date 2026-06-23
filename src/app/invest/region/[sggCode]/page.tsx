@@ -339,11 +339,14 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-canvas)', fontFamily: 'var(--font-sans)' }}>
-      <header style={{
-        height: 60, background: '#fff', borderBottom: '1px solid var(--line-default)',
-        display: 'flex', alignItems: 'center', padding: '0 32px', gap: 16,
-        position: 'sticky', top: 0, zIndex: 50,
-      }}>
+      <header
+        className="px-4 sm:px-8"
+        style={{
+          height: 60, background: '#fff', borderBottom: '1px solid var(--line-default)',
+          display: 'flex', alignItems: 'center', gap: 16,
+          position: 'sticky', top: 0, zIndex: 50,
+        }}
+      >
         <Link href="/" className="dj-logo">
           <span className="mark">단</span><span>단지온도</span>
         </Link>
@@ -354,7 +357,7 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
         <span style={{ font: '600 13px/1 var(--font-sans)', color: 'var(--fg-pri)' }}>{label}</span>
       </header>
 
-      <main style={{ maxWidth: 1040, margin: '0 auto', padding: '24px 32px' }}>
+      <main className="px-4 sm:px-8" style={{ maxWidth: 1040, margin: '0 auto', paddingTop: 24, paddingBottom: 48 }}>
         <div style={{ marginBottom: 20 }}>
           <h1 style={{ font: '700 22px/1.3 var(--font-sans)', letterSpacing: '-0.02em', margin: '0 0 6px' }}>
             {label} 시세 예측 분석

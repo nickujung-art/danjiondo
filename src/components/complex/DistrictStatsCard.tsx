@@ -141,33 +141,33 @@ export function DistrictStatsCard({
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: perHousehold !== null ? '1fr 1fr 1fr' : '1fr 1fr',
+              gridTemplateColumns: perHousehold !== null ? 'repeat(3, minmax(0, 1fr))' : 'repeat(2, minmax(0, 1fr))',
               gap: 16,
               marginBottom: 20,
             }}
           >
-            <div>
+            <div style={{ minWidth: 0 }}>
               <div style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginBottom: 4 }}>
                 인구수
               </div>
-              <div className="tnum" style={{ font: '700 22px/1 var(--font-sans)', color: 'var(--fg-pri)' }}>
+              <div className="tnum" style={{ font: '700 20px/1 var(--font-sans)', color: 'var(--fg-pri)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {population !== null ? `${population.toLocaleString('ko-KR')}명` : '—'}
               </div>
             </div>
-            <div>
+            <div style={{ minWidth: 0 }}>
               <div style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginBottom: 4 }}>
                 세대수
               </div>
-              <div className="tnum" style={{ font: '700 22px/1 var(--font-sans)', color: 'var(--fg-pri)' }}>
+              <div className="tnum" style={{ font: '700 20px/1 var(--font-sans)', color: 'var(--fg-pri)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {households !== null ? `${households.toLocaleString('ko-KR')}세대` : '—'}
               </div>
             </div>
             {perHousehold !== null && (
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <div style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginBottom: 4 }}>
                   가구당 인구
                 </div>
-                <div className="tnum" style={{ font: '700 22px/1 var(--font-sans)', color: 'var(--fg-pri)' }}>
+                <div className="tnum" style={{ font: '700 20px/1 var(--font-sans)', color: 'var(--fg-pri)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {perHousehold}명
                 </div>
               </div>

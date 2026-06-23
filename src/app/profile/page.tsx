@@ -60,13 +60,13 @@ export default async function ProfilePage() {
     >
       {/* Nav */}
       <header
+        className="px-4 sm:px-8"
         style={{
           height:       60,
           background:   '#fff',
           borderBottom: '1px solid var(--line-default)',
           display:      'flex',
           alignItems:   'center',
-          padding:      '0 32px',
           gap:          24,
           position:     'sticky',
           top:          0,
