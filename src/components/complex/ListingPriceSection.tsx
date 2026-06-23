@@ -78,7 +78,7 @@ export function ListingPriceSection({ listingHistory, rawSaleData }: Props) {
 
   return (
     <div>
-      <ResponsiveContainer width="100%" height={220}>
+      <ResponsiveContainer width="100%" height={260}>
         <ComposedChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--line-subtle)" />
           <XAxis

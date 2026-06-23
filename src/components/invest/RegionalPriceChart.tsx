@@ -89,7 +89,7 @@ export function RegionalPriceChart({ data, title, predictionData }: RegionalPric
           {title}
         </p>
       )}
-      <ResponsiveContainer width="100%" height={220}>
+      <ResponsiveContainer width="100%" height={260}>
         <ComposedChart data={mergedData} margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
           <defs>
             <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">

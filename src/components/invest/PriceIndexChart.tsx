@@ -90,7 +90,7 @@ export function PriceIndexChart({ regional, national }: Props) {
   const yDomain = [Math.floor(minVal - pad), Math.ceil(maxVal + pad)]
 
   return (
-    <ResponsiveContainer width="100%" height={200}>
+    <ResponsiveContainer width="100%" height={240}>
       <LineChart data={rows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--line-subtle)" vertical={false} />
         <XAxis

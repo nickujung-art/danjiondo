@@ -69,7 +69,7 @@ export function TransactionChart({ normal, outliers, dealType }: Props) {
     return (
       <div
         style={{
-          minHeight: 240,
+          minHeight: 300,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -122,7 +122,7 @@ export function TransactionChart({ normal, outliers, dealType }: Props) {
         </button>
       </div>
 
-      <ResponsiveContainer width="100%" height={240}>
+      <ResponsiveContainer width="100%" height={300}>
         <ComposedChart margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
           <XAxis

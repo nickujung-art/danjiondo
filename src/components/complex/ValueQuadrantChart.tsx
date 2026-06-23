@@ -142,7 +142,7 @@ export function ValueQuadrantChart({ data, medianX, medianY, regionLabel, totalC
       <div style={{ position: 'relative' }} role="img" aria-label={`${regionLabel} 내 단지 평당가·전세가율 분포`}>
         <p className="sr-only">현재 단지는 {regionLabel} 내 {totalCount}개 단지와 비교한 평당가×전세가율 분포입니다.</p>
 
-        <ResponsiveContainer width="100%" height={260}>
+        <ResponsiveContainer width="100%" height={300}>
           <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 8 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
 
