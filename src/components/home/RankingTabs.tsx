@@ -75,12 +75,8 @@ export function RankingTabs({ initialData }: Props) {
 
       {/* 랭킹 목록 */}
       <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: '0 32px',
-          borderTop: '1px solid var(--line-default)',
-        }}
+        className="grid grid-cols-1 sm:grid-cols-2 sm:gap-x-8"
+        style={{ borderTop: '1px solid var(--line-default)' }}
       >
         {rows.length > 0 ? (
           rows.map((r) => {
@@ -138,7 +134,7 @@ export function RankingTabs({ initialData }: Props) {
                     style={{
                       font: '500 13px/1 var(--font-sans)',
                       color: 'var(--fg-sec)',
-                      width: 90,
+                      minWidth: 80,
                       textAlign: 'right',
                       flexShrink: 0,
                     }}

@@ -236,7 +236,8 @@ export default async function InvestPage({ searchParams }: Props) {
           </div>
         ) : (
           <div className="card" style={{ overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', minWidth: 580, borderCollapse: 'collapse' }}>
               <thead>
                 <tr
                   style={{
@@ -383,6 +384,7 @@ export default async function InvestPage({ searchParams }: Props) {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         )}
 

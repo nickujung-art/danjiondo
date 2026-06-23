@@ -46,8 +46,8 @@ export default async function FavoritesPage() {
           borderBottom: '1px solid var(--line-default)',
           display: 'flex',
           alignItems: 'center',
-          padding: '0 32px',
-          gap: 32,
+          padding: '0 16px',
+          gap: 16,
           position: 'sticky',
           top: 0,
           zIndex: 50,
@@ -65,7 +65,7 @@ export default async function FavoritesPage() {
         </nav>
       </header>
 
-      <div style={{ padding: '32px 48px', maxWidth: 1280, margin: '0 auto' }}>
+      <div style={{ padding: '24px 16px', maxWidth: 1280, margin: '0 auto' }}>
         <h1
           style={{
             font: '700 28px/1.25 var(--font-sans)',

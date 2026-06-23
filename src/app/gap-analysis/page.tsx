@@ -98,8 +98,10 @@ export default async function GapAnalysisPage({ searchParams }: Props) {
   }
 
   const tabStyle = (active: boolean): React.CSSProperties => ({
-    display:        'inline-block',
-    padding:        '5px 12px',
+    display:        'inline-flex',
+    alignItems:     'center',
+    padding:        '0 12px',
+    minHeight:      44,
     borderRadius:   6,
     font:           '500 12px/1 var(--font-sans)',
     textDecoration: 'none',
@@ -119,7 +121,7 @@ export default async function GapAnalysisPage({ searchParams }: Props) {
           borderBottom: '1px solid var(--line-default)',
           display:      'flex',
           alignItems:   'center',
-          padding:      '0 32px',
+          padding:      '0 16px',
           gap:          16,
           position:     'sticky',
           top:          0,
@@ -135,7 +137,7 @@ export default async function GapAnalysisPage({ searchParams }: Props) {
         </span>
       </header>
 
-      <main style={{ maxWidth: 1040, margin: '0 auto', padding: '24px 32px' }}>
+      <main style={{ maxWidth: 1040, margin: '0 auto', padding: '24px 16px' }}>
         {/* Page title */}
         <div style={{ marginBottom: 20 }}>
           <h1
@@ -222,7 +224,8 @@ export default async function GapAnalysisPage({ searchParams }: Props) {
           </div>
         ) : (
           <div className="card" style={{ overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', minWidth: 580, borderCollapse: 'collapse' }}>
               <thead>
                 <tr
                   style={{
@@ -368,6 +371,7 @@ export default async function GapAnalysisPage({ searchParams }: Props) {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         )}
 
