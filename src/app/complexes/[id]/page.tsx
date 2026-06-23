@@ -18,7 +18,7 @@ import { CompareAddButton } from '@/components/complex/CompareAddButton'
 import { CompareFloatingBar } from '@/components/complex/CompareFloatingBar'
 import { SidebarAdsSection } from '@/components/ads/SidebarAdsSection'
 import { NeighborhoodOpinion } from '@/components/reviews/NeighborhoodOpinion'
-import { RedevelopmentTimeline } from '@/components/complex/RedevelopmentTimeline'
+import { RedevelopmentSheet } from '@/components/complex/RedevelopmentSheet'
 import { GapLabel } from '@/components/complex/GapLabel'
 import { AnalysisSection } from '@/components/complex/AnalysisSection'
 import { AiChatPanel } from '@/components/complex/AiChatPanel'
@@ -819,12 +819,17 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
             <FacilityEduSection complexId={id} si={complex.si ?? undefined} gu={complex.gu ?? undefined} lat={complex.lat ?? undefined} lng={complex.lng ?? undefined} />
           </Suspense>
 
-          {/* 재건축 타임라인 — status='in_redevelopment' 단지만 표시 */}
+          {/* 재건축 타임라인 — status='in_redevelopment' 단지만 표시 (D-11: 바텀시트로 제공) */}
           {complex.status === 'in_redevelopment' && redevelopmentProject && (
-            <RedevelopmentTimeline
-              phase={redevelopmentProject.phase}
-              notes={redevelopmentProject.notes}
-            />
+            <div className="card" style={{ padding: 20 }}>
+              <h3 style={{ font: '700 15px/1.4 var(--font-sans)', margin: '0 0 12px' }}>
+                재건축 정보
+              </h3>
+              <RedevelopmentSheet
+                phase={redevelopmentProject.phase}
+                notes={redevelopmentProject.notes}
+              />
+            </div>
           )}
 
           {/* 동네 의견 */}
