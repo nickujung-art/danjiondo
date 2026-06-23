@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useMemo, useCallback, useEffect } from 'react'
 import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs'
 import useEmblaCarousel from 'embla-carousel-react'
 import { TransactionChart } from './TransactionChart'
@@ -32,7 +32,13 @@ const PERIOD_OPTIONS: { id: PeriodKey; label: string }[] = [
 ]
 
 export function DealTypeTabs({ rawSaleData, rawJeonseData }: Props) {
-  const [active, setActive] = useState<DealTab>('sale')
+  // D-12: 탭 상태 nuqs URL 동기화 — 매매↔전세 URL 공유 가능 (?tab=jeonse)
+  const [active, setActive] = useQueryState(
+    'tab',
+    parseAsStringEnum<DealTab>(['sale', 'jeonse'])
+      .withDefault('sale')
+      .withOptions({ clearOnDefault: true, shallow: true, history: 'replace' }),
+  )
   const activeTabIndex = TAB_KEYS.indexOf(active)
 
   // D-02: 기간 필터 nuqs URL 상태 (기본값 '3y', clearOnDefault로 URL 청소)
@@ -62,8 +68,8 @@ export function DealTypeTabs({ rawSaleData, rawJeonseData }: Props) {
     if (!emblaApi) return
     const newIndex = emblaApi.selectedScrollSnap()
     const newTab = TAB_KEYS[newIndex]
-    if (newTab) setActive(newTab)
-  }, [emblaApi])
+    if (newTab) void setActive(newTab)
+  }, [emblaApi, setActive])
 
   useEffect(() => {
     if (!emblaApi) return
@@ -119,7 +125,7 @@ export function DealTypeTabs({ rawSaleData, rawJeonseData }: Props) {
           {TABS.map((tab, idx) => (
             <button
               key={tab.id}
-              onClick={() => { setActive(tab.id); emblaApi?.scrollTo(idx) }}
+              onClick={() => { void setActive(tab.id); emblaApi?.scrollTo(idx) }}
               className="tab min-h-[44px]"
               data-orange-active={active === tab.id ? 'true' : undefined}
               style={{ background: 'none' }}
