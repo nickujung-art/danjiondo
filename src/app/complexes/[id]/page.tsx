@@ -386,9 +386,10 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
         {/* Main column */}
         <div className="flex flex-col gap-4">
           {/* Header card */}
-          <div className="card" style={{ padding: 28 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-              <div style={{ flex: 1 }}>
+          <div className="card" style={{ padding: 20 }}>
+            {/* Mobile-first: name/address stacks above price; sm+ side-by-side */}
+            <div className="flex flex-col sm:flex-row sm:items-start sm:gap-4">
+              <div className="flex-1">
                 <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
                   <span className="badge orange">
                     <FireIcon />
@@ -421,28 +422,9 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
                   {address}
                   {complex.floors_above && ` · ${complex.floors_above}층`}
                 </div>
-
-                {/* Action buttons — AppHeader 제거 후 hero 영역으로 이동 */}
-                <div className="flex flex-wrap gap-2 mt-3">
-                  <ShareButton
-                    complexId={id}
-                    complexName={complex.canonical_name}
-                    location={[complex.si, complex.gu, complex.dong].filter(Boolean).join(' ')}
-                  />
-                  <FavoriteButton complexId={id} />
-                  <CompareAddButton complexId={id} complexName={complex.canonical_name} />
-                  <Link
-                    href={`/login?next=/complexes/${id}`}
-                    className="btn btn-md btn-orange"
-                    style={{ textDecoration: 'none', gap: 6 }}
-                  >
-                    <BellIcon />
-                    알림 설정
-                  </Link>
-                </div>
               </div>
               {latestSale && (
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                <div className="text-right mt-3 sm:mt-0 sm:flex-shrink-0">
                   <div
                     style={{
                       font: '500 12px/1 var(--font-sans)',
@@ -477,6 +459,24 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
                   </div>
                 </div>
               )}
+            </div>
+            {/* Action buttons — full-width row below name/price on all breakpoints */}
+            <div className="flex flex-wrap gap-2 mt-3">
+              <ShareButton
+                complexId={id}
+                complexName={complex.canonical_name}
+                location={[complex.si, complex.gu, complex.dong].filter(Boolean).join(' ')}
+              />
+              <FavoriteButton complexId={id} />
+              <CompareAddButton complexId={id} complexName={complex.canonical_name} />
+              <Link
+                href={`/login?next=/complexes/${id}`}
+                className="btn btn-md btn-orange min-h-[44px]"
+                style={{ textDecoration: 'none', gap: 6 }}
+              >
+                <BellIcon />
+                알림 설정
+              </Link>
             </div>
           </div>
 
@@ -580,14 +580,14 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
                   <div>
                     <div
                       style={{
-                        font: '500 11px/1 var(--font-sans)',
+                        font: '500 12px/1 var(--font-sans)',
                         color: 'var(--fg-tertiary)',
                         marginBottom: 2,
                       }}
                     >
                       {item.label}
                     </div>
-                    <div style={{ font: '700 14px/1.3 var(--font-sans)' }}>
+                    <div style={{ font: '700 15px/1.3 var(--font-sans)' }}>
                       {item.value}
                     </div>
                     {item.sub && (
@@ -727,12 +727,12 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
                 <h3 style={{ font: '700 15px/1.4 var(--font-sans)', margin: 0 }}>시세 흐름</h3>
                 {/* 타입 탭 — URL searchParam area_type */}
                 {areaTypes.length > 0 && (
-                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  <div style={{ overflowX: 'auto', display: 'flex', gap: 4, flexWrap: 'nowrap', paddingBottom: 4 }}>
                     {/* '전체' 탭 */}
                     <a href={`/complexes/${id}`}
                       style={{
-                        display: 'inline-block', padding: '4px 10px', borderRadius: 5,
-                        font: '500 11px/1 var(--font-sans)', textDecoration: 'none',
+                        display: 'inline-block', padding: '6px 12px', borderRadius: 5,
+                        font: '500 12px/1 var(--font-sans)', textDecoration: 'none',
                         background: !areaBucket ? 'var(--dj-orange)' : 'var(--bg-surface-2)',
                         color: !areaBucket ? '#fff' : 'var(--fg-sec)',
                         border: '1px solid var(--line-subtle)', whiteSpace: 'nowrap',
@@ -743,8 +743,8 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
                       return (
                         <a key={t.bucket} href={`/complexes/${id}?area_type=${t.bucket}`}
                           style={{
-                            display: 'inline-block', padding: '4px 10px', borderRadius: 5,
-                            font: '500 11px/1 var(--font-sans)', textDecoration: 'none',
+                            display: 'inline-block', padding: '6px 12px', borderRadius: 5,
+                            font: '500 12px/1 var(--font-sans)', textDecoration: 'none',
                             background: isActive ? 'var(--dj-orange)' : 'var(--bg-surface-2)',
                             color: isActive ? '#fff' : 'var(--fg-sec)',
                             border: '1px solid var(--line-subtle)', whiteSpace: 'nowrap',
