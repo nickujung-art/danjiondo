@@ -390,7 +390,7 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
             {/* Mobile-first: name/address stacks above price; sm+ side-by-side */}
             <div className="flex flex-col sm:flex-row sm:items-start sm:gap-4">
               <div className="flex-1">
-                <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+                <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
                   <span className="badge orange">
                     <FireIcon />
                     신고가
@@ -424,7 +424,7 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
                 </div>
               </div>
               {latestSale && (
-                <div className="text-right mt-3 sm:mt-0 sm:flex-shrink-0">
+                <div className="mt-3 sm:mt-0 sm:text-right sm:flex-shrink-0">
                   <div
                     style={{
                       font: '500 12px/1 var(--font-sans)',
@@ -461,7 +461,7 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
               )}
             </div>
             {/* Action buttons — full-width row below name/price on all breakpoints */}
-            <div className="flex flex-wrap gap-2 mt-3">
+            <div className="grid grid-cols-2 gap-2 mt-3 sm:grid-cols-4">
               <ShareButton
                 complexId={id}
                 complexName={complex.canonical_name}
@@ -481,7 +481,7 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
           </div>
 
           {/* Chart card */}
-          <div className="card" style={{ padding: 24 }}>
+          <div className="card p-4 sm:p-6">
             <div
               style={{
                 display: 'flex',
@@ -727,7 +727,7 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
                 <h3 style={{ font: '700 15px/1.4 var(--font-sans)', margin: 0 }}>시세 흐름</h3>
                 {/* 타입 탭 — URL searchParam area_type */}
                 {areaTypes.length > 0 && (
-                  <div style={{ overflowX: 'auto', display: 'flex', gap: 4, flexWrap: 'nowrap', paddingBottom: 4 }}>
+                  <div style={{ overflowX: 'auto', display: 'flex', gap: 4, flexWrap: 'nowrap', paddingBottom: 4, scrollbarWidth: 'none' as const }}>
                     {/* '전체' 탭 */}
                     <a href={`/complexes/${id}`}
                       style={{
@@ -735,7 +735,7 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
                         font: '500 12px/1 var(--font-sans)', textDecoration: 'none',
                         background: !areaBucket ? 'var(--dj-orange)' : 'var(--bg-surface-2)',
                         color: !areaBucket ? '#fff' : 'var(--fg-sec)',
-                        border: '1px solid var(--line-subtle)', whiteSpace: 'nowrap',
+                        border: '1px solid var(--line-subtle)', whiteSpace: 'nowrap', flexShrink: 0,
                       }}>전체</a>
                     {areaTypes.map(t => {
                       const AREA_LABEL: Record<string, string> = { '소형': '소형', '59': '59㎡', '84': '84㎡', '대형': '대형' }
@@ -747,7 +747,7 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
                             font: '500 12px/1 var(--font-sans)', textDecoration: 'none',
                             background: isActive ? 'var(--dj-orange)' : 'var(--bg-surface-2)',
                             color: isActive ? '#fff' : 'var(--fg-sec)',
-                            border: '1px solid var(--line-subtle)', whiteSpace: 'nowrap',
+                            border: '1px solid var(--line-subtle)', whiteSpace: 'nowrap', flexShrink: 0,
                           }}>
                           {AREA_LABEL[t.bucket] ?? t.bucket}
                         </a>
@@ -868,7 +868,9 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
           </div>
 
           {/* Sidebar ads — 클라이언트 fetch로 ISR 우회 + sggCode 지역 필터 */}
-          <SidebarAdsSection sggCode={complex.sgg_code} />
+          <div className="hidden lg:block">
+            <SidebarAdsSection sggCode={complex.sgg_code} />
+          </div>
 
           {/* 이 단지 담당 공인중개사 (D-01, D-05) */}
           {complexRealtors.length > 0 && (

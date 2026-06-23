@@ -871,7 +871,7 @@ function SchoolRankingSheet({ si, schoolType, onClose }: {
 
 // ─── SchoolList ────────────────────────────────────────────────────────────
 
-function SchoolList({ schools, si, gu }: { schools: SchoolItem[]; si?: string; gu?: string }) {
+function SchoolList({ schools, si, gu: _gu }: { schools: SchoolItem[]; si?: string; gu?: string }) {
   const [schoolTab, setSchoolTab]           = useState<'elementary' | 'middle' | 'high'>('elementary')
   const [selectedSchool, setSelectedSchool] = useState<SchoolItem | null>(null)
   const [showRanking, setShowRanking]       = useState(false)
@@ -933,7 +933,7 @@ function SchoolList({ schools, si, gu }: { schools: SchoolItem[]; si?: string; g
               flexShrink:   0,
             }}
           >
-            {(gu ?? si)} {SCHOOL_TYPE_LABEL[schoolTab]} 순위보기
+            순위보기
           </button>
         )}
       </div>
@@ -1316,7 +1316,7 @@ export function EducationCard({ data, si, gu, lat, lng }: Props) {
         교육 환경
       </h3>
 
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--line-default)', marginBottom: 16 }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--line-default)', marginBottom: 16, overflowX: 'auto', scrollbarWidth: 'none' as const }}>
         {tabs.map(t => {
           const active = tab === t.key
           return (
@@ -1333,6 +1333,7 @@ export function EducationCard({ data, si, gu, lat, lng }: Props) {
                 cursor:       'pointer',
                 marginBottom: -1,
                 whiteSpace:   'nowrap',
+                flexShrink:   0,
               }}
             >
               {t.label}
