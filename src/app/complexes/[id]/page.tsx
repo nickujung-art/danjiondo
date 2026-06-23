@@ -376,59 +376,10 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      {/* Nav */}
-      <header
-        style={{
-          height: 60,
-          background: '#fff',
-          borderBottom: '1px solid var(--line-default)',
-          display: 'flex',
-          alignItems: 'center',
-          padding: '0 32px',
-          gap: 24,
-          position: 'sticky',
-          top: 0,
-          zIndex: 50,
-        }}
-      >
-        <Link href="/" className="dj-logo">
-          <span className="mark">단</span>
-          <span>단지온도</span>
-        </Link>
-        <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
-          {breadcrumb.join(' › ')} › {complex.canonical_name}
-        </span>
-        <div style={{ flex: 1 }} />
-        <ShareButton
-          complexId={id}
-          complexName={complex.canonical_name}
-          location={[complex.si, complex.gu, complex.dong].filter(Boolean).join(' ')}
-        />
-        <FavoriteButton complexId={id} />
-        <CompareAddButton complexId={id} complexName={complex.canonical_name} />
-        <Link
-          href={`/login?next=/complexes/${id}`}
-          className="btn btn-md btn-orange"
-          style={{ textDecoration: 'none', gap: 6 }}
-        >
-          <BellIcon />
-          알림 설정
-        </Link>
-      </header>
-
       {/* Body */}
-      <main
-        style={{
-          padding: '24px 32px',
-          display: 'grid',
-          gridTemplateColumns: '1fr 360px',
-          gap: 24,
-          maxWidth: 1280,
-          margin: '0 auto',
-        }}
-      >
+      <main className="px-4 py-4 sm:px-6 sm:py-6 max-w-screen-xl mx-auto grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px] lg:gap-6">
         {/* Main column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="flex flex-col gap-4">
           {/* Header card */}
           <div className="card" style={{ padding: 28 }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
@@ -464,6 +415,25 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
                 >
                   {address}
                   {complex.floors_above && ` · ${complex.floors_above}층`}
+                </div>
+
+                {/* Action buttons — AppHeader 제거 후 hero 영역으로 이동 */}
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <ShareButton
+                    complexId={id}
+                    complexName={complex.canonical_name}
+                    location={[complex.si, complex.gu, complex.dong].filter(Boolean).join(' ')}
+                  />
+                  <FavoriteButton complexId={id} />
+                  <CompareAddButton complexId={id} complexName={complex.canonical_name} />
+                  <Link
+                    href={`/login?next=/complexes/${id}`}
+                    className="btn btn-md btn-orange"
+                    style={{ textDecoration: 'none', gap: 6 }}
+                  >
+                    <BellIcon />
+                    알림 설정
+                  </Link>
                 </div>
               </div>
               {latestSale && (
@@ -879,7 +849,7 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
         </div>
 
         {/* Right rail */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="flex flex-col gap-4">
           <div className="card" style={{ padding: 20 }}>
             <h3 style={{ font: '700 15px/1.4 var(--font-sans)', margin: '0 0 12px' }}>
               최근 실거래 내역
