@@ -374,7 +374,12 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
       <ViewCountTracker complexId={id} />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd)
+            .replace(/</g, '\\u003c')
+            .replace(/>/g, '\\u003e')
+            .replace(/&/g, '\\u0026'),
+        }}
       />
       {/* Body */}
       <main className="px-4 py-4 sm:px-6 sm:py-6 max-w-screen-xl mx-auto grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px] lg:gap-6">

@@ -18,7 +18,7 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
         <Drawer.Content
           className="fixed bottom-0 left-0 right-0 z-[201] rounded-t-[20px] bg-white max-h-[90dvh] overflow-y-auto"
           style={{
-            paddingBottom: 'env(safe-area-inset-bottom, 20px)',
+            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
             boxShadow: '0 -8px 40px rgba(0,0,0,0.15)',
           }}
           aria-label={title}

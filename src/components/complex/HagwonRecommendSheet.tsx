@@ -346,6 +346,7 @@ export function HagwonRecommendSheet({ lat, lng, schools, onClose }: {
   }
 
   function handleAgeNext() {
+    if (!ageGroup) return
     // 초등/중/고 선택 시 학교 선택 단계로 (학교 목록 없어도 건너뛰기 UI 제공)
     if (needsSchoolStep) {
       setStep('school')
@@ -383,7 +384,7 @@ export function HagwonRecommendSheet({ lat, lng, schools, onClose }: {
           }
         }
       } catch (err) {
-        console.error('[HagwonRecommendSheet] 추천 오류:', err)
+        void err
         setCombo({ hagwons: [], visitOrder: [], route: [], totalRouteDist: 0 })
         setComment('추천 결과를 불러오는 중 오류가 발생했습니다.')
       } finally {

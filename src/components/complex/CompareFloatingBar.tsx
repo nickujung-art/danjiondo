@@ -23,8 +23,10 @@ export function CompareFloatingBar() {
         try {
           const saved = localStorage.getItem(STORAGE_KEY)
           if (saved) {
-            const savedIds = JSON.parse(saved) as string[]
-            if (savedIds.length > 0) void setIds(savedIds)
+            const raw: unknown = JSON.parse(saved)
+            if (Array.isArray(raw) && raw.every(x => typeof x === 'string') && raw.length > 0) {
+              void setIds(raw as string[])
+            }
           }
         } catch { /* ignore */ }
       }
