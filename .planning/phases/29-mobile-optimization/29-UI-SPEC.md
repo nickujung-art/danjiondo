@@ -57,23 +57,24 @@ Declared values (4pt grid — from `docs/UI_GUIDE.md`):
 
 ## Typography
 
-Declared sizes (4 roles — from `docs/UI_GUIDE.md` Wanted DS type scale):
+Declared sizes — exactly 4 roles (from `docs/UI_GUIDE.md` Wanted DS type scale):
 
-| Role | Size | Weight | Line Height | Tracking | Tailwind |
-|------|------|--------|-------------|----------|----------|
-| Body | 16px (body-1n) | 500 | 1.5 | +0.006em | `text-base font-medium` |
-| Label | 14px (label-1n) | 500 | 1.43 | +0.015em | `text-sm font-medium` |
-| Heading | 20px (heading-2) | 700 | 1.4 | -0.012em | `text-xl font-bold` |
-| Display | 28px (title-2) | 700 | 1.36 | -0.024em | `text-[28px] font-bold` |
+| Role | Size | Weight | Line Height | Tracking | Tailwind | Used For |
+|------|------|--------|-------------|----------|----------|----------|
+| Label / Caption | 12px | 700 | 1.43 | +0.015em | `text-xs font-bold` | Tab bar labels, timestamps, data freshness, badge text |
+| Body | 16px | 500 | 1.5 | +0.006em | `text-base font-medium` | Body text, list items, chip labels |
+| Heading | 20px | 700 | 1.4 | -0.012em | `text-xl font-bold` | Section headings, sub-headings, BottomSheet title |
+| Display | 28px | 700 | 1.36 | -0.024em | `text-[28px] font-bold` | Price display, ranking figures — always `tabular-nums` |
 
-**Additional declared sizes for this phase:**
+**Weight system — exactly 2 weights:**
+- `500` (medium) — body text, labels at reading scale, inactive UI elements
+- `700` (bold) — all headings, display figures, tab bar labels, CTAs, section sub-headings
 
-| Context | Size | Weight | Notes |
-|---------|------|--------|-------|
-| Tab bar label | 10px | 600 | `text-[10px] font-semibold` — bottom tab labels |
-| Caption / timestamp | 12px | 500 | `text-xs font-medium` — data freshness labels |
-| Section sub-heading | 18px (headline-1) | 600 | `text-[18px] font-semibold` |
-| Price display | 22–28px | 700 | `tabular-nums` — right-aligned numeric values |
+**Collapsed roles:**
+- Tab bar labels (was 10px/600) → **12px/700** (`text-xs font-bold`)
+- Caption / timestamp (was 12px/500) → **12px/700** (`text-xs font-bold`) for labels; use `--fg-tertiary` color for visual de-emphasis instead of reduced weight
+- Section sub-heading (was 18px/600) → **20px/700** (`text-xl font-bold`)
+- Price display (was 22–28px/700) → **28px/700** (`text-[28px] font-bold tabular-nums`)
 
 **Font rule:** `font-variant-numeric: tabular-nums` on all price/number cells.
 
@@ -106,7 +107,7 @@ Declared sizes (4 roles — from `docs/UI_GUIDE.md` Wanted DS type scale):
 |-------|-------|-------|
 | `--fg-pri` | `#171719` | Body text, headings, active tab content |
 | `--fg-sec` | `rgba(55,56,60,0.61)` | Inactive tab labels, secondary body |
-| `--fg-tertiary` | `rgba(55,56,60,0.43)` | Placeholders, timestamps |
+| `--fg-tertiary` | `rgba(55,56,60,0.43)` | Timestamps, captions (use color not weight to de-emphasize 12px labels) |
 | `--line-default` | `rgba(112,115,124,0.22)` | Card borders, header/tab-bar borders, dividers |
 | `--line-subtle` | `rgba(112,115,124,0.12)` | List dividers |
 
@@ -153,6 +154,7 @@ Declared sizes (4 roles — from `docs/UI_GUIDE.md` Wanted DS type scale):
 
 - **Active state:** icon + label `color: var(--dj-orange)` (inline style — CSS variable)
 - **Inactive state:** icon + label `color: var(--fg-sec)`
+- **Tab labels:** 12px / weight 700 (`text-xs font-bold`) — de-emphasis via `--fg-sec` color on inactive, not via weight reduction
 - **Each tab element:** `flex flex-1 flex-col items-center justify-center gap-1 min-h-[44px]` — 44px touch target enforced
 - **Active detection:** `pathname === '/'` for home; `pathname.startsWith(tab.href)` for others
 - **MY tab href:** `/profile` — existing `/profile/page.tsx` auth guard handles unauthenticated redirect to `/login?next=/profile`
@@ -166,7 +168,8 @@ Declared sizes (4 roles — from `docs/UI_GUIDE.md` Wanted DS type scale):
 - **Content:** `fixed bottom-0 left-0 right-0 z-[201] rounded-t-[20px] bg-white max-h-[90dvh] overflow-y-auto`
 - **Safe area:** `paddingBottom: 'env(safe-area-inset-bottom, 20px)'`
 - **Drag handle:** `mx-auto mt-3 h-1 w-10 rounded-full bg-[var(--line-default)]`
-- **Title:** 17px, weight 700 (`font-bold`), in `px-5 pt-3 pb-4`
+- **Title:** 20px / weight 700 (`text-xl font-bold`), in `px-5 pt-3 pb-4`
+- **Close button:** `lucide-react X` at 20×20px, `strokeWidth={1.75}`, `aria-label="닫기"`, positioned `absolute top-4 right-4`, touch target `w-11 h-11 flex items-center justify-center`
 - **z-index hierarchy:** Page content (0) → BottomTabBar (z-40) → BottomSheet overlay (z-200) → BottomSheet content (z-201)
 
 #### Tab Swipe (extends `DealTypeTabs`)
@@ -216,13 +219,13 @@ Declared sizes (4 roles — from `docs/UI_GUIDE.md` Wanted DS type scale):
 
 ### Page Layout Patterns
 
-| Page | Mobile layout | Desktop override |
-|------|--------------|-----------------|
-| 홈 (`/`) | Single column, `px-4`, stacked sections | `sm:grid-cols-2 lg:grid-cols-4` for ranking cards |
-| 랭킹 (`/rankings`) | Full-width list, filter chips row `overflow-x-auto` | `sm:max-w-3xl sm:mx-auto` |
-| 단지상세 (`/complexes/[id]`) | Single column, tabs + swipe | `lg:grid-cols-[1fr_360px]` — main + sidebar |
-| 분양 (`/presale`) | Stacked tier sections | `sm:max-w-3xl sm:mx-auto` |
-| 투자 (`/invest`) | Single column charts | `sm:max-w-screen-lg sm:mx-auto` |
+| Page | Mobile layout | Desktop override | Focal Point |
+|------|--------------|-----------------|-------------|
+| 홈 (`/`) | Single column, `px-4`, stacked sections | `sm:grid-cols-2 lg:grid-cols-4` for ranking cards | **Search bar** — primary focal point; centered, full-width `w-full`, rendered first in DOM and visual order |
+| 랭킹 (`/rankings`) | Full-width list, filter chips row `overflow-x-auto` | `sm:max-w-3xl sm:mx-auto` | Filter chip row + first ranking item |
+| 단지상세 (`/complexes/[id]`) | Single column, tabs + swipe | `lg:grid-cols-[1fr_360px]` — main + sidebar | Tab bar (sticky below AppHeader) |
+| 분양 (`/presale`) | Stacked tier sections | `sm:max-w-3xl sm:mx-auto` | Tier 1 card (top presale item) |
+| 투자 (`/invest`) | Single column charts | `sm:max-w-screen-lg sm:mx-auto` | Gap analysis chart |
 
 ---
 
@@ -235,7 +238,7 @@ Declared sizes (4 roles — from `docs/UI_GUIDE.md` Wanted DS type scale):
 
 ### BottomSheet Interactions
 - **Open trigger:** Button tap (explicit — no swipe-from-edge to open)
-- **Dismiss:** Drag down past snap threshold OR tap overlay
+- **Dismiss:** Drag down past snap threshold OR tap overlay OR tap close button (`lucide-react X`)
 - **Focus trap:** Vaul handles automatically (WCAG 2.4.3 compliant)
 - **Scroll:** `overflow-y: auto` inside content div; outer container does NOT scroll
 - **Max height:** `90dvh` — does not cover full screen
@@ -278,7 +281,7 @@ Declared sizes (4 roles — from `docs/UI_GUIDE.md` Wanted DS type scale):
 | Primary CTA (분양) | "청약 일정 확인" | Presale page CTA link |
 | Primary CTA (MY 미로그인) | "로그인하고 즐겨찾기 저장하기" | Profile page empty state CTA |
 | Bottom tab labels | 홈 / 랭킹 / 분양 / MY | Exact strings — no changes |
-| BottomSheet 닫기 버튼 | `aria-label="닫기"` | No visible label; icon only (X mark) |
+| BottomSheet 닫기 버튼 | `aria-label="닫기"` | Icon only: `lucide-react X` 20×20px, `strokeWidth={1.75}` — no visible text label |
 | Empty state — 즐겨찾기 없음 | "저장한 단지가 없어요" | Sub: "단지를 검색하고 즐겨찾기에 저장해보세요" |
 | Empty state — 알림 없음 | "새 알림이 없어요" | Sub: "관심 단지를 설정하면 알림을 받을 수 있어요" |
 | Error state — 로딩 실패 | "데이터를 불러올 수 없어요" | Sub: "잠시 후 다시 시도해주세요" |
@@ -395,6 +398,9 @@ No shadcn registry used. No third-party component registries.
 | z-index hierarchy | RESEARCH.md CONTEXT.md code_context | z-index section |
 | Copywriting tone/labels | CONTEXT.md D-05 + RESEARCH.md | Copywriting contract |
 | `max-sm:` forbidden | CONTEXT.md D-06 [LOCKED] | Layout contract |
+| Typography collapse (4 sizes, 2 weights) | UI checker revision 2026-06-23 | Typography section |
+| BottomSheet X close button spec | UI checker revision 2026-06-23 | Component inventory + Copywriting |
+| 홈 focal point (search bar) | UI checker revision 2026-06-23 | Layout contract |
 
 ---
 
