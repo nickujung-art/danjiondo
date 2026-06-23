@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { createReadonlyClient } from '@/lib/supabase/readonly'
 import {
   getActiveListings,
@@ -31,42 +30,18 @@ export default async function PresalePage() {
   ])
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--bg-canvas)' }}>
-      <header
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 24,
-          padding: '16px 24px',
-          borderBottom: '1px solid var(--line-default)',
-        }}
-      >
-        <nav style={{ display: 'flex', gap: 24, font: '600 14px/1 var(--font-sans)' }}>
-          <Link href="/" style={{ color: 'var(--fg-sec)', textDecoration: 'none' }}>홈</Link>
-          <Link href="/map" style={{ color: 'var(--fg-sec)', textDecoration: 'none' }}>지도</Link>
-          <Link href="/presale" style={{ color: 'var(--dj-orange)', textDecoration: 'none' }}>분양</Link>
-          <Link href="/favorites" style={{ color: 'var(--fg-sec)', textDecoration: 'none' }}>관심단지</Link>
-        </nav>
-      </header>
-
-      <main style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px' }}>
-        <div style={{ marginBottom: 32 }}>
+    <div className="min-h-screen" style={{ background: 'var(--bg-canvas)' }}>
+      <main className="px-4 py-6 sm:px-6 sm:max-w-3xl sm:mx-auto">
+        <div className="mb-8">
           <h1
-            style={{
-              font: '700 22px/1.3 var(--font-sans)',
-              letterSpacing: '-0.02em',
-              margin: '0 0 8px',
-              color: 'var(--fg-pri)',
-            }}
+            className="text-2xl font-bold tracking-tight mb-2"
+            style={{ color: 'var(--fg-pri)' }}
           >
             창원·김해 신축·분양·재건축
           </h1>
           <p
-            style={{
-              font: '500 13px/1.4 var(--font-sans)',
-              color: 'var(--fg-sec)',
-              margin: 0,
-            }}
+            className="text-sm font-medium"
+            style={{ color: 'var(--fg-sec)' }}
           >
             청약홈 분양 공고 · admin 지정 재건축 단지 · 2021년 이후 신축 단지
           </p>
@@ -74,19 +49,15 @@ export default async function PresalePage() {
 
         {/* Tier 0: 분양 예정 — 청약홈 미등록, 공식 사이트 크롤링 데이터 */}
         {enrichedItems.length > 0 && (
-          <section style={{ marginBottom: 40 }} aria-labelledby="section-enriched">
+          <section className="mb-10" aria-labelledby="section-enriched">
             <h2
               id="section-enriched"
-              style={{
-                font: '700 18px/1.3 var(--font-sans)',
-                letterSpacing: '-0.02em',
-                margin: '0 0 4px',
-                color: 'var(--fg-pri)',
-              }}
+              className="text-xl font-bold tracking-tight mb-1"
+              style={{ color: 'var(--fg-pri)' }}
             >
               분양 예정
             </h2>
-            <p style={{ font: '500 12px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '0 0 16px' }}>
+            <p className="text-xs font-medium mb-4" style={{ color: 'var(--fg-tertiary)' }}>
               청약홈에 미등록된 분양 예정 단지 · 공식 사이트 기준
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -99,21 +70,14 @@ export default async function PresalePage() {
 
         {/* Tier 1: 분양 공고 (데이터 없으면 헤더도 숨김) */}
         {listings.length > 0 && (
-          <section style={{ marginBottom: 40 }} aria-labelledby="section-presale">
+          <section className="mb-10" aria-labelledby="section-presale">
             <h2
               id="section-presale"
-              style={{
-                font: '700 18px/1.3 var(--font-sans)',
-                letterSpacing: '-0.02em',
-                margin: '0 0 16px',
-                color: 'var(--fg-pri)',
-              }}
+              className="text-xl font-bold tracking-tight mb-4"
+              style={{ color: 'var(--fg-pri)' }}
             >
               분양 공고
-              <span
-                className="badge pos"
-                style={{ marginLeft: 12, font: '500 11px/1 var(--font-sans)' }}
-              >
+              <span className="badge pos ml-3 text-xs font-medium">
                 {listings.length}건 진행 중
               </span>
             </h2>
@@ -127,19 +91,15 @@ export default async function PresalePage() {
 
         {/* Tier 1-B: 최근 30일 마감 공고 (활성 공고 없을 때 또는 항상 하단 표시) */}
         {recentlyExpired.length > 0 && (
-          <section style={{ marginBottom: 40 }} aria-labelledby="section-expired">
+          <section className="mb-10" aria-labelledby="section-expired">
             <h2
               id="section-expired"
-              style={{
-                font: '700 18px/1.3 var(--font-sans)',
-                letterSpacing: '-0.02em',
-                margin: '0 0 4px',
-                color: 'var(--fg-pri)',
-              }}
+              className="text-xl font-bold tracking-tight mb-1"
+              style={{ color: 'var(--fg-pri)' }}
             >
               최근 마감
             </h2>
-            <p style={{ font: '500 12px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '0 0 16px' }}>
+            <p className="text-xs font-medium mb-4" style={{ color: 'var(--fg-tertiary)' }}>
               30일 이내 청약 마감된 공고입니다.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -152,15 +112,11 @@ export default async function PresalePage() {
 
         {/* Tier 2: 재건축 예정 (데이터 없으면 헤더도 숨김) */}
         {redevelopments.length > 0 && (
-          <section style={{ marginBottom: 40 }} aria-labelledby="section-redev">
+          <section className="mb-10" aria-labelledby="section-redev">
             <h2
               id="section-redev"
-              style={{
-                font: '700 18px/1.3 var(--font-sans)',
-                letterSpacing: '-0.02em',
-                margin: '0 0 16px',
-                color: 'var(--fg-pri)',
-              }}
+              className="text-xl font-bold tracking-tight mb-4"
+              style={{ color: 'var(--fg-pri)' }}
             >
               재건축 예정
             </h2>
@@ -176,32 +132,18 @@ export default async function PresalePage() {
         <section aria-labelledby="section-newbuild">
           <h2
             id="section-newbuild"
-            style={{
-              font: '700 18px/1.3 var(--font-sans)',
-              letterSpacing: '-0.02em',
-              margin: '0 0 16px',
-              color: 'var(--fg-pri)',
-            }}
+            className="text-xl font-bold tracking-tight mb-4"
+            style={{ color: 'var(--fg-pri)' }}
           >
             신축 단지
-            <span
-              style={{
-                marginLeft: 8,
-                font: '500 12px/1 var(--font-sans)',
-                color: 'var(--fg-sec)',
-              }}
-            >
+            <span className="ml-2 text-sm font-medium" style={{ color: 'var(--fg-sec)' }}>
               2021년 이후 준공, 최신순
             </span>
           </h2>
           {newBuilds.length === 0 ? (
             <div
-              style={{
-                padding: '40px 0',
-                textAlign: 'center',
-                font: '500 13px/1.6 var(--font-sans)',
-                color: 'var(--fg-tertiary)',
-              }}
+              className="py-10 text-center text-sm font-medium"
+              style={{ color: 'var(--fg-tertiary)' }}
             >
               2021년 이후 준공된 단지가 등록되지 않았습니다.
             </div>
