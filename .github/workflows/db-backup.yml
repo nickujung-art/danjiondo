@@ -17,57 +17,19 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y postgresql-client
 
-      - name: Diagnose connection
+      - name: Diagnose URL structure
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
-          set -e
-          # Show URL structure (masked password)
-          python3 - << 'PYEOF'
-import os, urllib.parse
-
-url = os.environ['SUPABASE_DB_URL']
-print(f"URL length: {len(url)}")
-
-# Method 1: urlparse
-u = urllib.parse.urlparse(url)
-print(f"urlparse host: {u.hostname}")
-print(f"urlparse user: {u.username}")
-print(f"urlparse password length: {len(u.password) if u.password else 'None'}")
-print(f"urlparse password first2: {(u.password[:2] + '***') if u.password else 'None'}")
-
-# Method 2: rsplit
-after_scheme = url.split('://', 1)[1]
-userpass = after_scheme.rsplit('@', 1)[0]
-host_part = after_scheme.rsplit('@', 1)[1]
-pw_raw = userpass.split(':', 1)[1]
-pw_decoded = urllib.parse.unquote(pw_raw)
-print(f"rsplit method password length: {len(pw_decoded)}")
-print(f"rsplit method password first2: {pw_decoded[:2] + '***'}")
-print(f"host from rsplit: {host_part.split(':')[0]}")
-print(f"@ count in URL: {url.count('@')}")
-PYEOF
+          python3 -c "import os,urllib.parse as p; url=os.environ['SUPABASE_DB_URL']; u=p.urlparse(url); print('URL_len',len(url),'@count',url.count('@'),'user',u.username,'host',u.hostname,'pass_len',len(u.password or ''))"
+          python3 -c "import os,urllib.parse as p; url=os.environ['SUPABASE_DB_URL']; up=url.split('://',1)[1].rsplit('@',1)[0]; pw=p.unquote(up.split(':',1)[1]); print('rsplit_pw_len',len(pw),'first3',pw[:3]+'***' if len(pw)>3 else '***')"
 
       - name: Test psql connection
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
-          set -e
-          export PGPASSWORD=$(python3 -c "
-import os, urllib.parse
-url = os.environ['SUPABASE_DB_URL']
-up = url.split('://', 1)[1].rsplit('@', 1)[0]
-pw = up.split(':', 1)[1]
-print(urllib.parse.unquote(pw))
-")
-          echo "Testing psql connection to Session Pooler..."
-          psql \
-            --host=aws-1-ap-southeast-2.pooler.supabase.com \
-            --port=5432 \
-            --username=postgres.auoravdadyzvuoxunogh \
-            --dbname=postgres \
-            --no-password \
-            -c "SELECT count(*) FROM pg_tables WHERE schemaname='public';" 2>&1 || echo "psql failed with exit $?"
+          export PGPASSWORD=$(python3 -c "import os,urllib.parse as p; url=os.environ['SUPABASE_DB_URL']; up=url.split('://',1)[1].rsplit('@',1)[0]; print(p.unquote(up.split(':',1)[1]))")
+          psql --host=aws-1-ap-southeast-2.pooler.supabase.com --port=5432 --username=postgres.auoravdadyzvuoxunogh --dbname=postgres --no-password -c "SELECT 'connected' AS status;" 2>&1 || echo "psql exit=$?"
 
       - name: Run pg_dump
         env:
@@ -75,20 +37,8 @@ print(urllib.parse.unquote(pw))
         run: |
           set -e
           FILENAME="backup-$(date +%Y-%m-%d).sql.gz"
-          export PGPASSWORD=$(python3 -c "
-import os, urllib.parse
-url = os.environ['SUPABASE_DB_URL']
-up = url.split('://', 1)[1].rsplit('@', 1)[0]
-pw = up.split(':', 1)[1]
-print(urllib.parse.unquote(pw))
-")
-          pg_dump \
-            --host=aws-1-ap-southeast-2.pooler.supabase.com \
-            --port=5432 \
-            --username=postgres.auoravdadyzvuoxunogh \
-            --dbname=postgres \
-            --no-password \
-          | gzip > "/tmp/$FILENAME"
+          export PGPASSWORD=$(python3 -c "import os,urllib.parse as p; url=os.environ['SUPABASE_DB_URL']; up=url.split('://',1)[1].rsplit('@',1)[0]; print(p.unquote(up.split(':',1)[1]))")
+          pg_dump --host=aws-1-ap-southeast-2.pooler.supabase.com --port=5432 --username=postgres.auoravdadyzvuoxunogh --dbname=postgres --no-password | gzip > "/tmp/$FILENAME"
           echo "FILENAME=$FILENAME" >> "$GITHUB_ENV"
           echo "pg_dump complete: $FILENAME"
 
@@ -108,9 +58,7 @@ print(urllib.parse.unquote(pw))
           BACKUP_PAT: ${{ secrets.BACKUP_PAT }}
         run: |
           set -e
-          git clone \
-            "https://x-access-token:${BACKUP_PAT}@github.com/nickujung-art/danjiondo-backup.git" \
-            /tmp/backup-repo
+          git clone "https://x-access-token:${BACKUP_PAT}@github.com/nickujung-art/danjiondo-backup.git" /tmp/backup-repo
 
       - name: Commit backup file
         run: |
