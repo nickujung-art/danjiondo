@@ -5,9 +5,12 @@ on:
     - cron: '0 19 * * 6'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   backup:
-    name: pg_dump -> danjiondo-backup repo
+    name: pg_dump -> GitHub Release
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -23,7 +26,7 @@ jobs:
           sudo apt-get install -y postgresql-client-17
           /usr/lib/postgresql/17/bin/pg_dump --version
 
-      - name: Run pg_dump 17
+      - name: Run pg_dump
         run: |
           set -e
           FILENAME="backup-$(date +%Y-%m-%d).sql.gz"
@@ -37,55 +40,42 @@ jobs:
             --no-password \
             --no-owner \
             --no-privileges \
-          | gzip > "/tmp/$FILENAME"
+          2>&1 | gzip > "/tmp/$FILENAME"
           echo "FILENAME=$FILENAME" >> "$GITHUB_ENV"
           DUMP_SIZE=$(wc -c < "/tmp/$FILENAME")
           echo "pg_dump complete: $DUMP_SIZE bytes"
-
-      - name: Verify dump
-        run: |
-          set -e
-          DUMP_SIZE=$(wc -c < "/tmp/$FILENAME")
           if [ "$DUMP_SIZE" -lt 10000 ]; then
-            echo "ERROR: dump too small ($DUMP_SIZE bytes)" >&2
-            exit 1
+            echo "ERROR: dump too small" >&2; exit 1
           fi
-          echo "OK: $DUMP_SIZE bytes"
 
-      - name: Clone backup repo
+      - name: Upload to GitHub Release (db-backups)
         env:
-          BACKUP_PAT: ${{ secrets.BACKUP_PAT }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          git clone "https://x-access-token:${BACKUP_PAT}@github.com/nickujung-art/danjiondo-backup.git" /tmp/backup-repo
-
-      - name: Commit backup
-        run: |
-          set -e
-          cp "/tmp/$FILENAME" /tmp/backup-repo/
-          cd /tmp/backup-repo
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add "$FILENAME"
-          git commit -m "backup: $FILENAME"
-          git push
+          # Create or get existing release tag "db-backups"
+          if ! gh release view db-backups --repo ${{ github.repository }} > /dev/null 2>&1; then
+            gh release create db-backups \
+              --repo ${{ github.repository }} \
+              --title "DB Backups" \
+              --notes "Automated weekly database backups" \
+              --prerelease
+          fi
+          # Upload backup file
+          gh release upload db-backups "/tmp/$FILENAME" \
+            --repo ${{ github.repository }} \
+            --clobber
+          echo "Uploaded $FILENAME to release db-backups"
 
       - name: Cleanup backups older than 90 days
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -e
-          cd /tmp/backup-repo
           CUTOFF=$(date -d '90 days ago' +%Y-%m-%d)
-          REMOVED=0
-          for f in backup-*.sql.gz; do
-            [ -f "$f" ] || continue
-            FILEDATE="${f#backup-}"
-            FILEDATE="${FILEDATE%.sql.gz}"
-            if [[ "$FILEDATE" < "$CUTOFF" ]]; then
-              git rm "$f"
-              REMOVED=$((REMOVED + 1))
-            fi
+          gh release view db-backups --repo ${{ github.repository }} --json assets \
+            --jq ".assets[] | select(.name | test(\"backup-\")) | select(.name | ltrimstr(\"backup-\") | rtrimstr(\".sql.gz\") < \"$CUTOFF\") | .name" \
+          | while read -r OLD_FILE; do
+            gh release delete-asset db-backups "$OLD_FILE" \
+              --repo ${{ github.repository }} --yes || true
+            echo "Deleted old backup: $OLD_FILE"
           done
-          if [ "$REMOVED" -gt 0 ]; then
-            git commit -m "cleanup: remove $REMOVED backup(s) older than 90 days"
-            git push
-          fi
