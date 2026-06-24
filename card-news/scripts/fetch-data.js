@@ -253,44 +253,70 @@ export async function fetchValueRanking({ sggCodes, areaMin = 80, areaMax = 95, 
 }
 
 /**
- * 구별 대장단지 — 각 구 최고가 단지 1개씩
+ * 구별 대장단지 — 각 구 최고 평당가 단지 1개씩 + 전주 대비 변동률
  */
 export async function fetchDistrictChampions({ sggMap, dealType = 'sale' }) {
   const { from, to } = getLastWeekRange()
   const allCodes = Object.keys(sggMap)
 
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('complex_id, price, area_m2, sgg_code')
-    .is('cancel_date', null)
-    .is('superseded_by', null)
-    .eq('deal_type', dealType)
-    .gte('deal_date', from)
-    .lte('deal_date', to)
-    .in('sgg_code', allCodes)
-    .not('complex_id', 'is', null)
-    .limit(5000)
+  const fmt = (d) => d.toISOString().split('T')[0]
+  const prevFrom = new Date(from); prevFrom.setDate(prevFrom.getDate() - 7)
+  const prevTo = new Date(to); prevTo.setDate(prevTo.getDate() - 7)
 
-  if (error) throw new Error(`fetchDistrictChampions: ${error.message}`)
-
-  // 구별로 최고가 단지 1개 선정
-  const byGu = new Map() // sggCode → { complex_id, price, area_m2 }
-  for (const t of data ?? []) {
-    const cur = byGu.get(t.sgg_code)
-    if (!cur || t.price > cur.price) byGu.set(t.sgg_code, { complex_id: t.complex_id, price: t.price, area_m2: t.area_m2 })
+  async function fetchWeekTx(weekFrom, weekTo) {
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('complex_id, price, area_m2, sgg_code')
+      .is('cancel_date', null)
+      .is('superseded_by', null)
+      .eq('deal_type', dealType)
+      .gte('deal_date', weekFrom)
+      .lte('deal_date', weekTo)
+      .in('sgg_code', allCodes)
+      .not('complex_id', 'is', null)
+      .gt('area_m2', 0)
+      .limit(5000)
+    if (error) throw new Error(`fetchDistrictChampions: ${error.message}`)
+    return data ?? []
   }
 
-  const complexIds = [...byGu.values()].map((v) => v.complex_id).filter(Boolean)
+  const [thisTx, prevTx] = await Promise.all([
+    fetchWeekTx(from, to),
+    fetchWeekTx(fmt(prevFrom), fmt(prevTo)),
+  ])
+
+  // 구별 최고 평당가 단지 선정
+  function bestPerPyeong(txList) {
+    const byGu = new Map()
+    for (const t of txList) {
+      const ppp = Math.round(t.price / (t.area_m2 / 3.3058))
+      const cur = byGu.get(t.sgg_code)
+      if (!cur || ppp > cur.ppp) byGu.set(t.sgg_code, { complex_id: t.complex_id, ppp })
+    }
+    return byGu
+  }
+
+  const thisBest = bestPerPyeong(thisTx)
+  const prevBest = bestPerPyeong(prevTx)
+
+  const complexIds = [...thisBest.values()].map((v) => v.complex_id).filter(Boolean)
   const cmap = await fetchComplexNames(complexIds)
 
-  return allCodes.map((code, i) => {
-    const best = byGu.get(code)
+  return allCodes.map((code) => {
+    const best = thisBest.get(code)
+    const prev = prevBest.get(code)
     const c = best ? cmap.get(best.complex_id) : null
+
+    let change = null
+    if (best?.ppp && prev?.ppp) {
+      change = Math.round(((best.ppp - prev.ppp) / prev.ppp) * 1000) / 10
+    }
+
     return {
-      rank: i + 1,
       district: sggMap[code],
       name: c?.canonical_name ?? null,
-      price: best ? formatPrice(best.price) : null,
+      pricePerPyeong: best?.ppp ?? null,
+      change,
     }
   })
 }

@@ -22,7 +22,7 @@ import {
   getWeekCode,
   getPeriodLabel,
 } from './fetch-data.js'
-import { renderCover, renderHighlight, renderRanking, renderClosing } from './templates.js'
+import { renderCover, renderHighlight, renderRanking, renderClosing, renderDistrictChampionsCard } from './templates.js'
 import { captureCard, closeBrowser } from './capture.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -179,24 +179,23 @@ async function main() {
       const dir = join(OUTPUT_DIR, weekCode, 'district-champions')
       mkdirSync(dir, { recursive: true })
 
-      // 대장단지는 랭킹 데이터를 구별 챔피언으로 채워서 동일 템플릿 활용
-      const ranking = champions.map((c, i) => ({
-        rank: i + 1,
-        name: c.name,
-        subtitle: c.district,
-        price: c.price,
-      }))
+      const data = { ...baseWeekData, champions }
+      const cards = [
+        { name: '01-grid',    html: renderDistrictChampionsCard(data) },
+        { name: '02-closing', html: renderClosing(data) },
+      ]
 
-      const data = {
-        ...baseWeekData,
-        region: '창원+김해',
-        area: null,
-        seriesType: 'district',
-        subCaption: '이번 주 각 구에서\n가장 비싸게 거래된 대장 단지',
-        ranking: pad10(ranking),
+      for (const card of cards) {
+        const pngPath = join(dir, `${card.name}.png`)
+        const htmlPath = join(dir, `${card.name}.html`)
+        if (dryRun) {
+          writeFileSync(htmlPath, card.html, 'utf-8')
+          console.log(`  [dry] wrote ${card.name}.html`)
+        } else {
+          await captureCard(card.html, pngPath)
+          console.log(`  ✓ ${card.name}.png`)
+        }
       }
-
-      await generateCardSet('district-champions', data, dryRun)
     } catch (err) {
       console.error(`  [ERROR] district-champions: ${err.message}`)
     }

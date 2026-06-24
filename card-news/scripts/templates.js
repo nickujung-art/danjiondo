@@ -249,7 +249,83 @@ export function renderRanking(data) {
   return html(body, css)
 }
 
-// ── 4. 클로징 CTA ─────────────────────────────────────────
+// ── 4. 구별 대장단지 그리드 ───────────────────────────────
+
+export function renderDistrictChampionsCard(data) {
+  const { week, period, champions } = data
+
+  function changeHtml(change) {
+    if (change === null || change === undefined) return ''
+    const abs = Math.abs(change).toFixed(1)
+    if (change > 0.05) return `<span class="change-up">▲${abs}%</span>`
+    if (change < -0.05) return `<span class="change-down">▼${abs}%</span>`
+    return `<span class="change-flat">— 전주 동일</span>`
+  }
+
+  function districtCard(ch) {
+    const { district, name, pricePerPyeong, change } = ch
+    const priceStr = pricePerPyeong ? pricePerPyeong.toLocaleString('ko-KR') : '—'
+    const nameStr = name ?? '데이터 없음'
+    const isNoData = !pricePerPyeong
+
+    return `<div class="district-card">
+      <div class="district-hd">${district}</div>
+      <div class="district-body">
+        <div>
+          <div class="district-price${isNoData ? ' ph' : ''}">${priceStr}</div>
+          <div class="district-unit">만원/평</div>
+        </div>
+        <div class="district-name${isNoData ? ' ph' : ''}">${nameStr}</div>
+        <div class="district-change">${changeHtml(change)}</div>
+      </div>
+    </div>`
+  }
+
+  const css = `
+    .card { width:1080px; height:1080px; background:#fff; overflow:hidden; display:flex; flex-direction:column; }
+    .top-bar { height:14px; background:var(--brand); flex-shrink:0; }
+    .header { padding:32px 80px 20px; display:flex; flex-direction:column; gap:10px; flex-shrink:0; }
+    .header-top { display:flex; justify-content:space-between; align-items:center; }
+    .header-week { font:700 22px/1 'Pretendard'; color:var(--brand); letter-spacing:0.3px; }
+    .header-title { font:900 52px/1.1 'Pretendard'; color:var(--ink); letter-spacing:-2px; }
+    .header-sub { font:500 21px/1 'Pretendard'; color:var(--ink-3); }
+
+    .grid { display:grid; grid-template-columns:1fr 1fr; grid-template-rows:repeat(3,1fr); gap:12px; padding:0 40px 40px; flex:1; min-height:0; }
+
+    .district-card { border-radius:20px; overflow:hidden; display:flex; flex-direction:column; }
+    .district-hd { background:var(--brand); color:#fff; padding:14px 24px; font:700 28px/1 'Pretendard'; letter-spacing:-0.5px; flex-shrink:0; }
+    .district-body { background:var(--surface-2); flex:1; padding:16px 24px 18px; display:flex; flex-direction:column; justify-content:space-between; }
+
+    .district-price { font:900 46px/1 'Pretendard'; color:var(--ink); letter-spacing:-2px; }
+    .district-unit { font:500 18px/1 'Pretendard'; color:var(--ink-3); margin-top:4px; }
+    .district-name { font:600 21px/1.3 'Pretendard'; color:var(--ink-2); overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+    .district-change { font:700 20px/1 'Pretendard'; }
+
+    .change-up { color:#16A34A; }
+    .change-down { color:#DC2626; }
+    .change-flat { color:var(--ink-3); }
+    .ph { color:var(--placeholder); }
+  `
+
+  const body = `<div class="card">
+    <div class="top-bar"></div>
+    <div class="header">
+      <div class="header-top">
+        ${BrandLockup()}
+        <div class="header-week">WEEKLY REPORT · ${week}</div>
+      </div>
+      <div class="header-title">구별 대장단지</div>
+      <div class="header-sub">창원·김해 구별 최고 평당가 단지 &nbsp;·&nbsp; ${period}</div>
+    </div>
+    <div class="grid">
+      ${champions.map(districtCard).join('')}
+    </div>
+  </div>`
+
+  return html(body, css)
+}
+
+// ── 5. 클로징 CTA ─────────────────────────────────────────
 
 export function renderClosing(data) {
   const { source } = data
