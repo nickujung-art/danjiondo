@@ -41,37 +41,54 @@ describe('extractTypedAreaGroups', () => {
     expect(extractTypedAreaGroups([])).toEqual([])
   })
 
-  it('네이버 exclusive_area_m2가 있으면 "84.73㎡" 형태로 label 표시', () => {
-    const points = [makeNamed('34B', 84.73)]
-    const [group] = extractTypedAreaGroups(points)
-    expect(group.label).toBe('84.73㎡')
-    expect(group.key).toBe('34B')
+  it('고유한 m² → 정수㎡만 표시 ("59㎡")', () => {
+    const points = [makeNamed('25', 59.45, 59.46)]
+    const group = extractTypedAreaGroups(points)[0]!
+    expect(group.label).toBe('59㎡')
+    expect(group.key).toBe('25')
     expect(group.isNamed).toBe(true)
-    expect(group.pyeongName).toBe('34B')
+    expect(group.pyeongName).toBe('25')
   })
 
-  it('exclusive_area_m2가 null이면 pyeong_name으로 fallback', () => {
-    const points = [makeNamed('34A', null)]
-    const [group] = extractTypedAreaGroups(points)
-    expect(group.label).toBe('34A')
-  })
-
-  it('34A / 34B 같은 단지에서 key로 구분됨', () => {
+  it('충돌하는 m² → 정수㎡ + suffix ("84㎡A", "84㎡B")', () => {
     const points = [
       makeNamed('34A', 84.72, 84.72),
       makeNamed('34B', 84.73, 84.73),
     ]
     const groups = extractTypedAreaGroups(points)
     expect(groups).toHaveLength(2)
-    expect(groups.map(g => g.key)).toContain('34A')
-    expect(groups.map(g => g.key)).toContain('34B')
-    expect(groups.find(g => g.key === '34A')?.label).toBe('84.72㎡')
-    expect(groups.find(g => g.key === '34B')?.label).toBe('84.73㎡')
+    expect(groups.find(g => g.key === '34A')?.label).toBe('84㎡A')   // Math.floor(84.72)=84
+    expect(groups.find(g => g.key === '34B')?.label).toBe('84㎡B')   // Math.floor(84.73)=84
   })
 
-  it('isNamed=false 거래는 "84㎡" 형태 label, key는 숫자 문자열', () => {
+  it('exclusive_area_m2가 null이면 pyeong_name으로 fallback', () => {
+    const points = [makeNamed('34A', null)]
+    const group = extractTypedAreaGroups(points)[0]!
+    expect(group.label).toBe('34A')
+  })
+
+  it('실제 용지아이파크 케이스: 6개 평형 중 34A/34B만 충돌', () => {
+    const points = [
+      makeNamed('25',  59.45, 59.46),
+      makeNamed('34A', 84.72, 84.72),
+      makeNamed('34B', 84.73, 84.73),
+      makeNamed('39',  100.19, 100.19),
+      makeNamed('43',  114.80, 114.81),
+      makeNamed('47',  127.36, 127.37),
+    ]
+    const groups = extractTypedAreaGroups(points)
+    const labels = groups.map(g => g.label)
+    expect(labels).toContain('59㎡')
+    expect(labels).toContain('84㎡A')
+    expect(labels).toContain('84㎡B')
+    expect(labels).toContain('100㎡')
+    expect(labels).toContain('114㎡')
+    expect(labels).toContain('127㎡')
+  })
+
+  it('isNamed=false 거래는 "84㎡" 형태 label', () => {
     const points = [makeUnnamed(84.4)]
-    const [group] = extractTypedAreaGroups(points)
+    const group = extractTypedAreaGroups(points)[0]!
     expect(group.label).toBe('84㎡')
     expect(group.key).toBe('84')
     expect(group.isNamed).toBe(false)
@@ -85,12 +102,12 @@ describe('extractTypedAreaGroups', () => {
       makeNamed('34B', 84.73, 84.73),
     ]
     const groups = extractTypedAreaGroups(points)
-    expect(groups[0].key).toBe('34B')
+    expect(groups[0]!.key).toBe('34B')
   })
 })
 
 describe('filterByTypedArea', () => {
-  it('pyeong_name 기준으로 필터 (named)', () => {
+  it('pyeong_name key 기준으로 필터 (named)', () => {
     const points = [
       makeNamed('34A', 84.72, 84.72),
       makeNamed('34B', 84.73, 84.73),
@@ -100,7 +117,7 @@ describe('filterByTypedArea', () => {
   })
 
   it('Math.round fallback (unnamed)', () => {
-    // 84.2 → round(84), 84.4 → round(84), 84.6 → round(85)
+    // 84.2 → round(84), 84.4 → round(84)
     const points = [makeUnnamed(84.2), makeUnnamed(84.4), makeUnnamed(59.0)]
     const result = filterByTypedArea(points, '84')
     expect(result).toHaveLength(2)

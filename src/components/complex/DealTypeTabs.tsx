@@ -192,7 +192,7 @@ export function DealTypeTabs({ rawSaleData, rawJeonseData }: Props) {
                       onClick={() => void setArea(group.key)}
                       className={`btn btn-sm ${isActive ? 'btn-orange' : 'btn-secondary'}`}
                       style={{ minHeight: 32, padding: '4px 12px' }}
-                      title={group.isNamed ? (group.pyeongName ? `${group.pyeongName} 타입` : group.label) : `약 ${Math.round(parseInt(group.key) / 3.3058)}평`}
+                      aria-label={group.isNamed && group.pyeongName ? `${group.pyeongName} 타입 (${group.label})` : group.label}
                     >
                       {group.label}
                     </button>
@@ -227,7 +227,7 @@ export function DealTypeTabs({ rawSaleData, rawJeonseData }: Props) {
                       onClick={() => void setArea(group.key)}
                       className={`btn btn-sm ${isActive ? 'btn-orange' : 'btn-secondary'}`}
                       style={{ minHeight: 32, padding: '4px 12px' }}
-                      title={group.isNamed ? (group.pyeongName ? `${group.pyeongName} 타입` : group.label) : `약 ${Math.round(parseInt(group.key) / 3.3058)}평`}
+                      aria-label={group.isNamed && group.pyeongName ? `${group.pyeongName} 타입 (${group.label})` : group.label}
                     >
                       {group.label}
                     </button>
