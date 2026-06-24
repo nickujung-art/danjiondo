@@ -31,7 +31,7 @@
 | 23 | SEO URL 구조 최적화 | V4.0 | 한글 디렉토리 URL + 계층별 페이지 + BreadcrumbList + 사이트맵·RSS — 네이버 검색 노출 최대화 | SEO-01~06 | ✅ Complete (4/4 plans) |
 | 28 | 학원 추천 시스템 | V4.2 | 교육 탭 "내 아이에 맞는 학원 추천" — NEIS 학원 DB + Groq AI 분류 + 맞춤 추천 팝업 + 자녀 프로필 저장 | HAGWON-01~09 | 🔲 Not started |
 | 29 | 모바일 최적화 | V4.3 | 하단 탭바 + Tailwind mobile-first + 44px 터치 타겟 + 바텀시트로 진짜 mobile-first UX 구현 | MOB-01~06 | 🔲 Not started |
-| 30 | 인스타 카드뉴스 생성기 | V5.0 | 매주 Supabase 실거래가 DB 집계 → CARDDESIGN.md 규격 1080×1080 PNG 4장 자동 생성 (창원부동산랩 인스타그램) | CARD-01~06 | 🔲 Not started |
+| 30 | 인스타 카드뉴스 생성기 | V5.0 | 매주 Supabase 실거래가 DB 집계 → CARDDESIGN.md 규격 1080×1080 PNG 4장 자동 생성 (창원부동산랩 인스타그램) | CARD-01~06 | 🔄 In Progress (Wave 0+1 ✅, CI 검증 대기) |
 
 ---
 
