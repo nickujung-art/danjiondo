@@ -79,12 +79,13 @@ export async function getComplexTransactionSummary(
 }
 
 export interface RawTransaction {
-  dealDate:    string       // "YYYY-MM-DD"
-  yearMonth:   string       // "YYYY-MM"
-  price:       number       // 만원
-  area:        number       // m2 (numeric → number)
-  areaTypeId:  string | null  // complex_area_types.id (네이버 평형 canonical)
-  pyeongName:  string | null  // "34A", "34B" 등 (null이면 Math.round fallback)
+  dealDate:        string       // "YYYY-MM-DD"
+  yearMonth:       string       // "YYYY-MM"
+  price:           number       // 만원
+  area:            number       // m2 (numeric → number)
+  areaTypeId:      string | null  // complex_area_types.id (네이버 평형 canonical)
+  pyeongName:      string | null  // "34A", "34B" 등 (null이면 Math.round fallback)
+  exclusiveAreaM2: number | null  // 네이버 canonical 전용면적 — 칩 레이블 기준
 }
 
 /**
@@ -106,18 +107,20 @@ export async function getComplexRawTransactions(
   if (error) throw new Error(`getComplexRawTransactions failed: ${error.message}`)
   if (!data) return []
   return (data as Array<{
-    deal_date:    string
-    year_month:   string
-    price:        number | string
-    area_m2:      number | string
-    area_type_id: string | null
-    pyeong_name:  string | null
+    deal_date:         string
+    year_month:        string
+    price:             number | string
+    area_m2:           number | string
+    area_type_id:      string | null
+    pyeong_name:       string | null
+    exclusive_area_m2: number | string | null
   }>).map((row) => ({
-    dealDate:   row.deal_date,
-    yearMonth:  row.year_month,
-    price:      Number(row.price),
-    area:       Number(row.area_m2),
-    areaTypeId: row.area_type_id ?? null,
-    pyeongName: row.pyeong_name ?? null,
+    dealDate:        row.deal_date,
+    yearMonth:       row.year_month,
+    price:           Number(row.price),
+    area:            Number(row.area_m2),
+    areaTypeId:      row.area_type_id ?? null,
+    pyeongName:      row.pyeong_name ?? null,
+    exclusiveAreaM2: row.exclusive_area_m2 != null ? Number(row.exclusive_area_m2) : null,
   }))
 }
