@@ -23,14 +23,11 @@ jobs:
         run: |
           set -e
           FILENAME="backup-$(date +%Y-%m-%d).sql.gz"
-          export PGPASSWORD=$(python3 -c "import os,urllib.parse; u=urllib.parse.urlparse(os.environ['SUPABASE_DB_URL']); print(u.password)")
-          pg_dump \
-            --host=aws-1-ap-southeast-2.pooler.supabase.com \
-            --port=5432 \
-            --username=postgres.auoravdadyzvuoxunogh \
-            --dbname=postgres \
-            --no-password \
-          | gzip > "/tmp/$FILENAME"
+          # Replace direct host+user with Session Pooler equivalents (no password extraction needed)
+          POOLER_URL=$(echo "$SUPABASE_DB_URL" \
+            | sed 's|//postgres:|//postgres.auoravdadyzvuoxunogh:|' \
+            | sed 's|@db\.auoravdadyzvuoxunogh\.supabase\.co:5432|@aws-1-ap-southeast-2.pooler.supabase.com:5432|')
+          pg_dump "$POOLER_URL" | gzip > "/tmp/$FILENAME"
           echo "FILENAME=$FILENAME" >> "$GITHUB_ENV"
           echo "pg_dump complete: $FILENAME"
 
