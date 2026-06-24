@@ -23,9 +23,16 @@ jobs:
         run: |
           set -e
           FILENAME="backup-$(date +%Y-%m-%d).sql.gz"
-          DB_PASS=$(python3 -c "from urllib.parse import urlparse, quote; import os; u = urlparse(os.environ['SUPABASE_DB_URL']); print(quote(u.password, safe=''))")
-          POOLER_URL="postgresql://postgres.auoravdadyzvuoxunogh:${DB_PASS}@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres"
-          pg_dump "$POOLER_URL" | gzip > "/tmp/$FILENAME"
+          # Use rsplit('@',1) to correctly handle passwords containing '@'
+          # Then use PGPASSWORD env var to avoid any URL-encoding issues
+          export PGPASSWORD=$(python3 -c "import os,urllib.parse; url=os.environ['SUPABASE_DB_URL']; up=url.split('://',1)[1].rsplit('@',1)[0]; pw=up.split(':',1)[1]; print(urllib.parse.unquote(pw))")
+          pg_dump \
+            --host=aws-1-ap-southeast-2.pooler.supabase.com \
+            --port=5432 \
+            --username=postgres.auoravdadyzvuoxunogh \
+            --dbname=postgres \
+            --no-password \
+          | gzip > "/tmp/$FILENAME"
           echo "FILENAME=$FILENAME" >> "$GITHUB_ENV"
           echo "pg_dump complete: $FILENAME"
 
