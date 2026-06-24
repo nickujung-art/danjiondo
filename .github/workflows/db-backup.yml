@@ -27,11 +27,13 @@ jobs:
           /usr/lib/postgresql/17/bin/pg_dump --version
 
       - name: Run pg_dump
+        env:
+          BACKUP_AGENT_PASSWORD: ${{ secrets.BACKUP_AGENT_PASSWORD }}
         run: |
           set -e
           FILENAME="backup-$(date +%Y-%m-%d).sql.gz"
           export PGCONNECT_TIMEOUT=60
-          export PGPASSWORD="BdsBackup2026!"
+          export PGPASSWORD="$BACKUP_AGENT_PASSWORD"
           /usr/lib/postgresql/17/bin/pg_dump \
             --host=aws-1-ap-southeast-2.pooler.supabase.com \
             --port=5432 \
