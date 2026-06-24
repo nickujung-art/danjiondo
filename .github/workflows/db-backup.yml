@@ -19,7 +19,10 @@ jobs:
 
       - name: Run pg_dump
         env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          # Supabase 무료플랜 DB(db.*.supabase.co)는 IPv6 전용 — GitHub Actions runner 차단
+          # Session Pooler URL(aws-0-*.pooler.supabase.com:5432)은 IPv4 지원
+          # Supabase 대시보드 → Settings → Database → Connection pooling → Session mode → URI 복사
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_POOLER_URL }}
         run: |
           set -e
           FILENAME="backup-$(date +%Y-%m-%d).sql.gz"
