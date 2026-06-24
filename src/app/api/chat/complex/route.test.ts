@@ -89,7 +89,7 @@ describe('POST /api/chat/complex', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        complexId: 'test-uuid',
+        complexId: '00000000-0000-0000-0000-000000000001',
         messages: [{ role: 'user', content: '이 단지 어때요?' }],
       }),
     })
@@ -115,7 +115,7 @@ describe('POST /api/chat/complex', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        complexId: 'test-uuid',
+        complexId: '00000000-0000-0000-0000-000000000001',
         messages: [{ role: 'user', content: '실거래가 알려줘' }],
       }),
     })
@@ -139,14 +139,14 @@ describe('POST /api/chat/complex', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        complexId: 'my-complex-id',
+        complexId: '00000000-0000-0000-0000-000000000002',
         messages: [{ role: 'user', content: '주차 어때요?' }],
       }),
     })
     await POST(req)
     expect(mockRpc).toHaveBeenCalledWith(
       'match_complex_embeddings',
-      expect.objectContaining({ target_complex_id: 'my-complex-id' }),
+      expect.objectContaining({ target_complex_id: '00000000-0000-0000-0000-000000000002' }),
     )
   })
 })
