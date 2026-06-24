@@ -12,58 +12,45 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: Install postgresql-client-17
+      - name: Install postgresql-client
         run: |
-          sudo apt-get install -y curl ca-certificates
-          sudo install -d /usr/share/postgresql-common/pgdg
-          sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail \
-            https://www.postgresql.org/media/keys/ACCC4CF8.asc
-          sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] \
-            https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
-            > /etc/apt/sources.list.d/pgdg.list'
           sudo apt-get update -qq
-          sudo apt-get install -y postgresql-client-17
-          psql --version
-          pg_dump --version
+          sudo apt-get install -y postgresql-client
 
-      - name: Test connection with pg17 client
-        env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      - name: Test backup_agent connection
         run: |
-          PW=$(python3 -c "import os,urllib.parse; u=urllib.parse.urlparse(os.environ['SUPABASE_DB_URL']); print(u.password)")
+          export PGCONNECT_TIMEOUT=15
           HOST="aws-1-ap-southeast-2.pooler.supabase.com"
-          USER_FULL="postgres.auoravdadyzvuoxunogh"
-          export PGCONNECT_TIMEOUT=10
 
-          echo "=== pg17: Session 5432 + DB pw ==="
-          PGPASSWORD="$PW" psql "postgresql://${USER_FULL}@${HOST}:5432/postgres" --no-password -c "SELECT version()" 2>&1 || true
+          echo "=== Session 5432 ==="
+          PGPASSWORD="BdsBackup2026!" psql \
+            "postgresql://backup_agent.auoravdadyzvuoxunogh@${HOST}:5432/postgres" \
+            --no-password -c "SELECT current_user, pg_is_in_recovery()" 2>&1 || true
 
-          echo "=== pg17: Transaction 6543 + DB pw ==="
-          PGPASSWORD="$PW" psql "postgresql://${USER_FULL}@${HOST}:6543/postgres" --no-password -c "SELECT version()" 2>&1 || true
+          echo "=== Transaction 6543 ==="
+          PGPASSWORD="BdsBackup2026!" psql \
+            "postgresql://backup_agent.auoravdadyzvuoxunogh@${HOST}:6543/postgres" \
+            --no-password -c "SELECT current_user, pg_is_in_recovery()" 2>&1 || true
 
-          echo "=== pg17: Session 5432 + JWT ==="
-          PGPASSWORD="$SUPABASE_SERVICE_ROLE_KEY" psql "postgresql://${USER_FULL}@${HOST}:5432/postgres" --no-password -c "SELECT version()" 2>&1 || true
-
-      - name: Run pg_dump (Session Pooler + DB password)
-        env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      - name: Run pg_dump (backup_agent, data-only)
         run: |
           set -e
           FILENAME="backup-$(date +%Y-%m-%d).sql.gz"
-          PW=$(python3 -c "import os,urllib.parse; u=urllib.parse.urlparse(os.environ['SUPABASE_DB_URL']); print(u.password)")
-          export PGPASSWORD="$PW"
           export PGCONNECT_TIMEOUT=30
+          export PGPASSWORD="BdsBackup2026!"
           pg_dump \
             --host=aws-1-ap-southeast-2.pooler.supabase.com \
             --port=5432 \
-            --username=postgres.auoravdadyzvuoxunogh \
+            --username=backup_agent.auoravdadyzvuoxunogh \
             --dbname=postgres \
             --no-password \
+            --no-owner \
+            --no-privileges \
+            --data-only \
           | gzip > "/tmp/$FILENAME"
           echo "FILENAME=$FILENAME" >> "$GITHUB_ENV"
           DUMP_SIZE=$(wc -c < "/tmp/$FILENAME")
-          echo "Dump size: $DUMP_SIZE bytes"
+          echo "pg_dump complete: $FILENAME ($DUMP_SIZE bytes)"
 
       - name: Verify dump
         run: |
