@@ -12,27 +12,24 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: Install postgresql-client
+      - name: Install postgresql-client-17
         run: |
+          sudo apt-get install -y curl ca-certificates
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail \
+            https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
           sudo apt-get update -qq
-          sudo apt-get install -y postgresql-client
+          sudo apt-get install -y postgresql-client-17
+          /usr/lib/postgresql/17/bin/pg_dump --version
 
-      - name: Diagnose backup_agent tables visible
-        run: |
-          export PGCONNECT_TIMEOUT=15
-          HOST="aws-1-ap-southeast-2.pooler.supabase.com"
-          PGPASSWORD="BdsBackup2026!" psql \
-            "postgresql://backup_agent.auoravdadyzvuoxunogh@${HOST}:5432/postgres" \
-            --no-password -c "SELECT schemaname, tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename LIMIT 10;" 2>&1
-
-      - name: Run pg_dump (full, with stderr)
+      - name: Run pg_dump 17
         run: |
           set -e
           FILENAME="backup-$(date +%Y-%m-%d).sql.gz"
-          export PGCONNECT_TIMEOUT=30
+          export PGCONNECT_TIMEOUT=60
           export PGPASSWORD="BdsBackup2026!"
-          # Capture stderr separately to see errors
-          pg_dump \
+          /usr/lib/postgresql/17/bin/pg_dump \
             --host=aws-1-ap-southeast-2.pooler.supabase.com \
             --port=5432 \
             --username=backup_agent.auoravdadyzvuoxunogh \
@@ -40,20 +37,16 @@ jobs:
             --no-password \
             --no-owner \
             --no-privileges \
-            --schema=public \
-          2>/tmp/pg_dump_err | gzip > "/tmp/$FILENAME"
-          PG_EXIT=${PIPESTATUS[0]}
-          echo "pg_dump exit: $PG_EXIT"
-          cat /tmp/pg_dump_err || true
+          | gzip > "/tmp/$FILENAME"
           echo "FILENAME=$FILENAME" >> "$GITHUB_ENV"
           DUMP_SIZE=$(wc -c < "/tmp/$FILENAME")
-          echo "pg_dump output: $DUMP_SIZE bytes"
+          echo "pg_dump complete: $DUMP_SIZE bytes"
 
       - name: Verify dump
         run: |
           set -e
           DUMP_SIZE=$(wc -c < "/tmp/$FILENAME")
-          if [ "$DUMP_SIZE" -lt 1000 ]; then
+          if [ "$DUMP_SIZE" -lt 10000 ]; then
             echo "ERROR: dump too small ($DUMP_SIZE bytes)" >&2
             exit 1
           fi
