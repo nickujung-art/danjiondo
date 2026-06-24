@@ -19,14 +19,15 @@ jobs:
 
       - name: Run pg_dump
         env:
-          # Supabase 무료플랜 DB는 IPv6 전용 — Session Pooler URL(IPv4)이 필요합니다
-          # Supabase 대시보드 → Settings → Database → Connection pooling → Session mode → URI 복사
-          # 예시: postgresql://postgres.auoravdadyzvuoxunogh:[password]@aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_POOLER_URL }}
+          # SUPABASE_DB_URL: postgresql://postgres:[PW]@db.auoravdadyzvuoxunogh.supabase.co:5432/postgres
+          # 비밀번호를 추출해 Session Pooler URL(IPv4)로 재조합
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           set -e
           FILENAME="backup-$(date +%Y-%m-%d).sql.gz"
-          pg_dump "$SUPABASE_DB_URL" | gzip > "/tmp/$FILENAME"
+          PW=$(python3 -c "from urllib.parse import urlparse; import os; print(urlparse(os.environ['SUPABASE_DB_URL']).password)")
+          POOLER_URL="postgresql://postgres.auoravdadyzvuoxunogh:${PW}@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres"
+          pg_dump "$POOLER_URL" | gzip > "/tmp/$FILENAME"
           echo "FILENAME=$FILENAME" >> "$GITHUB_ENV"
           echo "pg_dump complete: $FILENAME"
 
