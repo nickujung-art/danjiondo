@@ -63,7 +63,8 @@ export async function captureCard(htmlString, outputPath) {
  * 단일 HTML 파일 캡처 (디버그용)
  * node scripts/capture.js <html-file> <output.png>
  */
-if (process.argv[2]) {
+const isDirectRun = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+if (isDirectRun && process.argv[2]) {
   const { readFileSync } = await import('fs')
   const htmlPath = resolve(process.argv[2])
   const outPath = resolve(process.argv[3] ?? 'output.png')
