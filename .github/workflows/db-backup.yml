@@ -12,30 +12,103 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: Install postgresql-client
+      - name: Install postgresql-client-17
         run: |
+          sudo apt-get install -y curl ca-certificates
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail \
+            https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] \
+            https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            > /etc/apt/sources.list.d/pgdg.list'
           sudo apt-get update -qq
-          sudo apt-get install -y postgresql-client
+          sudo apt-get install -y postgresql-client-17
+          psql --version
+          pg_dump --version
 
-      - name: Diagnose connections
+      - name: Test connection with pg17 client
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           PW=$(python3 -c "import os,urllib.parse; u=urllib.parse.urlparse(os.environ['SUPABASE_DB_URL']); print(u.password)")
-          JWT="$SUPABASE_SERVICE_ROLE_KEY"
           HOST="aws-1-ap-southeast-2.pooler.supabase.com"
           USER_FULL="postgres.auoravdadyzvuoxunogh"
           export PGCONNECT_TIMEOUT=10
 
-          echo "=== Session Pooler 5432 + DB pw ==="
-          PGPASSWORD="$PW" psql "postgresql://${USER_FULL}@${HOST}:5432/postgres" --no-password -c "SELECT 'OK'" 2>&1 || true
+          echo "=== pg17: Session 5432 + DB pw ==="
+          PGPASSWORD="$PW" psql "postgresql://${USER_FULL}@${HOST}:5432/postgres" --no-password -c "SELECT version()" 2>&1 || true
 
-          echo "=== Transaction Pooler 6543 + DB pw ==="
-          PGPASSWORD="$PW" psql "postgresql://${USER_FULL}@${HOST}:6543/postgres" --no-password -c "SELECT 'OK'" 2>&1 || true
+          echo "=== pg17: Transaction 6543 + DB pw ==="
+          PGPASSWORD="$PW" psql "postgresql://${USER_FULL}@${HOST}:6543/postgres" --no-password -c "SELECT version()" 2>&1 || true
 
-          echo "=== Session Pooler 5432 + JWT ==="
-          PGPASSWORD="$JWT" psql "postgresql://${USER_FULL}@${HOST}:5432/postgres" --no-password -c "SELECT 'OK'" 2>&1 || true
+          echo "=== pg17: Session 5432 + JWT ==="
+          PGPASSWORD="$SUPABASE_SERVICE_ROLE_KEY" psql "postgresql://${USER_FULL}@${HOST}:5432/postgres" --no-password -c "SELECT version()" 2>&1 || true
 
-          echo "=== Transaction Pooler 6543 + JWT ==="
-          PGPASSWORD="$JWT" psql "postgresql://${USER_FULL}@${HOST}:6543/postgres" --no-password -c "SELECT 'OK'" 2>&1 || true
+      - name: Run pg_dump (Session Pooler + DB password)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -e
+          FILENAME="backup-$(date +%Y-%m-%d).sql.gz"
+          PW=$(python3 -c "import os,urllib.parse; u=urllib.parse.urlparse(os.environ['SUPABASE_DB_URL']); print(u.password)")
+          export PGPASSWORD="$PW"
+          export PGCONNECT_TIMEOUT=30
+          pg_dump \
+            --host=aws-1-ap-southeast-2.pooler.supabase.com \
+            --port=5432 \
+            --username=postgres.auoravdadyzvuoxunogh \
+            --dbname=postgres \
+            --no-password \
+          | gzip > "/tmp/$FILENAME"
+          echo "FILENAME=$FILENAME" >> "$GITHUB_ENV"
+          DUMP_SIZE=$(wc -c < "/tmp/$FILENAME")
+          echo "Dump size: $DUMP_SIZE bytes"
+
+      - name: Verify dump
+        run: |
+          set -e
+          DUMP_SIZE=$(wc -c < "/tmp/$FILENAME")
+          if [ "$DUMP_SIZE" -lt 1000 ]; then
+            echo "ERROR: dump too small ($DUMP_SIZE bytes)" >&2
+            exit 1
+          fi
+          echo "OK: $DUMP_SIZE bytes"
+
+      - name: Clone backup repo
+        env:
+          BACKUP_PAT: ${{ secrets.BACKUP_PAT }}
+        run: |
+          set -e
+          git clone "https://x-access-token:${BACKUP_PAT}@github.com/nickujung-art/danjiondo-backup.git" /tmp/backup-repo
+
+      - name: Commit backup
+        run: |
+          set -e
+          cp "/tmp/$FILENAME" /tmp/backup-repo/
+          cd /tmp/backup-repo
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add "$FILENAME"
+          git commit -m "backup: $FILENAME"
+          git push
+
+      - name: Cleanup backups older than 90 days
+        run: |
+          set -e
+          cd /tmp/backup-repo
+          CUTOFF=$(date -d '90 days ago' +%Y-%m-%d)
+          REMOVED=0
+          for f in backup-*.sql.gz; do
+            [ -f "$f" ] || continue
+            FILEDATE="${f#backup-}"
+            FILEDATE="${FILEDATE%.sql.gz}"
+            if [[ "$FILEDATE" < "$CUTOFF" ]]; then
+              git rm "$f"
+              REMOVED=$((REMOVED + 1))
+            fi
+          done
+          if [ "$REMOVED" -gt 0 ]; then
+            git commit -m "cleanup: remove $REMOVED backup(s) older than 90 days"
+            git push
+          fi
