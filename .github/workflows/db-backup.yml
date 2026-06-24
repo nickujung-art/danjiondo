@@ -17,28 +17,20 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y postgresql-client
 
-      - name: Diagnose URL structure
-        env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-        run: |
-          python3 -c "import os,urllib.parse as p; url=os.environ['SUPABASE_DB_URL']; u=p.urlparse(url); print('URL_len',len(url),'@count',url.count('@'),'user',u.username,'host',u.hostname,'pass_len',len(u.password or ''))"
-          python3 -c "import os,urllib.parse as p; url=os.environ['SUPABASE_DB_URL']; up=url.split('://',1)[1].rsplit('@',1)[0]; pw=p.unquote(up.split(':',1)[1]); print('rsplit_pw_len',len(pw),'first3',pw[:3]+'***' if len(pw)>3 else '***')"
-
-      - name: Test psql connection
-        env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-        run: |
-          export PGPASSWORD=$(python3 -c "import os,urllib.parse as p; url=os.environ['SUPABASE_DB_URL']; up=url.split('://',1)[1].rsplit('@',1)[0]; print(p.unquote(up.split(':',1)[1]))")
-          psql --host=aws-1-ap-southeast-2.pooler.supabase.com --port=5432 --username=postgres.auoravdadyzvuoxunogh --dbname=postgres --no-password -c "SELECT 'connected' AS status;" 2>&1 || echo "psql exit=$?"
-
       - name: Run pg_dump
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           set -e
           FILENAME="backup-$(date +%Y-%m-%d).sql.gz"
-          export PGPASSWORD=$(python3 -c "import os,urllib.parse as p; url=os.environ['SUPABASE_DB_URL']; up=url.split('://',1)[1].rsplit('@',1)[0]; print(p.unquote(up.split(':',1)[1]))")
-          pg_dump --host=aws-1-ap-southeast-2.pooler.supabase.com --port=5432 --username=postgres.auoravdadyzvuoxunogh --dbname=postgres --no-password | gzip > "/tmp/$FILENAME"
+          export PGPASSWORD=$(python3 -c "import os,urllib.parse; u=urllib.parse.urlparse(os.environ['SUPABASE_DB_URL']); print(u.password)")
+          pg_dump \
+            --host=aws-1-ap-southeast-2.pooler.supabase.com \
+            --port=5432 \
+            --username=postgres.auoravdadyzvuoxunogh \
+            --dbname=postgres \
+            --no-password \
+          | gzip > "/tmp/$FILENAME"
           echo "FILENAME=$FILENAME" >> "$GITHUB_ENV"
           echo "pg_dump complete: $FILENAME"
 
