@@ -287,7 +287,7 @@ export function renderDistrictChampionsCard(data) {
     .header { padding:32px 80px 20px; display:flex; flex-direction:column; gap:10px; flex-shrink:0; }
     .header-top { display:flex; justify-content:space-between; align-items:center; }
     .header-week { font:700 22px/1 'Pretendard'; color:var(--brand); letter-spacing:0.3px; }
-    .header-title { font:900 52px/1.1 'Pretendard'; color:var(--ink); letter-spacing:-2px; }
+    .header-title { font:900 44px/1.15 'Pretendard'; color:var(--ink); letter-spacing:-1.5px; }
     .header-sub { font:500 21px/1 'Pretendard'; color:var(--ink-3); }
 
     .grid { display:grid; grid-template-columns:1fr 1fr; grid-template-rows:repeat(3,1fr); gap:12px; padding:0 40px 40px; flex:1; min-height:0; }
@@ -314,7 +314,7 @@ export function renderDistrictChampionsCard(data) {
         ${BrandLockup()}
         <div class="header-week">WEEKLY REPORT · ${week}</div>
       </div>
-      <div class="header-title">구별 대장단지</div>
+      <div class="header-title">창원+김해 전체 실거래가<br>구별 대장단지</div>
       <div class="header-sub">창원·김해 구별 최고 평당가 단지 &nbsp;·&nbsp; ${period}</div>
     </div>
     <div class="grid">
