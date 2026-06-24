@@ -17,17 +17,27 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y postgresql-client
 
+      - name: Debug pooler URL
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          POOLER_URL=$(echo "$SUPABASE_DB_URL" \
+            | sed 's|//postgres:|//postgres.auoravdadyzvuoxunogh:|' \
+            | sed 's|@db\.auoravdadyzvuoxunogh\.supabase\.co:5432|@aws-1-ap-southeast-2.pooler.supabase.com:5432|')
+          SAFE=$(echo "$POOLER_URL" | sed 's|:[^:@/]*@|:***@|')
+          echo "Pooler URL (masked): $SAFE"
+          echo "URL length: ${#POOLER_URL}"
+
       - name: Run pg_dump
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           set -e
           FILENAME="backup-$(date +%Y-%m-%d).sql.gz"
-          # Replace direct host+user with Session Pooler equivalents (no password extraction needed)
           POOLER_URL=$(echo "$SUPABASE_DB_URL" \
             | sed 's|//postgres:|//postgres.auoravdadyzvuoxunogh:|' \
             | sed 's|@db\.auoravdadyzvuoxunogh\.supabase\.co:5432|@aws-1-ap-southeast-2.pooler.supabase.com:5432|')
-          pg_dump "$POOLER_URL" | gzip > "/tmp/$FILENAME"
+          pg_dump "${POOLER_URL}?sslmode=require" | gzip > "/tmp/$FILENAME"
           echo "FILENAME=$FILENAME" >> "$GITHUB_ENV"
           echo "pg_dump complete: $FILENAME"
 
