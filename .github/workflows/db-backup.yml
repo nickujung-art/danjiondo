@@ -17,27 +17,21 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y postgresql-client
 
-      - name: Test backup_agent connection
+      - name: Diagnose backup_agent tables visible
         run: |
           export PGCONNECT_TIMEOUT=15
           HOST="aws-1-ap-southeast-2.pooler.supabase.com"
-
-          echo "=== Session 5432 ==="
           PGPASSWORD="BdsBackup2026!" psql \
             "postgresql://backup_agent.auoravdadyzvuoxunogh@${HOST}:5432/postgres" \
-            --no-password -c "SELECT current_user, pg_is_in_recovery()" 2>&1 || true
+            --no-password -c "SELECT schemaname, tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename LIMIT 10;" 2>&1
 
-          echo "=== Transaction 6543 ==="
-          PGPASSWORD="BdsBackup2026!" psql \
-            "postgresql://backup_agent.auoravdadyzvuoxunogh@${HOST}:6543/postgres" \
-            --no-password -c "SELECT current_user, pg_is_in_recovery()" 2>&1 || true
-
-      - name: Run pg_dump (backup_agent, data-only)
+      - name: Run pg_dump (full, with stderr)
         run: |
           set -e
           FILENAME="backup-$(date +%Y-%m-%d).sql.gz"
           export PGCONNECT_TIMEOUT=30
           export PGPASSWORD="BdsBackup2026!"
+          # Capture stderr separately to see errors
           pg_dump \
             --host=aws-1-ap-southeast-2.pooler.supabase.com \
             --port=5432 \
@@ -46,11 +40,14 @@ jobs:
             --no-password \
             --no-owner \
             --no-privileges \
-            --data-only \
-          | gzip > "/tmp/$FILENAME"
+            --schema=public \
+          2>/tmp/pg_dump_err | gzip > "/tmp/$FILENAME"
+          PG_EXIT=${PIPESTATUS[0]}
+          echo "pg_dump exit: $PG_EXIT"
+          cat /tmp/pg_dump_err || true
           echo "FILENAME=$FILENAME" >> "$GITHUB_ENV"
           DUMP_SIZE=$(wc -c < "/tmp/$FILENAME")
-          echo "pg_dump complete: $FILENAME ($DUMP_SIZE bytes)"
+          echo "pg_dump output: $DUMP_SIZE bytes"
 
       - name: Verify dump
         run: |
