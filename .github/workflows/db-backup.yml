@@ -2,8 +2,8 @@ name: DB Backup
 
 on:
   schedule:
-    - cron: '0 19 * * 6'   # Saturday 19:00 UTC = Sunday 04:00 KST
-  workflow_dispatch: {}
+    - cron: '0 19 * * 6'
+  workflow_dispatch:
 
 jobs:
   backup:
@@ -19,8 +19,6 @@ jobs:
 
       - name: Run pg_dump
         env:
-          # Supabase free plan DB is IPv6-only; use Session Pooler (IPv4) instead
-          # Extracts password from SUPABASE_DB_URL and rebuilds pooler URL safely
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           set -e
@@ -42,7 +40,7 @@ print(f'postgresql://postgres.auoravdadyzvuoxunogh:{pw}@aws-1-ap-southeast-2.poo
           DUMP_SIZE=$(wc -c < "/tmp/$FILENAME")
           echo "Dump file size: $DUMP_SIZE bytes"
           if [ "$DUMP_SIZE" -lt 1000 ]; then
-            echo "ERROR: dump file suspiciously small ($DUMP_SIZE bytes) -- pg_dump may have failed" >&2
+            echo "ERROR: dump file too small ($DUMP_SIZE bytes)" >&2
             exit 1
           fi
           echo "Dump integrity OK: $DUMP_SIZE bytes"
