@@ -127,70 +127,79 @@ async function main() {
   for (const s of AREA_GU_SERIES) {
     if (filter && !filter.includes(s.id)) continue
     console.log(`[${s.id}] ${s.region} ${s.area}`)
-
-    const ranking = await fetchAreaRanking({ sggCode: s.sggCode, areaMin: s.areaMin, areaMax: s.areaMax })
-    const data = {
-      ...baseWeekData,
-      region: s.region,
-      area: s.area,
-      seriesType: 'area',
-      ranking: pad10(ranking),
+    try {
+      const ranking = await fetchAreaRanking({ sggCode: s.sggCode, areaMin: s.areaMin, areaMax: s.areaMax })
+      const data = {
+        ...baseWeekData,
+        region: s.region,
+        area: s.area,
+        seriesType: 'area',
+        ranking: pad10(ranking),
+      }
+      await generateCardSet(s.id, data, dryRun)
+    } catch (err) {
+      console.error(`  [ERROR] ${s.id}: ${err.message}`)
     }
-
-    await generateCardSet(s.id, data, dryRun)
   }
 
   // ── 도시 전체 시리즈 ──────────────────────────────────
   for (const s of CITY_SERIES) {
     if (filter && !filter.includes(s.id)) continue
     console.log(`[${s.id}] ${s.region}`)
+    try {
+      let ranking = []
+      if (s.type === 'city') {
+        ranking = await fetchCityRanking({ sggCodes: ALL_SGG })
+      } else if (s.type === 'volume') {
+        ranking = await fetchVolumeRanking({ sggCodes: ALL_SGG })
+      } else if (s.type === 'value') {
+        ranking = await fetchValueRanking({ sggCodes: ALL_SGG })
+      }
 
-    let ranking = []
-    if (s.type === 'city') {
-      ranking = await fetchCityRanking({ sggCodes: ALL_SGG })
-    } else if (s.type === 'volume') {
-      ranking = await fetchVolumeRanking({ sggCodes: ALL_SGG })
-    } else if (s.type === 'value') {
-      ranking = await fetchValueRanking({ sggCodes: ALL_SGG })
+      const data = {
+        ...baseWeekData,
+        region: s.region,
+        area: s.area,
+        seriesType: s.type,
+        subCaption: s.caption,
+        ranking: pad10(ranking),
+      }
+
+      await generateCardSet(s.id, data, dryRun)
+    } catch (err) {
+      console.error(`  [ERROR] ${s.id}: ${err.message}`)
     }
-
-    const data = {
-      ...baseWeekData,
-      region: s.region,
-      area: s.area,
-      seriesType: s.type,
-      subCaption: s.caption,
-      ranking: pad10(ranking),
-    }
-
-    await generateCardSet(s.id, data, dryRun)
   }
 
   // ── 구별 대장단지 시리즈 ──────────────────────────────
   if (!filter || filter.includes('district-champions')) {
     console.log(`[district-champions] 구별 대장단지`)
-    const champions = await fetchDistrictChampions({ sggMap: SGG_MAP })
-    const dir = join(OUTPUT_DIR, weekCode, 'district-champions')
-    mkdirSync(dir, { recursive: true })
+    try {
+      const champions = await fetchDistrictChampions({ sggMap: SGG_MAP })
+      const dir = join(OUTPUT_DIR, weekCode, 'district-champions')
+      mkdirSync(dir, { recursive: true })
 
-    // 대장단지는 랭킹 데이터를 구별 챔피언으로 채워서 동일 템플릿 활용
-    const ranking = champions.map((c, i) => ({
-      rank: i + 1,
-      name: c.name,
-      subtitle: c.district,
-      price: c.price,
-    }))
+      // 대장단지는 랭킹 데이터를 구별 챔피언으로 채워서 동일 템플릿 활용
+      const ranking = champions.map((c, i) => ({
+        rank: i + 1,
+        name: c.name,
+        subtitle: c.district,
+        price: c.price,
+      }))
 
-    const data = {
-      ...baseWeekData,
-      region: '창원+김해',
-      area: null,
-      seriesType: 'district',
-      subCaption: '이번 주 각 구에서\n가장 비싸게 거래된 대장 단지',
-      ranking: pad10(ranking),
+      const data = {
+        ...baseWeekData,
+        region: '창원+김해',
+        area: null,
+        seriesType: 'district',
+        subCaption: '이번 주 각 구에서\n가장 비싸게 거래된 대장 단지',
+        ranking: pad10(ranking),
+      }
+
+      await generateCardSet('district-champions', data, dryRun)
+    } catch (err) {
+      console.error(`  [ERROR] district-champions: ${err.message}`)
     }
-
-    await generateCardSet('district-champions', data, dryRun)
   }
 
   await closeBrowser()
