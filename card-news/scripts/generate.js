@@ -43,6 +43,12 @@ const SGG_MAP = {
 
 const SOURCE = '국토교통부 실거래가 공개시스템'
 
+const AREA_CAPTION = {
+  '59㎡':  '이번 주 가장 비싸게 거래된\n소형 아파트는 어디일까요?',
+  '84㎡':  '이번 주 가장 비싸게 거래된\n국민평형 아파트는 어디일까요?',
+  '102㎡': '이번 주 가장 비싸게 거래된\n준대형 아파트는 어디일까요?',
+}
+
 /** 평형별 구별 시리즈 — 핵심 콘텐츠 */
 const AREA_GU_SERIES = [
   // 84㎡ (국민평형) — 6개 구
@@ -134,6 +140,7 @@ async function main() {
         region: s.region,
         area: s.area,
         seriesType: 'area',
+        subCaption: AREA_CAPTION[s.area],
         ranking: pad10(ranking),
       }
       await generateCardSet(s.id, data, dryRun)
