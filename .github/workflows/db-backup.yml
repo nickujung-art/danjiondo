@@ -17,100 +17,27 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y postgresql-client
 
-      - name: Test A - DB password from SUPABASE_DB_URL
-        env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-        run: |
-          export PGPASSWORD=$(python3 -c "import os,urllib.parse; u=urllib.parse.urlparse(os.environ['SUPABASE_DB_URL']); print(u.password)")
-          psql --host=aws-1-ap-southeast-2.pooler.supabase.com --port=5432 \
-            --username=postgres.auoravdadyzvuoxunogh --dbname=postgres \
-            --no-password -c "SELECT 'TEST_A_OK'" 2>&1 && echo "AUTH_A=success" || echo "AUTH_A=fail"
-
-      - name: Test B - Service Role JWT as password
-        env:
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: |
-          export PGPASSWORD="$SUPABASE_SERVICE_ROLE_KEY"
-          psql --host=aws-1-ap-southeast-2.pooler.supabase.com --port=5432 \
-            --username=postgres.auoravdadyzvuoxunogh --dbname=postgres \
-            --no-password -c "SELECT 'TEST_B_OK'" 2>&1 && echo "AUTH_B=success" || echo "AUTH_B=fail"
-
-      - name: Run pg_dump (whichever auth worked)
+      - name: Diagnose all connection methods
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
-          set -e
-          FILENAME="backup-$(date +%Y-%m-%d).sql.gz"
-          # Try DB password first, fall back to JWT
-          PW_A=$(python3 -c "import os,urllib.parse; u=urllib.parse.urlparse(os.environ['SUPABASE_DB_URL']); print(u.password)")
-          if PGPASSWORD="$PW_A" psql --host=aws-1-ap-southeast-2.pooler.supabase.com --port=5432 \
-              --username=postgres.auoravdadyzvuoxunogh --dbname=postgres --no-password \
-              -c "SELECT 1" > /dev/null 2>&1; then
-            echo "Using DB password"
-            export PGPASSWORD="$PW_A"
-          else
-            echo "Using Service Role JWT"
-            export PGPASSWORD="$SUPABASE_SERVICE_ROLE_KEY"
-          fi
-          pg_dump \
-            --host=aws-1-ap-southeast-2.pooler.supabase.com \
-            --port=5432 \
-            --username=postgres.auoravdadyzvuoxunogh \
-            --dbname=postgres \
-            --no-password \
-          | gzip > "/tmp/$FILENAME"
-          echo "FILENAME=$FILENAME" >> "$GITHUB_ENV"
-          echo "pg_dump complete: $FILENAME"
+          PW=$(python3 -c "import os,urllib.parse; u=urllib.parse.urlparse(os.environ['SUPABASE_DB_URL']); print(u.password)")
+          JWT="$SUPABASE_SERVICE_ROLE_KEY"
+          HOST_SESSION="aws-1-ap-southeast-2.pooler.supabase.com"
+          USER_FULL="postgres.auoravdadyzvuoxunogh"
 
-      - name: Verify dump file integrity
-        run: |
-          set -e
-          DUMP_SIZE=$(wc -c < "/tmp/$FILENAME")
-          echo "Dump file size: $DUMP_SIZE bytes"
-          if [ "$DUMP_SIZE" -lt 1000 ]; then
-            echo "ERROR: dump file too small ($DUMP_SIZE bytes)" >&2
-            exit 1
-          fi
-          echo "Dump integrity OK: $DUMP_SIZE bytes"
+          echo "=== Session Pooler (5432) + DB password ==="
+          PGPASSWORD="$PW" psql --host="$HOST_SESSION" --port=5432 --username="$USER_FULL" --dbname=postgres --no-password --connect-timeout=10 -c "SELECT 1" 2>&1 || true
 
-      - name: Clone backup repo
-        env:
-          BACKUP_PAT: ${{ secrets.BACKUP_PAT }}
-        run: |
-          set -e
-          git clone "https://x-access-token:${BACKUP_PAT}@github.com/nickujung-art/danjiondo-backup.git" /tmp/backup-repo
+          echo "=== Transaction Pooler (6543) + DB password ==="
+          PGPASSWORD="$PW" psql --host="$HOST_SESSION" --port=6543 --username="$USER_FULL" --dbname=postgres --no-password --connect-timeout=10 -c "SELECT 1" 2>&1 || true
 
-      - name: Commit backup file
-        run: |
-          set -e
-          cp "/tmp/$FILENAME" /tmp/backup-repo/
-          cd /tmp/backup-repo
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add "$FILENAME"
-          git commit -m "backup: $FILENAME"
-          git push
+          echo "=== Session Pooler (5432) + JWT ==="
+          PGPASSWORD="$JWT" psql --host="$HOST_SESSION" --port=5432 --username="$USER_FULL" --dbname=postgres --no-password --connect-timeout=10 -c "SELECT 1" 2>&1 || true
 
-      - name: Cleanup backups older than 90 days
-        run: |
-          set -e
-          cd /tmp/backup-repo
-          CUTOFF=$(date -d '90 days ago' +%Y-%m-%d)
-          REMOVED=0
-          for f in backup-*.sql.gz; do
-            [ -f "$f" ] || continue
-            FILEDATE="${f#backup-}"
-            FILEDATE="${FILEDATE%.sql.gz}"
-            if [[ "$FILEDATE" < "$CUTOFF" ]]; then
-              git rm "$f"
-              REMOVED=$((REMOVED + 1))
-            fi
-          done
-          if [ "$REMOVED" -gt 0 ]; then
-            git commit -m "cleanup: remove $REMOVED backup(s) older than 90 days"
-            git push
-            echo "Removed $REMOVED old backup(s)"
-          else
-            echo "No old backups to remove"
-          fi
+          echo "=== Transaction Pooler (6543) + JWT ==="
+          PGPASSWORD="$JWT" psql --host="$HOST_SESSION" --port=6543 --username="$USER_FULL" --dbname=postgres --no-password --connect-timeout=10 -c "SELECT 1" 2>&1 || true
+
+          echo "=== Session Pooler (5432) + plain 'postgres' username + DB pw ==="
+          PGPASSWORD="$PW" psql --host="$HOST_SESSION" --port=5432 --username="postgres" --dbname=postgres --no-password --connect-timeout=10 -c "SELECT 1" 2>&1 || true
