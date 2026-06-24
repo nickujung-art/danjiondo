@@ -31,6 +31,7 @@
 | 23 | SEO URL 구조 최적화 | V4.0 | 한글 디렉토리 URL + 계층별 페이지 + BreadcrumbList + 사이트맵·RSS — 네이버 검색 노출 최대화 | SEO-01~06 | ✅ Complete (4/4 plans) |
 | 28 | 학원 추천 시스템 | V4.2 | 교육 탭 "내 아이에 맞는 학원 추천" — NEIS 학원 DB + Groq AI 분류 + 맞춤 추천 팝업 + 자녀 프로필 저장 | HAGWON-01~09 | 🔲 Not started |
 | 29 | 모바일 최적화 | V4.3 | 하단 탭바 + Tailwind mobile-first + 44px 터치 타겟 + 바텀시트로 진짜 mobile-first UX 구현 | MOB-01~06 | 🔲 Not started |
+| 30 | 인스타 카드뉴스 생성기 | V5.0 | 매주 Supabase 실거래가 DB 집계 → CARDDESIGN.md 규격 1080×1080 PNG 4장 자동 생성 (창원부동산랩 인스타그램) | CARD-01~06 | 🔲 Not started |
 
 ---
 
@@ -1120,6 +1121,38 @@
 5. `npm run lint && npm run build && npm run test` 통과
 
 **UI hint**: yes
+
+### Phase 30: 인스타 카드뉴스 생성기
+
+**Goal:** `bds/card-news/` 폴더에서 매주 Supabase 실거래가 DB를 집계하여 CARDDESIGN.md 규격(1080×1080, 4장 세트)의 PNG 카드뉴스를 자동 생성한다. GitHub Actions 주간 cron으로 월요일 새벽에 실행.
+
+**Version:** V5.0
+
+**Requirements:**
+- CARD-01: Pretendard woff2 폰트 다운로드 스크립트 (`scripts/setup.js`) — 5개 웨이트 자동 설치
+- CARD-02: Supabase 주간 실거래가 집계 (`scripts/fetch-data.js`) — 구별 84㎡/59㎡/전체/거래량/가성비/대장단지 6종 쿼리
+- CARD-03: HTML 카드 템플릿 4장 (`scripts/templates.js`) — 표지/TOP3 하이라이트/1-10위 랭킹/클로징 CARDDESIGN.md 100% 준수
+- CARD-04: Puppeteer 1080×1080 PNG 캡처 (`scripts/capture.js`) — 로컬 폰트 로드 + 폰트 ready 대기 + 클린업
+- CARD-05: 오케스트레이터 (`scripts/generate.js`) — 14+ 시리즈 정의 (84㎡/59㎡/102㎡ × 6개 구 + city-overall/volume/value/district-champions) + --dry-run/--series 옵션
+- CARD-06: GitHub Actions 주간 cron (`.github/workflows/weekly-generate.yml`) — 매주 월요일 00:10 KST 자동 실행 + PNG artifact 업로드
+
+**Context:**
+- 기술 결정: HTML/Puppeteer 엔진 (한글 100% 정확·무료·결정적) — Gemini 이미지 API 불사용
+- 디자인: CARDDESIGN.md — 화이트 클린 (표지 B), Pretendard 900/800/700/600/500
+- 컬러: --brand #0066FF · --ink #152038 · --gold #FFC93C — 그라데이션/빨강/초록 금지
+- 브랜드: 창원부동산랩 (단지온도 별도 인스타 계정)
+- 데이터 필터: `cancel_date IS NULL AND superseded_by IS NULL`, sgg_code IN ['48121','48123','48125','48127','48129','48250']
+- 폴더: `bds/card-news/` — 동일 Supabase DB 공유, 별도 package.json
+
+**Depends on:** Phase 27 (rankings — DB 집계 패턴 참조)
+
+**Success Criteria:**
+1. `node scripts/setup.js` 실행 시 Pretendard 5개 웨이트 woff2 다운로드 완료
+2. `node scripts/generate.js --dry-run` 실행 시 `output/YYYY-WW/` 폴더에 HTML 파일 생성
+3. `node scripts/generate.js --series=84-seongsan` 실행 시 `output/YYYY-WW/84-seongsan/` 에 01~04 PNG 4장 생성
+4. 생성된 PNG가 정확히 1080×1080px이다
+5. 표지·하이라이트·랭킹·클로징 카드 모두 Pretendard 폰트로 렌더링 (로봇 폰트 없음)
+6. GitHub Actions `.github/workflows/weekly-generate.yml`이 존재하고 valid YAML이다
 
 ---
 ---
