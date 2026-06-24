@@ -37,7 +37,7 @@
 ## 스택
 Next.js 15 App Router · TypeScript strict · Tailwind 3.4 · Supabase (Postgres+PostGIS+RLS) · Supabase Auth (Naver OAuth + Email OTP) · Serwist PWA · Recharts · react-kakao-maps-sdk · Vitest + Playwright · Vercel Hobby + GitHub Actions CI
 
-## 현재 구현 단계 (2026-06-16 기준)
+## 현재 구현 단계 (2026-06-24 기준)
 
 ### 완료된 주요 기능
 | 기능 | 상태 |
@@ -56,6 +56,7 @@ Next.js 15 App Router · TypeScript strict · Tailwind 3.4 · Supabase (Postgres
 | PWA (Serwist·웹 푸시) | ✅ |
 | 재건축 정보 (어드민 수동) | ✅ |
 | 어드민 콘솔 (회원·광고·카드뉴스·공인중개사) | ✅ |
+| 인스타 카드뉴스 생성기 (Puppeteer·주간 PNG 자동화·창원부동산랩) | 🔄 |
 
 ### 진행 중 / 예정
 - 11월: 학교 진학률 데이터 갱신 (`scrape-school-advancement.ts` 중/고 재실행)
