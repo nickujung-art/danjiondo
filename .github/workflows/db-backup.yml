@@ -1,13 +1,13 @@
-﻿name: DB Backup
+name: DB Backup
 
 on:
   schedule:
-    - cron: '0 19 * * 6'   # ?좎슂??19:00 UTC = ?쇱슂??04:00 KST
+    - cron: '0 19 * * 6'   # Saturday 19:00 UTC = Sunday 04:00 KST
   workflow_dispatch: {}
 
 jobs:
   backup:
-    name: pg_dump ??danjiondo-backup repo
+    name: pg_dump -> danjiondo-backup repo
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -19,12 +19,13 @@ jobs:
 
       - name: Run pg_dump
         env:
-          # SUPABASE_DB_URL: postgresql://postgres:[PW]@db.auoravdadyzvuoxunogh.supabase.co:5432/postgres
-          # 鍮꾨?踰덊샇瑜?異붿텧??Session Pooler URL(IPv4)濡??ъ“??          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          # Supabase free plan DB is IPv6-only; use Session Pooler (IPv4) instead
+          # Extracts password from SUPABASE_DB_URL and rebuilds pooler URL safely
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           set -e
           FILENAME="backup-$(date +%Y-%m-%d).sql.gz"
-          # 鍮꾨?踰덊샇??@!# ???뱀닔臾몄옄媛 ?덉뼱???덉쟾?섍쾶 URL ?ъ“??          POOLER_URL=$(python3 -c "
+          POOLER_URL=$(python3 -c "
 from urllib.parse import urlparse, quote
 import os
 u = urlparse(os.environ['SUPABASE_DB_URL'])
@@ -41,7 +42,7 @@ print(f'postgresql://postgres.auoravdadyzvuoxunogh:{pw}@aws-1-ap-southeast-2.poo
           DUMP_SIZE=$(wc -c < "/tmp/$FILENAME")
           echo "Dump file size: $DUMP_SIZE bytes"
           if [ "$DUMP_SIZE" -lt 1000 ]; then
-            echo "ERROR: dump file suspiciously small ($DUMP_SIZE bytes) ??pg_dump may have failed" >&2
+            echo "ERROR: dump file suspiciously small ($DUMP_SIZE bytes) -- pg_dump may have failed" >&2
             exit 1
           fi
           echo "Dump integrity OK: $DUMP_SIZE bytes"
