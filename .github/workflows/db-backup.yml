@@ -17,27 +17,49 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y postgresql-client
 
-      - name: Debug pooler URL
+      - name: Test A - DB password from SUPABASE_DB_URL
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
-          POOLER_URL=$(echo "$SUPABASE_DB_URL" \
-            | sed 's|//postgres:|//postgres.auoravdadyzvuoxunogh:|' \
-            | sed 's|@db\.auoravdadyzvuoxunogh\.supabase\.co:5432|@aws-1-ap-southeast-2.pooler.supabase.com:5432|')
-          SAFE=$(echo "$POOLER_URL" | sed 's|:[^:@/]*@|:***@|')
-          echo "Pooler URL (masked): $SAFE"
-          echo "URL length: ${#POOLER_URL}"
+          export PGPASSWORD=$(python3 -c "import os,urllib.parse; u=urllib.parse.urlparse(os.environ['SUPABASE_DB_URL']); print(u.password)")
+          psql --host=aws-1-ap-southeast-2.pooler.supabase.com --port=5432 \
+            --username=postgres.auoravdadyzvuoxunogh --dbname=postgres \
+            --no-password -c "SELECT 'TEST_A_OK'" 2>&1 && echo "AUTH_A=success" || echo "AUTH_A=fail"
 
-      - name: Run pg_dump
+      - name: Test B - Service Role JWT as password
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          export PGPASSWORD="$SUPABASE_SERVICE_ROLE_KEY"
+          psql --host=aws-1-ap-southeast-2.pooler.supabase.com --port=5432 \
+            --username=postgres.auoravdadyzvuoxunogh --dbname=postgres \
+            --no-password -c "SELECT 'TEST_B_OK'" 2>&1 && echo "AUTH_B=success" || echo "AUTH_B=fail"
+
+      - name: Run pg_dump (whichever auth worked)
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           set -e
           FILENAME="backup-$(date +%Y-%m-%d).sql.gz"
-          POOLER_URL=$(echo "$SUPABASE_DB_URL" \
-            | sed 's|//postgres:|//postgres.auoravdadyzvuoxunogh:|' \
-            | sed 's|@db\.auoravdadyzvuoxunogh\.supabase\.co:5432|@aws-1-ap-southeast-2.pooler.supabase.com:5432|')
-          pg_dump "${POOLER_URL}?sslmode=require" | gzip > "/tmp/$FILENAME"
+          # Try DB password first, fall back to JWT
+          PW_A=$(python3 -c "import os,urllib.parse; u=urllib.parse.urlparse(os.environ['SUPABASE_DB_URL']); print(u.password)")
+          if PGPASSWORD="$PW_A" psql --host=aws-1-ap-southeast-2.pooler.supabase.com --port=5432 \
+              --username=postgres.auoravdadyzvuoxunogh --dbname=postgres --no-password \
+              -c "SELECT 1" > /dev/null 2>&1; then
+            echo "Using DB password"
+            export PGPASSWORD="$PW_A"
+          else
+            echo "Using Service Role JWT"
+            export PGPASSWORD="$SUPABASE_SERVICE_ROLE_KEY"
+          fi
+          pg_dump \
+            --host=aws-1-ap-southeast-2.pooler.supabase.com \
+            --port=5432 \
+            --username=postgres.auoravdadyzvuoxunogh \
+            --dbname=postgres \
+            --no-password \
+          | gzip > "/tmp/$FILENAME"
           echo "FILENAME=$FILENAME" >> "$GITHUB_ENV"
           echo "pg_dump complete: $FILENAME"
 
