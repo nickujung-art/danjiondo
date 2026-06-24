@@ -23,13 +23,8 @@ jobs:
         run: |
           set -e
           FILENAME="backup-$(date +%Y-%m-%d).sql.gz"
-          POOLER_URL=$(python3 -c "
-from urllib.parse import urlparse, quote
-import os
-u = urlparse(os.environ['SUPABASE_DB_URL'])
-pw = quote(u.password, safe='')
-print(f'postgresql://postgres.auoravdadyzvuoxunogh:{pw}@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres')
-")
+          DB_PASS=$(python3 -c "from urllib.parse import urlparse, quote; import os; u = urlparse(os.environ['SUPABASE_DB_URL']); print(quote(u.password, safe=''))")
+          POOLER_URL="postgresql://postgres.auoravdadyzvuoxunogh:${DB_PASS}@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres"
           pg_dump "$POOLER_URL" | gzip > "/tmp/$FILENAME"
           echo "FILENAME=$FILENAME" >> "$GITHUB_ENV"
           echo "pg_dump complete: $FILENAME"
