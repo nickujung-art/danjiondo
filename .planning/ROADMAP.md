@@ -1175,7 +1175,7 @@
 **Plans:** 4 plans / 4 waves
 
 **Wave 1** *(독립 실행 가능 — card-news 스크립트 확장)*
-- [ ] 31-01-PLAN.md — card-news/scripts 확장 (fetch-data.js 신규 쿼리·이상치 필터, templates.js D-08 법적 표기·CDN 미리보기 CSS, generate-from-payload.js + GitHub Actions YML) (BILD-04, BILD-07, BILD-08)
+- [x] 31-01-PLAN.md — card-news/scripts 확장 (fetch-data.js 신규 쿼리·이상치 필터, templates.js D-08 법적 표기·CDN 미리보기 CSS, generate-from-payload.js + GitHub Actions YML) (BILD-04, BILD-07, BILD-08) ✅ 2026-06-25
 
 **Wave 2** *(blocked on Wave 1 — 서비스 어댑터·TypeScript 카드 렌더 계약)*
 - [ ] 31-02-PLAN.md — github-actions.ts 어댑터 + card-templates.ts + 집계·HTML·AI API Route (BILD-01, BILD-02, BILD-03)
