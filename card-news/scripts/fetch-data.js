@@ -19,6 +19,38 @@ const supabase = createClient(
 
 // ── 날짜 유틸 ─────────────────────────────────────────────
 
+/**
+ * 기간 타입에 따른 날짜 범위 반환
+ * @param {'weekly'|'monthly'|'quarterly'|'yearly'|'custom'} type
+ * @param {string} [customFrom] - 'custom' 타입일 때 시작일 (YYYY-MM-DD)
+ * @param {string} [customTo]   - 'custom' 타입일 때 종료일 (YYYY-MM-DD)
+ * @returns {{ from: string, to: string }}
+ */
+export function getDateRange(type, customFrom, customTo) {
+  if (type === 'custom') return { from: customFrom, to: customTo }
+  const now = new Date()
+  // 로컬 시간 기준 날짜 포맷 (toISOString은 UTC 기준이므로 UTC+9 환경에서 날짜가 달라질 수 있음)
+  const fmtLocal = (d) => {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+  const yesterday = fmtLocal(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1))
+  if (type === 'weekly') return getLastWeekRange()
+  if (type === 'monthly') {
+    return { from: fmtLocal(new Date(now.getFullYear(), now.getMonth(), 1)), to: yesterday }
+  }
+  if (type === 'quarterly') {
+    const q = Math.floor(now.getMonth() / 3)
+    return { from: fmtLocal(new Date(now.getFullYear(), q * 3, 1)), to: yesterday }
+  }
+  if (type === 'yearly') {
+    return { from: `${now.getFullYear()}-01-01`, to: yesterday }
+  }
+  throw new Error(`Unknown period type: ${type}`)
+}
+
 /** 지난 주 월~일 반환 */
 export function getLastWeekRange() {
   const now = new Date()
@@ -250,6 +282,293 @@ export async function fetchValueRanking({ sggCodes, areaMin = 80, areaMax = 95, 
       priceUnit: '',
     }
   })
+}
+
+// ── 이상치 필터 ───────────────────────────────────────────
+
+/**
+ * 12개월 평균 대비 200% 초과 거래를 제거한다 (D-04)
+ * Pitfall-6 해결책: 이상치 기준가는 항상 12개월 전체 평균으로 별도 쿼리
+ * @param {Array} transactions - { complex_id, price, ... }[]
+ * @param {string} dealType
+ * @returns {Promise<Array>}
+ */
+export async function filterOutliers(transactions, dealType) {
+  if (!transactions.length) return transactions
+  const complexIds = [...new Set(transactions.map((t) => t.complex_id).filter(Boolean))]
+  if (!complexIds.length) return transactions
+
+  const twelveMonthsAgo = new Date()
+  twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1)
+
+  const { data: historical } = await supabase
+    .from('transactions')
+    .select('complex_id, price')
+    .is('cancel_date', null)
+    .is('superseded_by', null)
+    .eq('deal_type', dealType)
+    .gte('deal_date', twelveMonthsAgo.toISOString().slice(0, 10))
+    .in('complex_id', complexIds)
+    .limit(50000)
+
+  const sumMap = new Map()
+  for (const t of historical ?? []) {
+    const cur = sumMap.get(t.complex_id) ?? { sum: 0, count: 0 }
+    sumMap.set(t.complex_id, { sum: cur.sum + t.price, count: cur.count + 1 })
+  }
+  const avgMap = new Map()
+  for (const [id, { sum, count }] of sumMap) avgMap.set(id, sum / count)
+
+  return transactions.filter((t) => {
+    const avg = avgMap.get(t.complex_id)
+    if (!avg) return true
+    return t.price <= avg * 2  // 200% 초과 제외 (D-04)
+  })
+}
+
+// ── 빌더 전용 집계 함수 ───────────────────────────────────
+
+/**
+ * 전세 최고가 TOP N (BILD-07, D-11)
+ * @param {{ sggCodes: string[], areaMin?: number, areaMax?: number, from: string, to: string, limit?: number }}
+ */
+export async function fetchJeonseRanking({ sggCodes, areaMin, areaMax, from, to, limit = 10 }) {
+  let query = supabase
+    .from('transactions')
+    .select('complex_id, price, area_m2')
+    .is('cancel_date', null)
+    .is('superseded_by', null)
+    .eq('deal_type', 'jeonse')
+    .gte('deal_date', from)
+    .lte('deal_date', to)
+    .in('sgg_code', sggCodes)
+    .not('complex_id', 'is', null)
+    .limit(5000)
+
+  if (areaMin != null) query = query.gte('area_m2', areaMin)
+  if (areaMax != null) query = query.lte('area_m2', areaMax)
+
+  const { data, error } = await query
+  if (error) throw new Error(`fetchJeonseRanking: ${error.message}`)
+
+  const filtered = await filterOutliers(data ?? [], 'jeonse')
+
+  // 단지별 거래 건수 + 최고가, 3건 미만 제외 (D-04)
+  const countMap = new Map()
+  const maxMap = new Map()
+  for (const t of filtered) {
+    countMap.set(t.complex_id, (countMap.get(t.complex_id) ?? 0) + 1)
+    const cur = maxMap.get(t.complex_id)
+    if (!cur || t.price > cur.price) maxMap.set(t.complex_id, { price: t.price })
+  }
+
+  const sorted = [...maxMap.entries()]
+    .filter(([id]) => (countMap.get(id) ?? 0) >= 3)
+    .sort(([, a], [, b]) => b.price - a.price)
+    .slice(0, limit)
+
+  const cmap = await fetchComplexNames(sorted.map(([id]) => id))
+
+  return sorted.map(([id, { price }], i) => {
+    const c = cmap.get(id)
+    return {
+      rank: i + 1,
+      name: c?.canonical_name ?? null,
+      subtitle: c ? (c.gu ?? c.si) : null,
+      price: formatPrice(price),
+    }
+  })
+}
+
+/**
+ * 월세 최고 보증금 TOP N (D-09 LOCKED "월세최고보증금", D-11)
+ * @param {{ sggCodes: string[], areaMin?: number, areaMax?: number, from: string, to: string, limit?: number }}
+ */
+export async function fetchMonthlyRanking({ sggCodes, areaMin, areaMax, from, to, limit = 10 }) {
+  let query = supabase
+    .from('transactions')
+    .select('complex_id, price, area_m2')
+    .is('cancel_date', null)
+    .is('superseded_by', null)
+    .eq('deal_type', 'monthly')
+    .gte('deal_date', from)
+    .lte('deal_date', to)
+    .in('sgg_code', sggCodes)
+    .not('complex_id', 'is', null)
+    .limit(5000)
+
+  if (areaMin != null) query = query.gte('area_m2', areaMin)
+  if (areaMax != null) query = query.lte('area_m2', areaMax)
+
+  const { data, error } = await query
+  if (error) throw new Error(`fetchMonthlyRanking: ${error.message}`)
+
+  const filtered = await filterOutliers(data ?? [], 'monthly')
+
+  // 단지별 거래 건수 + 최고 보증금(price), 3건 미만 제외 (D-04)
+  const countMap = new Map()
+  const maxMap = new Map()
+  for (const t of filtered) {
+    countMap.set(t.complex_id, (countMap.get(t.complex_id) ?? 0) + 1)
+    const cur = maxMap.get(t.complex_id)
+    if (!cur || t.price > cur.price) maxMap.set(t.complex_id, { price: t.price })
+  }
+
+  const sorted = [...maxMap.entries()]
+    .filter(([id]) => (countMap.get(id) ?? 0) >= 3)
+    .sort(([, a], [, b]) => b.price - a.price)
+    .slice(0, limit)
+
+  const cmap = await fetchComplexNames(sorted.map(([id]) => id))
+
+  return sorted.map(([id, { price }], i) => {
+    const c = cmap.get(id)
+    return {
+      rank: i + 1,
+      name: c?.canonical_name ?? null,
+      subtitle: c ? (c.gu ?? c.si) : null,
+      price: formatPrice(price),
+    }
+  })
+}
+
+/**
+ * 신고가 경신 TOP N — 집계 기간 내 최고가 > 이전 전체 기간 최고가인 단지 (BILD-07)
+ * @param {{ sggCodes: string[], areaMin?: number, areaMax?: number, from: string, to: string, dealType?: string, limit?: number }}
+ */
+export async function fetchAllTimeHighRanking({ sggCodes, areaMin, areaMax, from, to, dealType = 'sale', limit = 10 }) {
+  // 1단계: 집계 기간 내 단지별 최고가
+  let query = supabase
+    .from('transactions')
+    .select('complex_id, price')
+    .is('cancel_date', null)
+    .is('superseded_by', null)
+    .eq('deal_type', dealType)
+    .gte('deal_date', from)
+    .lte('deal_date', to)
+    .in('sgg_code', sggCodes)
+    .not('complex_id', 'is', null)
+    .limit(5000)
+
+  if (areaMin != null) query = query.gte('area_m2', areaMin)
+  if (areaMax != null) query = query.lte('area_m2', areaMax)
+
+  const { data: periodData, error: e1 } = await query
+  if (e1) throw new Error(`fetchAllTimeHighRanking(period): ${e1.message}`)
+
+  const filtered = await filterOutliers(periodData ?? [], dealType)
+
+  // 단지별 거래 건수 + 최고가
+  const periodCount = new Map()
+  const periodMax = new Map()
+  for (const t of filtered) {
+    periodCount.set(t.complex_id, (periodCount.get(t.complex_id) ?? 0) + 1)
+    if (!periodMax.has(t.complex_id) || t.price > periodMax.get(t.complex_id))
+      periodMax.set(t.complex_id, t.price)
+  }
+
+  // 3건 미만 제외 (D-04)
+  for (const [id, count] of periodCount) {
+    if (count < 3) periodMax.delete(id)
+  }
+
+  if (!periodMax.size) return []
+
+  // 2단계: 해당 단지들의 이전 전체 기간 역대 최고가
+  const complexIds = [...periodMax.keys()]
+  const { data: histData, error: e2 } = await supabase
+    .from('transactions')
+    .select('complex_id, price')
+    .is('cancel_date', null)
+    .is('superseded_by', null)
+    .eq('deal_type', dealType)
+    .lt('deal_date', from)
+    .in('complex_id', complexIds)
+    .limit(50000)
+  if (e2) throw new Error(`fetchAllTimeHighRanking(hist): ${e2.message}`)
+
+  const histMax = new Map()
+  for (const t of histData ?? []) {
+    if (!histMax.has(t.complex_id) || t.price > histMax.get(t.complex_id))
+      histMax.set(t.complex_id, t.price)
+  }
+
+  // 3단계: 신고가 경신 단지만 필터링 (현재 최고가 > 역대 최고가)
+  const newHighs = [...periodMax.entries()]
+    .filter(([id, curMax]) => curMax > (histMax.get(id) ?? 0))
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, limit)
+
+  const cmap = await fetchComplexNames(newHighs.map(([id]) => id))
+  return newHighs.map(([id, price], i) => ({
+    rank: i + 1,
+    name: cmap.get(id)?.canonical_name ?? null,
+    subtitle: cmap.get(id)?.gu ?? null,
+    price: formatPrice(price),
+  }))
+}
+
+/**
+ * 가격 변동률 TOP N — 현재 기간 평균가 vs 직전 동일 기간 평균가 (BILD-07)
+ * @param {{ sggCodes: string[], areaMin?: number, areaMax?: number, from: string, to: string, dealType?: string, limit?: number }}
+ */
+export async function fetchPriceChangeRanking({ sggCodes, areaMin, areaMax, from, to, dealType = 'sale', limit = 10 }) {
+  const durationMs = new Date(to) - new Date(from)
+  const prevTo = new Date(from)
+  prevTo.setDate(prevTo.getDate() - 1)
+  const prevFrom = new Date(prevTo.getTime() - durationMs)
+
+  async function fetchPeriodAvg(periodFrom, periodTo) {
+    let query = supabase
+      .from('transactions')
+      .select('complex_id, price')
+      .is('cancel_date', null)
+      .is('superseded_by', null)
+      .eq('deal_type', dealType)
+      .gte('deal_date', periodFrom)
+      .lte('deal_date', periodTo)
+      .in('sgg_code', sggCodes)
+      .not('complex_id', 'is', null)
+      .limit(5000)
+
+    if (areaMin != null) query = query.gte('area_m2', areaMin)
+    if (areaMax != null) query = query.lte('area_m2', areaMax)
+
+    const { data, error } = await query
+    if (error) throw new Error(`fetchPriceChangeRanking: ${error.message}`)
+
+    const map = new Map()
+    for (const t of data ?? []) {
+      const cur = map.get(t.complex_id) ?? { sum: 0, count: 0 }
+      map.set(t.complex_id, { sum: cur.sum + t.price, count: cur.count + 1 })
+    }
+    return map
+  }
+
+  const [curMap, prevMap] = await Promise.all([
+    fetchPeriodAvg(from, to),
+    fetchPeriodAvg(prevFrom.toISOString().slice(0, 10), prevTo.toISOString().slice(0, 10)),
+  ])
+
+  const changes = []
+  for (const [id, cur] of curMap) {
+    if (cur.count < 3) continue  // 3건 미만 제외 (D-04)
+    const prev = prevMap.get(id)
+    if (!prev || prev.count < 3) continue
+    const changePct = ((cur.sum / cur.count) - (prev.sum / prev.count)) / (prev.sum / prev.count) * 100
+    changes.push({ id, changePct })
+  }
+
+  const sorted = changes.sort((a, b) => b.changePct - a.changePct).slice(0, limit)
+  const cmap = await fetchComplexNames(sorted.map((s) => s.id))
+
+  return sorted.map((s, i) => ({
+    rank: i + 1,
+    name: cmap.get(s.id)?.canonical_name ?? null,
+    subtitle: cmap.get(s.id)?.gu ?? null,
+    price: `${s.changePct > 0 ? '+' : ''}${s.changePct.toFixed(1)}%`,
+    priceUnit: '',
+  }))
 }
 
 /**
