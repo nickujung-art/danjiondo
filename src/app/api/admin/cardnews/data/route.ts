@@ -34,6 +34,8 @@ interface RankingRow {
   priceUnit?: string
 }
 
+type DealTypeEnum = 'sale' | 'jeonse' | 'monthly'
+
 // 기간 계산 (D-09 기간 옵션 계산 로직)
 function getDateRange(
   period: string,
@@ -99,7 +101,7 @@ type AdminClient = ReturnType<typeof createSupabaseAdminClient>
 // 이상치 필터 (D-04 — 12개월 평균 200% 초과 제외 / PITFALL-6 해결)
 async function filterOutliers(
   transactions: Array<{ complex_id: string; price: number }>,
-  dealType: string,
+  dealType: DealTypeEnum,
   adminClient: AdminClient,
 ): Promise<Array<{ complex_id: string; price: number }>> {
   if (!transactions.length) return transactions
@@ -156,7 +158,7 @@ async function fetchComplexNames(
 
 // sale_top / jeonse_top 집계
 async function querySaleTop(params: {
-  dealType: string
+  dealType: DealTypeEnum
   from: string
   to: string
   sggCodes: string[]
@@ -227,7 +229,7 @@ async function querySaleTop(params: {
 
 // 신고가 경신 집계 (Pattern 9: 2단계 쿼리)
 async function queryAlltimeHigh(params: {
-  dealType: string
+  dealType: DealTypeEnum
   from: string
   to: string
   sggCodes: string[]
@@ -310,7 +312,7 @@ async function queryAlltimeHigh(params: {
 
 // 가격 변동률 집계 (Pattern 10: 병렬 기간 비교)
 async function queryPriceChange(params: {
-  dealType: string
+  dealType: DealTypeEnum
   from: string
   to: string
   sggCodes: string[]
@@ -434,8 +436,9 @@ export async function POST(request: Request): Promise<NextResponse> {
   try {
     let result: RankingRow[] = []
 
+    const resolvedDealType: DealTypeEnum = topic === 'jeonse_top' ? 'jeonse' : (dealType as DealTypeEnum)
     const queryParams = {
-      dealType: topic === 'jeonse_top' ? 'jeonse' : dealType,
+      dealType: resolvedDealType,
       from,
       to,
       sggCodes,
