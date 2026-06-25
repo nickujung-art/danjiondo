@@ -1155,6 +1155,57 @@
 6. GitHub Actions `.github/workflows/weekly-generate.yml`이 존재하고 valid YAML이다
 
 ---
+
+### Phase 31: 어드민 카드뉴스 빌더
+
+**Goal:** 어드민 콘솔에 임시/이슈성 카드뉴스를 직접 생성하는 빌더를 추가한다. 기존 GitHub Actions 자동 주간 생성(18시리즈)을 보완하며, 자동 배포 스케줄러 on/off 관리 메뉴도 별도 제공한다.
+
+**Version:** V5.0
+
+**Requirements:**
+- BILD-01: 데이터 API (`/api/admin/cardnews/data`) — 기간·주제·지역·평형 파라미터로 실거래가 집계 (매매/전세/월세), 이상치 필터 (최소 3건, 평균가 200% 초과 제외)
+- BILD-02: HTML 생성 API (`/api/admin/cardnews/generate-html`) — 옵션 → 카드 HTML 4장 생성 (기존 templates.js 패턴 기반)
+- BILD-03: AI 텍스트 API (`/api/admin/cardnews/ai-text`) — Groq LLM으로 제목/커버캡션/인사이트/SNS캡션/해시태그 생성, 수정 가능 에디터 반환
+- BILD-04: GitHub Actions 트리거 API (`/api/admin/cardnews/trigger-actions`) — workflow_dispatch로 PNG 생성 트리거, artifact ZIP 다운로드 링크 반환
+- BILD-05: 빌더 UI 페이지 (`/admin/cardnews/builder`) — 옵션 패널 + iframe 미리보기 + AI 텍스트 에디터 + 다운로드 패널
+- BILD-06: 스케줄러 관리 페이지 (`/admin/cardnews/scheduler`) — GitHub Actions weekly-generate.yml enable/disable, 마지막 실행 결과·다음 예정 시각 표시, 수동 트리거 버튼
+- BILD-07: 신규 카드 주제 쿼리 (fetch-data.js 확장) — 전세최고가·월세최고보증금·신고가경신·가격변동률 TOP 10
+- BILD-08: 법적 표기 강화 — 모든 카드 "출처: 국토교통부 실거래가 공개시스템" + 면책 문구 (templates.js 수정)
+
+**Plans:** 4 plans / 4 waves
+
+**Wave 1** *(독립 실행 가능 — card-news 스크립트 확장)*
+- [ ] 31-01-PLAN.md — card-news/scripts 확장 (fetch-data.js 신규 쿼리·이상치 필터, templates.js D-08 법적 표기·CDN 미리보기 CSS, generate-from-payload.js + GitHub Actions YML) (BILD-04, BILD-07, BILD-08)
+
+**Wave 2** *(blocked on Wave 1 — 서비스 어댑터·TypeScript 카드 렌더 계약)*
+- [ ] 31-02-PLAN.md — github-actions.ts 어댑터 + card-templates.ts + 집계·HTML·AI API Route (BILD-01, BILD-02, BILD-03)
+
+**Wave 3** *(blocked on Wave 2 — Actions 트리거·스케줄러 API)*
+- [ ] 31-03-PLAN.md — trigger-actions·artifact·scheduler API Route (BILD-04, BILD-06)
+
+**Wave 4** *(blocked on Wave 2+3 — 프론트엔드 UI)*
+- [ ] 31-04-PLAN.md — 빌더 UI·스케줄러 페이지·AdminSidebar (BILD-05, BILD-06, BILD-07, BILD-08)
+
+**Context:**
+- 기획 결정: 이슈성/특별 요청 카드 전용 (자동 주간 18시리즈 보완)
+- PNG 생성: GitHub Actions workflow_dispatch 트리거 → artifact ZIP 다운로드 (Vercel Hobby 제약)
+- AI: Groq (기존 키 활용, llama-3.3-70b), 숫자는 코드 계산 → AI는 텍스트만 생성
+- 이력 저장: 없음 (단순 생성기)
+- Instagram API: Phase 2로 분리
+- 데이터 품질: 최소 3건 필터 + 가격 이상치(최근 12개월 평균 200% 초과) 제외 + 경고 UI
+
+**Depends on:** Phase 30 (card-news scripts 패턴 참조)
+
+**Success Criteria:**
+1. `/admin/cardnews/builder` 에서 기간·주제·지역·평형을 선택하고 "데이터 불러오기" 클릭 시 랭킹 데이터가 반환된다
+2. 빌더에서 생성된 카드 HTML이 iframe 미리보기에 정상 렌더링된다
+3. AI 텍스트 생성 버튼 클릭 시 제목·캡션·SNS캡션·해시태그가 생성되고 수정 가능하다
+4. "PNG 생성" 버튼 클릭 시 GitHub Actions workflow_dispatch가 트리거된다
+5. `/admin/cardnews/scheduler` 에서 자동 배포 on/off 및 수동 트리거가 가능하다
+6. 모든 생성 카드에 "출처: 국토교통부 실거래가 공개시스템" 표기가 포함된다
+7. `npm run lint && npm run build` 통과
+
+---
 ---
 ## Milestone Summary
 
