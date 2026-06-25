@@ -1184,7 +1184,7 @@
 - [x] 31-03-PLAN.md — trigger-actions·artifact·scheduler API Route (BILD-04, BILD-06) ✅ 2026-06-25
 
 **Wave 4** *(blocked on Wave 2+3 — 프론트엔드 UI)*
-- [ ] 31-04-PLAN.md — 빌더 UI·스케줄러 페이지·AdminSidebar (BILD-05, BILD-06, BILD-07, BILD-08)
+- [x] 31-04-PLAN.md — 빌더 UI·스케줄러 페이지·AdminSidebar (BILD-05, BILD-06, BILD-07, BILD-08) ✅ 2026-06-25
 
 **Context:**
 - 기획 결정: 이슈성/특별 요청 카드 전용 (자동 주간 18시리즈 보완)
