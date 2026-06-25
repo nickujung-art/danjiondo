@@ -33,18 +33,19 @@ export async function GET(request: Request): Promise<NextResponse> {
     }
 
     const artifacts = await getRunArtifacts(GH_OWNER, GH_REPO, runId)
-    if (!artifacts.length) {
+    const firstArtifact = artifacts[0]
+    if (!firstArtifact) {
       return NextResponse.json({ status: 'pending', download_url: null })
     }
 
     // 첫 번째 artifact (custom-card-*) 의 다운로드 URL 획득
-    const downloadUrl = await getArtifactDownloadUrl(GH_OWNER, GH_REPO, artifacts[0].id)
+    const downloadUrl = await getArtifactDownloadUrl(GH_OWNER, GH_REPO, firstArtifact.id)
 
     return NextResponse.json({
       status: 'ready',
       download_url: downloadUrl,
-      artifact_name: artifacts[0].name,
-      size_bytes: artifacts[0].size_in_bytes,
+      artifact_name: firstArtifact.name,
+      size_bytes: firstArtifact.size_in_bytes,
       expires_info: 'artifact는 30일 후 만료됩니다',
     })
   } catch (err) {
