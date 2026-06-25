@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-06-25T16:25:00Z"
-last_activity: 2026-06-25 — Phase 31 Plan 02 완료: github-actions.ts + card-templates.ts + data/generate-html/ai-text API 3개 (BILD-01~03)
+last_updated: "2026-06-25T07:29:18Z"
+last_activity: 2026-06-25 — Phase 31 Plan 03 완료: trigger-actions/artifact/scheduler API 3개 Route (BILD-04, BILD-06)
 progress:
   total_phases: 26
   completed_phases: 24
   total_plans: 69
-  completed_plans: 68
+  completed_plans: 69
   percent: 99
 ---
 
@@ -235,6 +235,8 @@ Key notes: MOLIT_API_KEY (기존 data.go.kr 키) 재사용. B552555 청약홈 �
 | 2026-06-25 | DealTypeEnum('sale'|'jeonse'|'monthly') 타입 alias 정의 — Supabase 컬럼 유니온 타입과 매칭 (TS strict) | 31-02 |
 | 2026-06-25 | AiTextResult 인터페이스 명시적 정의 — FALLBACK const null 추론 타입 좁힘 문제 해결 | 31-02 |
 | 2026-06-25 | Groq D-05 패턴: try/catch에서 fallback:true 반환 (500 throw 안 함) — 생성 API 안정성 | 31-02 |
+| 2026-06-25 | getAdminGuard 헬퍼 함수 패턴: scheduler 3핸들러 공통 인증 로직 추출 — 중복 제거 | 31-03 |
+| 2026-06-25 | artifact/route.ts run_id 없으면 getLatestWorkflowRun 자동 조회 — UX 편의성 | 31-03 |
 
 ---
 *Initialized: 2026-05-06*
