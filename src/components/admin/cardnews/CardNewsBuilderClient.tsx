@@ -86,6 +86,8 @@ export function CardNewsBuilderClient() {
           region: opts.regionLabel,
           area: opts.areaMax < 300 ? `${opts.areaMin}~${opts.areaMax}㎡` : null,
           period: opts.period,
+          topic: opts.topic,
+          seriesType: opts.topic,
           source: '국토교통부 실거래가 공개시스템',
         }),
       })

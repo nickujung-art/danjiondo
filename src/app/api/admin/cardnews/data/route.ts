@@ -384,6 +384,176 @@ async function queryPriceChange(params: {
   }))
 }
 
+const SGG_LABEL: Record<string, string> = {
+  '48121': '의창구',
+  '48123': '성산구',
+  '48125': '마산합포구',
+  '48127': '마산회원구',
+  '48129': '진해구',
+  '48250': '김해시',
+}
+
+// 거래량 TOP10
+async function queryVolume(params: {
+  dealType: DealTypeEnum
+  from: string
+  to: string
+  sggCodes: string[]
+  areaMin: number
+  areaMax: number
+  adminClient: AdminClient
+}): Promise<RankingRow[]> {
+  const { dealType, from, to, sggCodes, areaMin, areaMax, adminClient } = params
+
+  const { data: raw } = await adminClient
+    .from('transactions')
+    .select('complex_id')
+    .is('cancel_date', null)
+    .is('superseded_by', null)
+    .eq('deal_type', dealType)
+    .gte('deal_date', from)
+    .lte('deal_date', to)
+    .in('sgg_code', sggCodes)
+    .gte('area_m2', areaMin)
+    .lte('area_m2', areaMax)
+    .not('complex_id', 'is', null)
+    .limit(10000)
+
+  const countMap = new Map<string, number>()
+  for (const t of (raw ?? []) as Array<{ complex_id: string }>) {
+    countMap.set(t.complex_id, (countMap.get(t.complex_id) ?? 0) + 1)
+  }
+
+  const sorted = [...countMap.entries()]
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 10)
+
+  const cmap = await fetchComplexNames(sorted.map(([id]) => id), adminClient)
+
+  return sorted.map(([id, count], i) => ({
+    rank: i + 1,
+    name: cmap.get(id)?.canonical_name ?? null,
+    subtitle: cmap.get(id)?.gu ?? null,
+    price: `${count}건`,
+    priceUnit: '',
+  }))
+}
+
+// 가성비 TOP10 (평당가 낮은 순)
+async function queryValue(params: {
+  dealType: DealTypeEnum
+  from: string
+  to: string
+  sggCodes: string[]
+  areaMin: number
+  areaMax: number
+  adminClient: AdminClient
+}): Promise<RankingRow[]> {
+  const { from, to, sggCodes, areaMin, areaMax, adminClient } = params
+
+  const effectiveMin = areaMin > 0 ? areaMin : 0
+  const effectiveMax = areaMax < 300 ? areaMax : 300
+
+  const { data: raw } = await adminClient
+    .from('transactions')
+    .select('complex_id, price, area_m2')
+    .is('cancel_date', null)
+    .is('superseded_by', null)
+    .eq('deal_type', 'sale')
+    .gte('deal_date', from)
+    .lte('deal_date', to)
+    .in('sgg_code', sggCodes)
+    .gte('area_m2', effectiveMin)
+    .lte('area_m2', effectiveMax)
+    .not('complex_id', 'is', null)
+    .gt('area_m2', 0)
+    .limit(10000)
+
+  const ppMap = new Map<string, { sum: number; count: number }>()
+  for (const t of (raw ?? []) as Array<{ complex_id: string; price: number; area_m2: number }>) {
+    if (!t.area_m2 || t.area_m2 === 0) continue
+    const pp = t.price / t.area_m2
+    const cur = ppMap.get(t.complex_id) ?? { sum: 0, count: 0 }
+    ppMap.set(t.complex_id, { sum: cur.sum + pp, count: cur.count + 1 })
+  }
+
+  const sorted = [...ppMap.entries()]
+    .filter(([, { count }]) => count >= 3)
+    .map(([id, { sum, count }]) => ({ id, avgPP: sum / count }))
+    .sort((a, b) => a.avgPP - b.avgPP)
+    .slice(0, 10)
+
+  const cmap = await fetchComplexNames(sorted.map((s) => s.id), adminClient)
+
+  return sorted.map((s, i) => ({
+    rank: i + 1,
+    name: cmap.get(s.id)?.canonical_name ?? null,
+    subtitle: cmap.get(s.id)?.gu ?? null,
+    price: `${Math.round(s.avgPP).toLocaleString('ko-KR')}만/㎡`,
+    priceUnit: '',
+  }))
+}
+
+// 구별 챔피언 — 구마다 최고가 단지 1개
+async function queryDistrictChampions(params: {
+  dealType: DealTypeEnum
+  from: string
+  to: string
+  sggCodes: string[]
+  areaMin: number
+  areaMax: number
+  adminClient: AdminClient
+}): Promise<RankingRow[]> {
+  const { dealType, from, to, sggCodes, areaMin, areaMax, adminClient } = params
+
+  const { data: raw } = await adminClient
+    .from('transactions')
+    .select('complex_id, price, sgg_code')
+    .is('cancel_date', null)
+    .is('superseded_by', null)
+    .eq('deal_type', dealType)
+    .gte('deal_date', from)
+    .lte('deal_date', to)
+    .in('sgg_code', sggCodes)
+    .gte('area_m2', areaMin)
+    .lte('area_m2', areaMax)
+    .not('complex_id', 'is', null)
+    .limit(10000)
+
+  // 구별 단지 최고가 맵
+  const districtMax = new Map<string, Map<string, number>>()
+  for (const t of (raw ?? []) as Array<{ complex_id: string; price: number; sgg_code: string }>) {
+    if (!districtMax.has(t.sgg_code)) districtMax.set(t.sgg_code, new Map())
+    const dm = districtMax.get(t.sgg_code)!
+    if (!dm.has(t.complex_id) || t.price > (dm.get(t.complex_id) ?? 0)) {
+      dm.set(t.complex_id, t.price)
+    }
+  }
+
+  const districtTopList: Array<{ sggCode: string; complexId: string | null; price: number }> = []
+  const allTopIds: string[] = []
+
+  for (const sggCode of sggCodes) {
+    const dm = districtMax.get(sggCode)
+    if (!dm?.size) {
+      districtTopList.push({ sggCode, complexId: null, price: 0 })
+      continue
+    }
+    const [topId, topPrice] = [...dm.entries()].sort(([, a], [, b]) => b - a)[0]!
+    districtTopList.push({ sggCode, complexId: topId, price: topPrice })
+    allTopIds.push(topId)
+  }
+
+  const cmap = await fetchComplexNames(allTopIds, adminClient)
+
+  return districtTopList.map((d, i) => ({
+    rank: i + 1,
+    name: d.complexId ? (cmap.get(d.complexId)?.canonical_name ?? null) : null,
+    subtitle: SGG_LABEL[d.sggCode] ?? d.sggCode,
+    price: d.price > 0 ? formatPrice(d.price) : null,
+  }))
+}
+
 export async function POST(request: Request): Promise<NextResponse> {
   // 어드민 권한 검증 (gps-approve/route.ts 패턴)
   const supabase = await createSupabaseServerClient()
@@ -436,7 +606,10 @@ export async function POST(request: Request): Promise<NextResponse> {
   try {
     let result: RankingRow[] = []
 
-    const resolvedDealType: DealTypeEnum = topic === 'jeonse_top' ? 'jeonse' : (dealType as DealTypeEnum)
+    const resolvedDealType: DealTypeEnum =
+    topic === 'jeonse_top' ? 'jeonse' :
+    topic === 'monthly_top' ? 'monthly' :
+    (dealType as DealTypeEnum)
     const queryParams = {
       dealType: resolvedDealType,
       from,
@@ -454,8 +627,13 @@ export async function POST(request: Request): Promise<NextResponse> {
     } else if (topic === 'price_change') {
       result = await queryPriceChange(queryParams)
     }
-    // volume / value / district_champions: fetch-data.js 로직 참조
-    // (현재 동일 패턴, 추후 확장)
+    else if (topic === 'volume') {
+      result = await queryVolume(queryParams)
+    } else if (topic === 'value') {
+      result = await queryValue(queryParams)
+    } else if (topic === 'district_champions') {
+      result = await queryDistrictChampions(queryParams)
+    }
 
     return NextResponse.json({ data: result, from, to, warning, topic })
   } catch (err) {

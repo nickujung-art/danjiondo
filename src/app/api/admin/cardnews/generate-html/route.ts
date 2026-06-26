@@ -5,6 +5,7 @@ import {
   renderCoverPreview,
   renderHighlightPreview,
   renderRankingPreview,
+  renderDistrictChampionsPreview,
   renderClosingPreview,
 } from '@/lib/cardnews/card-templates'
 
@@ -72,6 +73,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       region: data.region,
       area: data.area,
       subCaption: data.subCaption,
+      topic: data.topic,
     }
 
     const cardSetData = {
@@ -85,10 +87,14 @@ export async function POST(request: Request): Promise<NextResponse> {
       subCaption: data.subCaption,
     }
 
+    const isDistrictChampions = data.topic === 'district_champions'
+
     const html = {
       cover: renderCoverPreview(coverData),
       highlight: renderHighlightPreview(cardSetData),
-      ranking: renderRankingPreview(cardSetData),
+      ranking: isDistrictChampions
+        ? renderDistrictChampionsPreview(cardSetData)
+        : renderRankingPreview(cardSetData),
       closing: renderClosingPreview({}),
     }
 
