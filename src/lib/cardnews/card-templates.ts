@@ -160,8 +160,7 @@ export function renderCoverPreview(data: CoverData): string {
 
 export function renderHighlightPreview(data: CardSetData): string {
   const { week: _week, region, area, period, source, ranking, seriesType } = data
-  const r = pad10(ranking ?? [])
-  const top3 = r.slice(0, 3)
+  const top3 = (ranking ?? []).filter(item => item.name).slice(0, 3)
 
   const highlightTitleMap: Record<string, string> = {
     jeonse_top: '전세 최고가 TOP 3',
@@ -246,7 +245,7 @@ export function renderHighlightPreview(data: CardSetData): string {
 
 export function renderRankingPreview(data: CardSetData): string {
   const { region: _region, area: _area, period, source, ranking, seriesType } = data
-  const r = pad10(ranking ?? [])
+  const r = (ranking ?? []).filter(item => item.name)
 
   const topic = seriesType // seriesType = opts.topic from client
 

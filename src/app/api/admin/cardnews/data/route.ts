@@ -210,7 +210,7 @@ async function querySaleTop(params: {
   }
 
   const sorted = [...maxMap.entries()]
-    .filter(([id]) => (countMap.get(id) ?? 0) >= 3)
+    .filter(([id]) => (countMap.get(id) ?? 0) >= 1)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 10)
 
