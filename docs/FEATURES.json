@@ -1,9 +1,9 @@
 {
   "_schema": "feature-registry/v1",
   "_usage": "세션 시작 시 읽어서 todo/in_progress 항목 파악. done이지만 checklist 미완료 항목은 주의.",
-  "lastUpdated": "2026-06-24",
+  "lastUpdated": "2026-06-26",
   "summary": {
-    "done": 26,
+    "done": 27,
     "in_progress": 1,
     "todo": 0,
     "deferred": 5,
@@ -481,6 +481,29 @@
         { "layer": "ci",     "name": "GitHub Secrets 등록 (SUPABASE_URL, SERVICE_ROLE_KEY)", "status": "todo" },
         { "layer": "ci",     "name": "workflow_dispatch 실제 CI 실행 검증 (PNG Artifact)", "status": "todo" },
         { "layer": "design", "name": "카드 디자인 고도화 (하이라이트·volume·typography)", "status": "todo" }
+      ]
+    },
+
+    {
+      "id": "cardnews-builder",
+      "category": "어드민",
+      "name": "어드민 카드뉴스 빌더 + 관리 대시보드 (Phase 31/32)",
+      "status": "done",
+      "priority": "medium",
+      "notes": "/admin/cardnews/builder. 8개 주제 × 기간·지역·평형 옵션. iframe 4장 미리보기. TextOverrides 텍스트 직접 편집. /admin/cardnews 통합 관리 대시보드.",
+      "checklist": [
+        { "layer": "api",    "name": "data/route.ts — 8개 주제 집계 (sale/jeonse/monthly/volume/value/alltime_high/price_change/district_champions)", "status": "done" },
+        { "layer": "api",    "name": "generate-html/route.ts — 4장 템플릿 렌더링 + TextOverrides", "status": "done" },
+        { "layer": "api",    "name": "ai-text/route.ts — Groq AI SNS 캡션 생성", "status": "done" },
+        { "layer": "api",    "name": "trigger-actions + artifact — GitHub Actions PNG 생성", "status": "done" },
+        { "layer": "lib",    "name": "card-templates.ts — 4종 렌더러 + TextOverrides 오버라이드", "status": "done" },
+        { "layer": "ui",     "name": "BuilderOptionsPanel — 기간 세부 선택 (주간 8주·월간 12개월·분기·연간)", "status": "done" },
+        { "layer": "ui",     "name": "BuilderPreviewPanel — ResizeObserver 반응형 + 모바일 탭", "status": "done" },
+        { "layer": "ui",     "name": "CardTextEditor — 카드별 텍스트 직접 편집 (7개 슬롯)", "status": "done" },
+        { "layer": "ui",     "name": "AiTextEditor — AI SNS 텍스트 생성", "status": "done" },
+        { "layer": "ui",     "name": "ExportPanel — PNG 생성 트리거", "status": "done" },
+        { "layer": "ui",     "name": "/admin/cardnews 통합 관리 대시보드 (Phase 32)", "status": "done" },
+        { "layer": "data",   "name": "D-04 완화: sale_top 최소 거래 3건→1건 (주간 구별 데이터 부족 해소)", "status": "done" }
       ]
     }
 
