@@ -19,6 +19,16 @@ const RankingRowSchema = z.object({
   priceUnit: z.string().optional(),
 })
 
+const TextOverridesSchema = z.object({
+  coverTitle2: z.string().optional(),
+  coverTitle3: z.string().optional(),
+  coverCaption: z.string().optional(),
+  highlightTitle: z.string().optional(),
+  rankingHeader: z.string().optional(),
+  closingHeading: z.string().optional(),
+  closingDesc: z.string().optional(),
+}).optional()
+
 const RequestSchema = z.object({
   ranking: z.array(RankingRowSchema),
   week: z.string(),
@@ -29,6 +39,7 @@ const RequestSchema = z.object({
   topic: z.string().optional(),
   seriesType: z.string().optional(),
   subCaption: z.string().optional(),
+  textOverrides: TextOverridesSchema,
 })
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -68,12 +79,15 @@ export async function POST(request: Request): Promise<NextResponse> {
   const data = parsed.data
 
   try {
+    const overrides = data.textOverrides
+
     const coverData = {
       week: data.week,
       region: data.region,
       area: data.area,
       subCaption: data.subCaption,
       topic: data.topic,
+      overrides,
     }
 
     const cardSetData = {
@@ -85,6 +99,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       ranking: data.ranking,
       seriesType: data.seriesType,
       subCaption: data.subCaption,
+      overrides,
     }
 
     const isDistrictChampions = data.topic === 'district_champions'
@@ -95,7 +110,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       ranking: isDistrictChampions
         ? renderDistrictChampionsPreview(cardSetData)
         : renderRankingPreview(cardSetData),
-      closing: renderClosingPreview({}),
+      closing: renderClosingPreview(cardSetData),
     }
 
     return NextResponse.json({ html })

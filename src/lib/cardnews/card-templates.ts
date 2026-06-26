@@ -66,6 +66,16 @@ export interface RankingRow {
   priceUnit?: string
 }
 
+export interface TextOverrides {
+  coverTitle2?: string
+  coverTitle3?: string
+  coverCaption?: string
+  highlightTitle?: string
+  rankingHeader?: string
+  closingHeading?: string
+  closingDesc?: string
+}
+
 export interface CoverData {
   week: string
   region: string
@@ -73,6 +83,7 @@ export interface CoverData {
   subCaption?: string
   period?: string
   topic?: string
+  overrides?: TextOverrides
 }
 
 export interface CardSetData {
@@ -84,6 +95,7 @@ export interface CardSetData {
   ranking: RankingRow[]
   seriesType?: string
   subCaption?: string
+  overrides?: TextOverrides
 }
 
 // ── 1. 커버 카드 — 미리보기 ────────────────────────────────
@@ -105,7 +117,9 @@ export function renderCoverPreview(data: CoverData): string {
     line3: '랭킹 TOP 10',
     caption: '이번 기간 가장 비싸게 거래된\n아파트는 어디일까요?',
   }
-  const caption = subCaption ?? titleInfo.caption
+  const line2 = data.overrides?.coverTitle2 ?? titleInfo.line2
+  const line3 = data.overrides?.coverTitle3 ?? titleInfo.line3
+  const caption = data.overrides?.coverCaption ?? subCaption ?? titleInfo.caption
   const locationMeta = area ? `${region} · 전용 ${area} 기준` : region
 
   const css = `
@@ -128,8 +142,8 @@ export function renderCoverPreview(data: CoverData): string {
     <div class="eyebrow">WEEKLY REPORT · ${week ?? ''}</div>
     <div class="title">
       <span class="title-line">${region ?? ''}</span>
-      <span class="title-line"><span class="title-blue">${titleInfo.line2}</span></span>
-      <span class="title-line">${titleInfo.line3}</span>
+      <span class="title-line"><span class="title-blue">${line2}</span></span>
+      <span class="title-line">${line3}</span>
     </div>
     <div class="ghost">10</div>
     <div class="caption">${caption}</div>
@@ -158,7 +172,7 @@ export function renderHighlightPreview(data: CardSetData): string {
     price_change: '가격 상승률 TOP 3',
     district_champions: '최고가 지역 TOP 3',
   }
-  const highlightTitle = highlightTitleMap[seriesType ?? ''] ?? '최고가 거래 TOP 3'
+  const highlightTitle = data.overrides?.highlightTitle ?? highlightTitleMap[seriesType ?? ''] ?? '최고가 거래 TOP 3'
 
   const css = `
     .card { width:1080px; height:1080px; background:var(--surface-2); position:relative; padding:0 72px; display:flex; flex-direction:column; justify-content:flex-start; }
@@ -245,6 +259,8 @@ export function renderRankingPreview(data: CardSetData): string {
   if (topic === 'alltime_high') { headerLabel = '신고가 경신 단지'; captionNote = '해당 기간 역대 최고가 달성' }
   if (topic === 'price_change') { headerLabel = '가격 변동률 TOP10'; captionNote = '전기간 대비 변동률 (%)' }
 
+  const finalHeader = data.overrides?.rankingHeader ?? headerLabel
+
   const css = `
     .card { width:1080px; height:1080px; background:#fff; position:relative; display:flex; flex-direction:column; padding:0 72px; }
     .top-bar { position:absolute; top:0; left:0; width:100%; height:14px; background:var(--brand); }
@@ -283,7 +299,7 @@ export function renderRankingPreview(data: CardSetData): string {
     <div class="top-bar"></div>
     <div class="header">
       <div class="eyebrow-sm">FULL RANKING</div>
-      <div class="h2">${headerLabel}</div>
+      <div class="h2">${finalHeader}</div>
     </div>
     ${r.map(rowHtml).join('')}
     <div class="footer">${captionNote} &nbsp;·&nbsp; 출처: ${source ?? ''} &nbsp;·&nbsp; ${period ?? ''}</div>
@@ -342,7 +358,15 @@ export function renderDistrictChampionsPreview(data: CardSetData): string {
 
 // ── 4. 클로징 CTA — 미리보기 ─────────────────────────────
 
-export function renderClosingPreview(_data: Partial<CardSetData>): string {
+export function renderClosingPreview(data: Partial<CardSetData>): string {
+  const nl2br = (s: string) => s.replace(/\n/g, '<br>')
+  const headingHtml = data.overrides?.closingHeading
+    ? nl2br(data.overrides.closingHeading)
+    : '매주 업데이트되는<br>창원 <span class="gold-text">실거래가 리포트</span>'
+  const descHtml = data.overrides?.closingDesc
+    ? nl2br(data.overrides.closingDesc)
+    : '우리 동네 아파트 시세가 궁금하다면<br>창원부동산랩을 팔로우하세요.'
+
   const css = `
     .card { width:1080px; height:1080px; background:var(--ink); position:relative; display:flex; flex-direction:column; padding:80px; }
     .brand-white { margin-bottom:auto; }
@@ -358,8 +382,8 @@ export function renderClosingPreview(_data: Partial<CardSetData>): string {
 
   const body = `<div class="card">
     <div class="brand-white" style="padding-bottom:80px;">${BrandLockupPreview({ size: 56, fontSize: 34, color: '#fff' })}</div>
-    <div class="h2">매주 업데이트되는<br>창원 <span class="gold-text">실거래가 리포트</span></div>
-    <div class="desc">우리 동네 아파트 시세가 궁금하다면<br>창원부동산랩을 팔로우하세요.</div>
+    <div class="h2">${headingHtml}</div>
+    <div class="desc">${descHtml}</div>
     <div class="cta-row">
       <button class="btn btn-primary">팔로우 +</button>
       <button class="btn btn-outline">저장하기</button>

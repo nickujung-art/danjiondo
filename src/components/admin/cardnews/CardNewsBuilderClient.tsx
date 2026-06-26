@@ -5,6 +5,7 @@ import { DataQualityWarning } from './DataQualityWarning'
 import { BuilderPreviewPanel } from './BuilderPreviewPanel'
 import { AiTextEditor, type AiFields } from './AiTextEditor'
 import { ExportPanel } from './ExportPanel'
+import { CardTextEditor, type TextOverrides } from './CardTextEditor'
 
 interface RankingRow {
   rank: number
@@ -40,6 +41,7 @@ export function CardNewsBuilderClient() {
   const [htmlCards, setHtmlCards] = useState<HtmlCards | null>(null)
   const [dataLoading, setDataLoading] = useState(false)
   const [htmlLoading, setHtmlLoading] = useState(false)
+  const [textOverrides, setTextOverrides] = useState<TextOverrides>({})
   const [, setAiFields] = useState<AiFields>({
     title: '',
     caption: '',
@@ -48,62 +50,77 @@ export function CardNewsBuilderClient() {
     hashtags: '',
   })
 
-  const handleOptionsSubmit = useCallback(async (opts: BuilderOptions) => {
-    setOptions(opts)
-    setDataLoading(true)
-    setHtmlCards(null)
-    try {
-      // 1. 데이터 조회
-      const dataRes = await fetch('/api/admin/cardnews/data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          period: opts.period,
-          topic: opts.topic,
-          sggCodes: opts.sggCodes,
-          areaMin: opts.areaMin,
-          areaMax: opts.areaMax,
-          customFrom: opts.customFrom,
-          customTo: opts.customTo,
-        }),
-      })
-      const dataResult = (await dataRes.json()) as DataApiResponse
-      setRanking(dataResult.data ?? [])
-      setDataWarning(dataResult.warning ?? false)
-      setDataFrom(dataResult.from ?? '')
-      setDataTo(dataResult.to ?? '')
-
-      // 2. HTML 생성
+  const generateHtml = useCallback(
+    async (rows: RankingRow[], opts: BuilderOptions, overrides: TextOverrides) => {
       setHtmlLoading(true)
-      const now = new Date()
-      const week = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${Math.ceil(now.getDate() / 7)}주`
-      const htmlRes = await fetch('/api/admin/cardnews/generate-html', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ranking: dataResult.data,
-          week,
-          region: opts.regionLabel,
-          area: opts.areaMax < 300 ? `${opts.areaMin}~${opts.areaMax}㎡` : null,
-          period: opts.period,
-          topic: opts.topic,
-          seriesType: opts.topic,
-          source: '국토교통부 실거래가 공개시스템',
-        }),
-      })
-      const htmlResult = (await htmlRes.json()) as HtmlApiResponse
-      setHtmlCards(htmlResult.html)
-    } finally {
-      setDataLoading(false)
-      setHtmlLoading(false)
-    }
-  }, [])
+      try {
+        const res = await fetch('/api/admin/cardnews/generate-html', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ranking: rows,
+            week: opts.periodLabel,
+            region: opts.regionLabel,
+            area: opts.areaMax < 300 ? `${opts.areaMin}~${opts.areaMax}㎡` : null,
+            period: `${opts.customFrom} ~ ${opts.customTo}`,
+            topic: opts.topic,
+            seriesType: opts.topic,
+            source: '국토교통부 실거래가 공개시스템',
+            textOverrides: Object.keys(overrides).length > 0 ? overrides : undefined,
+          }),
+        })
+        const result = (await res.json()) as HtmlApiResponse
+        setHtmlCards(result.html)
+      } finally {
+        setHtmlLoading(false)
+      }
+    },
+    [],
+  )
+
+  const handleOptionsSubmit = useCallback(
+    async (opts: BuilderOptions) => {
+      setOptions(opts)
+      setDataLoading(true)
+      setHtmlCards(null)
+      try {
+        const dataRes = await fetch('/api/admin/cardnews/data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            period: 'custom',
+            topic: opts.topic,
+            sggCodes: opts.sggCodes,
+            areaMin: opts.areaMin,
+            areaMax: opts.areaMax,
+            customFrom: opts.customFrom,
+            customTo: opts.customTo,
+          }),
+        })
+        const dataResult = (await dataRes.json()) as DataApiResponse
+        const rows = dataResult.data ?? []
+        setRanking(rows)
+        setDataWarning(dataResult.warning ?? false)
+        setDataFrom(dataResult.from ?? '')
+        setDataTo(dataResult.to ?? '')
+        await generateHtml(rows, opts, textOverrides)
+      } finally {
+        setDataLoading(false)
+      }
+    },
+    [generateHtml, textOverrides],
+  )
+
+  const handleRegenerate = useCallback(async () => {
+    if (!options || ranking.length === 0) return
+    await generateHtml(ranking, options, textOverrides)
+  }, [generateHtml, options, ranking, textOverrides])
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-xl font-bold text-gray-900 mb-6">카드뉴스 빌더</h1>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* 좌측 패널: 옵션 + 경고 + AI + 내보내기 */}
+        {/* 좌측 패널 */}
         <div className="space-y-4">
           <BuilderOptionsPanel
             onSubmit={handleOptionsSubmit}
@@ -121,6 +138,13 @@ export function CardNewsBuilderClient() {
             options={options}
             ranking={ranking}
             onFieldsChange={setAiFields}
+          />
+          <CardTextEditor
+            overrides={textOverrides}
+            onChange={setTextOverrides}
+            onRegenerate={handleRegenerate}
+            loading={htmlLoading}
+            disabled={!options || ranking.length === 0}
           />
           <ExportPanel htmlCards={htmlCards} />
         </div>

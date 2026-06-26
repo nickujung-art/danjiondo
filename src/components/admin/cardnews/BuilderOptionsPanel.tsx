@@ -1,8 +1,8 @@
 'use client'
 import { useState } from 'react'
 
-// D-09 LOCKED 옵션 — 이 목록은 CONTEXT.md D-09에 잠금됨
-const PERIOD_OPTIONS = [
+// D-09 LOCKED 옵션
+const PERIOD_TYPES = [
   { value: 'weekly', label: '주간' },
   { value: 'monthly', label: '월간' },
   { value: 'quarterly', label: '분기' },
@@ -23,12 +23,12 @@ const TOPIC_OPTIONS = [
 
 const REGION_OPTIONS = [
   { label: '창원 전체', sggCodes: ['48121', '48123', '48125', '48127', '48129'] },
-  { label: '성산구', sggCodes: ['48123'] },    // D-09 LOCKED: 성산구=48123
-  { label: '의창구', sggCodes: ['48121'] },    // D-09 LOCKED: 의창구=48121
-  { label: '마산합포구', sggCodes: ['48125'] }, // D-09 LOCKED: 마산합포구=48125
-  { label: '마산회원구', sggCodes: ['48127'] }, // D-09 LOCKED: 마산회원구=48127
-  { label: '진해구', sggCodes: ['48129'] },    // D-09 LOCKED: 진해구=48129
-  { label: '김해시', sggCodes: ['48250'] },    // D-09 LOCKED: 김해시=48250
+  { label: '성산구', sggCodes: ['48123'] },
+  { label: '의창구', sggCodes: ['48121'] },
+  { label: '마산합포구', sggCodes: ['48125'] },
+  { label: '마산회원구', sggCodes: ['48127'] },
+  { label: '진해구', sggCodes: ['48129'] },
+  { label: '김해시', sggCodes: ['48250'] },
 ]
 
 const SIZE_OPTIONS = [
@@ -41,6 +41,8 @@ const SIZE_OPTIONS = [
 
 export interface BuilderOptions {
   period: string
+  periodType: string
+  periodLabel: string
   topic: string
   regionLabel: string
   sggCodes: string[]
@@ -50,32 +52,130 @@ export interface BuilderOptions {
   customTo: string
 }
 
+function toYMD(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+interface SubPeriod { label: string; from: string; to: string }
+
+function getSubPeriods(type: string): SubPeriod[] {
+  const now = new Date()
+
+  if (type === 'weekly') {
+    const dow = now.getDay()
+    const daysToMon = dow === 0 ? 6 : dow - 1
+    const thisMonday = new Date(now)
+    thisMonday.setDate(now.getDate() - daysToMon)
+    thisMonday.setHours(0, 0, 0, 0)
+    return Array.from({ length: 8 }, (_, i) => {
+      const mon = new Date(thisMonday)
+      mon.setDate(thisMonday.getDate() - i * 7)
+      const sun = new Date(mon)
+      sun.setDate(mon.getDate() + 6)
+      const m = mon.getMonth() + 1
+      const w = Math.ceil(mon.getDate() / 7)
+      const fmt = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`
+      return {
+        label: `${mon.getFullYear()}년 ${m}월 ${w}주차 (${fmt(mon)}~${fmt(sun)})`,
+        from: toYMD(mon),
+        to: toYMD(sun),
+      }
+    })
+  }
+
+  if (type === 'monthly') {
+    return Array.from({ length: 12 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const y = d.getFullYear()
+      const m = d.getMonth()
+      const lastDay = new Date(y, m + 1, 0)
+      return {
+        label: `${y}년 ${m + 1}월`,
+        from: `${y}-${String(m + 1).padStart(2, '0')}-01`,
+        to: toYMD(lastDay),
+      }
+    })
+  }
+
+  if (type === 'quarterly') {
+    const curQ = Math.floor(now.getMonth() / 3)
+    return Array.from({ length: 6 }, (_, i) => {
+      let q = curQ - i
+      let y = now.getFullYear()
+      while (q < 0) { q += 4; y-- }
+      const fromMonth = q * 3 + 1
+      const toMonth = fromMonth + 2
+      const lastDay = new Date(y, toMonth, 0)
+      return {
+        label: `${y}년 ${q + 1}분기 (${fromMonth}~${toMonth}월)`,
+        from: `${y}-${String(fromMonth).padStart(2, '0')}-01`,
+        to: toYMD(lastDay),
+      }
+    })
+  }
+
+  if (type === 'yearly') {
+    return Array.from({ length: 5 }, (_, i) => {
+      const y = now.getFullYear() - i
+      return {
+        label: `${y}년`,
+        from: `${y}-01-01`,
+        to: i === 0 ? toYMD(now) : `${y}-12-31`,
+      }
+    })
+  }
+
+  return []
+}
+
+const BTN_BASE = 'px-3 py-1.5 text-sm rounded-md border transition-colors'
+const BTN_ON = 'bg-blue-600 text-white border-blue-600'
+const BTN_OFF = 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+
 interface Props {
   onSubmit: (opts: BuilderOptions) => void
   loading: boolean
 }
 
 export function BuilderOptionsPanel({ onSubmit, loading }: Props) {
-  const [period, setPeriod] = useState<string>('weekly')
-  const [topic, setTopic] = useState<string>('sale_top')
+  const [periodType, setPeriodType] = useState('weekly')
+  const [subPeriodIdx, setSubPeriodIdx] = useState(0)
+  const [topic, setTopic] = useState('sale_top')
   const [regionIdx, setRegionIdx] = useState(0)
   const [sizeIdx, setSizeIdx] = useState(0)
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
 
+  const subPeriods = getSubPeriods(periodType)
+
   const handleSubmit = () => {
     const region = REGION_OPTIONS[regionIdx]
     const size = SIZE_OPTIONS[sizeIdx]
     if (!region || !size) return
+
+    let from = customFrom
+    let to = customTo
+    let label = `${customFrom} ~ ${customTo}`
+
+    if (periodType !== 'custom') {
+      const sub = subPeriods[subPeriodIdx]
+      if (!sub) return
+      from = sub.from
+      to = sub.to
+      label = sub.label
+    }
+
     onSubmit({
-      period,
+      period: 'custom',
+      periodType,
+      periodLabel: label,
       topic,
       regionLabel: region.label,
       sggCodes: [...region.sggCodes],
       areaMin: size.areaMin,
       areaMax: size.areaMax,
-      customFrom,
-      customTo,
+      customFrom: from,
+      customTo: to,
     })
   }
 
@@ -83,34 +183,45 @@ export function BuilderOptionsPanel({ onSubmit, loading }: Props) {
     <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-5">
       <h2 className="text-base font-semibold text-gray-900">카드뉴스 옵션</h2>
 
-      {/* 기간 */}
+      {/* 기간 타입 */}
       <fieldset>
         <legend className="text-sm font-medium text-gray-700 mb-2">기간</legend>
-        <div className="flex flex-wrap gap-2">
-          {PERIOD_OPTIONS.map(opt => (
+        <div className="flex flex-wrap gap-2 mb-3">
+          {PERIOD_TYPES.map(opt => (
             <button
               key={opt.value}
               type="button"
-              onClick={() => setPeriod(opt.value)}
-              className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
-                period === opt.value
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
-              }`}
+              onClick={() => { setPeriodType(opt.value); setSubPeriodIdx(0) }}
+              className={`${BTN_BASE} ${periodType === opt.value ? BTN_ON : BTN_OFF}`}
             >
               {opt.label}
             </button>
           ))}
         </div>
-        {period === 'custom' && (
-          <div className="flex gap-2 mt-2">
+
+        {/* 세부 기간 선택 */}
+        {periodType !== 'custom' && subPeriods.length > 0 && (
+          <select
+            value={subPeriodIdx}
+            onChange={e => setSubPeriodIdx(Number(e.target.value))}
+            className="w-full text-sm border border-gray-300 rounded px-2 py-1.5 bg-white"
+          >
+            {subPeriods.map((sp, i) => (
+              <option key={i} value={i}>{sp.label}</option>
+            ))}
+          </select>
+        )}
+
+        {/* 직접 입력 날짜 */}
+        {periodType === 'custom' && (
+          <div className="flex gap-2 items-center">
             <input
               type="date"
               value={customFrom}
               onChange={e => setCustomFrom(e.target.value)}
               className="text-sm border border-gray-300 rounded px-2 py-1"
             />
-            <span className="text-gray-400 self-center">~</span>
+            <span className="text-gray-400">~</span>
             <input
               type="date"
               value={customTo}
@@ -130,11 +241,7 @@ export function BuilderOptionsPanel({ onSubmit, loading }: Props) {
               key={opt.value}
               type="button"
               onClick={() => setTopic(opt.value)}
-              className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
-                topic === opt.value
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
-              }`}
+              className={`${BTN_BASE} ${topic === opt.value ? BTN_ON : BTN_OFF}`}
             >
               {opt.label}
             </button>
@@ -151,11 +258,7 @@ export function BuilderOptionsPanel({ onSubmit, loading }: Props) {
               key={opt.label}
               type="button"
               onClick={() => setRegionIdx(i)}
-              className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
-                regionIdx === i
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
-              }`}
+              className={`${BTN_BASE} ${regionIdx === i ? BTN_ON : BTN_OFF}`}
             >
               {opt.label}
             </button>
@@ -172,11 +275,7 @@ export function BuilderOptionsPanel({ onSubmit, loading }: Props) {
               key={opt.label}
               type="button"
               onClick={() => setSizeIdx(i)}
-              className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
-                sizeIdx === i
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
-              }`}
+              className={`${BTN_BASE} ${sizeIdx === i ? BTN_ON : BTN_OFF}`}
             >
               {opt.label}
             </button>
