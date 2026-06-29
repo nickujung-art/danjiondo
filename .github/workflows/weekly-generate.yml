@@ -14,6 +14,14 @@ on:
         description: 'Specific series IDs (comma-separated, leave empty for all)'
         type: string
         default: ''
+      post_instagram:
+        description: 'Post to Instagram after generation'
+        type: boolean
+        default: false
+      instagram_series:
+        description: 'Instagram series to post (comma-separated, leave empty for city-overall only)'
+        type: string
+        default: 'city-overall'
 
 jobs:
   generate:
@@ -62,3 +70,17 @@ jobs:
           name: card-news-${{ github.run_id }}
           path: card-news/output/
           retention-days: 30
+
+      - name: Post to Instagram
+        if: ${{ inputs.post_instagram == true }}
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          META_INSTAGRAM_ACCOUNT_ID: ${{ secrets.META_INSTAGRAM_ACCOUNT_ID }}
+          META_PAGE_ACCESS_TOKEN: ${{ secrets.META_PAGE_ACCESS_TOKEN }}
+        run: |
+          WEEK=$(ls -1 output/ | sort | tail -1)
+          SERIES="${{ inputs.instagram_series }}"
+          if [ -z "$SERIES" ]; then SERIES="city-overall"; fi
+          echo "게시 주차: $WEEK / 시리즈: $SERIES"
+          node scripts/post-instagram.js --week=$WEEK --series=$SERIES

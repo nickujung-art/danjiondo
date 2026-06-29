@@ -1,5 +1,5 @@
 /**
- * capture.js — HTML 문자열 → 1080×1080 PNG (Puppeteer)
+ * capture.js — HTML 문자열 → 1080×1350 PNG (Puppeteer, 4:5 portrait)
  */
 import puppeteer from 'puppeteer'
 import { writeFileSync, unlinkSync, existsSync } from 'fs'
@@ -32,7 +32,7 @@ export async function closeBrowser() {
 }
 
 /**
- * HTML 문자열을 1080×1080 PNG로 캡처
+ * HTML 문자열을 1080×1350 PNG로 캡처
  * @param {string} htmlString - 완전한 HTML 문서
  * @param {string} outputPath - PNG 저장 경로
  */
@@ -45,14 +45,14 @@ export async function captureCard(htmlString, outputPath) {
   const page = await browser.newPage()
 
   try {
-    await page.setViewport({ width: 1080, height: 1080, deviceScaleFactor: 1 })
+    await page.setViewport({ width: 1080, height: 1350, deviceScaleFactor: 1 })
     await page.goto(pathToFileURL(tempPath).href, { waitUntil: 'load', timeout: 15000 })
 
     // 폰트 로드 대기
     await page.evaluate(() => document.fonts.ready)
     await new Promise((r) => setTimeout(r, 300))
 
-    await page.screenshot({ path: outputPath, type: 'png', clip: { x: 0, y: 0, width: 1080, height: 1080 } })
+    await page.screenshot({ path: outputPath, type: 'png', clip: { x: 0, y: 0, width: 1080, height: 1350 } })
   } finally {
     await page.close()
     if (existsSync(tempPath)) unlinkSync(tempPath)

@@ -32,7 +32,7 @@ const BASE_CSS = `
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { width: 1080px; height: 1080px; overflow: hidden; }
+  html, body { width: 1080px; height: 1350px; overflow: hidden; }
   body { font-family: 'Pretendard', -apple-system, 'Apple SD Gothic Neo', sans-serif; -webkit-font-smoothing: antialiased; }
 `
 
@@ -55,7 +55,7 @@ export const BASE_CSS_PREVIEW = `
     --placeholder: #C4CAD3;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { width: 1080px; height: 1080px; overflow: hidden; }
+  html, body { width: 1080px; height: 1350px; overflow: hidden; }
   body { font-family: 'Pretendard', -apple-system, 'Apple SD Gothic Neo', sans-serif; -webkit-font-smoothing: antialiased; }
 `
 
@@ -113,16 +113,16 @@ export function renderCover(data) {
   const locationMeta = area ? `${region} · 전용 ${area} 기준` : region
 
   const css = `
-    .card { width:1080px; height:1080px; background:#fff; position:relative; overflow:hidden; }
+    .card { width:1080px; height:1350px; background:#fff; position:relative; overflow:hidden; }
     .top-bar { width:100%; height:14px; background:var(--brand); }
     .brand { position:absolute; top:40px; left:80px; }
     .eyebrow { position:absolute; top:124px; left:80px; font:700 28px/1 'Pretendard'; color:var(--brand); letter-spacing:0.5px; }
-    .title { position:absolute; top:172px; left:80px; z-index:1; }
-    .title-line { font:900 100px/1.08 'Pretendard'; color:var(--ink); letter-spacing:-3.5px; display:block; }
+    .title { position:absolute; top:200px; left:80px; z-index:1; }
+    .title-line { font:900 110px/1.08 'Pretendard'; color:var(--ink); letter-spacing:-3.5px; display:block; }
     .title-blue { color:var(--brand); }
-    .ghost { position:absolute; bottom:-120px; right:-30px; font:900 560px/1 'Pretendard'; color:var(--brand-tint); z-index:0; user-select:none; white-space:nowrap; }
-    .caption { position:absolute; bottom:138px; left:80px; z-index:1; font:500 30px/1.6 'Pretendard'; color:var(--ink-2); white-space:pre-line; }
-    .location { position:absolute; bottom:76px; left:80px; z-index:1; display:flex; align-items:center; gap:8px; font:500 23px/1 'Pretendard'; color:var(--ink-3); }
+    .ghost { position:absolute; bottom:-140px; right:-30px; font:900 700px/1 'Pretendard'; color:var(--brand-tint); z-index:0; user-select:none; white-space:nowrap; }
+    .caption { position:absolute; bottom:172px; left:80px; z-index:1; font:500 30px/1.6 'Pretendard'; color:var(--ink-2); white-space:pre-line; }
+    .location { position:absolute; bottom:96px; left:80px; z-index:1; display:flex; align-items:center; gap:8px; font:500 23px/1 'Pretendard'; color:var(--ink-3); }
     .pin { color:var(--brand); font-size:20px; }
   `
 
@@ -154,42 +154,43 @@ export function renderHighlight(data) {
   const top3 = r.slice(0, 3)
 
   const css = `
-    .card { width:1080px; height:1080px; background:var(--surface-2); position:relative; padding:0 72px; display:flex; flex-direction:column; justify-content:flex-start; }
+    .card { width:1080px; height:1350px; background:var(--surface-2); position:relative; padding:0 72px; display:flex; flex-direction:column; }
     .top-bar { position:absolute; top:0; left:0; width:100%; height:14px; background:var(--brand); }
-    .header { padding-top:56px; margin-bottom:28px; }
-    .eyebrow-sm { font:700 24px/1 'Pretendard'; color:var(--brand); letter-spacing:0.5px; margin-bottom:10px; }
-    .h2 { font:900 60px/1.1 'Pretendard'; color:var(--ink); letter-spacing:-2.5px; }
+    .header { padding-top:60px; margin-bottom:32px; flex-shrink:0; }
+    .eyebrow-sm { font:700 26px/1 'Pretendard'; color:var(--brand); letter-spacing:0.5px; margin-bottom:12px; }
+    .h2 { font:900 64px/1.1 'Pretendard'; color:var(--ink); letter-spacing:-2.5px; }
 
-    .rank-card { border-radius:24px; padding:28px 32px; margin-bottom:16px; display:flex; align-items:center; gap:24px; }
+    .rank-cards { flex:1; display:flex; flex-direction:column; gap:20px; padding-bottom:8px; }
+    .rank-card { flex:1; border-radius:28px; padding:32px 40px; display:flex; align-items:center; gap:28px; }
     .rank-card-1 { background:var(--ink); }
     .rank-card-other { background:#fff; border:1.5px solid var(--line); }
 
-    .badge { width:80px; height:80px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .badge { width:92px; height:92px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
     .badge-1 { background:var(--gold); }
     .badge-other { background:var(--surface-2); border:1.5px solid var(--line); }
-    .badge-num { font:900 34px/1 'Pretendard'; }
+    .badge-num { font:900 38px/1 'Pretendard'; }
     .badge-1 .badge-num { color:var(--ink); }
     .badge-other .badge-num { color:var(--ink-3); }
 
     .complex-info { flex:1; min-width:0; }
-    .complex-name { font:800 38px/1.2 'Pretendard'; letter-spacing:-1.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .complex-name { font:800 42px/1.2 'Pretendard'; letter-spacing:-1.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .name-1 { color:#fff; }
     .name-other { color:var(--ink); }
-    .complex-sub { font:500 22px/1 'Pretendard'; margin-top:6px; }
+    .complex-sub { font:500 24px/1 'Pretendard'; margin-top:8px; }
     .sub-1 { color:rgba(255,255,255,0.6); }
     .sub-other { color:var(--ink-3); }
     .placeholder-name { color:var(--placeholder); }
 
     .price-wrap { text-align:right; flex-shrink:0; }
-    .price-num { font:900 40px/1.1 'Pretendard'; letter-spacing:-1.5px; }
+    .price-num { font:900 46px/1.1 'Pretendard'; letter-spacing:-1.5px; }
     .price-1 { color:var(--gold); }
     .price-other { color:var(--ink); }
-    .price-unit { font:500 20px/1 'Pretendard'; }
+    .price-unit { font:500 22px/1 'Pretendard'; margin-top:4px; }
     .unit-1 { color:rgba(255,255,255,0.5); }
     .unit-other { color:var(--ink-3); }
     .placeholder-price { color:var(--placeholder); }
 
-    .caption-row { margin-top:auto; padding-bottom:52px; font:500 21px/1 'Pretendard'; color:var(--ink-3); }
+    .caption-row { padding:20px 0 56px; font:500 22px/1 'Pretendard'; color:var(--ink-3); flex-shrink:0; }
   `
 
   function rankCard(item, idx) {
@@ -219,7 +220,9 @@ export function renderHighlight(data) {
       <div class="eyebrow-sm">HIGHLIGHT</div>
       <div class="h2">최고가 거래 TOP 3</div>
     </div>
-    ${top3.map((item, i) => rankCard(item, i)).join('')}
+    <div class="rank-cards">
+      ${top3.map((item, i) => rankCard(item, i)).join('')}
+    </div>
     <div class="caption-row">출처: ${source} &nbsp;·&nbsp; 기간: ${period}</div>
   </div>`
 
@@ -242,24 +245,25 @@ export function renderRanking(data) {
   if (isValue) { headerLabel = '가성비 순위 1~10위 (평당가 ↓)'; captionNote = '84㎡ 기준 평당 거래가 낮은 순' }
 
   const css = `
-    .card { width:1080px; height:1080px; background:#fff; position:relative; display:flex; flex-direction:column; padding:0 72px; }
+    .card { width:1080px; height:1350px; background:#fff; position:relative; display:flex; flex-direction:column; padding:0 72px; }
     .top-bar { position:absolute; top:0; left:0; width:100%; height:14px; background:var(--brand); }
     .header { padding-top:48px; margin-bottom:20px; }
     .eyebrow-sm { font:700 22px/1 'Pretendard'; color:var(--brand); letter-spacing:0.5px; margin-bottom:8px; }
     .h2 { font:900 52px/1.1 'Pretendard'; color:var(--ink); letter-spacing:-2px; }
 
-    .row { display:flex; align-items:center; padding:14px 0; border-bottom:1px solid var(--line); gap:16px; }
-    .row-rank { font:900 38px/1 'Pretendard'; width:52px; flex-shrink:0; text-align:center; }
+    .row { display:flex; align-items:center; padding:18px 0; border-bottom:1px solid var(--line); gap:16px; flex:1; }
+    .row-rank { font:900 40px/1 'Pretendard'; width:56px; flex-shrink:0; text-align:center; }
     .rank-gold { color:var(--gold-2); }
     .rank-gray { color:#9AA4B2; }
     .row-name { flex:1; min-width:0; }
-    .row-complex { font:700 30px/1.2 'Pretendard'; color:var(--ink); letter-spacing:-0.8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .row-sub { font:500 19px/1 'Pretendard'; color:var(--ink-3); margin-top:4px; }
+    .row-complex { font:700 32px/1.2 'Pretendard'; color:var(--ink); letter-spacing:-0.8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .row-sub { font:500 20px/1 'Pretendard'; color:var(--ink-3); margin-top:5px; }
     .placeholder-text { color:var(--placeholder); }
-    .row-price { font:900 32px/1 'Pretendard'; color:var(--ink); letter-spacing:-1px; text-align:right; flex-shrink:0; }
+    .row-price { font:900 34px/1 'Pretendard'; color:var(--ink); letter-spacing:-1px; text-align:right; flex-shrink:0; }
     .row-price-placeholder { color:var(--placeholder); }
 
-    .footer { margin-top:auto; padding-bottom:40px; font:500 20px/1 'Pretendard'; color:var(--ink-3); }
+    .rows-wrap { flex:1; display:flex; flex-direction:column; }
+    .footer { padding:16px 0 48px; font:500 21px/1 'Pretendard'; color:var(--ink-3); flex-shrink:0; }
   `
 
   function row(item) {
@@ -283,7 +287,9 @@ export function renderRanking(data) {
       <div class="eyebrow-sm">FULL RANKING</div>
       <div class="h2">${headerLabel}</div>
     </div>
-    ${r.map(row).join('')}
+    <div class="rows-wrap">
+      ${r.map(row).join('')}
+    </div>
     <div class="footer">${captionNote} &nbsp;·&nbsp; 출처: ${source} &nbsp;·&nbsp; ${period}</div>
   </div>`
 
@@ -323,7 +329,7 @@ export function renderDistrictChampionsCard(data) {
   }
 
   const css = `
-    .card { width:1080px; height:1080px; background:#fff; overflow:hidden; display:flex; flex-direction:column; }
+    .card { width:1080px; height:1350px; background:#fff; overflow:hidden; display:flex; flex-direction:column; }
     .top-bar { height:14px; background:var(--brand); flex-shrink:0; }
     .header { padding:32px 80px 20px; display:flex; flex-direction:column; gap:10px; flex-shrink:0; }
     .header-top { display:flex; justify-content:space-between; align-items:center; }
@@ -372,16 +378,16 @@ export function renderClosing(data) {
   const { source } = data
 
   const css = `
-    .card { width:1080px; height:1080px; background:var(--ink); position:relative; display:flex; flex-direction:column; padding:80px; }
+    .card { width:1080px; height:1350px; background:var(--ink); position:relative; display:flex; flex-direction:column; padding:100px; }
     .brand-white { margin-bottom:auto; }
-    .h2 { font:900 76px/1.15 'Pretendard'; color:#fff; letter-spacing:-2.5px; margin-bottom:28px; }
+    .h2 { font:900 88px/1.15 'Pretendard'; color:#fff; letter-spacing:-2.5px; margin-bottom:32px; }
     .gold-text { color:var(--gold); }
-    .desc { font:500 30px/1.7 'Pretendard'; color:rgba(255,255,255,0.7); margin-bottom:48px; }
-    .cta-row { display:flex; gap:16px; margin-bottom:auto; }
-    .btn { padding:16px 36px; border-radius:100px; font:700 26px/1 'Pretendard'; cursor:pointer; border:none; }
+    .desc { font:500 32px/1.7 'Pretendard'; color:rgba(255,255,255,0.7); margin-bottom:56px; }
+    .cta-row { display:flex; gap:20px; margin-bottom:auto; }
+    .btn { padding:20px 44px; border-radius:100px; font:700 28px/1 'Pretendard'; cursor:pointer; border:none; }
     .btn-primary { background:var(--brand); color:#fff; }
     .btn-outline { background:transparent; color:#fff; border:2px solid rgba(255,255,255,0.5); }
-    .disclaimer { font:500 19px/1.6 'Pretendard'; color:rgba(255,255,255,0.3); border-top:1px solid rgba(255,255,255,0.1); padding-top:20px; }
+    .disclaimer { font:500 21px/1.6 'Pretendard'; color:rgba(255,255,255,0.3); border-top:1px solid rgba(255,255,255,0.1); padding-top:24px; }
   `
 
   const body = `<div class="card">
@@ -413,7 +419,7 @@ export function renderCoverPreview(data) {
   const locationMeta = area ? `${region} · 전용 ${area} 기준` : region
 
   const css = `
-    .card { width:1080px; height:1080px; background:#fff; position:relative; overflow:hidden; }
+    .card { width:1080px; height:1350px; background:#fff; position:relative; overflow:hidden; }
     .top-bar { width:100%; height:14px; background:var(--brand); }
     .brand { position:absolute; top:40px; left:80px; }
     .eyebrow { position:absolute; top:124px; left:80px; font:700 28px/1 'Pretendard'; color:var(--brand); letter-spacing:0.5px; }
@@ -455,7 +461,7 @@ export function renderHighlightPreview(data) {
   const top3 = r.slice(0, 3)
 
   const css = `
-    .card { width:1080px; height:1080px; background:var(--surface-2); position:relative; padding:0 72px; display:flex; flex-direction:column; justify-content:flex-start; }
+    .card { width:1080px; height:1350px; background:var(--surface-2); position:relative; padding:0 72px; display:flex; flex-direction:column; justify-content:flex-start; }
     .top-bar { position:absolute; top:0; left:0; width:100%; height:14px; background:var(--brand); }
     .header { padding-top:56px; margin-bottom:28px; }
     .eyebrow-sm { font:700 24px/1 'Pretendard'; color:var(--brand); letter-spacing:0.5px; margin-bottom:10px; }
@@ -538,7 +544,7 @@ export function renderRankingPreview(data) {
   if (isValue) { headerLabel = '가성비 순위 1~10위 (평당가 ↓)'; captionNote = '84㎡ 기준 평당 거래가 낮은 순' }
 
   const css = `
-    .card { width:1080px; height:1080px; background:#fff; position:relative; display:flex; flex-direction:column; padding:0 72px; }
+    .card { width:1080px; height:1350px; background:#fff; position:relative; display:flex; flex-direction:column; padding:0 72px; }
     .top-bar { position:absolute; top:0; left:0; width:100%; height:14px; background:var(--brand); }
     .header { padding-top:48px; margin-bottom:20px; }
     .eyebrow-sm { font:700 22px/1 'Pretendard'; color:var(--brand); letter-spacing:0.5px; margin-bottom:8px; }
@@ -589,16 +595,16 @@ export function renderRankingPreview(data) {
  */
 export function renderClosingPreview(data) {
   const css = `
-    .card { width:1080px; height:1080px; background:var(--ink); position:relative; display:flex; flex-direction:column; padding:80px; }
+    .card { width:1080px; height:1350px; background:var(--ink); position:relative; display:flex; flex-direction:column; padding:100px; }
     .brand-white { margin-bottom:auto; }
-    .h2 { font:900 76px/1.15 'Pretendard'; color:#fff; letter-spacing:-2.5px; margin-bottom:28px; }
+    .h2 { font:900 88px/1.15 'Pretendard'; color:#fff; letter-spacing:-2.5px; margin-bottom:32px; }
     .gold-text { color:var(--gold); }
-    .desc { font:500 30px/1.7 'Pretendard'; color:rgba(255,255,255,0.7); margin-bottom:48px; }
-    .cta-row { display:flex; gap:16px; margin-bottom:auto; }
-    .btn { padding:16px 36px; border-radius:100px; font:700 26px/1 'Pretendard'; cursor:pointer; border:none; }
+    .desc { font:500 32px/1.7 'Pretendard'; color:rgba(255,255,255,0.7); margin-bottom:56px; }
+    .cta-row { display:flex; gap:20px; margin-bottom:auto; }
+    .btn { padding:20px 44px; border-radius:100px; font:700 28px/1 'Pretendard'; cursor:pointer; border:none; }
     .btn-primary { background:var(--brand); color:#fff; }
     .btn-outline { background:transparent; color:#fff; border:2px solid rgba(255,255,255,0.5); }
-    .disclaimer { font:500 19px/1.6 'Pretendard'; color:rgba(255,255,255,0.3); border-top:1px solid rgba(255,255,255,0.1); padding-top:20px; }
+    .disclaimer { font:500 21px/1.6 'Pretendard'; color:rgba(255,255,255,0.3); border-top:1px solid rgba(255,255,255,0.1); padding-top:24px; }
   `
 
   const body = `<div class="card">
