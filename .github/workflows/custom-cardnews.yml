@@ -48,7 +48,7 @@ jobs:
 
       - name: Generate PNG from payload
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node scripts/generate-from-payload.js --payload=payload.json --series=${{ inputs.series_id }}
 
