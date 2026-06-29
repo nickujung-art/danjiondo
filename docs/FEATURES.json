@@ -1,10 +1,10 @@
 {
   "_schema": "feature-registry/v1",
   "_usage": "세션 시작 시 읽어서 todo/in_progress 항목 파악. done이지만 checklist 미완료 항목은 주의.",
-  "lastUpdated": "2026-06-26",
+  "lastUpdated": "2026-06-29",
   "summary": {
-    "done": 27,
-    "in_progress": 1,
+    "done": 28,
+    "in_progress": 0,
     "todo": 0,
     "deferred": 5,
     "blocked": 2
@@ -469,18 +469,19 @@
       "id": "insta-card-news",
       "category": "마케팅",
       "name": "인스타 카드뉴스 자동 생성기 (Puppeteer · 주간 PNG · 창원부동산랩)",
-      "status": "in_progress",
+      "status": "done",
       "priority": "medium",
-      "notes": "card-news/ 독립 모듈. Node.js ESM + Puppeteer. 매주 월요일 GitHub Actions cron. 18개 시리즈 × 2~4장.",
+      "notes": "card-news/ 독립 모듈. Node.js ESM + Puppeteer. 매주 월요일 GitHub Actions cron. 18개 시리즈 × 2~4장. Meta Graph API 캐러셀 자동 포스팅. 4:5(1080×1350) Instagram 2025 권장 비율.",
       "checklist": [
-        { "layer": "script", "name": "fetch-data.js — Supabase 실거래가 집계 (5종 함수)", "status": "done" },
+        { "layer": "script", "name": "fetch-data.js — Supabase 실거래가 집계 (5종 함수) + --from/--to 파라미터", "status": "done" },
         { "layer": "script", "name": "templates.js — HTML 카드 템플릿 4종 + district-champions 그리드", "status": "done" },
-        { "layer": "script", "name": "capture.js — Puppeteer 1080×1080 PNG 캡처", "status": "done" },
-        { "layer": "script", "name": "generate.js — 18시리즈 오케스트레이터", "status": "done" },
-        { "layer": "ci",     "name": "GitHub Actions weekly-generate.yml cron 설정", "status": "done" },
-        { "layer": "ci",     "name": "GitHub Secrets 등록 (SUPABASE_URL, SERVICE_ROLE_KEY)", "status": "done" },
+        { "layer": "script", "name": "capture.js — Puppeteer 1080×1350 PNG 캡처 (4:5 portrait)", "status": "done" },
+        { "layer": "script", "name": "generate.js — 18시리즈 오케스트레이터 (--month, --from/--to 옵션)", "status": "done" },
+        { "layer": "script", "name": "post-instagram.js — Meta Graph API 캐러셀 자동 포스팅 + Supabase Storage", "status": "done" },
+        { "layer": "ci",     "name": "GitHub Actions weekly-generate.yml cron 설정 + post_instagram 옵션", "status": "done" },
+        { "layer": "ci",     "name": "GitHub Secrets 등록 (SUPABASE_URL, SERVICE_ROLE_KEY, META_INSTAGRAM_ACCOUNT_ID, META_PAGE_ACCESS_TOKEN)", "status": "done" },
         { "layer": "ci",     "name": "workflow_dispatch 실제 CI 실행 검증 (PNG Artifact)", "status": "done" },
-        { "layer": "design", "name": "카드 디자인 고도화 (하이라이트·volume·typography)", "status": "todo" }
+        { "layer": "design", "name": "카드 4:5 비율 전환 + flex:1 레이아웃 (하이라이트 3장·랭킹 10행 균등 배분)", "status": "done" }
       ]
     },
 
