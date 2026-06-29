@@ -478,8 +478,8 @@
         { "layer": "script", "name": "capture.js — Puppeteer 1080×1080 PNG 캡처", "status": "done" },
         { "layer": "script", "name": "generate.js — 18시리즈 오케스트레이터", "status": "done" },
         { "layer": "ci",     "name": "GitHub Actions weekly-generate.yml cron 설정", "status": "done" },
-        { "layer": "ci",     "name": "GitHub Secrets 등록 (SUPABASE_URL, SERVICE_ROLE_KEY)", "status": "todo" },
-        { "layer": "ci",     "name": "workflow_dispatch 실제 CI 실행 검증 (PNG Artifact)", "status": "todo" },
+        { "layer": "ci",     "name": "GitHub Secrets 등록 (SUPABASE_URL, SERVICE_ROLE_KEY)", "status": "done" },
+        { "layer": "ci",     "name": "workflow_dispatch 실제 CI 실행 검증 (PNG Artifact)", "status": "done" },
         { "layer": "design", "name": "카드 디자인 고도화 (하이라이트·volume·typography)", "status": "todo" }
       ]
     },
