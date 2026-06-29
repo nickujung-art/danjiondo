@@ -15,7 +15,7 @@ on:
         type: string
         default: ''
       post_instagram:
-        description: 'Post to Instagram after generation'
+        description: 'Post to Instagram after generation (수동 실행 시만 체크 — cron은 자동 포스팅 안 함)'
         type: boolean
         default: false
       instagram_series:
@@ -71,6 +71,8 @@ jobs:
           path: card-news/output/
           retention-days: 30
 
+      # ⚠️  Instagram 자동 포스팅은 cron에서 실행되지 않음.
+      #     workflow_dispatch에서 post_instagram 체크박스를 켜야만 실행됨.
       - name: Post to Instagram
         if: ${{ inputs.post_instagram == true }}
         env:
