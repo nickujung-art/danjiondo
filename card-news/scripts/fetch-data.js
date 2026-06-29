@@ -113,8 +113,8 @@ async function fetchComplexNames(ids) {
 /**
  * 구별 + 평형별 최고가 TOP 10 (Series A/B: 구별 랭킹)
  */
-export async function fetchAreaRanking({ sggCode, areaMin, areaMax, dealType = 'sale', limit = 10 }) {
-  const { from, to } = getLastWeekRange()
+export async function fetchAreaRanking({ sggCode, areaMin, areaMax, dealType = 'sale', limit = 10, from: fromArg, to: toArg }) {
+  const { from, to } = fromArg ? { from: fromArg, to: toArg } : getLastWeekRange()
 
   const { data, error } = await supabase
     .from('transactions')
@@ -154,8 +154,8 @@ export async function fetchAreaRanking({ sggCode, areaMin, areaMax, dealType = '
 /**
  * 창원+김해 전체 최고가 TOP 10 (Series C: 창원 전체 랭킹)
  */
-export async function fetchCityRanking({ sggCodes, dealType = 'sale', limit = 10 }) {
-  const { from, to } = getLastWeekRange()
+export async function fetchCityRanking({ sggCodes, dealType = 'sale', limit = 10, from: fromArg, to: toArg }) {
+  const { from, to } = fromArg ? { from: fromArg, to: toArg } : getLastWeekRange()
 
   const { data, error } = await supabase
     .from('transactions')
@@ -197,8 +197,8 @@ export async function fetchCityRanking({ sggCodes, dealType = 'sale', limit = 10
 /**
  * 거래량 TOP 10 (Series D: 거래 활발 단지)
  */
-export async function fetchVolumeRanking({ sggCodes, limit = 10 }) {
-  const { from, to } = getLastWeekRange()
+export async function fetchVolumeRanking({ sggCodes, limit = 10, from: fromArg, to: toArg }) {
+  const { from, to } = fromArg ? { from: fromArg, to: toArg } : getLastWeekRange()
 
   const { data, error } = await supabase
     .from('transactions')
@@ -238,8 +238,8 @@ export async function fetchVolumeRanking({ sggCodes, limit = 10 }) {
 /**
  * 가성비 TOP 10 — 평당가 낮은 순 (Series E)
  */
-export async function fetchValueRanking({ sggCodes, areaMin = 80, areaMax = 95, limit = 10 }) {
-  const { from, to } = getLastWeekRange()
+export async function fetchValueRanking({ sggCodes, areaMin = 80, areaMax = 95, limit = 10, from: fromArg, to: toArg }) {
+  const { from, to } = fromArg ? { from: fromArg, to: toArg } : getLastWeekRange()
 
   const { data, error } = await supabase
     .from('transactions')

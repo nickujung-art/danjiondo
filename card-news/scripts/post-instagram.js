@@ -174,7 +174,10 @@ async function postSeries(weekCode, seriesId) {
 
   // 3. 캡션
   const label = SERIES_LABELS[seriesId] || seriesId
-  const weekDisplay = weekCode.replace('-W', '년 ')+ '주차'
+  const isMonth = /^\d{4}-\d{2}$/.test(weekCode)
+  const weekDisplay = isMonth
+    ? (() => { const [y, m] = weekCode.split('-'); return `${y}년 ${Number(m)}월 전체` })()
+    : weekCode.replace('-W', '년 ') + '주차'
   const caption = `📊 ${weekDisplay} ${label}\n\n${HASHTAGS}`
 
   // 4. 캐러셀 생성 + 게시

@@ -116,17 +116,34 @@ async function main() {
   const dryRun = args.includes('--dry-run')
   const filterArg = args.find((a) => a.startsWith('--series='))
   const filter = filterArg ? filterArg.split('=')[1].split(',') : null
+  const fromArg = args.find((a) => a.startsWith('--from='))?.split('=')[1]
+  const toArg   = args.find((a) => a.startsWith('--to='))?.split('=')[1]
+  const monthArg = args.find((a) => a.startsWith('--month='))?.split('=')[1] // e.g. 2026-05
 
-  const { from, to } = getLastWeekRange()
-  const weekCode = getWeekCode(from)
-  const weekLabel = getWeekLabel(from)
+  let from, to
+  if (monthArg) {
+    const [y, m] = monthArg.split('-').map(Number)
+    const lastDay = new Date(y, m, 0).getDate()
+    from = `${monthArg}-01`
+    to   = `${monthArg}-${String(lastDay).padStart(2, '0')}`
+  } else if (fromArg) {
+    from = fromArg; to = toArg
+  } else {
+    ;({ from, to } = getLastWeekRange())
+  }
+
+  const weekCode = monthArg ? monthArg : getWeekCode(from)
+  const weekLabel = monthArg
+    ? `${monthArg.split('-')[0]}년 ${Number(monthArg.split('-')[1])}월 전체`
+    : getWeekLabel(from)
   const period = getPeriodLabel(from, to)
 
   console.log(`\n창원부동산랩 카드뉴스 생성`)
-  console.log(`주차: ${weekLabel} (${weekCode})`)
-  console.log(`기간: ${period}`)
+  console.log(`기간: ${weekLabel} (${weekCode})`)
+  console.log(`날짜: ${period}`)
   console.log(dryRun ? '모드: 드라이런 (HTML만)' : '모드: PNG 생성\n')
 
+  const dateRange = { from, to }
   const baseWeekData = { week: weekLabel, weekCode, period, source: SOURCE }
 
   // ── 구별 평형 시리즈 ──────────────────────────────────
@@ -134,7 +151,7 @@ async function main() {
     if (filter && !filter.includes(s.id)) continue
     console.log(`[${s.id}] ${s.region} ${s.area}`)
     try {
-      const ranking = await fetchAreaRanking({ sggCode: s.sggCode, areaMin: s.areaMin, areaMax: s.areaMax })
+      const ranking = await fetchAreaRanking({ sggCode: s.sggCode, areaMin: s.areaMin, areaMax: s.areaMax, ...dateRange })
       const data = {
         ...baseWeekData,
         region: s.region,
@@ -156,11 +173,11 @@ async function main() {
     try {
       let ranking = []
       if (s.type === 'city') {
-        ranking = await fetchCityRanking({ sggCodes: ALL_SGG })
+        ranking = await fetchCityRanking({ sggCodes: ALL_SGG, ...dateRange })
       } else if (s.type === 'volume') {
-        ranking = await fetchVolumeRanking({ sggCodes: ALL_SGG })
+        ranking = await fetchVolumeRanking({ sggCodes: ALL_SGG, ...dateRange })
       } else if (s.type === 'value') {
-        ranking = await fetchValueRanking({ sggCodes: ALL_SGG })
+        ranking = await fetchValueRanking({ sggCodes: ALL_SGG, ...dateRange })
       }
 
       const data = {
