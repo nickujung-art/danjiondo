@@ -54,7 +54,7 @@ export default function RootLayout({
           href="/feed.xml"
         />
       </head>
-      <body className="font-sans antialiased pb-[calc(64px+env(safe-area-inset-bottom,0px))]">
+      <body className="font-sans antialiased pb-[calc(64px+env(safe-area-inset-bottom,0px))] sm:pb-0">
         <AppHeader />
         <NuqsAdapter>
           {children}
