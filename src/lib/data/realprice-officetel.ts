@@ -228,45 +228,53 @@ export async function ingestOffiMonth(
     } catch { rowsFailed++ }
   }
 
-  // 매매 수집
-  let page = 1
-  while (true) {
-    const { items, totalCount } = await fetchOffiSalePage(sggCode, yearMonth, page)
-    if (items.length === 0) break
-    rowsFetched += items.length
-    for (const item of items) await processSaleItem(item)
-    if (rowsFetched >= totalCount || items.length < 100) break
-    page++
+  let finalStatus: 'success' | 'partial' | 'failed' = 'success'
+  let finalErrorMessage: string | null = null
+
+  try {
+    // 매매 수집
+    let page = 1
+    while (true) {
+      const { items, totalCount } = await fetchOffiSalePage(sggCode, yearMonth, page)
+      if (items.length === 0) break
+      rowsFetched += items.length
+      for (const item of items) await processSaleItem(item)
+      if (rowsFetched >= totalCount || items.length < 100) break
+      page++
+    }
+
+    // 전월세 수집
+    page = 1
+    let rentFetched = 0
+    while (true) {
+      const { items, totalCount } = await fetchOffiRentPage(sggCode, yearMonth, page)
+      if (items.length === 0) break
+      rowsFetched  += items.length
+      rentFetched  += items.length
+      for (const item of items) await processRentItem(item)
+      if (rentFetched >= totalCount || items.length < 100) break
+      page++
+    }
+
+    const zodFailRate = totalRows > 0 ? zodFails / totalRows : 0
+    const hasCriticalFailure = zodFailRate > ZOD_FAILURE_THRESHOLD
+    finalStatus = hasCriticalFailure ? 'failed' : rowsFailed > 0 ? 'partial' : 'success'
+    finalErrorMessage = hasCriticalFailure
+      ? `zod 실패율 ${(zodFailRate * 100).toFixed(1)}% (임계 ${ZOD_FAILURE_THRESHOLD * 100}% 초과)`
+      : null
+  } catch (err) {
+    finalStatus = 'failed'
+    finalErrorMessage = err instanceof Error ? err.message : String(err)
+    rowsFailed++
+  } finally {
+    await supabase.from('ingest_runs').update({
+      status:        finalStatus,
+      rows_fetched:  rowsFetched,
+      rows_upserted: rowsUpserted,
+      error_message: finalErrorMessage,
+      completed_at:  new Date().toISOString(),
+    }).eq('id', runId)
   }
 
-  // 전월세 수집
-  page = 1
-  let rentFetched = 0
-  while (true) {
-    const { items, totalCount } = await fetchOffiRentPage(sggCode, yearMonth, page)
-    if (items.length === 0) break
-    rowsFetched  += items.length
-    rentFetched  += items.length
-    for (const item of items) await processRentItem(item)
-    if (rentFetched >= totalCount || items.length < 100) break
-    page++
-  }
-
-  const zodFailRate = totalRows > 0 ? zodFails / totalRows : 0
-  const hasCriticalFailure = zodFailRate > ZOD_FAILURE_THRESHOLD
-
-  const status = hasCriticalFailure ? 'failed' : rowsFailed > 0 ? 'partial' : 'success'
-  const errorMessage = hasCriticalFailure
-    ? `zod 실패율 ${(zodFailRate * 100).toFixed(1)}% (임계 ${ZOD_FAILURE_THRESHOLD * 100}% 초과)`
-    : null
-
-  await supabase.from('ingest_runs').update({
-    status,
-    rows_fetched:  rowsFetched,
-    rows_upserted: rowsUpserted,
-    error_message: errorMessage,
-    completed_at:  new Date().toISOString(),
-  }).eq('id', runId)
-
-  return { runId, sggCode, yearMonth, rowsFetched, rowsUpserted, rowsSkipped, rowsFailed, status }
+  return { runId, sggCode, yearMonth, rowsFetched, rowsUpserted, rowsSkipped, rowsFailed, status: finalStatus }
 }
