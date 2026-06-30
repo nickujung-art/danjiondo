@@ -25,14 +25,76 @@
 - wave 단위로 코드 작성 → 커밋 → 다음 wave 진행
 - 각 wave 완료마다 커밋, phase 완료 시 SUMMARY 업데이트
 
-### 간단한 수정·소형 기능
-대화로 바로 실행 (plan 없이 직접 Edit/Write/Bash)
-- 버그 수정, 단일 컴포넌트 수정, 스크립트 1회 실행, 스타일 조정 등
+### 소형 작업 — FIX LOOP
 
-### 판단 기준
-- 파일 3개 초과 변경 예상 → GSD Phase
-- 마이그레이션 + 코드 + 스크립트 세트 → GSD Phase
-- 파일 1~2개, 명확한 범위 → 대화로 직접
+버그 수정·소소한 수정 요청 시 아래 루프를 **항상** 실행한다.
+
+#### STEP 1: 복잡도 분류 (GSD 차단 게이트)
+
+아래 항목 중 하나라도 해당하면 FIX LOOP를 **즉시 중단**하고 사용자에게 묻는다.
+> "이 작업은 GSD Phase 범위입니다. `/gsd-plan-phase`로 시작하시겠습니까?"
+
+**GSD 강제 전환 트리거**
+- 새 페이지 / 라우트 생성
+- DB 스키마 변경 (migration 파일 필요)
+- 새 API 엔드포인트 추가
+- 외부 서비스 신규 연동
+- 신규 컴포넌트 3개 이상 동시 생성
+- 변경 파일 예상 4개 초과
+- `FEATURES.json`에 없는 신규 기능
+
+**분류 결과**
+
+| 분류 | 조건 | 처리 |
+|---|---|---|
+| **Trivial** | 파일 1개 + 변경 5줄 이하 + 로직 없음 (텍스트·오타·단순 스타일) | 실행 → tsc+lint → 커밋 → 완료 알림 |
+| **Small** | 파일 1~3개, 기존 로직 수정, DB/API 변경 없음 | 전체 FIX LOOP 실행 |
+
+#### STEP 2: 컨텍스트 파악 (Small만)
+1. `.planning/fix-loop/error-notes.md` 먼저 스캔 (과거 실수 확인)
+2. 영향 파일·컴포넌트 파악 — 범위가 2개 이상 컴포넌트에 걸치면 병렬 스킬 호출
+
+#### STEP 3: 기획안 작성
+1. `error-notes.md` 재참조 후 `.planning/fix-loop/active-fix.md` 작성
+   ```
+   ## 문제 정의 / 수정 범위 (파일 목록) / 해결 접근법 / 예상 변경 사항 / 루프 카운터: 0
+   ```
+
+#### STEP 4: 검증
+`code-reviewer` 에이전트로 기획안 및 코딩 계획 검증.
+
+#### STEP 5: 승인 요청
+검증 결과를 포함하여 사용자에게 기획안 제안 → 승인 후 실행.
+
+#### STEP 6: 실행
+승인된 기획안대로 코드 수정.
+
+#### STEP 7: QA 루프 (최대 3회)
+**점수 계산**: tsc+lint 에러 0 → 70점 / 관련 테스트 전부 통과 → +20점 / 기획안 의도 충족 → +10점
+
+- **< 90점** → `error-notes.md`에 오답 기록 → `active-fix.md` 루프 카운터 +1 → STEP 3 복귀
+- **3회 초과** → GSD Phase 전환 권장 알림, `active-fix.md` 보존 후 중단
+- **≥ 90점** → 다음 단계
+
+#### STEP 8: Playwright 시각 검증
+1. `localhost:3000` 상태 확인 → 미실행 시 `npm run dev` 자동 시작
+2. 수정된 기능·화면 직접 클릭 확인 (기능 + 디자인 모두)
+
+#### STEP 9: 커밋
+`fix: 설명` 타입으로 커밋.
+
+#### STEP 10: UAT 요청
+1. `active-fix.md` 기획안 기반으로 UAT 체크리스트 자동 생성 후 사용자에게 전달
+2. `active-fix.md` → `.planning/fix-loop/archive/YYYYMMDD-HHmm.md` 이동
+
+---
+
+**오답노트 규칙** — `.planning/fix-loop/error-notes.md` (영구 누적)
+```
+## #NNN · YYYY-MM-DD · [컴포넌트/페이지]
+상황 / 실수 / 교훈
+```
+QA 실패 시 반드시 기록. STEP 2·3에서 항상 참조.
 
 ## 스택
 Next.js 15 App Router · TypeScript strict · Tailwind 3.4 · Supabase (Postgres+PostGIS+RLS) · Supabase Auth (Naver OAuth + Email OTP) · Serwist PWA · Recharts · react-kakao-maps-sdk · Vitest + Playwright · Vercel Hobby + GitHub Actions CI

@@ -873,20 +873,19 @@ D-08 요구 문구:
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **weekly-generate.yml 루트 이동 여부**
-   - 알고 있는 것: 현재 `card-news/.github/workflows/`에 있어 GitHub Actions 자동 실행 안 됨
-   - 불분명: Phase 30에서 72 PNG를 어떻게 생성했는지 (로컬? 임시 루트 배치?)
-   - 권장: Phase 31 Wave 0에서 루트 `.github/workflows/weekly-generate.yml`로 이동하면서 custom-cardnews.yml도 함께 생성
+1. **weekly-generate.yml 루트 이동 여부** ✅ RESOLVED
+   - 결정: Plan 31-01 Task 3에서 루트 `.github/workflows/weekly-generate.yml`로 신규 생성 (내용 동일, 기존 서브디렉토리 파일은 무해하게 유지)
+   - custom-cardnews.yml도 동시에 루트에 신규 생성
 
-2. **GROQ_API_KEY 재발급 상태**
-   - MEMORY에 "⚠️ GROQ 키 재발급 필요" 표시
-   - Phase 31 실행 전 키 상태 확인 필수
+2. **GROQ_API_KEY 재발급 상태** ✅ RESOLVED (조건부)
+   - Plan 02 user_setup에 "실행 전 키 확인 필수" 명시
+   - AI 기능만 비활성화되고 빌더 나머지 기능은 동작하므로 실행 블로커 아님
 
-3. **가격변동률 쿼리 직전 기간 데이터 부족**
-   - 주간 선택 시 직전 주 거래가 0건인 단지가 많을 수 있음
-   - 권장: 비교 기간 거래 3건 미만 단지는 변동률 계산 제외 + UI에 "비교 데이터 부족 단지 제외됨" 안내
+3. **가격변동률 쿼리 직전 기간 데이터 부족** ✅ RESOLVED
+   - 결정: 비교 기간 거래 3건 미만 단지 변동률 계산 제외 (D-04 동일 기준 적용)
+   - Plan 01 Task 1 fetchPriceChangeRanking 명세에 반영됨
 
 ---
 
