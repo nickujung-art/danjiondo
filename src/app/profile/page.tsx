@@ -58,48 +58,6 @@ export default async function ProfilePage() {
         fontFamily: 'var(--font-sans)',
       }}
     >
-      {/* Nav */}
-      <header
-        className="px-4 sm:px-8"
-        style={{
-          height:       60,
-          background:   '#fff',
-          borderBottom: '1px solid var(--line-default)',
-          display:      'flex',
-          alignItems:   'center',
-          gap:          24,
-          position:     'sticky',
-          top:          0,
-          zIndex:       50,
-        }}
-      >
-        <Link href="/" className="dj-logo">
-          <span className="mark">단</span>
-          <span>단지온도</span>
-        </Link>
-        <nav style={{ display: 'flex', gap: 4 }}>
-          {[
-            { href: '/',          label: '홈' },
-            { href: '/map',       label: '지도' },
-            { href: '/favorites', label: '관심단지' },
-          ].map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              style={{
-                font:           '500 14px/1 var(--font-sans)',
-                color:          'var(--fg-sec)',
-                textDecoration: 'none',
-                padding:        '6px 10px',
-                borderRadius:   6,
-              }}
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
-      </header>
-
       <div style={{ maxWidth: 640, margin: '0 auto', padding: '28px 24px' }}>
         {/* Profile header */}
         <div
