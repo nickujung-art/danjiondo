@@ -113,30 +113,6 @@ export default async function GapAnalysisPage({ searchParams }: Props) {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-canvas)', fontFamily: 'var(--font-sans)' }}>
-      {/* Header */}
-      <header
-        style={{
-          height:       60,
-          background:   '#fff',
-          borderBottom: '1px solid var(--line-default)',
-          display:      'flex',
-          alignItems:   'center',
-          padding:      '0 16px',
-          gap:          16,
-          position:     'sticky',
-          top:          0,
-          zIndex:       50,
-        }}
-      >
-        <Link href="/" className="dj-logo">
-          <span className="mark">단</span>
-          <span>단지온도</span>
-        </Link>
-        <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
-          갭투자 분석
-        </span>
-      </header>
-
       <main style={{ maxWidth: 1040, margin: '0 auto', padding: '24px 16px' }}>
         {/* Page title */}
         <div style={{ marginBottom: 20 }}>

@@ -503,57 +503,6 @@ async function ComplexDetailPage({
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <BreadcrumbNav slug={slugParts} />
       <ViewCountTracker complexId={id} />
-      {/* Nav — desktop only (mobile uses global AppHeader) */}
-      <header
-        className="hidden lg:flex items-center"
-        style={{
-          height: 56,
-          background: '#fff',
-          borderBottom: '1px solid var(--line-default)',
-          padding: '0 16px',
-          gap: 12,
-          position: 'sticky',
-          top: 0,
-          zIndex: 50,
-        }}
-      >
-        <Link href="/" className="dj-logo">
-          <span className="mark">단</span>
-          <span className="hidden sm:inline">단지온도</span>
-        </Link>
-        <span
-          className="hidden lg:block"
-          style={{
-            font: '500 13px/1 var(--font-sans)',
-            color: 'var(--fg-tertiary)',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            flex: 1,
-          }}
-        >
-          {breadcrumb.join(' › ')} › {complex.canonical_name}
-        </span>
-        <div style={{ flex: 1 }} />
-        <div className="hidden lg:flex items-center gap-4">
-          <ShareButton
-            complexId={id}
-            complexName={complex.canonical_name}
-            location={[complex.si, complex.gu, complex.dong].filter(Boolean).join(' ')}
-          />
-          <FavoriteButton complexId={id} />
-          <CompareAddButton complexId={id} complexName={complex.canonical_name} />
-          <Link
-            href={`/login?next=/complexes/${id}`}
-            className="btn btn-md btn-orange"
-            style={{ textDecoration: 'none', gap: 6 }}
-          >
-            <BellIcon />
-            알림 설정
-          </Link>
-        </div>
-      </header>
-
       {/* Body */}
       <main className="px-4 py-4 sm:px-6 sm:py-6 max-w-screen-xl mx-auto">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
@@ -645,9 +594,9 @@ async function ComplexDetailPage({
               </div>
             )}
 
-            {/* Compare + Alert buttons — mobile only (desktop uses sticky header) */}
+            {/* Compare + Alert buttons */}
             <div
-              className="grid grid-cols-2 gap-2 lg:hidden"
+              className="grid grid-cols-2 gap-2"
               style={{ marginTop: 10 }}
             >
               <CompareAddButton complexId={id} complexName={complex.canonical_name} />

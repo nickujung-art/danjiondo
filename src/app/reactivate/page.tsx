@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import type { Metadata } from 'next'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { reactivateAccount } from '@/lib/auth/consent-actions'
@@ -42,26 +41,6 @@ export default async function ReactivatePage() {
         fontFamily: 'var(--font-sans)',
       }}
     >
-      <header
-        style={{
-          height:       60,
-          background:   '#fff',
-          borderBottom: '1px solid var(--line-default)',
-          display:      'flex',
-          alignItems:   'center',
-          padding:      '0 32px',
-          gap:          24,
-          position:     'sticky',
-          top:          0,
-          zIndex:       50,
-        }}
-      >
-        <Link href="/" className="dj-logo">
-          <span className="mark">단</span>
-          <span>단지온도</span>
-        </Link>
-      </header>
-
       <main style={{ maxWidth: 640, margin: '0 auto', padding: '40px 24px' }}>
         <h1
           style={{

@@ -1,11 +1,9 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Suspense } from 'react'
 import { createReadonlyClient } from '@/lib/supabase/readonly'
 import { getRecentDailyFeed } from '@/lib/data/rankings-page'
 import { formatPrice, complexHref, formatPyeong } from '@/lib/format'
-import { UserMenu } from '@/components/auth/UserMenu'
 import { ShareButton } from '@/components/rankings/ShareButton'
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://danjiondo.kr'
@@ -50,32 +48,6 @@ export default async function DateRankingsPage({ params }: Props) {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-canvas)', fontFamily: 'var(--font-sans)' }}>
-      <header style={{
-        height:       56,
-        background:   '#fff',
-        borderBottom: '1px solid var(--line-default)',
-        display:      'flex',
-        alignItems:   'center',
-        padding:      '0 16px',
-        gap:          20,
-        position:     'sticky',
-        top:          0,
-        zIndex:       50,
-      }}>
-        <Link href="/" className="dj-logo" style={{ flexShrink: 0 }}>
-          <span className="mark">단</span>
-          <span>단지온도</span>
-        </Link>
-        <nav style={{ display: 'flex', gap: 16, font: '600 13px/1 var(--font-sans)' }}>
-          <Link href="/"         style={{ color: 'var(--fg-sec)',    textDecoration: 'none' }}>홈</Link>
-          <Link href="/map"      style={{ color: 'var(--fg-sec)',    textDecoration: 'none' }}>지도</Link>
-          <Link href="/rankings" style={{ color: 'var(--dj-orange)', textDecoration: 'none' }}>랭킹</Link>
-        </nav>
-        <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
-          <Suspense><UserMenu /></Suspense>
-        </div>
-      </header>
-
       <main style={{ maxWidth: 680, margin: '0 auto', padding: '20px 16px 48px' }}>
 
         <div style={{ marginBottom: 12 }}>

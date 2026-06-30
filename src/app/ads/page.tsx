@@ -24,29 +24,6 @@ const TARGET_TYPES = [
 export default function AdsPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#fff', fontFamily: 'var(--font-sans)' }}>
-      <header
-        style={{
-          height: 60,
-          borderBottom: '1px solid var(--line-default)',
-          display: 'flex',
-          alignItems: 'center',
-          padding: '0 32px',
-          gap: 32,
-          position: 'sticky',
-          top: 0,
-          zIndex: 50,
-          background: '#fff',
-        }}
-      >
-        <Link href="/" className="dj-logo">
-          <span className="mark">단</span>
-          <span>단지온도</span>
-        </Link>
-        <span style={{ font: '600 14px/1 var(--font-sans)', color: 'var(--fg-sec)' }}>
-          광고 문의
-        </span>
-      </header>
-
       <main style={{ maxWidth: 800, margin: '0 auto', padding: '48px 32px' }}>
         {/* 히어로 */}
         <section style={{ marginBottom: 48, textAlign: 'center' }}>

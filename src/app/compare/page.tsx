@@ -38,35 +38,6 @@ export default async function ComparePage({ searchParams }: Props) {
         fontFamily: 'var(--font-sans)',
       }}
     >
-      {/* Nav */}
-      <header
-        style={{
-          height: 60,
-          background: '#fff',
-          borderBottom: '1px solid var(--line-default)',
-          display: 'flex',
-          alignItems: 'center',
-          padding: '0 16px',
-          gap: 16,
-          position: 'sticky',
-          top: 0,
-          zIndex: 50,
-        }}
-      >
-        <Link href="/" className="dj-logo">
-          <span className="mark">단</span>
-          <span>단지온도</span>
-        </Link>
-        <span style={{ font: '700 16px/1.4 var(--font-sans)', letterSpacing: '-0.015em' }}>
-          단지 비교
-        </span>
-        {validIds.length > 0 && (
-          <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
-            {validIds.length}개 선택
-          </span>
-        )}
-      </header>
-
       {/* Body */}
       <div
         style={{

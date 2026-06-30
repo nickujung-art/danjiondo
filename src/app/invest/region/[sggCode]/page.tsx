@@ -339,26 +339,13 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-canvas)', fontFamily: 'var(--font-sans)' }}>
-      <header
-        className="px-4 sm:px-8"
-        style={{
-          height: 60, background: '#fff', borderBottom: '1px solid var(--line-default)',
-          display: 'flex', alignItems: 'center', gap: 16,
-          position: 'sticky', top: 0, zIndex: 50,
-        }}
-      >
-        <Link href="/" className="dj-logo">
-          <span className="mark">단</span><span>단지온도</span>
-        </Link>
-        <Link href="/invest" style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--fg-tertiary)', textDecoration: 'none' }}>
-          투자 분석
-        </Link>
-        <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>›</span>
-        <span style={{ font: '600 13px/1 var(--font-sans)', color: 'var(--fg-pri)' }}>{label}</span>
-      </header>
-
       <main className="px-4 sm:px-8" style={{ maxWidth: 1040, margin: '0 auto', paddingTop: 24, paddingBottom: 48 }}>
         <div style={{ marginBottom: 20 }}>
+          <nav style={{ display: 'flex', alignItems: 'center', gap: 6, font: '500 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginBottom: 12 }}>
+            <Link href="/invest" style={{ color: 'inherit', textDecoration: 'none' }}>투자 분석</Link>
+            <span>›</span>
+            <span style={{ color: 'var(--fg-pri)' }}>{label}</span>
+          </nav>
           <h1 style={{ font: '700 22px/1.3 var(--font-sans)', letterSpacing: '-0.02em', margin: '0 0 6px' }}>
             {label} 시세 예측 분석
           </h1>
