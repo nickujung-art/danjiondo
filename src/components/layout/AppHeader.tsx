@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Bell, User, MoreHorizontal, Map, TrendingUp, Heart, FileText, Shield, Megaphone } from 'lucide-react'
+import { Bell, User, Map, TrendingUp, Heart, FileText, Shield, Megaphone } from 'lucide-react'
 
 const PC_NAV = [
   { href: '/',         label: '홈' },
@@ -92,7 +92,6 @@ export function AppHeader() {
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 4,
               height: 56,
               padding: '0 14px',
               fontFamily: 'var(--font-sans)',
@@ -107,7 +106,6 @@ export function AppHeader() {
             }}
           >
             더보기
-            <MoreHorizontal size={15} strokeWidth={1.75} />
           </button>
 
           {open && (
