@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-06-25T08:44:58Z"
-last_activity: 2026-06-25 — Phase 31 Plan 04 완료: 어드민 카드뉴스 빌더 UI (BuilderOptionsPanel·DataQualityWarning·BuilderPreviewPanel·AiTextEditor·ExportPanel·SchedulerPanel·CardNewsBuilderClient·builder/page·scheduler/page·AdminSidebar nav) (BILD-05~08)
+last_updated: "2026-06-30T00:00:00Z"
+last_activity: 2026-06-30 — Phase 29 확장 완료: invest 모바일 카드(갭랭킹·AI예측랭킹) + 전체 페이지 중복 헤더 10개 제거(slug 단지상세 포함) / Phase 32 완료(2026-06-26): 카드뉴스 어드민 관리 대시보드
 progress:
-  total_phases: 26
-  completed_phases: 24
-  total_plans: 69
-  completed_plans: 70
-  percent: 99
+  total_phases: 32
+  completed_phases: 32
+  total_plans: 80
+  completed_plans: 80
+  percent: 100
 ---
 
 # Project State — 단지온도
@@ -20,11 +20,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-06)
 
 **Core value:** 창원·김해 실수요자가 "이 단지 사도 되는지" 데이터와 이웃 의견으로 30분 안에 결정 짓게 한다.
-**Current focus:** Phase 24 완료 — 단지별 AI 코멘트 배치 구현. 다음 phase 미기획.
+**Current focus:** Phase 32 완료 — 카드뉴스 어드민 대시보드 + Phase 29 모바일 최적화 전체 완료. deferred(V1.5/V2) 항목 외 주요 기능 모두 완성.
 
 ## Current Phase
 
-**Phase 24: 단지별 AI 코멘트 배치** ✅ Complete
+**Phase 32: 카드뉴스 어드민 관리 대시보드** ✅ Complete (2026-06-26)
+
+**Phase 31: 어드민 카드뉴스 빌더** ✅ Complete (2026-06-25)
 
 Goal: complex_price_predictions.ai_commentary 월간 Gemini 배치 + 투자 랭킹 카드 코멘트 표시
 
@@ -121,8 +123,27 @@ Waves:
 | 9 | 단지 상세 UX 고도화 | ✅ Complete (5/5 plans) |
 | 10 | 교육 환경 고도화 | ✅ Complete |
 | 11 | 지도 고도화 | ✅ Complete (5/5 plans) |
-| 12 | 지도 마커·클러스터 개편 | 🔄 In Progress (3/4 plans complete) |
+| 12 | 지도 마커·클러스터 개편 | ✅ Complete (3/4 plans; 12-04 dropped — 통합 완료) |
 | 13 | 신축·분양·재건축 대시보드 | ✅ Complete |
+| 14 | 지도 줌 중간 레벨 (동 클러스터) | ✅ Complete |
+| 15 | 커뮤니티 & 게이미피케이션 | ✅ Complete |
+| 16 | 광고 플랫폼 MVP | ✅ Complete |
+| 17 | 광고 게재 확장 | ✅ Complete |
+| 18 | 공인중개사 추천 섹션 | ✅ Complete |
+| 19 | 어드민 UI/UX 전면 개선 | ✅ Complete |
+| 20 | 갭투자 분석 | ✅ Complete |
+| 21 | 투자 분석 통합 페이지 | ✅ Complete |
+| 22 | AI 가격 예측 | ✅ Complete |
+| 23 | SEO URL 구조 최적화 | ✅ Complete |
+| 24 | 단지별 AI 코멘트 배치 | ✅ Complete |
+| 25 | 네이버 매물 크롤링 (호가·area_type) | ✅ Complete |
+| 26 | Cron 개편 | ✅ Complete |
+| 27 | 랭킹 페이지 + 평형 정규화 | ✅ Complete |
+| 28 | 학원 추천 시스템 | ✅ Complete |
+| 29 | 모바일 최적화 | ✅ Complete (하단탭바 + invest 모바일카드 + 전체 중복헤더 제거) |
+| 30 | 인스타 카드뉴스 생성기 | ✅ Complete |
+| 31 | 어드민 카드뉴스 빌더 | ✅ Complete |
+| 32 | 카드뉴스 어드민 대시보드 | ✅ Complete |
 
 ---
 

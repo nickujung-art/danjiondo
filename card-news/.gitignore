@@ -1,5 +1,6 @@
 output/
 node_modules/
+fonts/
 .env
 temp-*.html
 *.log

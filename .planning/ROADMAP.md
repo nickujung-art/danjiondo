@@ -29,9 +29,11 @@
 | 21 | 투자 분석 통합 페이지 | V3.3 | 실거래 2년 시세 흐름 차트 + 갭투자 랭킹을 /invest 페이지로 통합 | INVEST-01~04 | ✅ Completed 2026-05-29 |
 | 22 | AI 가격 예측 | V3.4 | Holt-Winters 통계 엔진 + Claude Haiku 해설로 단지별 평형별 6개월 예측선 구현 | PRED-01~04 | ✅ Completed 2026-05-29 |
 | 23 | SEO URL 구조 최적화 | V4.0 | 한글 디렉토리 URL + 계층별 페이지 + BreadcrumbList + 사이트맵·RSS — 네이버 검색 노출 최대화 | SEO-01~06 | ✅ Complete (4/4 plans) |
-| 28 | 학원 추천 시스템 | V4.2 | 교육 탭 "내 아이에 맞는 학원 추천" — NEIS 학원 DB + Groq AI 분류 + 맞춤 추천 팝업 + 자녀 프로필 저장 | HAGWON-01~09 | 🔲 Not started |
-| 29 | 모바일 최적화 | V4.3 | 하단 탭바 + Tailwind mobile-first + 44px 터치 타겟 + 바텀시트로 진짜 mobile-first UX 구현 | MOB-01~06 | 🔲 Not started |
-| 30 | 인스타 카드뉴스 생성기 | V5.0 | 매주 Supabase 실거래가 DB 집계 → CARDDESIGN.md 규격 1080×1080 PNG 4장 자동 생성 (창원부동산랩 인스타그램) | CARD-01~06 | 🔄 In Progress (Wave 0+1 ✅, CI 검증 대기) |
+| 28 | 학원 추천 시스템 | V4.2 | 교육 탭 "내 아이에 맞는 학원 추천" — NEIS 학원 DB + Groq AI 분류 + 맞춤 추천 팝업 + 자녀 프로필 저장 | HAGWON-01~09 | ✅ Complete |
+| 29 | 모바일 최적화 | V4.3 | 하단 탭바 + Tailwind mobile-first + 44px 터치 타겟 + 바텀시트 + invest 모바일카드 + 전체 중복헤더 제거 | MOB-01~06 | ✅ Complete |
+| 30 | 인스타 카드뉴스 생성기 | V5.0 | 매주 Supabase 실거래가 DB 집계 → 1080×1350 PNG 4장 자동 생성 + Instagram 자동 포스팅 (창원부동산랩) | CARD-01~06 | ✅ Complete |
+| 31 | 어드민 카드뉴스 빌더 | V5.1 | 8주제 × 기간·지역·평형 세부선택 + iframe 미리보기 + 텍스트 편집 + AI 캡션 + PNG 생성 트리거 | BILD-01~08 | ✅ Complete |
+| 32 | 카드뉴스 어드민 대시보드 | V5.1 | /admin/cardnews 통합 대시보드 — 생성·히스토리·스케줄러 통합 관리 | DASH-01~03 | ✅ Complete |
 
 ---
 
