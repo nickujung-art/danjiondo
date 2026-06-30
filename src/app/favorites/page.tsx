@@ -38,33 +38,6 @@ export default async function FavoritesPage() {
         fontFamily: 'var(--font-sans)',
       }}
     >
-      {/* Nav */}
-      <header
-        style={{
-          height: 60,
-          background: '#fff',
-          borderBottom: '1px solid var(--line-default)',
-          display: 'flex',
-          alignItems: 'center',
-          padding: '0 16px',
-          gap: 16,
-          position: 'sticky',
-          top: 0,
-          zIndex: 50,
-        }}
-      >
-        <Link href="/" className="dj-logo">
-          <span className="mark">단</span>
-          <span>단지온도</span>
-        </Link>
-        <nav style={{ display: 'flex', gap: 24, font: '600 14px/1 var(--font-sans)' }}>
-          <Link href="/" style={{ color: 'var(--fg-sec)', textDecoration: 'none' }}>홈</Link>
-          <Link href="/map" style={{ color: 'var(--fg-sec)', textDecoration: 'none' }}>지도</Link>
-          <Link href="#" style={{ color: 'var(--fg-sec)', textDecoration: 'none' }}>분양</Link>
-          <Link href="/favorites" style={{ color: 'var(--dj-orange)', textDecoration: 'none' }}>관심단지</Link>
-        </nav>
-      </header>
-
       <div style={{ padding: '24px 16px', maxWidth: 1280, margin: '0 auto' }}>
         <h1
           style={{

@@ -215,177 +215,110 @@ export default async function InvestPage({ searchParams }: Props) {
         {/* Table or empty state */}
         {rows.length === 0 ? (
           <div className="card" style={{ padding: 48, textAlign: 'center' }}>
-            <p
-              style={{
-                font:   '500 14px/1.6 var(--font-sans)',
-                color:  'var(--fg-tertiary)',
-                margin: 0,
-              }}
-            >
+            <p style={{ font: '500 14px/1.6 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>
               갭투자 통계 데이터가 아직 없습니다.
             </p>
-            <p
-              style={{
-                font:   '400 12px/1.5 var(--font-sans)',
-                color:  'var(--fg-tertiary)',
-                margin: '8px 0 0',
-              }}
-            >
+            <p style={{ font: '400 12px/1.5 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '8px 0 0' }}>
               일배치 cron이 실행된 후 데이터가 표시됩니다.
             </p>
           </div>
         ) : (
-          <div className="card" style={{ overflow: 'hidden' }}>
-            <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', minWidth: 580, borderCollapse: 'collapse' }}>
-              <thead>
-                <tr
-                  style={{
-                    background:   'var(--bg-surface-2)',
-                    borderBottom: '1px solid var(--line-default)',
-                  }}
-                >
-                  {['#', '단지명', '갭 비율', '갭 금액', '전세가율', '위험도', '매매 건수'].map(
-                    (h) => (
-                      <th
-                        key={h}
-                        style={{
-                          padding:    '10px 12px',
-                          font:       '600 11px/1 var(--font-sans)',
-                          color:      'var(--fg-sec)',
-                          textAlign:  h === '#' || h === '매매 건수' ? 'center' : 'left',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {h}
-                      </th>
-                    ),
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, idx) => {
-                  const badge      = RISK_BADGE[row.riskLevel] ?? RISK_BADGE['caution']
-                  const ratioColor =
-                    row.riskLevel === 'danger'
-                      ? '#dc2626'
-                      : row.riskLevel === 'caution'
-                        ? '#d97706'
-                        : '#16a34a'
-
-                  return (
-                    <tr
-                      key={row.complexId}
-                      style={{ borderBottom: '1px solid var(--line-subtle)' }}
-                    >
-                      {/* # */}
-                      <td
-                        style={{
-                          padding:   '10px 12px',
-                          font:      '500 12px/1 var(--font-sans)',
-                          color:     'var(--fg-tertiary)',
-                          textAlign: 'center',
-                          width:     36,
-                        }}
-                      >
-                        {idx + 1}
-                      </td>
-
-                      {/* 단지명 */}
-                      <td style={{ padding: '10px 12px' }}>
-                        {/* D-06: 단지 클릭 → /complexes/[id] (기존 상세 페이지) */}
-                        <Link
-                          href={`/complexes/${row.complexId}`}
-                          style={{
-                            font:           '600 13px/1.3 var(--font-sans)',
-                            color:          'var(--fg-pri)',
-                            textDecoration: 'none',
-                          }}
-                        >
-                          {row.complexName}
-                        </Link>
-                        {(row.si ?? row.gu) && (
-                          <div
-                            style={{
-                              font:      '400 11px/1 var(--font-sans)',
-                              color:     'var(--fg-tertiary)',
-                              marginTop: 2,
-                            }}
-                          >
-                            {[row.si, row.gu].filter(Boolean).join(' ')}
-                          </div>
-                        )}
-                      </td>
-
-                      {/* 갭 비율 */}
-                      <td
-                        className="tnum"
-                        style={{
-                          padding: '10px 12px',
-                          font:    '700 14px/1 var(--font-sans)',
-                          color:   ratioColor,
-                        }}
-                      >
-                        {row.gapRatio.toFixed(1)}%
-                      </td>
-
-                      {/* 갭 금액 */}
-                      <td
-                        className="tnum"
-                        style={{ padding: '10px 12px', font: '500 13px/1 var(--font-sans)' }}
-                      >
-                        {formatPrice(row.gapAmount)}
-                      </td>
-
-                      {/* 전세가율 */}
-                      <td
-                        className="tnum"
-                        style={{
-                          padding: '10px 12px',
-                          font:    '500 13px/1 var(--font-sans)',
-                          color:   'var(--fg-sec)',
-                        }}
-                      >
-                        {row.jeonseRatio.toFixed(1)}%
-                      </td>
-
-                      {/* 위험도 */}
-                      <td style={{ padding: '10px 12px' }}>
-                        <span
-                          style={{
-                            display:      'inline-flex',
-                            alignItems:   'center',
-                            background:   badge.bg,
-                            color:        '#fff',
-                            font:         '600 11px/1 var(--font-sans)',
-                            borderRadius: 4,
-                            padding:      '3px 8px',
-                            whiteSpace:   'nowrap',
-                          }}
-                        >
+          <>
+            {/* 모바일: 카드 리스트 */}
+            <div className="sm:hidden" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {rows.map((row, idx) => {
+                const badge      = RISK_BADGE[row.riskLevel] ?? RISK_BADGE['caution']
+                const ratioColor = row.riskLevel === 'danger' ? '#dc2626' : row.riskLevel === 'caution' ? '#d97706' : '#16a34a'
+                return (
+                  <Link
+                    key={row.complexId}
+                    href={`/complexes/${row.complexId}`}
+                    className="card"
+                    style={{ display: 'block', padding: '14px 16px', textDecoration: 'none', color: 'inherit' }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>#{idx + 1}</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', background: badge.bg, color: '#fff', font: '600 11px/1 var(--font-sans)', borderRadius: 4, padding: '3px 8px' }}>
                           {badge.label}
                         </span>
-                      </td>
-
-                      {/* 매매 건수 */}
-                      <td
-                        className="tnum"
-                        style={{
-                          padding:   '10px 12px',
-                          font:      '500 12px/1 var(--font-sans)',
-                          color:     'var(--fg-tertiary)',
-                          textAlign: 'center',
-                        }}
-                      >
-                        {row.saleCount}건
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                      </div>
+                      <span className="tnum" style={{ font: '700 22px/1 var(--font-sans)', color: ratioColor }}>
+                        {row.gapRatio.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div style={{ font: '600 14px/1.3 var(--font-sans)', color: 'var(--fg-pri)', marginBottom: 2 }}>
+                      {row.complexName}
+                    </div>
+                    {(row.si ?? row.gu) && (
+                      <div style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginBottom: 10 }}>
+                        {[row.si, row.gu].filter(Boolean).join(' ')}
+                      </div>
+                    )}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', paddingTop: 10, borderTop: '1px solid var(--line-subtle)' }}>
+                      {[
+                        { label: '갭 금액',  value: formatPrice(row.gapAmount) },
+                        { label: '전세가율', value: `${row.jeonseRatio.toFixed(1)}%` },
+                        { label: '매매 건수', value: `${row.saleCount}건` },
+                      ].map(({ label, value }) => (
+                        <div key={label} style={{ textAlign: 'center' }}>
+                          <div style={{ font: '400 10px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', marginBottom: 2 }}>{label}</div>
+                          <div className="tnum" style={{ font: '600 13px/1 var(--font-sans)', color: 'var(--fg-pri)' }}>{value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </Link>
+                )
+              })}
             </div>
-          </div>
+
+            {/* 데스크탑: 테이블 */}
+            <div className="hidden sm:block card" style={{ overflow: 'hidden' }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', minWidth: 580, borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: 'var(--bg-surface-2)', borderBottom: '1px solid var(--line-default)' }}>
+                      {['#', '단지명', '갭 비율', '갭 금액', '전세가율', '위험도', '매매 건수'].map((h) => (
+                        <th key={h} style={{ padding: '10px 12px', font: '600 11px/1 var(--font-sans)', color: 'var(--fg-sec)', textAlign: h === '#' || h === '매매 건수' ? 'center' : 'left', whiteSpace: 'nowrap' }}>
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((row, idx) => {
+                      const badge      = RISK_BADGE[row.riskLevel] ?? RISK_BADGE['caution']
+                      const ratioColor = row.riskLevel === 'danger' ? '#dc2626' : row.riskLevel === 'caution' ? '#d97706' : '#16a34a'
+                      return (
+                        <tr key={row.complexId} style={{ borderBottom: '1px solid var(--line-subtle)' }}>
+                          <td style={{ padding: '10px 12px', font: '500 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', textAlign: 'center', width: 36 }}>{idx + 1}</td>
+                          <td style={{ padding: '10px 12px' }}>
+                            <Link href={`/complexes/${row.complexId}`} style={{ font: '600 13px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none' }}>
+                              {row.complexName}
+                            </Link>
+                            {(row.si ?? row.gu) && (
+                              <div style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginTop: 2 }}>
+                                {[row.si, row.gu].filter(Boolean).join(' ')}
+                              </div>
+                            )}
+                          </td>
+                          <td className="tnum" style={{ padding: '10px 12px', font: '700 14px/1 var(--font-sans)', color: ratioColor }}>{row.gapRatio.toFixed(1)}%</td>
+                          <td className="tnum" style={{ padding: '10px 12px', font: '500 13px/1 var(--font-sans)' }}>{formatPrice(row.gapAmount)}</td>
+                          <td className="tnum" style={{ padding: '10px 12px', font: '500 13px/1 var(--font-sans)', color: 'var(--fg-sec)' }}>{row.jeonseRatio.toFixed(1)}%</td>
+                          <td style={{ padding: '10px 12px' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', background: badge.bg, color: '#fff', font: '600 11px/1 var(--font-sans)', borderRadius: 4, padding: '3px 8px', whiteSpace: 'nowrap' }}>
+                              {badge.label}
+                            </span>
+                          </td>
+                          <td className="tnum" style={{ padding: '10px 12px', font: '500 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', textAlign: 'center' }}>{row.saleCount}건</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
         )}
 
         {/* Data footnote */}

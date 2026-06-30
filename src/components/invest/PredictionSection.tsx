@@ -181,139 +181,128 @@ export function PredictionSection({
           </p>
         </div>
       ) : (
-        <div className="card" style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr
-                style={{
-                  background:   'var(--bg-surface-2)',
-                  borderBottom: '1px solid var(--line-default)',
-                }}
-              >
-                {[
-                  { h: '#',           align: 'center' as const },
-                  { h: '단지명',       align: 'left'   as const },
-                  { h: '지역',         align: 'left'   as const },
-                  { h: '현재 예측가',   align: 'right'  as const },
-                  { h: '6개월 후',     align: 'right'  as const },
-                  { h: '변화율',       align: 'right'  as const },
-                  { h: '신뢰도',       align: 'center' as const },
-                ].map(({ h, align }) => (
-                  <th
-                    key={h}
-                    style={{
-                      padding:    '10px 12px',
-                      font:       '600 11px/1 var(--font-sans)',
-                      color:      'var(--fg-sec)',
-                      textAlign:  align,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rankingItems.map((item, idx) => {
-                const color = DIRECTION_COLOR[item.direction]
-                const conf  = confidenceBadge(item.mape)
-                return (
-                  <tr key={`${item.complexId}-${item.areaBucket}`} style={{ borderBottom: '1px solid var(--line-subtle)' }}>
-                    <td
-                      style={{
-                        padding:   '10px 12px',
-                        font:      '500 12px/1 var(--font-sans)',
-                        color:     'var(--fg-tertiary)',
-                        textAlign: 'center',
-                        width:     36,
-                      }}
-                    >
-                      {idx + 1}
-                    </td>
-                    <td style={{ padding: '10px 12px' }}>
-                      <Link
-                        href={complexHref(item.complexId, item.status === 'active' ? item.urlSlug : null)}
-                        style={{
-                          font:           '600 13px/1.3 var(--font-sans)',
-                          color:          'var(--fg-pri)',
-                          textDecoration: 'none',
-                        }}
-                      >
-                        {item.complexName}
-                      </Link>
-                      <div style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginTop: 2 }}>
-                        {item.areaBucket === '소형' || item.areaBucket === '대형'
-                          ? item.areaBucket
-                          : `${item.areaBucket}㎡`}
-                      </div>
-                      {item.aiCommentary && (
-                        <div
-                          className="line-clamp-2"
-                          style={{ font: '400 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', marginTop: 3 }}
-                        >
-                          {item.aiCommentary}
-                        </div>
-                      )}
-                    </td>
-                    <td
-                      style={{
-                        padding:    '10px 12px',
-                        font:       '400 12px/1.3 var(--font-sans)',
-                        color:      'var(--fg-sec)',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {[item.si, item.gu].filter(Boolean).join(' ') || '—'}
-                    </td>
-                    <td
-                      className="tnum"
-                      style={{ padding: '10px 12px', font: '500 13px/1 var(--font-sans)', textAlign: 'right', whiteSpace: 'nowrap' }}
-                    >
-                      {formatPrice(item.nearPrice)}
-                    </td>
-                    <td
-                      className="tnum"
-                      style={{ padding: '10px 12px', font: '600 13px/1 var(--font-sans)', textAlign: 'right', whiteSpace: 'nowrap' }}
-                    >
-                      {formatPrice(item.farPrice)}
-                    </td>
-                    <td
-                      className="tnum"
-                      style={{
-                        padding:    '10px 12px',
-                        font:       '700 13px/1 var(--font-sans)',
-                        color,
-                        textAlign:  'right',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      <span aria-hidden="true" style={{ marginRight: 2 }}>
-                        {DIRECTION_ARROW[item.direction]}
-                      </span>
-                      {fmtPct(item.changePct)}
-                    </td>
-                    <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+        <>
+          {/* 모바일: 카드 리스트 */}
+          <div className="sm:hidden" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {rankingItems.map((item, idx) => {
+              const color = DIRECTION_COLOR[item.direction]
+              const conf  = confidenceBadge(item.mape)
+              const area  = item.areaBucket === '소형' || item.areaBucket === '대형'
+                ? item.areaBucket
+                : `${item.areaBucket}㎡`
+              const location = [item.si, item.gu].filter(Boolean).join(' ')
+              return (
+                <Link
+                  key={`${item.complexId}-${item.areaBucket}`}
+                  href={complexHref(item.complexId, item.status === 'active' ? item.urlSlug : null)}
+                  className="card"
+                  style={{ display: 'block', padding: '14px 16px', textDecoration: 'none', color: 'inherit' }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>#{idx + 1}</span>
                       <span
                         style={{
-                          display:      'inline-block',
-                          color:        conf.color,
-                          font:         '600 11px/1 var(--font-sans)',
-                          border:       `1px solid ${conf.color}`,
-                          borderRadius: 4,
-                          padding:      '3px 8px',
-                          whiteSpace:   'nowrap',
+                          display: 'inline-block', color: conf.color,
+                          font: '600 11px/1 var(--font-sans)',
+                          border: `1px solid ${conf.color}`, borderRadius: 4, padding: '2px 7px',
                         }}
                       >
                         {conf.label}
                       </span>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+                    </div>
+                    <span className="tnum" style={{ font: '700 18px/1 var(--font-sans)', color }}>
+                      {DIRECTION_ARROW[item.direction]} {fmtPct(item.changePct)}
+                    </span>
+                  </div>
+                  <div style={{ font: '600 14px/1.3 var(--font-sans)', color: 'var(--fg-pri)', marginBottom: 2 }}>
+                    {item.complexName}
+                  </div>
+                  <div style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginBottom: item.aiCommentary ? 6 : 10 }}>
+                    {area}{location ? ` · ${location}` : ''}
+                  </div>
+                  {item.aiCommentary && (
+                    <div className="line-clamp-2" style={{ font: '400 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', marginBottom: 10 }}>
+                      {item.aiCommentary}
+                    </div>
+                  )}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', paddingTop: 10, borderTop: '1px solid var(--line-subtle)' }}>
+                    {[
+                      { label: '현재 예측가', value: formatPrice(item.nearPrice) },
+                      { label: '6개월 후',   value: formatPrice(item.farPrice), color },
+                    ].map(({ label, value, color: c }) => (
+                      <div key={label} style={{ textAlign: 'center' }}>
+                        <div style={{ font: '400 10px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', marginBottom: 2 }}>{label}</div>
+                        <div className="tnum" style={{ font: '600 13px/1 var(--font-sans)', color: c ?? 'var(--fg-pri)' }}>{value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+
+          {/* 데스크탑: 테이블 */}
+          <div className="hidden sm:block card" style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: 'var(--bg-surface-2)', borderBottom: '1px solid var(--line-default)' }}>
+                  {[
+                    { h: '#',           align: 'center' as const },
+                    { h: '단지명',       align: 'left'   as const },
+                    { h: '지역',         align: 'left'   as const },
+                    { h: '현재 예측가',   align: 'right'  as const },
+                    { h: '6개월 후',     align: 'right'  as const },
+                    { h: '변화율',       align: 'right'  as const },
+                    { h: '신뢰도',       align: 'center' as const },
+                  ].map(({ h, align }) => (
+                    <th key={h} style={{ padding: '10px 12px', font: '600 11px/1 var(--font-sans)', color: 'var(--fg-sec)', textAlign: align, whiteSpace: 'nowrap' }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rankingItems.map((item, idx) => {
+                  const color = DIRECTION_COLOR[item.direction]
+                  const conf  = confidenceBadge(item.mape)
+                  return (
+                    <tr key={`${item.complexId}-${item.areaBucket}`} style={{ borderBottom: '1px solid var(--line-subtle)' }}>
+                      <td style={{ padding: '10px 12px', font: '500 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', textAlign: 'center', width: 36 }}>{idx + 1}</td>
+                      <td style={{ padding: '10px 12px' }}>
+                        <Link href={complexHref(item.complexId, item.status === 'active' ? item.urlSlug : null)} style={{ font: '600 13px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none' }}>
+                          {item.complexName}
+                        </Link>
+                        <div style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', marginTop: 2 }}>
+                          {item.areaBucket === '소형' || item.areaBucket === '대형' ? item.areaBucket : `${item.areaBucket}㎡`}
+                        </div>
+                        {item.aiCommentary && (
+                          <div className="line-clamp-2" style={{ font: '400 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', marginTop: 3 }}>
+                            {item.aiCommentary}
+                          </div>
+                        )}
+                      </td>
+                      <td style={{ padding: '10px 12px', font: '400 12px/1.3 var(--font-sans)', color: 'var(--fg-sec)', whiteSpace: 'nowrap' }}>
+                        {[item.si, item.gu].filter(Boolean).join(' ') || '—'}
+                      </td>
+                      <td className="tnum" style={{ padding: '10px 12px', font: '500 13px/1 var(--font-sans)', textAlign: 'right', whiteSpace: 'nowrap' }}>{formatPrice(item.nearPrice)}</td>
+                      <td className="tnum" style={{ padding: '10px 12px', font: '600 13px/1 var(--font-sans)', textAlign: 'right', whiteSpace: 'nowrap' }}>{formatPrice(item.farPrice)}</td>
+                      <td className="tnum" style={{ padding: '10px 12px', font: '700 13px/1 var(--font-sans)', color, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <span aria-hidden="true" style={{ marginRight: 2 }}>{DIRECTION_ARROW[item.direction]}</span>
+                        {fmtPct(item.changePct)}
+                      </td>
+                      <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                        <span style={{ display: 'inline-block', color: conf.color, font: '600 11px/1 var(--font-sans)', border: `1px solid ${conf.color}`, borderRadius: 4, padding: '3px 8px', whiteSpace: 'nowrap' }}>
+                          {conf.label}
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {/* 법적 면책 */}
