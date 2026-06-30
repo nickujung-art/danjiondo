@@ -46,14 +46,14 @@ export default async function AdminPresaleDiscoveriesPage({
 
   if (error) {
     return (
-      <div style={{ padding: 32 }}>
+      <div className="admin-page-content">
         <p style={{ color: 'var(--fg-danger)' }}>데이터 조회 오류: {error.message}</p>
       </div>
     )
   }
 
   return (
-    <div style={{ padding: 32 }}>
+    <div className="admin-page-content">
       <h1 style={{ font: '600 20px/1.3 var(--font-sans)', marginBottom: 24 }}>
         분양 예정 단지 검수
       </h1>

@@ -59,7 +59,7 @@ export default async function AdminAdsPage({
 
   if (adsError) {
     return (
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 32px' }}>
+      <div className="admin-page-content">
         <div className="card" style={{ padding: 40, textAlign: 'center', font: '500 14px/1.6 var(--font-sans)', color: 'var(--fg-negative)' }}>
           광고 데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.
         </div>
@@ -70,7 +70,7 @@ export default async function AdminAdsPage({
   const rows = campaigns ?? []
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 32px' }}>
+    <div className="admin-page-content">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <h1
             style={{
@@ -131,7 +131,8 @@ export default async function AdminAdsPage({
           </div>
         ) : (
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div className="admin-table-wrap">
+            <table style={{ width: '100%', minWidth: 650, borderCollapse: 'collapse' }}>
               <thead>
                 <tr
                   style={{
@@ -220,6 +221,7 @@ export default async function AdminAdsPage({
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>

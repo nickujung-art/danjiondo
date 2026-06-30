@@ -56,7 +56,7 @@ export default async function AdminLayout({
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-canvas)' }}>
+    <div className="admin-layout" style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-canvas)' }}>
       <AdminSidebar pendingCounts={pendingCounts} />
       <AdminSidebarDrawer pendingCounts={pendingCounts} />
       <main style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-sans)' }}>

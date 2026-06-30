@@ -133,7 +133,7 @@ export default async function AdminRedevelopmentPage({
   const { saved, error: formError } = await searchParams
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 32px' }}>
+    <div className="admin-page-content">
         <h1
           style={{
             font: '700 22px/1.3 var(--font-sans)',
@@ -379,8 +379,8 @@ export default async function AdminRedevelopmentPage({
           </div>
         ) : (
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div className="admin-table-wrap">
+              <table style={{ width: '100%', minWidth: 600, borderCollapse: 'collapse' }}>
                 <thead>
                   <tr
                     style={{

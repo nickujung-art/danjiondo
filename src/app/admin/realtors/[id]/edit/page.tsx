@@ -42,7 +42,7 @@ export default async function AdminRealtorEditPage({
   const complexes = pageResults.flatMap(r => r.data ?? [])
 
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto', padding: '28px 32px' }}>
+    <div className="admin-page-narrow">
       <div style={{ marginBottom: 20 }}>
         <Link
           href="/admin/realtors"

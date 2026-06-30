@@ -5,7 +5,7 @@ export const revalidate = 0
 
 export default async function AdminRealtorsNewPage() {
   return (
-    <div style={{ maxWidth: 720, margin: '0 auto', padding: '28px 32px' }}>
+    <div className="admin-page-narrow">
       <div style={{ marginBottom: 20 }}>
         <Link
           href="/admin/realtors"

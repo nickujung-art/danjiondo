@@ -46,7 +46,7 @@ export default async function GpsRequestsPage() {
   )
 
   return (
-    <main style={{ padding: '32px', maxWidth: '960px', margin: '0 auto' }}>
+    <main className="admin-page-content">
       <h1 style={{
         font: '700 24px/1.25 var(--font-sans)',
         letterSpacing: '-0.024em',
@@ -62,7 +62,8 @@ export default async function GpsRequestsPage() {
         </p>
       ) : (
         <div className="card" style={{ overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div className="admin-table-wrap">
+          <table style={{ width: '100%', minWidth: 600, borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{
                 background: 'var(--bg-surface-2)',
@@ -115,6 +116,7 @@ export default async function GpsRequestsPage() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </main>

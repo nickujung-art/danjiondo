@@ -18,7 +18,7 @@ export default async function AdminAdEditPage({
   if (!campaign) notFound()
 
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto', padding: '28px 32px' }}>
+    <div className="admin-page-narrow">
       <div style={{ marginBottom: 20 }}>
         <Link
           href="/admin/ads"

@@ -92,7 +92,7 @@ export default async function AdminReportsPage({
 
   if (error) {
     return (
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 32px' }}>
+      <div className="admin-page-content">
         <h1 style={{ font: '700 22px/1.3 var(--font-sans)', letterSpacing: '-0.02em', margin: '0 0 16px' }}>신고 큐</h1>
         <div className="card" style={{ padding: 40, textAlign: 'center', font: '500 14px/1.6 var(--font-sans)', color: 'var(--fg-negative)' }}>
           신고 데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.
@@ -115,7 +115,7 @@ export default async function AdminReportsPage({
   }
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 32px' }}>
+    <div className="admin-page-content">
         <h1
           style={{
             font: '700 22px/1.3 var(--font-sans)',
@@ -166,7 +166,8 @@ export default async function AdminReportsPage({
           </div>
         ) : (
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div className="admin-table-wrap">
+            <table style={{ width: '100%', minWidth: 700, borderCollapse: 'collapse' }}>
               <thead>
                 <tr
                   style={{
@@ -284,6 +285,7 @@ export default async function AdminReportsPage({
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
 
