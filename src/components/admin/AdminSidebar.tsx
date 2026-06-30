@@ -17,6 +17,7 @@ interface NavItem {
 export function buildNavItems(pendingCounts: PendingCounts): NavItem[] {
   return [
     { label: '대시보드', href: '/admin/status' },
+    { label: '데이터 운영', href: '/admin/data-ops' },
     { label: '회원 관리', href: '/admin/members' },
     { label: '신고 관리', href: '/admin/reports', pendingCount: pendingCounts.reports },
     { label: '광고 관리', href: '/admin/ads', pendingCount: pendingCounts.ads },
