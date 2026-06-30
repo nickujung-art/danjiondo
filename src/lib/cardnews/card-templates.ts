@@ -48,14 +48,6 @@ function BrandLockupPreview({
   </div>`
 }
 
-// 랭킹 행 패딩 (10개 미만이면 빈 행으로 채움)
-function pad10(ranking: RankingRow[]): RankingRow[] {
-  return Array.from(
-    { length: 10 },
-    (_, i) => ranking[i] ?? { rank: i + 1, name: null, price: null, subtitle: null },
-  )
-}
-
 // ── 타입 정의 ──────────────────────────────────────────────
 
 export interface RankingRow {
