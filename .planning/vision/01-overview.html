@@ -1,0 +1,1665 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>단지온도 리디자인 기획안 v1.0</title>
+<style>
+  :root {
+    --ink: #111827;
+    --ink-soft: #374151;
+    --ink-muted: #6B7280;
+    --bg: #FAFAF8;
+    --bg-card: #FFFFFF;
+    --brand: #1B4332;
+    --brand-light: #D1FAE5;
+    --accent: #B45309;
+    --accent-light: #FEF3C7;
+    --divider: #E5E7EB;
+    --danger: #DC2626;
+    --danger-light: #FEE2E2;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, 'Apple SD Gothic Neo', 'Pretendard', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+  }
+
+  /* ── Layout ── */
+  .layout { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    background: var(--brand);
+    color: white;
+    padding: 32px 20px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar-logo { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .sidebar-sub { font-size: 11px; opacity: 0.6; margin-bottom: 32px; }
+  .sidebar nav { display: flex; flex-direction: column; gap: 2px; }
+  .sidebar a {
+    color: rgba(255,255,255,0.7);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.15s;
+  }
+  .sidebar a:hover, .sidebar a.active { background: rgba(255,255,255,0.12); color: white; }
+  .sidebar-section {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
+    padding: 18px 10px 6px;
+  }
+  .sidebar-meta { margin-top: auto; padding-top: 24px; font-size: 11px; opacity: 0.4; }
+
+  /* ── Main ── */
+  .main { padding: 0; }
+
+  /* ── Sections ── */
+  .section { padding: 72px 64px; border-bottom: 1px solid var(--divider); }
+  .section:last-child { border-bottom: none; }
+
+  /* Cover */
+  .cover {
+    background: var(--brand);
+    color: white;
+    padding: 96px 64px;
+    min-height: 420px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 400px; height: 400px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 50%;
+  }
+  .cover-tag {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 16px;
+  }
+  .cover h1 { font-size: 48px; font-weight: 800; line-height: 1.1; margin-bottom: 16px; }
+  .cover p { font-size: 18px; opacity: 0.7; max-width: 520px; margin-bottom: 40px; }
+  .cover-meta {
+    display: flex;
+    gap: 32px;
+    border-top: 1px solid rgba(255,255,255,0.15);
+    padding-top: 24px;
+  }
+  .cover-meta-item { font-size: 13px; }
+  .cover-meta-item span { display: block; font-size: 11px; opacity: 0.5; margin-bottom: 2px; }
+
+  /* Section headers */
+  .section-tag {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--brand);
+    margin-bottom: 10px;
+  }
+  .section-title { font-size: 32px; font-weight: 800; margin-bottom: 12px; letter-spacing: -0.02em; }
+  .section-lead { font-size: 17px; color: var(--ink-soft); max-width: 640px; margin-bottom: 48px; line-height: 1.7; }
+
+  /* Cards */
+  .cards { display: grid; gap: 16px; }
+  .cards-2 { grid-template-columns: 1fr 1fr; }
+  .cards-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--divider);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .card-icon { font-size: 24px; margin-bottom: 12px; }
+  .card-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .card-body { font-size: 14px; color: var(--ink-soft); line-height: 1.6; }
+
+  /* Problem / Solution */
+  .problem-box {
+    background: var(--danger-light);
+    border: 1px solid #FECACA;
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .problem-box .label { font-size: 11px; font-weight: 700; color: var(--danger); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .problem-box p { font-size: 15px; color: #7F1D1D; line-height: 1.6; }
+
+  .solution-box {
+    background: var(--brand-light);
+    border: 1px solid #A7F3D0;
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .solution-box .label { font-size: 11px; font-weight: 700; color: var(--brand); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .solution-box p { font-size: 15px; color: #064E3B; line-height: 1.6; }
+
+  .vs-grid { display: grid; grid-template-columns: 1fr 48px 1fr; gap: 16px; align-items: center; }
+  .vs-center { text-align: center; font-size: 20px; color: var(--ink-muted); }
+
+  /* Quote */
+  .quote {
+    border-left: 4px solid var(--brand);
+    padding: 20px 24px;
+    background: var(--bg-card);
+    border-radius: 0 8px 8px 0;
+    margin: 32px 0;
+  }
+  .quote p { font-size: 18px; font-weight: 600; color: var(--ink); line-height: 1.5; }
+  .quote cite { font-size: 13px; color: var(--ink-muted); font-style: normal; }
+
+  /* Funnel diagram */
+  .funnel { display: flex; flex-direction: column; align-items: center; gap: 0; margin: 40px 0; }
+  .funnel-step {
+    width: 100%;
+    max-width: 560px;
+    padding: 18px 28px;
+    border-radius: 8px;
+    position: relative;
+    text-align: center;
+  }
+  .funnel-step-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .funnel-step-sub { font-size: 13px; opacity: 0.8; }
+  .funnel-arrow {
+    font-size: 20px;
+    color: var(--ink-muted);
+    padding: 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+  .funnel-arrow::before, .funnel-arrow::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--divider);
+  }
+
+  /* UX Layer */
+  .ux-layer {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 0;
+    border: 1px solid var(--divider);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .ux-layer-label {
+    background: var(--ink);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    writing-mode: horizontal-tb;
+    padding: 20px 12px;
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+  .ux-layer-content {
+    padding: 18px 24px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    background: var(--bg-card);
+    border-left: 1px solid var(--divider);
+  }
+  .ux-chip {
+    background: var(--bg);
+    border: 1px solid var(--divider);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .ux-chip.primary { background: var(--brand); color: white; border-color: var(--brand); }
+  .ux-chip.accent { background: var(--accent-light); border-color: #FCD34D; color: #78350F; }
+
+  /* ── MOCKUP STYLES ── */
+  .mockup-container { margin: 48px 0; }
+  .mockup-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: 12px;
+  }
+
+  /* Browser chrome wrapper */
+  .browser {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid var(--divider);
+  }
+  .browser-bar {
+    background: #F3F4F6;
+    border-bottom: 1px solid var(--divider);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .browser-dots { display: flex; gap: 6px; }
+  .browser-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .bd-r { background: #FF5F57; }
+  .bd-y { background: #FEBC2E; }
+  .bd-g { background: #28C840; }
+  .browser-url {
+    flex: 1;
+    background: white;
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 12px;
+    color: var(--ink-muted);
+    border: 1px solid var(--divider);
+  }
+
+  /* ── Site Mockup: Home ── */
+  .site-home { background: #FAFAF8; font-family: -apple-system, sans-serif; }
+
+  .site-nav {
+    background: white;
+    border-bottom: 1px solid var(--divider);
+    padding: 0 32px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    position: sticky;
+    top: 0;
+  }
+  .site-logo-text { font-size: 18px; font-weight: 800; color: var(--brand); letter-spacing: -0.02em; }
+  .site-logo-dot { color: var(--accent); }
+  .site-nav-links { display: flex; gap: 20px; margin-left: 20px; flex: 1; }
+  .site-nav-link { font-size: 14px; color: var(--ink-soft); text-decoration: none; }
+  .site-nav-link.active { color: var(--brand); font-weight: 600; }
+  .site-nav-right { display: flex; gap: 10px; align-items: center; }
+  .nav-btn {
+    padding: 7px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+  }
+  .nav-btn-ghost { background: transparent; color: var(--ink-soft); }
+  .nav-btn-primary { background: var(--brand); color: white; }
+
+  /* Hero */
+  .site-hero {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 1px;
+    background: var(--divider);
+    border-bottom: 1px solid var(--divider);
+  }
+  .hero-main {
+    background: var(--ink);
+    padding: 40px 40px 36px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+  .hero-main::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(160deg, #2D6A4F 0%, #1B4332 50%, #0A2416 100%);
+    opacity: 0.9;
+  }
+  .hero-main-content { position: relative; z-index: 1; }
+  .hero-tag {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .hero-title { font-size: 26px; font-weight: 800; line-height: 1.3; margin-bottom: 12px; }
+  .hero-subtitle { font-size: 14px; opacity: 0.7; margin-bottom: 16px; }
+  .hero-meta { font-size: 12px; opacity: 0.5; }
+
+  .hero-side { background: white; display: flex; flex-direction: column; }
+  .hero-side-item {
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--divider);
+    flex: 1;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .hero-side-thumb {
+    width: 60px;
+    height: 56px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+  }
+  .hero-side-text .tag {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--brand);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .hero-side-text .title { font-size: 14px; font-weight: 600; line-height: 1.4; color: var(--ink); }
+  .hero-side-text .date { font-size: 11px; color: var(--ink-muted); margin-top: 4px; }
+
+  /* Content grid */
+  .site-content { padding: 40px 32px; }
+  .content-section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .content-section-title { font-size: 18px; font-weight: 800; color: var(--ink); }
+  .content-section-more { font-size: 13px; color: var(--ink-muted); text-decoration: none; }
+
+  .article-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 48px; }
+  .article-card { background: white; border-radius: 10px; overflow: hidden; border: 1px solid var(--divider); }
+  .article-thumb {
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+  }
+  .article-body { padding: 14px; }
+  .article-tag { font-size: 11px; font-weight: 700; color: var(--brand); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .article-title { font-size: 14px; font-weight: 700; line-height: 1.4; color: var(--ink); margin-bottom: 8px; }
+  .article-date { font-size: 11px; color: var(--ink-muted); }
+
+  /* Ranking strip */
+  .ranking-strip {
+    background: white;
+    border-radius: 10px;
+    border: 1px solid var(--divider);
+    padding: 20px 20px;
+    margin-bottom: 40px;
+  }
+  .ranking-strip-title { font-size: 15px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .ranking-strip-title .badge {
+    background: var(--accent);
+    color: white;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+  .ranking-list { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .ranking-item { text-align: center; }
+  .ranking-num { font-size: 11px; font-weight: 700; color: var(--ink-muted); margin-bottom: 4px; }
+  .ranking-name { font-size: 12px; font-weight: 700; color: var(--ink); margin-bottom: 2px; line-height: 1.3; }
+  .ranking-price { font-size: 13px; font-weight: 800; color: var(--brand); }
+  .ranking-change { font-size: 11px; color: #DC2626; }
+
+  /* CTA Banner */
+  .cta-banner {
+    background: linear-gradient(135deg, var(--brand) 0%, #0A2416 100%);
+    border-radius: 12px;
+    padding: 28px 32px;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .cta-banner h3 { font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+  .cta-banner p { font-size: 14px; opacity: 0.7; }
+  .cta-btn {
+    background: white;
+    color: var(--brand);
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-left: 32px;
+  }
+
+  /* ── Mockup: Content Detail Page ── */
+  .content-detail { background: white; }
+  .detail-header { padding: 28px 40px 0; }
+  .detail-breadcrumb { font-size: 12px; color: var(--ink-muted); margin-bottom: 16px; }
+  .detail-tag { display: inline-block; background: var(--brand-light); color: var(--brand); font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; margin-bottom: 14px; }
+  .detail-title { font-size: 26px; font-weight: 800; line-height: 1.3; color: var(--ink); margin-bottom: 12px; }
+  .detail-meta { font-size: 13px; color: var(--ink-muted); padding-bottom: 24px; border-bottom: 1px solid var(--divider); }
+  .detail-body { display: grid; grid-template-columns: 1fr 280px; gap: 40px; padding: 32px 40px; }
+
+  .detail-card-img {
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 24px;
+    background: var(--ink);
+    padding: 0;
+    position: relative;
+  }
+  .detail-card-inner {
+    padding: 32px 28px;
+    color: white;
+    background: linear-gradient(135deg, #1B4332 0%, #0A2416 100%);
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .detail-card-top { font-size: 12px; opacity: 0.6; }
+  .detail-card-headline { font-size: 20px; font-weight: 800; line-height: 1.3; }
+  .detail-card-stat { display: flex; gap: 24px; margin-top: 20px; }
+  .stat { }
+  .stat-val { font-size: 22px; font-weight: 800; }
+  .stat-label { font-size: 11px; opacity: 0.6; }
+
+  .detail-text-block { font-size: 15px; color: var(--ink-soft); line-height: 1.8; margin-bottom: 24px; }
+
+  .data-embed {
+    background: var(--bg);
+    border: 1px solid var(--divider);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .data-embed-title { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 14px; display: flex; justify-content: space-between; }
+  .data-embed-title a { font-size: 12px; color: var(--brand); text-decoration: none; font-weight: 600; }
+  .mini-chart { display: flex; align-items: flex-end; gap: 4px; height: 50px; }
+  .mini-bar { flex: 1; border-radius: 3px 3px 0 0; }
+
+  .detail-cta {
+    background: var(--brand);
+    color: white;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .detail-cta h4 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .detail-cta p { font-size: 13px; opacity: 0.8; margin-bottom: 14px; }
+  .detail-cta button {
+    background: white;
+    color: var(--brand);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    width: 100%;
+  }
+
+  .related-articles-sidebar h4 { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+  .related-item { padding: 12px 0; border-bottom: 1px solid var(--divider); }
+  .related-item:last-child { border-bottom: none; }
+  .related-item .tag { font-size: 11px; color: var(--brand); font-weight: 700; margin-bottom: 4px; }
+  .related-item .title { font-size: 13px; font-weight: 600; color: var(--ink); line-height: 1.4; }
+
+  /* ── Mobile Mockup ── */
+  .mobile-frame {
+    width: 320px;
+    border: 8px solid #111;
+    border-radius: 32px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    background: white;
+    margin: 0 auto;
+  }
+  .mobile-notch {
+    background: #111;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .mobile-notch-bar { width: 60px; height: 4px; background: #333; border-radius: 2px; }
+  .mobile-screen { overflow: hidden; }
+
+  .mobile-nav {
+    background: white;
+    border-bottom: 1px solid var(--divider);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .mobile-logo { font-size: 16px; font-weight: 800; color: var(--brand); }
+  .mobile-icons { display: flex; gap: 12px; font-size: 18px; }
+
+  .mobile-hero {
+    background: linear-gradient(135deg, #1B4332 0%, #0A2416 100%);
+    padding: 20px 16px;
+    color: white;
+  }
+  .mobile-hero-tag {
+    font-size: 10px;
+    font-weight: 700;
+    background: var(--accent);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 3px;
+    display: inline-block;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+  .mobile-hero-title { font-size: 17px; font-weight: 800; line-height: 1.35; margin-bottom: 6px; }
+  .mobile-hero-meta { font-size: 11px; opacity: 0.6; }
+
+  .mobile-section { padding: 20px 16px; }
+  .mobile-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .mobile-section-title { font-size: 15px; font-weight: 800; }
+  .mobile-section-more { font-size: 12px; color: var(--ink-muted); }
+
+  .mobile-card-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+  .mobile-card-scroll::-webkit-scrollbar { display: none; }
+  .mobile-card {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--divider);
+    flex-shrink: 0;
+    width: 160px;
+  }
+  .mobile-card-thumb { height: 80px; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+  .mobile-card-body { padding: 10px; }
+  .mobile-card-tag { font-size: 10px; font-weight: 700; color: var(--brand); text-transform: uppercase; margin-bottom: 4px; }
+  .mobile-card-title { font-size: 12px; font-weight: 700; line-height: 1.4; color: var(--ink); }
+
+  .mobile-bottom-nav {
+    background: white;
+    border-top: 1px solid var(--divider);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    padding: 8px 0;
+  }
+  .mobile-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 4px;
+  }
+  .mobile-tab-icon { font-size: 18px; }
+  .mobile-tab-label { font-size: 9px; color: var(--ink-muted); }
+  .mobile-tab.active .mobile-tab-label { color: var(--brand); font-weight: 700; }
+
+  /* Diagrams */
+  .diagram-box {
+    background: var(--bg-card);
+    border: 1px solid var(--divider);
+    border-radius: 12px;
+    padding: 32px;
+    margin: 32px 0;
+  }
+
+  .ia-tree { font-size: 14px; }
+  .ia-root { font-weight: 800; font-size: 16px; color: var(--brand); margin-bottom: 20px; }
+  .ia-branch { margin-left: 24px; border-left: 2px solid var(--divider); padding-left: 20px; margin-bottom: 16px; }
+  .ia-branch-label { font-weight: 700; color: var(--ink); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .ia-branch-label::before { content: ''; display: block; width: 20px; height: 2px; background: var(--divider); margin-left: -20px; flex-shrink: 0; }
+  .ia-leaf { color: var(--ink-soft); font-size: 13px; padding: 3px 0 3px 16px; }
+  .ia-leaf::before { content: '↳ '; color: var(--ink-muted); }
+  .ia-new { background: var(--brand); color: white; font-size: 10px; padding: 1px 7px; border-radius: 3px; font-weight: 700; }
+  .ia-change { background: var(--accent-light); color: var(--accent); font-size: 10px; padding: 1px 7px; border-radius: 3px; font-weight: 700; border: 1px solid #FCD34D; }
+  .ia-keep { background: var(--divider); color: var(--ink-muted); font-size: 10px; padding: 1px 7px; border-radius: 3px; font-weight: 700; }
+
+  /* Persona */
+  .persona-card {
+    background: var(--bg-card);
+    border: 1px solid var(--divider);
+    border-radius: 12px;
+    padding: 28px;
+  }
+  .persona-avatar { font-size: 48px; margin-bottom: 12px; }
+  .persona-name { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+  .persona-role { font-size: 13px; color: var(--ink-muted); margin-bottom: 20px; }
+  .persona-section { margin-bottom: 16px; }
+  .persona-section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); margin-bottom: 8px; }
+  .persona-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .persona-tag { background: var(--bg); border: 1px solid var(--divider); border-radius: 20px; padding: 4px 12px; font-size: 13px; }
+
+  /* Comparison table */
+  .compare-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .compare-table th {
+    background: var(--bg);
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    border-bottom: 2px solid var(--divider);
+  }
+  .compare-table td { padding: 12px 16px; border-bottom: 1px solid var(--divider); color: var(--ink-soft); }
+  .compare-table td:first-child { font-weight: 600; color: var(--ink); }
+  .compare-table .highlight { background: #F0FDF4; }
+  .compare-table .highlight td { color: var(--brand); font-weight: 600; }
+  .yes { color: #16A34A; font-weight: 700; }
+  .no { color: #DC2626; }
+  .partial { color: var(--accent); }
+
+  /* Content type pills */
+  .content-type {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 24px 0;
+  }
+  .ct-pill {
+    border-radius: 10px;
+    padding: 16px 20px;
+    border: 1px solid var(--divider);
+    background: white;
+    flex: 1;
+    min-width: 160px;
+  }
+  .ct-icon { font-size: 24px; margin-bottom: 8px; }
+  .ct-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .ct-freq { font-size: 12px; color: var(--ink-muted); }
+
+  /* Tags */
+  .tag-keep { display: inline-block; background: #D1FAE5; color: #065F46; font-size: 12px; padding: 2px 8px; border-radius: 4px; font-weight: 600; margin-right: 4px; }
+  .tag-hide { display: inline-block; background: #FEF3C7; color: #92400E; font-size: 12px; padding: 2px 8px; border-radius: 4px; font-weight: 600; margin-right: 4px; }
+  .tag-cut { display: inline-block; background: #FEE2E2; color: #991B1B; font-size: 12px; padding: 2px 8px; border-radius: 4px; font-weight: 600; margin-right: 4px; }
+
+  /* Step list */
+  .steps { display: flex; flex-direction: column; gap: 0; }
+  .step {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 20px;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--divider);
+  }
+  .step:last-child { border-bottom: none; }
+  .step-num {
+    width: 40px;
+    height: 40px;
+    background: var(--brand);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .step-content h4 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .step-content p { font-size: 14px; color: var(--ink-soft); line-height: 1.6; }
+  .step-content .step-meta { font-size: 12px; color: var(--brand); font-weight: 600; margin-top: 8px; }
+
+  hr.divider { border: none; border-top: 1px solid var(--divider); margin: 0; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .section { padding: 48px 24px; }
+    .cover { padding: 64px 24px; }
+    .cards-2, .cards-3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">단지온도</div>
+  <div class="sidebar-sub">리디자인 기획안 v1.0</div>
+  <nav>
+    <div class="sidebar-section">Overview</div>
+    <a href="#problem">문제 정의</a>
+    <a href="#direction">새로운 방향</a>
+    <a href="#target">타겟 사용자</a>
+    <a href="#positioning">포지셔닝</a>
+
+    <div class="sidebar-section">Structure</div>
+    <a href="#ia">정보 아키텍처</a>
+    <a href="#ux-layer">UX 레이어</a>
+    <a href="#funnel">유입 퍼널</a>
+    <a href="#content">콘텐츠 전략</a>
+
+    <div class="sidebar-section">Mockups</div>
+    <a href="#mockup-home">홈 화면</a>
+    <a href="#mockup-content">콘텐츠 페이지</a>
+    <a href="#mockup-mobile">모바일</a>
+
+    <div class="sidebar-section">Next</div>
+    <a href="#features">기능 재배치</a>
+    <a href="#roadmap">다음 단계</a>
+  </nav>
+  <div class="sidebar-meta">2026년 6월 · 초안</div>
+</aside>
+
+<!-- ── Main Content ── -->
+<main class="main">
+
+  <!-- COVER -->
+  <div class="cover">
+    <div class="cover-tag">단지온도 · 서비스 리디자인 기획안</div>
+    <h1>로컬 부동산<br>미디어로의 전환</h1>
+    <p>20만 명 네이버카페 커뮤니티를 기반으로, 창원·김해 부동산 이야기를 전하는 콘텐츠 허브로 재설계합니다.</p>
+    <div class="cover-meta">
+      <div class="cover-meta-item"><span>버전</span>v1.0 — 초안</div>
+      <div class="cover-meta-item"><span>작성일</span>2026년 6월</div>
+      <div class="cover-meta-item"><span>대상</span>팀 내부 공유용</div>
+      <div class="cover-meta-item"><span>상태</span>논의 중</div>
+    </div>
+  </div>
+
+  <!-- PROBLEM -->
+  <section class="section" id="problem">
+    <div class="section-tag">01 · 문제 정의</div>
+    <h2 class="section-title">어쩌다 백화점이 됐나</h2>
+    <p class="section-lead">처음의 아이디어는 명확했습니다. 그런데 호갱노노·리치고·아파트미·네이버 부동산을 벤치마킹하면서 기능을 하나씩 추가하다 보니, 어느 순간 모든 것이 다 있지만 아무것도 특별하지 않은 서비스가 됐습니다.</p>
+
+    <div class="vs-grid" style="margin-bottom: 32px;">
+      <div class="problem-box">
+        <div class="label">⚠ 지금의 문제</div>
+        <p>실거래가, 투자분석, AI예측, 학군, 관리비, 학원추천, 카드뉴스, 단지비교, 랭킹… 전국 서비스를 창원/김해 버전으로 축소 복사한 형태. 타겟이 없어서 누구를 위한 서비스인지 불명확.</p>
+      </div>
+      <div class="vs-center">→</div>
+      <div class="solution-box">
+        <div class="label">✓ 우리가 가야 할 곳</div>
+        <p>창원·김해 부동산에 관심 있는 사람이 자연스럽게 소비하고 싶은 콘텐츠를 만드는 미디어. 데이터는 콘텐츠의 배경이 되고, 콘텐츠가 유입을 만든다.</p>
+      </div>
+    </div>
+
+    <div class="cards cards-3">
+      <div class="card">
+        <div class="card-icon">🎯</div>
+        <div class="card-title">타겟 부재</div>
+        <div class="card-body">부동산을 살 사람, 투자할 사람, 그냥 궁금한 사람 모두를 위한 기능이 섞여있어 어느 누구에게도 특별하지 않음.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🚪</div>
+        <div class="card-title">진입 장벽</div>
+        <div class="card-body">검색창 중심의 홈은 "뭘 찾아야 하는지 아는 사람"만 쓸 수 있음. 막연히 부동산에 관심 있는 사람은 진입 불가.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔄</div>
+        <div class="card-title">재방문 이유 없음</div>
+        <div class="card-body">지금 집 살 생각이 없으면 다시 올 이유가 없음. 미디어 콘텐츠가 있으면 관심만 있어도 주기적으로 돌아옴.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DIRECTION -->
+  <section class="section" id="direction">
+    <div class="section-tag">02 · 새로운 방향</div>
+    <h2 class="section-title">도구에서 미디어로</h2>
+    <p class="section-lead">사용자가 목적을 갖고 찾아오는 "도구"에서, 관심 있는 사람이 즐겨 소비하는 "미디어"로 전환합니다. 데이터는 사라지지 않습니다 — 콘텐츠의 배경이 됩니다.</p>
+
+    <div class="quote">
+      <p>"호갱노노는 전국에서 창원 데이터를 봄. 우리는 창원 사람들이 읽고 싶은 창원 이야기를 만든다."</p>
+    </div>
+
+    <div class="cards cards-2" style="margin-bottom: 32px;">
+      <div class="card" style="border-color: #FECACA; background: #FFF8F8;">
+        <div style="font-size: 12px; font-weight: 700; color: var(--danger); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px;">AS-IS · 도구형</div>
+        <div style="font-size: 15px; font-weight: 700; margin-bottom: 8px;">검색 → 데이터 탐색</div>
+        <div style="font-size: 14px; color: var(--ink-soft); line-height: 1.6;">사용자가 찾고 싶은 게 생겼을 때만 방문. 비교·분석 기능이 메인. 오늘 집 살 계획이 없으면 올 이유 없음.</div>
+      </div>
+      <div class="card" style="border-color: #A7F3D0; background: #F0FFF8;">
+        <div style="font-size: 12px; font-weight: 700; color: var(--brand); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px;">TO-BE · 미디어형</div>
+        <div style="font-size: 15px; font-weight: 700; margin-bottom: 8px;">콘텐츠 → 데이터 연결</div>
+        <div style="font-size: 14px; color: var(--ink-soft); line-height: 1.6;">운영진이 SNS/카페에 콘텐츠를 배포 → 유입 → 관련 데이터로 자연 연결. 관심만 있어도 주기적으로 소비.</div>
+      </div>
+    </div>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>항목</th>
+          <th>호갱노노·리치고</th>
+          <th>네이버 카페</th>
+          <th class="highlight">단지온도 (새 방향)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>커버리지</td>
+          <td>전국</td>
+          <td>창원·김해 로컬</td>
+          <td class="highlight">창원·김해 로컬</td>
+        </tr>
+        <tr>
+          <td>콘텐츠</td>
+          <td class="no">없음 (데이터만)</td>
+          <td class="partial">있음 (글·댓글)</td>
+          <td class="highlight yes">있음 (카드뉴스·기사)</td>
+        </tr>
+        <tr>
+          <td>구조화된 데이터</td>
+          <td class="yes">있음</td>
+          <td class="no">없음</td>
+          <td class="highlight yes">있음 (콘텐츠 연결)</td>
+        </tr>
+        <tr>
+          <td>SNS 배포</td>
+          <td class="no">없음</td>
+          <td class="partial">부분적</td>
+          <td class="highlight yes">핵심 채널</td>
+        </tr>
+        <tr>
+          <td>재방문 동기</td>
+          <td class="partial">집 살 때만</td>
+          <td class="yes">커뮤니티 활동</td>
+          <td class="highlight yes">새 콘텐츠 소비</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- TARGET -->
+  <section class="section" id="target">
+    <div class="section-tag">03 · 타겟 사용자</div>
+    <h2 class="section-title">누구를 위한 서비스인가</h2>
+    <p class="section-lead">하나의 서비스가 모두를 만족시킬 수 없습니다. 메인 타겟을 명확히 하고, 나머지는 자연스럽게 따라오게 합니다.</p>
+
+    <div class="cards cards-3" style="margin-bottom: 32px;">
+      <div class="persona-card">
+        <div class="persona-avatar">🏠</div>
+        <div class="persona-name">창원·김해 거주자</div>
+        <div class="persona-role">메인 타겟 — 핵심 독자</div>
+        <div class="persona-section">
+          <div class="persona-section-title">특성</div>
+          <div class="persona-tags">
+            <span class="persona-tag">30~50대</span>
+            <span class="persona-tag">이미 내 집 있음</span>
+            <span class="persona-tag">우리 동네 관심</span>
+            <span class="persona-tag">카페 회원</span>
+          </div>
+        </div>
+        <div class="persona-section">
+          <div class="persona-section-title">원하는 것</div>
+          <div class="persona-tags">
+            <span class="persona-tag">내 아파트 가격 추이</span>
+            <span class="persona-tag">동네 부동산 소식</span>
+            <span class="persona-tag">재건축·분양 정보</span>
+          </div>
+        </div>
+      </div>
+      <div class="persona-card" style="border: 2px solid var(--brand);">
+        <div style="position: absolute; right: 0; top: 0; background: var(--brand); color: white; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 0 10px 0 10px;">Primary</div>
+        <div class="persona-avatar">🔍</div>
+        <div class="persona-name">이 지역 처음 오는 사람</div>
+        <div class="persona-role">메인 타겟 — 신규 유입</div>
+        <div class="persona-section">
+          <div class="persona-section-title">특성</div>
+          <div class="persona-tags">
+            <span class="persona-tag">삼성·포스코 임직원</span>
+            <span class="persona-tag">타지역 이사 예정</span>
+            <span class="persona-tag">지역 정보 전무</span>
+          </div>
+        </div>
+        <div class="persona-section">
+          <div class="persona-section-title">원하는 것</div>
+          <div class="persona-tags">
+            <span class="persona-tag">"어느 동네가 좋아?"</span>
+            <span class="persona-tag">학군·교통 비교</span>
+            <span class="persona-tag">신뢰할 수 있는 정보</span>
+          </div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-avatar">📊</div>
+        <div class="persona-name">로컬 투자자</div>
+        <div class="persona-role">세컨드 타겟</div>
+        <div class="persona-section">
+          <div class="persona-section-title">특성</div>
+          <div class="persona-tags">
+            <span class="persona-tag">부동산 투자 경험</span>
+            <span class="persona-tag">갭투자·재건축 관심</span>
+            <span class="persona-tag">데이터 기반 결정</span>
+          </div>
+        </div>
+        <div class="persona-section">
+          <div class="persona-section-title">원하는 것</div>
+          <div class="persona-tags">
+            <span class="persona-tag">갭 분석</span>
+            <span class="persona-tag">가격 예측</span>
+            <span class="persona-tag">재건축 정보</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="border-color: var(--accent); background: var(--accent-light);">
+      <div style="font-weight: 700; margin-bottom: 8px; color: var(--accent);">📌 포커스 결정</div>
+      <div style="font-size: 14px; color: #78350F; line-height: 1.7;">
+        콘텐츠는 <strong>창원·김해 거주자 + 이 지역 처음 오는 사람</strong>을 위해 씁니다. 로컬 투자자를 위한 심화 데이터(갭분석, AI예측)는 기사 안에서 자연스럽게 연결하거나 단지 상세 페이지 탭으로 제공합니다. 홈에서 강조하지 않습니다.
+      </div>
+    </div>
+  </section>
+
+  <!-- POSITIONING -->
+  <section class="section" id="positioning">
+    <div class="section-tag">04 · 포지셔닝</div>
+    <h2 class="section-title">우리는 누구인가</h2>
+    <p class="section-lead">서비스의 정체성을 한 문장으로 정의하면 모든 기능 결정과 디자인이 이 기준으로 판단됩니다.</p>
+
+    <div class="quote">
+      <p>단지온도는 창원·김해 사람들이 우리 동네 부동산 이야기를 가장 먼저 접하는 미디어입니다.</p>
+    </div>
+
+    <div class="cards cards-2">
+      <div class="card">
+        <div class="card-title" style="margin-bottom: 12px;">이런 기능/결정은 맞다 ✓</div>
+        <ul style="font-size: 14px; color: var(--ink-soft); line-height: 2; list-style: none; padding: 0;">
+          <li>✓ 주간 실거래가 카드뉴스</li>
+          <li>✓ "이번 달 창원 가장 많이 거래된 단지"</li>
+          <li>✓ 기획기사 "왜 중동 아파트가 올랐나"</li>
+          <li>✓ 카드 → 단지 상세 데이터 연결</li>
+          <li>✓ 알림 구독 (새 콘텐츠 + 단지 가격 변동)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom: 12px;">이런 기능은 홈에서 뺀다 ✗</div>
+        <ul style="font-size: 14px; color: var(--ink-soft); line-height: 2; list-style: none; padding: 0;">
+          <li>✗ 투자분석 홈 노출 (탭 안으로)</li>
+          <li>✗ 학원 추천 독립 섹션 (단지 상세 내)</li>
+          <li>✗ AI 예측 배너 (기사 내 임베드)</li>
+          <li>✗ 관리비 독립 메뉴 (단지 탭)</li>
+          <li>✗ "Powered by AI" 강조 배지</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- IA -->
+  <section class="section" id="ia">
+    <div class="section-tag">05 · 정보 아키텍처</div>
+    <h2 class="section-title">사이트 구조 재설계</h2>
+    <p class="section-lead">메뉴 구조를 콘텐츠 중심으로 재편합니다. 기존 기능들은 삭제하지 않고 적절한 depth로 이동합니다.</p>
+
+    <div class="diagram-box">
+      <div class="ia-tree">
+        <div class="ia-root">🏠 단지온도</div>
+        <div class="ia-branch">
+          <div class="ia-branch-label">홈 (피드형) <span class="ia-change">변경</span></div>
+          <div class="ia-leaf">최신 카드뉴스·기사 피드</div>
+          <div class="ia-leaf">이번 주 거래 랭킹 인포그래픽</div>
+          <div class="ia-leaf">추천 단지 트렌드</div>
+          <div class="ia-leaf">알림 구독 CTA</div>
+        </div>
+        <div class="ia-branch">
+          <div class="ia-branch-label">콘텐츠 <span class="ia-new">신규</span></div>
+          <div class="ia-leaf">카드뉴스 (주간 실거래가)</div>
+          <div class="ia-leaf">기획기사 (동네 분석·시장 해설)</div>
+          <div class="ia-leaf">인포그래픽 (랭킹·트렌드)</div>
+          <div class="ia-leaf">분양 뉴스</div>
+        </div>
+        <div class="ia-branch">
+          <div class="ia-branch-label">단지 검색 <span class="ia-keep">유지</span></div>
+          <div class="ia-leaf">단지 상세 — 실거래가·그래프</div>
+          <div class="ia-leaf">단지 상세 — 학군·관리비·시설</div>
+          <div class="ia-leaf">단지 상세 — AI예측·갭분석 (탭)</div>
+          <div class="ia-leaf">단지 비교</div>
+        </div>
+        <div class="ia-branch">
+          <div class="ia-branch-label">지역 가이드 <span class="ia-new">신규</span></div>
+          <div class="ia-leaf">"창원 처음이라면" 동네별 소개</div>
+          <div class="ia-leaf">학군 지도</div>
+          <div class="ia-leaf">지역별 가격 트렌드</div>
+        </div>
+        <div class="ia-branch">
+          <div class="ia-branch-label">지도 <span class="ia-keep">유지 (접근성 낮춤)</span></div>
+          <div class="ia-leaf">카카오맵 기반 단지 탐색</div>
+        </div>
+        <div class="ia-branch">
+          <div class="ia-branch-label">마이페이지 <span class="ia-keep">유지</span></div>
+          <div class="ia-leaf">즐겨찾기 단지</div>
+          <div class="ia-leaf">가격 알림</div>
+          <div class="ia-leaf">콘텐츠 구독</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- UX LAYER -->
+  <section class="section" id="ux-layer">
+    <div class="section-tag">06 · UX 레이어 구조</div>
+    <h2 class="section-title">화면의 계층 구조</h2>
+    <p class="section-lead">사용자가 어디서 유입되고, 어떻게 더 깊이 들어가는지의 레이어를 정의합니다.</p>
+
+    <div class="ux-layer">
+      <div class="ux-layer-label" style="background: #6B7280;">발견층<br>(Discovery)</div>
+      <div class="ux-layer-content">
+        <span class="ux-chip primary">인스타그램 카드뉴스</span>
+        <span class="ux-chip primary">네이버 카페 포스팅</span>
+        <span class="ux-chip">구글 검색 (기획기사)</span>
+        <span class="ux-chip">지인 공유</span>
+        <span class="ux-chip">구독 이메일</span>
+        <div style="font-size: 12px; color: var(--ink-muted); width: 100%; margin-top: 4px;">→ 콘텐츠가 마케팅을 대신한다. 광고 없이 유입.</div>
+      </div>
+    </div>
+
+    <div class="ux-layer">
+      <div class="ux-layer-label" style="background: #374151;">진입층<br>(Landing)</div>
+      <div class="ux-layer-content">
+        <span class="ux-chip primary">콘텐츠 상세 페이지</span>
+        <span class="ux-chip accent">홈 피드</span>
+        <span class="ux-chip">카드뉴스 풀 뷰</span>
+        <span class="ux-chip">기획기사</span>
+        <div style="font-size: 12px; color: var(--ink-muted); width: 100%; margin-top: 4px;">→ SNS 링크 클릭 후 첫 화면. 콘텐츠가 완결성을 가져야 이탈 없음.</div>
+      </div>
+    </div>
+
+    <div class="ux-layer">
+      <div class="ux-layer-label" style="background: var(--brand);">탐색층<br>(Explore)</div>
+      <div class="ux-layer-content">
+        <span class="ux-chip primary">관련 단지 데이터 임베드</span>
+        <span class="ux-chip primary">단지 실거래가 상세</span>
+        <span class="ux-chip accent">지역 가이드</span>
+        <span class="ux-chip">관련 기사 추천</span>
+        <span class="ux-chip">단지 비교</span>
+        <div style="font-size: 12px; color: var(--ink-muted); width: 100%; margin-top: 4px;">→ 콘텐츠에서 데이터로 자연스럽게 이동. "자세히 보기" CTA가 핵심.</div>
+      </div>
+    </div>
+
+    <div class="ux-layer">
+      <div class="ux-layer-label" style="background: var(--accent);">전환층<br>(Convert)</div>
+      <div class="ux-layer-content">
+        <span class="ux-chip primary">가격 알림 구독</span>
+        <span class="ux-chip primary">콘텐츠 알림 구독</span>
+        <span class="ux-chip">즐겨찾기 단지 추가</span>
+        <span class="ux-chip">광고주 문의</span>
+        <div style="font-size: 12px; color: var(--ink-muted); width: 100%; margin-top: 4px;">→ 한 번 구독하면 콘텐츠가 올라올 때마다 자동 재방문.</div>
+      </div>
+    </div>
+
+    <div class="ux-layer">
+      <div class="ux-layer-label" style="background: #1a1a2e;">심화층<br>(Power)</div>
+      <div class="ux-layer-content">
+        <span class="ux-chip">갭투자 분석</span>
+        <span class="ux-chip">AI 가격 예측</span>
+        <span class="ux-chip">단지 비교 도구</span>
+        <span class="ux-chip">학원 추천</span>
+        <span class="ux-chip">관리비 조회</span>
+        <div style="font-size: 12px; color: var(--ink-muted); width: 100%; margin-top: 4px;">→ 기존에 만든 기능들. 홈 노출 없이 단지 상세 탭으로 접근.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FUNNEL -->
+  <section class="section" id="funnel">
+    <div class="section-tag">07 · 유입 퍼널</div>
+    <h2 class="section-title">콘텐츠가 만드는 유입 흐름</h2>
+    <p class="section-lead">운영진이 만든 콘텐츠가 어떤 경로로 새 사용자를 데려오고, 재방문으로 이어지는지의 흐름입니다.</p>
+
+    <div class="funnel">
+      <div class="funnel-step" style="background: #1B4332; color: white; max-width: 580px;">
+        <div class="funnel-step-title">🎨 운영진 콘텐츠 제작</div>
+        <div class="funnel-step-sub">어드민 카드뉴스 빌더 → 주간 실거래가 카드 / 기획기사 / 인포그래픽</div>
+      </div>
+      <div class="funnel-arrow">SNS 배포</div>
+      <div class="funnel-step" style="background: #2D6A4F; color: white; max-width: 520px;">
+        <div class="funnel-step-title">📱 인스타그램 / 네이버 카페 포스팅</div>
+        <div class="funnel-step-sub">이미지 + 링크 → 20만 카페 회원 + 인스타 팔로워에게 노출</div>
+      </div>
+      <div class="funnel-arrow">링크 클릭</div>
+      <div class="funnel-step" style="background: #40916C; color: white; max-width: 460px;">
+        <div class="funnel-step-title">🌐 콘텐츠 상세 페이지 진입</div>
+        <div class="funnel-step-sub">카드뉴스 풀 뷰 + 기사 본문 + 관련 단지 데이터 임베드</div>
+      </div>
+      <div class="funnel-arrow">"이 단지 자세히 보기" 클릭</div>
+      <div class="funnel-step" style="background: #52B788; color: white; max-width: 400px;">
+        <div class="funnel-step-title">🏢 단지 상세 데이터 탐색</div>
+        <div class="funnel-step-sub">실거래가 그래프 · 학군 · 면적별 시세 · AI 예측</div>
+      </div>
+      <div class="funnel-arrow">구독 CTA</div>
+      <div class="funnel-step" style="background: B45309; background: var(--accent); color: white; max-width: 340px;">
+        <div class="funnel-step-title">🔔 알림 구독 / 즐겨찾기</div>
+        <div class="funnel-step-sub">가격 변동 알림 + 새 콘텐츠 알림 → 자동 재방문 확보</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTENT -->
+  <section class="section" id="content">
+    <div class="section-tag">08 · 콘텐츠 전략</div>
+    <h2 class="section-title">무엇을 어떻게 만드나</h2>
+    <p class="section-lead">콘텐츠 타입별로 제작 주기와 채널을 명확히 합니다. 과도한 제작 부담보다 꾸준함이 중요합니다.</p>
+
+    <div class="content-type">
+      <div class="ct-pill" style="border-color: var(--brand); border-width: 2px;">
+        <div class="ct-icon">📊</div>
+        <div class="ct-name">주간 실거래가 카드뉴스</div>
+        <div class="ct-freq">주 1회 · 인스타 + 카페</div>
+        <div style="margin-top: 8px; font-size: 12px; color: var(--ink-muted);">이미 자동화 완료. 가장 중요한 정기 콘텐츠.</div>
+      </div>
+      <div class="ct-pill">
+        <div class="ct-icon">📰</div>
+        <div class="ct-name">기획기사</div>
+        <div class="ct-freq">월 2~4회 · 사이트 + 카페</div>
+        <div style="margin-top: 8px; font-size: 12px; color: var(--ink-muted);">"왜 중동이 올랐나" 류. SEO 효과 + 신뢰도 구축.</div>
+      </div>
+      <div class="ct-pill">
+        <div class="ct-icon">🏆</div>
+        <div class="ct-name">랭킹 인포그래픽</div>
+        <div class="ct-freq">주 1회 · 인스타 스토리</div>
+        <div style="margin-top: 8px; font-size: 12px; color: var(--ink-muted);">이번 주 TOP 5 거래량·상승률. 데이터 기반 자동 생성 가능.</div>
+      </div>
+      <div class="ct-pill">
+        <div class="ct-icon">🏘</div>
+        <div class="ct-name">동네 가이드</div>
+        <div class="ct-freq">월 1~2회 · 사이트</div>
+        <div style="margin-top: 8px; font-size: 12px; color: var(--ink-muted);">"의창구 처음이라면" 류. 롱테일 구글 검색 유입.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 24px; border-left: 4px solid var(--brand);">
+      <div style="font-weight: 700; font-size: 15px; margin-bottom: 12px;">콘텐츠 제작 원칙</div>
+      <ul style="font-size: 14px; color: var(--ink-soft); line-height: 2; list-style: none; padding: 0;">
+        <li>① 데이터가 있어야 한다 — 주관적 의견이 아닌 실거래가 기반</li>
+        <li>② 창원·김해 사람만 관심 갖는 이야기 — 전국 콘텐츠는 우리가 할 이유 없음</li>
+        <li>③ 읽은 뒤 단지 상세로 갈 수 있어야 한다 — 콘텐츠는 입구</li>
+        <li>④ 인스타에서 이미지만 봐도 핵심이 전달돼야 한다 — 링크 클릭 전에도 가치 제공</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- MOCKUP: HOME -->
+  <section class="section" id="mockup-home">
+    <div class="section-tag">09 · 화면 목업</div>
+    <h2 class="section-title">홈 화면 — 콘텐츠 피드형</h2>
+    <p class="section-lead">검색창 중심에서 콘텐츠 피드 중심으로. 처음 방문한 사람도 즉시 소비할 수 있는 콘텐츠가 먼저 보입니다.</p>
+
+    <div class="mockup-container">
+      <div class="mockup-label">Desktop — 홈 피드 레이아웃</div>
+      <div class="browser">
+        <div class="browser-bar">
+          <div class="browser-dots"><div class="browser-dot bd-r"></div><div class="browser-dot bd-y"></div><div class="browser-dot bd-g"></div></div>
+          <div class="browser-url">danjiondo.com</div>
+        </div>
+
+        <div class="site-home">
+          <!-- Nav -->
+          <div class="site-nav">
+            <div class="site-logo-text">단지온도<span class="site-logo-dot">.</span></div>
+            <div class="site-nav-links">
+              <a class="site-nav-link active" href="#">홈</a>
+              <a class="site-nav-link" href="#">콘텐츠</a>
+              <a class="site-nav-link" href="#">단지 검색</a>
+              <a class="site-nav-link" href="#">지역 가이드</a>
+              <a class="site-nav-link" href="#">지도</a>
+            </div>
+            <div class="site-nav-right">
+              <span style="font-size: 13px; color: var(--ink-muted);">🔍</span>
+              <button class="nav-btn nav-btn-ghost">로그인</button>
+              <button class="nav-btn nav-btn-primary">알림 구독</button>
+            </div>
+          </div>
+
+          <!-- Hero -->
+          <div class="site-hero">
+            <div class="hero-main">
+              <div class="hero-main-content">
+                <span class="hero-tag">주간 시장 분석</span>
+                <div class="hero-title">창원 의창구 3월 평균 매매가<br>6.4억 돌파 — 3개월 연속 상승</div>
+                <div class="hero-subtitle">호계동·사림동 중심으로 실거래가 급등. 전세가율은 여전히 낮아 갭투자 위험 구간.</div>
+                <div class="hero-meta">2026.06.28 · 주간 실거래가 리포트</div>
+              </div>
+            </div>
+            <div class="hero-side">
+              <div class="hero-side-item">
+                <div class="hero-side-thumb" style="background: #FEF3C7;">🏗</div>
+                <div class="hero-side-text">
+                  <div class="tag">분양 뉴스</div>
+                  <div class="title">김해 장유3지구 신규 분양 6월 공급 확정 — 청약 일정 정리</div>
+                  <div class="date">2026.06.25</div>
+                </div>
+              </div>
+              <div class="hero-side-item">
+                <div class="hero-side-thumb" style="background: #EDE9FE;">📍</div>
+                <div class="hero-side-text">
+                  <div class="tag">동네 분석</div>
+                  <div class="title">진해 용원동 왜 오르고 있나 — 광역철도 개통 전 선행 매수세</div>
+                  <div class="date">2026.06.22</div>
+                </div>
+              </div>
+              <div class="hero-side-item">
+                <div class="hero-side-thumb" style="background: #D1FAE5;">🏆</div>
+                <div class="hero-side-text">
+                  <div class="tag">랭킹</div>
+                  <div class="title">이번 주 가장 많이 거래된 단지 TOP 5 — 창원·김해 전체</div>
+                  <div class="date">2026.06.21</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Content -->
+          <div class="site-content">
+            <!-- Ranking strip -->
+            <div class="ranking-strip">
+              <div class="ranking-strip-title">🔥 이번 주 거래 TOP 5 <span class="badge">실거래가</span></div>
+              <div class="ranking-list">
+                <div class="ranking-item">
+                  <div class="ranking-num">1위</div>
+                  <div class="ranking-name">래미안<br>창원성산</div>
+                  <div class="ranking-price">5.8억</div>
+                  <div class="ranking-change">▲2.3%</div>
+                </div>
+                <div class="ranking-item">
+                  <div class="ranking-num">2위</div>
+                  <div class="ranking-name">더샵 센트럴<br>파크1단지</div>
+                  <div class="ranking-price">6.2억</div>
+                  <div class="ranking-change">▲1.8%</div>
+                </div>
+                <div class="ranking-item">
+                  <div class="ranking-num">3위</div>
+                  <div class="ranking-name">힐스테이트<br>김해</div>
+                  <div class="ranking-price">4.1억</div>
+                  <div class="ranking-change">▲0.9%</div>
+                </div>
+                <div class="ranking-item">
+                  <div class="ranking-num">4위</div>
+                  <div class="ranking-name">마산 롯데<br>캐슬</div>
+                  <div class="ranking-price">3.6억</div>
+                  <div class="ranking-change">▲1.2%</div>
+                </div>
+                <div class="ranking-item">
+                  <div class="ranking-num">5위</div>
+                  <div class="ranking-name">진해 SK뷰<br>2단지</div>
+                  <div class="ranking-price">3.2억</div>
+                  <div class="ranking-change">▲0.5%</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Articles -->
+            <div class="content-section-header">
+              <div class="content-section-title">최신 기획기사</div>
+              <a href="#" class="content-section-more">전체 보기 →</a>
+            </div>
+            <div class="article-grid">
+              <div class="article-card">
+                <div class="article-thumb" style="background: #D1FAE5;">🏠</div>
+                <div class="article-body">
+                  <div class="article-tag">동네 분석</div>
+                  <div class="article-title">의창구 북면 — 전원 생활 원하는 신혼부부의 선택지</div>
+                  <div class="article-date">2026.06.20</div>
+                </div>
+              </div>
+              <div class="article-card">
+                <div class="article-thumb" style="background: #FEF3C7;">📈</div>
+                <div class="article-body">
+                  <div class="article-tag">시장 분석</div>
+                  <div class="article-title">창원 vs 김해 — 2026년 상반기 실거래가 비교 분석</div>
+                  <div class="article-date">2026.06.15</div>
+                </div>
+              </div>
+              <div class="article-card">
+                <div class="article-thumb" style="background: #EDE9FE;">🏫</div>
+                <div class="article-body">
+                  <div class="article-tag">지역 가이드</div>
+                  <div class="article-title">창원 전입 예정이라면 — 동별 학군·교통·시세 한눈에</div>
+                  <div class="article-date">2026.06.10</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- CTA -->
+            <div class="cta-banner">
+              <div>
+                <h3>관심 단지 가격 변동, 바로 알림 받으세요</h3>
+                <p>새 콘텐츠와 내 단지 실거래 알림을 이메일·앱으로 받을 수 있습니다.</p>
+              </div>
+              <button class="cta-btn">무료 알림 구독</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MOCKUP: CONTENT PAGE -->
+  <section class="section" id="mockup-content">
+    <h2 class="section-title" style="margin-bottom: 8px;">콘텐츠 상세 페이지</h2>
+    <p class="section-lead">SNS 링크를 클릭하면 도달하는 페이지. 콘텐츠를 완결성 있게 소비하고, 관련 데이터로 자연스럽게 이어집니다.</p>
+
+    <div class="mockup-container">
+      <div class="mockup-label">콘텐츠 상세 — "주간 실거래가 리포트" 랜딩</div>
+      <div class="browser">
+        <div class="browser-bar">
+          <div class="browser-dots"><div class="browser-dot bd-r"></div><div class="browser-dot bd-y"></div><div class="browser-dot bd-g"></div></div>
+          <div class="browser-url">danjiondo.com/content/weekly-2026-06-28</div>
+        </div>
+        <div class="content-detail">
+          <div class="detail-header">
+            <div class="detail-breadcrumb">홈 › 콘텐츠 › 주간 리포트</div>
+            <span class="detail-tag">주간 실거래가 리포트</span>
+            <div class="detail-title">창원 의창구 3월 평균 매매가 6.4억 돌파<br>— 3개월 연속 상승세</div>
+            <div class="detail-meta">2026년 6월 28일 · 단지온도 편집팀 · 읽는 시간 3분</div>
+          </div>
+          <div class="detail-body">
+            <div>
+              <!-- Card image mockup -->
+              <div class="detail-card-img">
+                <div class="detail-card-inner">
+                  <div class="detail-card-top">창원·김해 주간 실거래가 리포트 2026.06.28</div>
+                  <div>
+                    <div class="detail-card-headline">의창구 3개월 연속 상승<br>6.4억 돌파</div>
+                    <div class="detail-card-stat">
+                      <div class="stat"><div class="stat-val">6.4억</div><div class="stat-label">의창구 평균</div></div>
+                      <div class="stat"><div class="stat-val">+2.3%</div><div class="stat-label">전주 대비</div></div>
+                      <div class="stat"><div class="stat-val">47건</div><div class="stat-label">이번 주 거래</div></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="detail-text-block">
+                이번 주 창원 의창구의 평균 아파트 매매가가 6.4억 원을 기록하며 3개월 연속 상승세를 이어갔습니다. 특히 호계동과 사림동을 중심으로 실거래가 급등이 관찰됐습니다.
+              </div>
+
+              <!-- Data embed -->
+              <div class="data-embed">
+                <div class="data-embed-title">
+                  래미안 창원성산 — 최근 6개월 실거래가
+                  <a href="#">단지 상세 보기 →</a>
+                </div>
+                <div class="mini-chart">
+                  <div class="mini-bar" style="height: 40%; background: #A7F3D0;"></div>
+                  <div class="mini-bar" style="height: 55%; background: #6EE7B7;"></div>
+                  <div class="mini-bar" style="height: 50%; background: #6EE7B7;"></div>
+                  <div class="mini-bar" style="height: 65%; background: #34D399;"></div>
+                  <div class="mini-bar" style="height: 75%; background: #10B981;"></div>
+                  <div class="mini-bar" style="height: 90%; background: var(--brand);"></div>
+                </div>
+                <div style="font-size: 12px; color: var(--ink-muted); margin-top: 8px; display: flex; justify-content: space-between;">
+                  <span>1월</span><span>2월</span><span>3월</span><span>4월</span><span>5월</span><span>6월</span>
+                </div>
+              </div>
+
+              <div class="detail-text-block">
+                전문가들은 이번 상승의 주요 원인으로 ①광역철도 개통 기대감 ②신규 분양 감소에 따른 구축 수요 증가 ③저금리 기조 지속 등을 꼽고 있습니다.
+              </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div>
+              <div class="detail-cta">
+                <h4>🔔 내 단지 알림 받기</h4>
+                <p>관심 단지 가격 변동을 실시간으로 받아보세요</p>
+                <button>무료로 시작하기</button>
+              </div>
+              <div class="related-articles-sidebar">
+                <h4>관련 콘텐츠</h4>
+                <div class="related-item">
+                  <div class="tag">동네 분석</div>
+                  <div class="title">의창구 북면 신축 vs 구축 — 실거주자 선택 가이드</div>
+                </div>
+                <div class="related-item">
+                  <div class="tag">시장 분석</div>
+                  <div class="title">창원 전반기 결산 — 어디가 가장 많이 올랐나</div>
+                </div>
+                <div class="related-item">
+                  <div class="tag">지역 가이드</div>
+                  <div class="title">의창구 처음이라면 — 동별 특징 완전 정리</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MOCKUP: MOBILE -->
+  <section class="section" id="mockup-mobile">
+    <h2 class="section-title" style="margin-bottom: 8px;">모바일 홈 화면</h2>
+    <p class="section-lead">SNS를 통한 유입 대부분이 모바일입니다. 모바일 퍼스트로 설계됩니다.</p>
+
+    <div style="display: flex; gap: 48px; align-items: flex-start; justify-content: center; margin: 32px 0;">
+      <div>
+        <div class="mockup-label" style="text-align: center; margin-bottom: 20px;">홈 피드</div>
+        <div class="mobile-frame">
+          <div class="mobile-notch"><div class="mobile-notch-bar"></div></div>
+          <div class="mobile-screen">
+            <div class="mobile-nav">
+              <div class="mobile-logo">단지온도.</div>
+              <div class="mobile-icons">🔍 🔔</div>
+            </div>
+            <div class="mobile-hero">
+              <div class="mobile-hero-tag">주간 리포트</div>
+              <div class="mobile-hero-title">의창구 평균 매매가<br>6.4억 돌파</div>
+              <div class="mobile-hero-meta">2026.06.28 · 3개월 연속 상승</div>
+            </div>
+            <div class="mobile-section">
+              <div class="mobile-section-header">
+                <div class="mobile-section-title">최신 콘텐츠</div>
+                <div class="mobile-section-more">더 보기</div>
+              </div>
+              <div class="mobile-card-scroll">
+                <div class="mobile-card">
+                  <div class="mobile-card-thumb" style="background: #FEF3C7;">🏗</div>
+                  <div class="mobile-card-body">
+                    <div class="mobile-card-tag">분양</div>
+                    <div class="mobile-card-title">김해 장유3지구 6월 공급 확정</div>
+                  </div>
+                </div>
+                <div class="mobile-card">
+                  <div class="mobile-card-thumb" style="background: #EDE9FE;">📍</div>
+                  <div class="mobile-card-body">
+                    <div class="mobile-card-tag">동네 분석</div>
+                    <div class="mobile-card-title">진해 용원동 왜 오르나</div>
+                  </div>
+                </div>
+                <div class="mobile-card">
+                  <div class="mobile-card-thumb" style="background: #D1FAE5;">🏆</div>
+                  <div class="mobile-card-body">
+                    <div class="mobile-card-tag">랭킹</div>
+                    <div class="mobile-card-title">이번 주 거래 TOP 5</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="mobile-section" style="background: #F0FFF8; margin: 0; padding: 16px 16px;">
+              <div style="font-size: 13px; font-weight: 700; color: var(--brand); margin-bottom: 4px;">🔔 알림 구독</div>
+              <div style="font-size: 12px; color: var(--ink-soft);">관심 단지 가격 변동을 바로 받으세요</div>
+            </div>
+            <div class="mobile-bottom-nav">
+              <div class="mobile-tab active">
+                <div class="mobile-tab-icon">🏠</div>
+                <div class="mobile-tab-label" style="color: var(--brand); font-weight: 700;">홈</div>
+              </div>
+              <div class="mobile-tab">
+                <div class="mobile-tab-icon">📰</div>
+                <div class="mobile-tab-label">콘텐츠</div>
+              </div>
+              <div class="mobile-tab">
+                <div class="mobile-tab-icon">🔍</div>
+                <div class="mobile-tab-label">단지검색</div>
+              </div>
+              <div class="mobile-tab">
+                <div class="mobile-tab-icon">👤</div>
+                <div class="mobile-tab-label">내 정보</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="mockup-label" style="text-align: center; margin-bottom: 20px;">콘텐츠 상세</div>
+        <div class="mobile-frame">
+          <div class="mobile-notch"><div class="mobile-notch-bar"></div></div>
+          <div class="mobile-screen">
+            <div class="mobile-nav">
+              <div style="font-size: 13px; color: var(--ink-muted);">← 홈</div>
+              <div style="font-size: 15px;">⋯</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #1B4332, #0A2416); padding: 24px 16px; color: white;">
+              <div style="font-size: 10px; font-weight: 700; background: var(--accent); color: white; display: inline-block; padding: 2px 8px; border-radius: 3px; margin-bottom: 10px; text-transform: uppercase;">주간 리포트</div>
+              <div style="font-size: 18px; font-weight: 800; line-height: 1.3; margin-bottom: 16px;">의창구 3월 평균 매매가 6.4억 돌파</div>
+              <div style="display: flex; gap: 16px;">
+                <div style="text-align: center;"><div style="font-size: 18px; font-weight: 800;">6.4억</div><div style="font-size: 10px; opacity: 0.6;">의창구 평균</div></div>
+                <div style="text-align: center;"><div style="font-size: 18px; font-weight: 800;">+2.3%</div><div style="font-size: 10px; opacity: 0.6;">전주 대비</div></div>
+              </div>
+            </div>
+            <div style="padding: 20px 16px; font-size: 13px; color: var(--ink-soft); line-height: 1.7;">이번 주 창원 의창구 평균 아파트 매매가가 6.4억을 기록하며 3개월 연속 상승세...</div>
+            <div style="margin: 0 16px; border-radius: 10px; border: 1px solid var(--divider); padding: 16px; background: var(--bg);">
+              <div style="font-size: 13px; font-weight: 700; margin-bottom: 12px; display: flex; justify-content: space-between;">래미안 창원성산 <span style="color: var(--brand); font-size: 12px;">보기 →</span></div>
+              <div class="mini-chart" style="height: 36px;">
+                <div class="mini-bar" style="height: 45%; background: #A7F3D0;"></div>
+                <div class="mini-bar" style="height: 60%; background: #6EE7B7;"></div>
+                <div class="mini-bar" style="height: 55%; background: #6EE7B7;"></div>
+                <div class="mini-bar" style="height: 70%; background: #34D399;"></div>
+                <div class="mini-bar" style="height: 80%; background: #10B981;"></div>
+                <div class="mini-bar" style="height: 95%; background: var(--brand);"></div>
+              </div>
+            </div>
+            <div style="margin: 16px; background: var(--brand); color: white; border-radius: 10px; padding: 16px; text-align: center;">
+              <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px;">이 단지 알림 받기</div>
+              <div style="background: white; color: var(--brand); border-radius: 6px; padding: 8px; font-size: 13px; font-weight: 700;">구독하기</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <div class="section-tag">10 · 기존 기능 재배치</div>
+    <h2 class="section-title">버리지 않고 재배치한다</h2>
+    <p class="section-lead">기존에 만든 기능들은 삭제하지 않습니다. 홈에서의 노출을 줄이고 올바른 depth로 배치합니다.</p>
+
+    <div class="cards" style="margin-bottom: 24px;">
+      <div class="card">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px;">
+          <span class="tag-keep">전면 유지</span>
+          <div style="font-weight: 700;">홈 피드 → 콘텐츠 노출</div>
+        </div>
+        <div style="font-size: 14px; color: var(--ink-soft);">카드뉴스, 기획기사, 랭킹 인포그래픽, 알림 구독 CTA</div>
+      </div>
+      <div class="card">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px;">
+          <span class="tag-keep">단지 상세로 이동</span>
+          <div style="font-weight: 700;">독립 메뉴 → 탭 내부</div>
+        </div>
+        <div style="font-size: 14px; color: var(--ink-soft);">실거래가 그래프, 학군, 관리비, 학원 추천, AI 예측, 갭 분석, 단지 비교</div>
+      </div>
+      <div class="card">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px;">
+          <span class="tag-hide">기사 내 연결로 전환</span>
+          <div style="font-weight: 700;">독립 섹션 → 콘텐츠 내 임베드</div>
+        </div>
+        <div style="font-size: 14px; color: var(--ink-soft);">투자 분석 (갭 분석, 사분면), 랭킹 페이지 → 기사 + 홈 섹션으로 흡수</div>
+      </div>
+      <div class="card">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px;">
+          <span class="tag-keep">운영진 전용 유지</span>
+          <div style="font-weight: 700;">어드민 콘솔</div>
+        </div>
+        <div style="font-size: 14px; color: var(--ink-soft);">카드뉴스 빌더 (핵심 제작 도구), 회원 관리, 광고 관리 — 그대로 유지</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROADMAP -->
+  <section class="section" id="roadmap">
+    <div class="section-tag">11 · 다음 단계</div>
+    <h2 class="section-title">무엇부터 시작하나</h2>
+    <p class="section-lead">전체를 한번에 바꾸지 않습니다. 가장 적은 변경으로 가장 큰 방향 전환을 만드는 순서입니다.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h4>콘텐츠 상세 페이지 신설</h4>
+          <p>인스타/카페에서 링크 클릭 시 도달하는 랜딩 페이지. 카드뉴스 풀 뷰 + 관련 단지 데이터 임베드 + 구독 CTA. 이것이 없으면 퍼널이 완성되지 않음.</p>
+          <div class="step-meta">→ 이것 하나만 만들면 즉시 SNS 배포 효과가 생김</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h4>홈 피드형 재설계</h4>
+          <p>검색창 중심 → 콘텐츠 피드 + 랭킹 스트립 + CTA. 네비게이션에 "콘텐츠" 추가. 지도·투자분석 메뉴는 depth 낮춤.</p>
+          <div class="step-meta">→ 기존 기능 삭제 없이 홈 레이아웃만 교체</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h4>기획기사 작성 툴 추가</h4>
+          <p>어드민에 마크다운/리치텍스트 에디터 추가. 운영진이 기획기사를 직접 작성·발행. 데이터 임베드 단축키 지원.</p>
+          <div class="step-meta">→ 카드뉴스 빌더와 함께 핵심 제작 인프라 완성</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h4>지역 가이드 섹션 신설</h4>
+          <p>"창원 처음이라면" 동별 가이드 페이지. 구글 SEO로 타지역 유입 창구. 삼성·포스코 임직원 이전 수요 타겟.</p>
+          <div class="step-meta">→ 기존에 없는 신규 콘텐츠 — 차별화 포인트</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 32px; background: var(--ink); color: white; border: none;">
+      <div style="font-size: 16px; font-weight: 700; margin-bottom: 12px;">논의가 필요한 결정 사항</div>
+      <ul style="font-size: 14px; opacity: 0.8; line-height: 2; list-style: none; padding: 0;">
+        <li>□ 기획기사는 누가 쓰나? (운영진 직접 vs 외부 작성자 모집)</li>
+        <li>□ 인스타 채널과 이 사이트의 브랜드를 어떻게 연결하나?</li>
+        <li>□ 서비스명 "단지온도"가 미디어 이미지와 맞는가?</li>
+        <li>□ 카페 운영진이 이 사이트를 메인 채널로 쓸 의향이 있는가?</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+</div>
+
+</body>
+</html>
