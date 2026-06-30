@@ -103,7 +103,7 @@ function CaptureCardHeader({ title, meta, emoji }: { title: string; meta?: strin
             {title}
           </p>
           {meta && (
-            <p style={{ font: '500 11px/1 var(--font-sans)', color: 'rgba(255,255,255,0.85)', margin: '4px 0 0' }}>
+            <p style={{ font: '500 11px/1.3 var(--font-sans)', color: 'rgba(255,255,255,0.85)', margin: '4px 0 0' }}>
               {meta}
             </p>
           )}
@@ -118,9 +118,9 @@ function BrandMark() {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 7, padding: '8px 20px 10px', borderTop: '2px solid #f97316', background: '#fff7ed' }}>
       <span style={{ width: 20, height: 20, borderRadius: 4, background: 'var(--dj-orange)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <span style={{ font: '800 11px/1 var(--font-sans)', color: '#fff' }}>단</span>
+        <span style={{ font: '800 11px/1.3 var(--font-sans)', color: '#fff' }}>단</span>
       </span>
-      <span style={{ font: '700 12px/1 var(--font-sans)', color: '#ea580c', letterSpacing: '0.04em' }}>단지온도 · danjiondo.kr</span>
+      <span style={{ font: '700 12px/1.3 var(--font-sans)', color: '#ea580c', letterSpacing: '0.04em' }}>단지온도 · danjiondo.kr</span>
     </div>
   )
 }
@@ -149,18 +149,18 @@ function TradingHeatBar({ heat }: { heat: RegionalHeatRow[] }) {
       <div style={{ padding: '16px 20px 12px' }}>
         {heat.map(({ sggCode, label, txCount30d }) => (
           <div key={sggCode} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-            <span style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--fg-sec)', minWidth: 68, flexShrink: 0 }}>
+            <span style={{ font: '500 12px/1.3 var(--font-sans)', color: 'var(--fg-sec)', minWidth: 68, flexShrink: 0 }}>
               {label}
             </span>
             <div style={{ flex: 1, height: 7, background: 'var(--bg-surface-2)', borderRadius: 4, overflow: 'hidden' }}>
               <div style={{ height: '100%', width: `${Math.round(txCount30d / maxCount * 100)}%`, background: 'var(--dj-orange)', borderRadius: 4 }} />
             </div>
-            <span className="tnum" style={{ font: '700 13px/1 var(--font-sans)', color: 'var(--fg-pri)', minWidth: 40, textAlign: 'right', flexShrink: 0 }}>
+            <span className="tnum" style={{ font: '700 13px/1.3 var(--font-sans)', color: 'var(--fg-pri)', minWidth: 40, textAlign: 'right', flexShrink: 0 }}>
               {txCount30d}건
             </span>
           </div>
         ))}
-        <p style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '10px 0 0' }}>30일 매매 거래 합산</p>
+        <p style={{ font: '400 11px/1.3 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '10px 0 0' }}>30일 매매 거래 합산</p>
       </div>
       <BrandMark />
     </div>
@@ -210,7 +210,7 @@ export default async function RankingsPage({ searchParams }: Props) {
                 실거래 랭킹
               </h1>
               {newRecordCount > 0 && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, font: '600 12px/1 var(--font-sans)', padding: '5px 12px', borderRadius: 20, background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, font: '600 12px/1.3 var(--font-sans)', padding: '5px 12px', borderRadius: 20, background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa' }}>
                   <span style={{ font: '800 15px/1', color: '#ea580c' }}>{newRecordCount}</span>개 단지 신고가 경신 중
                 </span>
               )}
@@ -231,16 +231,16 @@ export default async function RankingsPage({ searchParams }: Props) {
               {champions.map(({ sggCode, regionLabel, data }) => (
                 <div key={sggCode} style={{ background: '#fff', borderRadius: 8, padding: '14px 14px', display: 'flex', flexDirection: 'column', border: '1px solid rgba(112,115,124,0.12)' }}>
                   {/* 구 뱃지 */}
-                  <span style={{ display: 'inline-block', font: '700 12px/1 var(--font-sans)', padding: '3px 9px', borderRadius: 10, background: 'var(--dj-orange)', color: '#fff', alignSelf: 'flex-start', marginBottom: 10 }}>
+                  <span style={{ display: 'inline-block', font: '700 12px/1.3 var(--font-sans)', padding: '3px 9px', borderRadius: 10, background: 'var(--dj-orange)', color: '#fff', alignSelf: 'flex-start', marginBottom: 10 }}>
                     {regionLabel}
                   </span>
                   {data ? (
                     <>
                       {/* 가격 — 히어로 수치 */}
-                      <p style={{ font: '800 22px/1 var(--font-sans)', color: 'var(--dj-orange)', margin: '0 0 2px', letterSpacing: '-0.02em' }}>
+                      <p style={{ font: '800 22px/1.3 var(--font-sans)', color: 'var(--dj-orange)', margin: '0 0 2px', letterSpacing: '-0.02em' }}>
                         {data.avgPricePerPyeong.toLocaleString()}
                       </p>
-                      <p style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '0 0 8px' }}>
+                      <p style={{ font: '500 11px/1.3 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '0 0 8px' }}>
                         만원/평
                       </p>
                       {/* 단지명 */}
@@ -253,12 +253,12 @@ export default async function RankingsPage({ searchParams }: Props) {
                       {/* 변동률 + 거래건수 */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         {data.priceChange30d != null && (
-                          <span style={{ font: '600 12px/1 var(--font-sans)', color: data.priceChange30d >= 0 ? '#16a34a' : '#dc2626' }}>
+                          <span style={{ font: '600 12px/1.3 var(--font-sans)', color: data.priceChange30d >= 0 ? '#16a34a' : '#dc2626' }}>
                             {data.priceChange30d >= 0 ? '▲' : '▼'}{Math.abs(data.priceChange30d * 100).toFixed(1)}%
                           </span>
                         )}
                         {data.txCount90d > 0 && (
-                          <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                          <span style={{ font: '400 11px/1.3 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
                             90일 {data.txCount90d}건
                           </span>
                         )}
@@ -309,7 +309,7 @@ export default async function RankingsPage({ searchParams }: Props) {
             </div>
           )}
 
-          <p style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '0 0 10px' }}>
+          <p style={{ font: '400 12px/1.3 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '0 0 10px' }}>
             국토부 실거래 신고일 기준 · 신고 지연으로 최근 거래는 추후 반영될 수 있음
           </p>
 
@@ -334,7 +334,7 @@ export default async function RankingsPage({ searchParams }: Props) {
                     background:   tx.is_new_high ? '#fff8f5' : 'transparent',
                   }}
                 >
-                  <span className="tnum" style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', minWidth: 18, textAlign: 'right', flexShrink: 0 }}>
+                  <span className="tnum" style={{ font: '500 12px/1.3 var(--font-sans)', color: 'var(--fg-tertiary)', minWidth: 18, textAlign: 'right', flexShrink: 0 }}>
                     {idx + 1}
                   </span>
 
@@ -344,22 +344,22 @@ export default async function RankingsPage({ searchParams }: Props) {
                         {tx.complexName}
                       </Link>
                       {tx.is_new_high && (
-                        <span style={{ font: '700 12px/1 var(--font-sans)', padding: '2px 6px', borderRadius: 4, background: '#ea580c', color: '#fff', flexShrink: 0 }}>
+                        <span style={{ font: '700 12px/1.3 var(--font-sans)', padding: '2px 6px', borderRadius: 4, background: '#ea580c', color: '#fff', flexShrink: 0 }}>
                           신고가
                         </span>
                       )}
                     </div>
-                    <p style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>
+                    <p style={{ font: '400 11px/1.3 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>
                       {formatPyeong(tx.area_m2)}{tx.floor != null ? ` · ${tx.floor}층` : ''}{tx.dong ? ` · ${tx.dong}` : ''}
                     </p>
                   </div>
 
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <span className="tnum" style={{ font: '800 17px/1 var(--font-sans)', color: 'var(--fg-pri)', display: 'block' }}>
+                    <span className="tnum" style={{ font: '800 17px/1.3 var(--font-sans)', color: 'var(--fg-pri)', display: 'block' }}>
                       {formatPrice(tx.price)}
                     </span>
                     {tx.priceDelta != null && Math.abs(tx.priceDelta) >= 100 && (
-                      <span className="tnum" style={{ font: '600 11px/1 var(--font-sans)', color: tx.priceDelta > 0 ? '#16a34a' : '#dc2626', display: 'block', marginTop: 3 }}>
+                      <span className="tnum" style={{ font: '600 11px/1.3 var(--font-sans)', color: tx.priceDelta > 0 ? '#16a34a' : '#dc2626', display: 'block', marginTop: 3 }}>
                         {tx.priceDelta > 0 ? '▲' : '▼'}{formatPrice(Math.abs(tx.priceDelta))}
                       </span>
                     )}
@@ -372,7 +372,7 @@ export default async function RankingsPage({ searchParams }: Props) {
 
           {activeDateFeed?.hasMore && (
             <div className="mt-2 text-right">
-              <Link href={`/rankings/${activeDate}`} style={{ font: '600 12px/1 var(--font-sans)', color: 'var(--dj-orange)', textDecoration: 'none' }}>
+              <Link href={`/rankings/${activeDate}`} style={{ font: '600 12px/1.3 var(--font-sans)', color: 'var(--dj-orange)', textDecoration: 'none' }}>
                 이 날 전체 거래 보기 →
               </Link>
             </div>
@@ -419,7 +419,7 @@ export default async function RankingsPage({ searchParams }: Props) {
                   }}
                 >
                   <span className="tnum" style={{
-                    font:      idx === 0 ? '900 15px/1 var(--font-sans)' : idx < 3 ? '700 13px/1 var(--font-sans)' : '500 12px/1 var(--font-sans)',
+                    font:      idx === 0 ? '900 15px/1.3 var(--font-sans)' : idx < 3 ? '700 13px/1.3 var(--font-sans)' : '500 12px/1.3 var(--font-sans)',
                     color:     idx === 0 ? 'var(--dj-orange)' : idx < 3 ? 'var(--fg-sec)' : 'var(--fg-tertiary)',
                     minWidth:  22, textAlign: 'right', flexShrink: 0,
                   }}>
@@ -429,7 +429,7 @@ export default async function RankingsPage({ searchParams }: Props) {
                     <Link href={complexHref(row.complexId, row.urlSlug)} style={{ font: '600 15px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', display: 'block' }}>
                       {row.complexName}
                     </Link>
-                    <p style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '3px 0 0' }}>
+                    <p style={{ font: '400 11px/1.3 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '3px 0 0' }}>
                       {[row.dong, row.gu].filter(Boolean).join(' ')}
                       {row.recentTradePrice != null && (
                         <span style={{ marginLeft: 6 }}>최근 {formatPrice(row.recentTradePrice)}</span>
@@ -437,10 +437,10 @@ export default async function RankingsPage({ searchParams }: Props) {
                     </p>
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <span className="tnum" style={{ font: '800 18px/1 var(--font-sans)', color: 'var(--dj-orange)', display: 'block' }}>
+                    <span className="tnum" style={{ font: '800 18px/1.3 var(--font-sans)', color: 'var(--dj-orange)', display: 'block' }}>
                       {row.avgPricePerPyeong.toLocaleString()}
                     </span>
-                    <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>만/평</span>
+                    <span style={{ font: '400 11px/1.3 var(--font-sans)', color: 'var(--fg-tertiary)' }}>만/평</span>
                   </div>
                 </div>
               ))}
@@ -452,7 +452,7 @@ export default async function RankingsPage({ searchParams }: Props) {
         {/* ── 섹션 5: 지역 역대 최고가 ── */}
         <section aria-labelledby="alltime-heading" className="mb-8">
           <SectionHeader title="지역 역대 최고가">
-            <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+            <span style={{ font: '400 11px/1.3 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
               {activeTab.label} · 단지별 최고 거래
             </span>
           </SectionHeader>
@@ -477,7 +477,7 @@ export default async function RankingsPage({ searchParams }: Props) {
                   }}
                 >
                   <span className="tnum" style={{
-                    font:      idx === 0 ? '900 15px/1 var(--font-sans)' : '500 12px/1 var(--font-sans)',
+                    font:      idx === 0 ? '900 15px/1.3 var(--font-sans)' : '500 12px/1.3 var(--font-sans)',
                     color:     idx === 0 ? 'var(--dj-orange)' : 'var(--fg-tertiary)',
                     minWidth:  22, textAlign: 'right', flexShrink: 0,
                   }}>
@@ -487,12 +487,12 @@ export default async function RankingsPage({ searchParams }: Props) {
                     <Link href={complexHref(row.complexId, row.urlSlug)} style={{ font: '600 15px/1.3 var(--font-sans)', color: 'var(--fg-pri)', textDecoration: 'none', display: 'block' }}>
                       {row.complexName}
                     </Link>
-                    <p style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '3px 0 0' }}>
+                    <p style={{ font: '400 12px/1.3 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '3px 0 0' }}>
                       {[row.dong, row.gu].filter(Boolean).join(' ')}
                       {' · '}{formatPyeong(row.area_m2)}{row.floor != null ? ` · ${row.floor}층` : ''} · {row.deal_date.slice(0, 7)}
                     </p>
                   </div>
-                  <span className="tnum" style={{ font: '800 17px/1 var(--font-sans)', color: 'var(--fg-pri)', flexShrink: 0 }}>
+                  <span className="tnum" style={{ font: '800 17px/1.3 var(--font-sans)', color: 'var(--fg-pri)', flexShrink: 0 }}>
                     {formatPrice(row.price)}
                   </span>
                 </div>
@@ -524,15 +524,15 @@ export default async function RankingsPage({ searchParams }: Props) {
                         {item.complexName}
                       </Link>
                       {(item.dong ?? item.gu) && (
-                        <p style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '2px 0 0' }}>
+                        <p style={{ font: '400 11px/1.3 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '2px 0 0' }}>
                           {[item.dong, item.gu].filter(Boolean).join(' ')}
                         </p>
                       )}
                       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginTop: 5, flexWrap: 'wrap' }}>
-                        <span className="tnum" style={{ font: '800 20px/1 var(--font-sans)', color: 'var(--dj-orange)' }}>
+                        <span className="tnum" style={{ font: '800 20px/1.3 var(--font-sans)', color: 'var(--dj-orange)' }}>
                           {formatPrice(item.price)}
                         </span>
-                        <span style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                        <span style={{ font: '400 12px/1.3 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
                           {formatPyeong(item.area_m2)} · {item.deal_date.slice(5).replace('-', '/')}
                         </span>
                       </div>
@@ -560,15 +560,15 @@ export default async function RankingsPage({ searchParams }: Props) {
                         {item.complexName}
                       </Link>
                       {(item.dong ?? item.gu) && (
-                        <p style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '2px 0 0' }}>
+                        <p style={{ font: '400 11px/1.3 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '2px 0 0' }}>
                           {[item.dong, item.gu].filter(Boolean).join(' ')}
                         </p>
                       )}
                       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginTop: 5 }}>
-                        <span className="tnum" style={{ font: '800 20px/1 var(--font-sans)', color: 'var(--dj-orange)' }}>
+                        <span className="tnum" style={{ font: '800 20px/1.3 var(--font-sans)', color: 'var(--dj-orange)' }}>
                           {item.txCount90d}건
                         </span>
-                        <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>90일 거래</span>
+                        <span style={{ font: '400 11px/1.3 var(--font-sans)', color: 'var(--fg-tertiary)' }}>90일 거래</span>
                       </div>
                     </div>
                   </div>
@@ -594,15 +594,15 @@ export default async function RankingsPage({ searchParams }: Props) {
                         {item.complexName}
                       </Link>
                       {(item.dong ?? item.gu) && (
-                        <p style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '2px 0 0' }}>
+                        <p style={{ font: '400 11px/1.3 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '2px 0 0' }}>
                           {[item.dong, item.gu].filter(Boolean).join(' ')}
                         </p>
                       )}
                       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginTop: 5 }}>
-                        <span className="tnum" style={{ font: '800 20px/1 var(--font-sans)', color: '#16a34a' }}>
+                        <span className="tnum" style={{ font: '800 20px/1.3 var(--font-sans)', color: '#16a34a' }}>
                           +{(item.changeRatio * 100).toFixed(1)}%
                         </span>
-                        <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--fg-tertiary)' }}>전월 대비</span>
+                        <span style={{ font: '400 11px/1.3 var(--font-sans)', color: 'var(--fg-tertiary)' }}>전월 대비</span>
                       </div>
                     </div>
                   </div>
@@ -625,7 +625,7 @@ export default async function RankingsPage({ searchParams }: Props) {
         <div className="sm:max-w-3xl sm:mx-auto flex items-center justify-between gap-3 flex-wrap">
           <div>
             <p className="mb-1" style={{ font: '700 14px/1.3 var(--font-sans)', margin: '0 0 3px' }}>창원부동산이야기</p>
-            <p className="m-0" style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--fg-sec)' }}>더 많은 정보와 의견을 카페에서 나눠보세요</p>
+            <p className="m-0" style={{ font: '400 12px/1.3 var(--font-sans)', color: 'var(--fg-sec)' }}>더 많은 정보와 의견을 카페에서 나눠보세요</p>
           </div>
           <a
             href={CAFE_URL}

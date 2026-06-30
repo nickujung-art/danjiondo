@@ -81,41 +81,14 @@ export function ShareButton({ url, title, text, captureId }: Props) {
             if (!el.getAttribute) return
             const orig = el.getAttribute('style')
             if (!orig) return
-
             let s = orig
             // var(--font-sans) → 실제 폰트값 (font: 단축속성 내 var() html2canvas 파싱 불가)
             if (s.includes('var(--font-sans)')) {
               s = s.replace(/var\(--font-sans\)/g, resolvedFont)
             }
-            // overflow:hidden + white-space:nowrap → overflow:visible
-            // html2canvas baseline 오차로 overflow:hidden이 한글 받침의 하단을 잘라냄
+            // overflow:hidden + white-space:nowrap → overflow:visible (말줄임 컨테이너 클리핑 방지)
             if (s.includes('white-space: nowrap') && s.includes('overflow: hidden')) {
               s = s.replace('overflow: hidden', 'overflow: visible')
-            }
-            // html2canvas 한글 받침 렌더링 수정:
-            // inline-block: html2canvas가 라인박스 경계로 클리핑 → lh≥1.4 필요
-            //   레이아웃 높이 유지를 위해 수직 padding을 (fs*0.2)px 줄여 보상
-            //   (translateY는 레이아웃 height를 바꾸지 않아 아래 요소가 밀리므로 사용 안 함)
-            // block/flex item: 클리핑 없음 → 작은 폰트만 12px로 키워 가독성 확보
-            if (s.includes('display: inline-block')) {
-              const fsMatch = s.match(/(\d+)px\/1(?!\.\d)/)
-              if (fsMatch) {
-                const fs = parseInt(fsMatch[1]!)
-                if (fs <= 13) {
-                  // lh=1 → 1.4 (받침 클리핑 방지, font-size 유지)
-                  s = s.replace(/(\d+px\/)1(\s)/, '$11.4$2')
-                  // 수직 padding 축소: lh 증가분(fs*0.2)만큼 상하 padding 감소 → 레이아웃 높이 유지
-                  const reduce = Math.round(fs * 0.2) // 12px → 2, 11px → 2
-                  s = s.replace(/padding:\s*([\d.]+)px(\s+)([\d.]+)px/, (_m, top, ws, lr) =>
-                    `padding: ${Math.max(0, parseFloat(top) - reduce)}px${ws}${lr}px`
-                  )
-                  // 이전 방식의 translateY 잔재 제거
-                  s = s.replace(/;\s*transform:\s*translateY\([^)]+\)/, '')
-                }
-              }
-            } else if (s.match(/1[01]px\/1(?!\.\d)/)) {
-              // 10-11px block/inline → 12px (클리핑 없음, 가독성 향상)
-              s = s.replace(/1[01]px\/1(?!\.\d)(\s)/g, '12px/1$1')
             }
             if (s !== orig) el.setAttribute('style', s)
           })
@@ -127,10 +100,6 @@ export function ShareButton({ url, title, text, captureId }: Props) {
           cloned.querySelectorAll('[data-capture-hide]').forEach(node => {
             (node as HTMLElement).style.display = 'none'
           })
-
-          // 6. 캡처 루트 clipping 방지
-          cloned.style.overflow = 'visible'
-          cloned.style.paddingBottom = '2px'
         },
       })
 
