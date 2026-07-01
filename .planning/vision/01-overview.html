@@ -1280,84 +1280,140 @@ h2.slide-h { font-size: 52px; font-weight: 900; line-height: 1.1; letter-spacing
   <h2 class="slide-h">어떻게 생겼나</h2>
 
   <div class="mockup-row">
-    <!-- Desktop Home -->
+    <!-- Desktop: 홈 피드 + 콘텐츠 상세 -->
     <div>
-      <div class="mockup-label-top">Desktop — 홈 피드</div>
-      <div class="browser">
-        <div class="browser-bar">
-          <div class="bdots"><div class="bdot r"></div><div class="bdot y"></div><div class="bdot g"></div></div>
-          <div class="burl">changbuletter.com</div>
+      <div class="mockup-label-top">Desktop — 홈 피드 + 콘텐츠 상세</div>
+      <div style="display:flex; gap:14px; align-items:flex-start;">
+
+        <!-- 브라우저 1: 홈 피드 -->
+        <div style="flex:1; min-width:0; border-radius:12px; overflow:hidden; box-shadow:0 16px 48px rgba(0,0,0,0.2); border:1px solid var(--divider);">
+          <div style="zoom:0.49; width:205%;">
+            <div class="browser-bar">
+              <div class="bdots"><div class="bdot r"></div><div class="bdot y"></div><div class="bdot g"></div></div>
+              <div class="burl">changbuletter.com</div>
+            </div>
+            <div>
+              <div class="s-nav">
+                <div class="s-logo">창부<em>레터</em></div>
+                <div class="s-links">
+                  <span class="s-link on">홈</span>
+                  <span class="s-link">콘텐츠</span>
+                  <span class="s-link">단지검색</span>
+                  <span class="s-link">지역가이드</span>
+                </div>
+                <button class="s-btn">💌 뉴스레터 구독</button>
+              </div>
+              <div class="s-hero">
+                <div class="s-hero-main">
+                  <div class="s-hero-tag">주간 리포트</div>
+                  <div class="s-hero-title">의창구 평균 매매가 6.4억 돌파<br>— 3개월 연속 상승</div>
+                  <div class="s-hero-meta">2026.06.28 · 주간 실거래가 리포트</div>
+                </div>
+                <div class="s-hero-side">
+                  <div class="s-side-item">
+                    <div class="s-side-thumb" style="background:#FEF3C7;">🏗</div>
+                    <div><div class="s-side-tag">분양</div><div class="s-side-title">김해 장유3지구 6월 공급 확정</div></div>
+                  </div>
+                  <div class="s-side-item">
+                    <div class="s-side-thumb" style="background:#EDE9FE;">📍</div>
+                    <div><div class="s-side-tag">동네 분석</div><div class="s-side-title">진해 용원동 왜 오르고 있나</div></div>
+                  </div>
+                  <div class="s-side-item">
+                    <div class="s-side-thumb" style="background:#D1FAE5;">🏆</div>
+                    <div><div class="s-side-tag">랭킹</div><div class="s-side-title">이번 주 거래 TOP 5</div></div>
+                  </div>
+                </div>
+              </div>
+              <div class="s-body">
+                <div class="s-section-h">
+                  <div class="s-section-title">최신 기획기사</div>
+                  <div class="s-section-more">전체 보기 →</div>
+                </div>
+                <div class="s-grid3">
+                  <div class="s-article">
+                    <div class="s-article-thumb" style="background:#D1FAE5;">🏠</div>
+                    <div class="s-article-body">
+                      <div class="s-article-tag">동네 분석</div>
+                      <div class="s-article-title">의창구 북면 — 신혼부부의 선택지</div>
+                    </div>
+                  </div>
+                  <div class="s-article">
+                    <div class="s-article-thumb" style="background:#FEF3C7;">📈</div>
+                    <div class="s-article-body">
+                      <div class="s-article-tag">시장 분석</div>
+                      <div class="s-article-title">창원 vs 김해 상반기 비교</div>
+                    </div>
+                  </div>
+                  <div class="s-article">
+                    <div class="s-article-thumb" style="background:#EDE9FE;">🏫</div>
+                    <div class="s-article-body">
+                      <div class="s-article-tag">지역 가이드</div>
+                      <div class="s-article-title">창원 전입 예정이라면</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="s-cta">
+                <div>
+                  <div class="s-cta-text">매주 월요일, 창부레터가 도착합니다</div>
+                  <div class="s-cta-sub">이번 주 부동산 뉴스 3가지를 이메일로 받아보세요</div>
+                </div>
+                <button class="s-cta-btn">무료 구독</button>
+              </div>
+            </div>
+          </div>
         </div>
-        <div>
-          <div class="s-nav">
-            <div class="s-logo">창부<em>레터</em></div>
-            <div class="s-links">
-              <span class="s-link on">홈</span>
-              <span class="s-link">콘텐츠</span>
-              <span class="s-link">단지검색</span>
-              <span class="s-link">지역가이드</span>
+
+        <!-- 브라우저 2: 콘텐츠 상세 -->
+        <div style="flex:1; min-width:0; border-radius:12px; overflow:hidden; box-shadow:0 16px 48px rgba(0,0,0,0.2); border:1px solid var(--divider);">
+          <div style="zoom:0.49; width:205%;">
+            <div class="browser-bar">
+              <div class="bdots"><div class="bdot r"></div><div class="bdot y"></div><div class="bdot g"></div></div>
+              <div class="burl">changbuletter.com/content/weekly-report-0628</div>
             </div>
-            <button class="s-btn">💌 뉴스레터 구독</button>
-          </div>
-          <div class="s-hero">
-            <div class="s-hero-main">
-              <div class="s-hero-tag">주간 리포트</div>
-              <div class="s-hero-title">의창구 평균 매매가 6.4억 돌파<br>— 3개월 연속 상승</div>
-              <div class="s-hero-meta">2026.06.28 · 주간 실거래가 리포트</div>
-            </div>
-            <div class="s-hero-side">
-              <div class="s-side-item">
-                <div class="s-side-thumb" style="background:#FEF3C7;">🏗</div>
-                <div><div class="s-side-tag">분양</div><div class="s-side-title">김해 장유3지구 6월 공급 확정</div></div>
+            <div>
+              <div class="s-nav">
+                <div class="s-logo">창부<em>레터</em></div>
+                <div class="s-links">
+                  <span class="s-link">홈</span>
+                  <span class="s-link on">콘텐츠</span>
+                  <span class="s-link">단지검색</span>
+                  <span class="s-link">지역가이드</span>
+                </div>
+                <button class="s-btn">💌 뉴스레터 구독</button>
               </div>
-              <div class="s-side-item">
-                <div class="s-side-thumb" style="background:#EDE9FE;">📍</div>
-                <div><div class="s-side-tag">동네 분석</div><div class="s-side-title">진해 용원동 왜 오르고 있나</div></div>
+              <div style="background:var(--brand); padding:28px 32px; color:white;">
+                <div style="font-size:10px; background:var(--accent); color:white; display:inline-block; padding:2px 8px; border-radius:3px; margin-bottom:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">주간 리포트</div>
+                <div style="font-size:20px; font-weight:800; line-height:1.3; margin-bottom:8px;">의창구 평균 매매가 6.4억 돌파<br>— 3개월 연속 상승</div>
+                <div style="font-size:11px; opacity:0.5; letter-spacing:0.02em;">2026.06.28 · 주간 실거래가 리포트</div>
               </div>
-              <div class="s-side-item">
-                <div class="s-side-thumb" style="background:#D1FAE5;">🏆</div>
-                <div><div class="s-side-tag">랭킹</div><div class="s-side-title">이번 주 거래 TOP 5</div></div>
+              <div style="background:#1C1C1C; padding:20px 32px; display:flex; gap:10px; justify-content:center; align-items:center;">
+                <div style="width:90px; height:113px; border-radius:6px; border:2px solid var(--accent); background:var(--brand); display:flex; align-items:center; justify-content:center; color:white; font-size:28px;">📊</div>
+                <div style="width:90px; height:113px; border-radius:6px; background:#374151; opacity:0.45;"></div>
+                <div style="width:90px; height:113px; border-radius:6px; background:#374151; opacity:0.45;"></div>
+                <div style="color:rgba(255,255,255,0.25); font-size:22px; margin-left:6px;">›</div>
               </div>
-            </div>
-          </div>
-          <div class="s-body">
-            <div class="s-section-h">
-              <div class="s-section-title">최신 기획기사</div>
-              <div class="s-section-more">전체 보기 →</div>
-            </div>
-            <div class="s-grid3">
-              <div class="s-article">
-                <div class="s-article-thumb" style="background:#D1FAE5;">🏠</div>
-                <div class="s-article-body">
-                  <div class="s-article-tag">동네 분석</div>
-                  <div class="s-article-title">의창구 북면 — 신혼부부의 선택지</div>
+              <div style="padding:24px 32px; background:var(--bg);">
+                <div style="font-size:13px; color:var(--ink2); line-height:1.85; margin-bottom:20px;">의창구 평균 매매가가 6.4억을 기록하며 3개월 연속 상승세다. 북면·동읍 신축 단지를 중심으로 거래가 활발해지며 가격을 이끌고 있다.</div>
+                <div style="background:white; border-radius:8px; border:1px solid var(--divider); padding:14px 18px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+                  <div>
+                    <div style="font-size:10px; font-weight:700; color:var(--brand); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">관련 단지</div>
+                    <div style="font-size:13px; font-weight:700; color:var(--ink);">래미안 창원성산</div>
+                  </div>
+                  <div style="font-size:13px; color:var(--brand); font-weight:700;">보기 →</div>
                 </div>
               </div>
-              <div class="s-article">
-                <div class="s-article-thumb" style="background:#FEF3C7;">📈</div>
-                <div class="s-article-body">
-                  <div class="s-article-tag">시장 분석</div>
-                  <div class="s-article-title">창원 vs 김해 상반기 비교</div>
+              <div class="s-cta">
+                <div>
+                  <div class="s-cta-text">매주 월요일, 창부레터가 도착합니다</div>
+                  <div class="s-cta-sub">이번 주 부동산 뉴스 3가지를 이메일로 받아보세요</div>
                 </div>
+                <button class="s-cta-btn">무료 구독</button>
               </div>
-              <div class="s-article">
-                <div class="s-article-thumb" style="background:#EDE9FE;">🏫</div>
-                <div class="s-article-body">
-                  <div class="s-article-tag">지역 가이드</div>
-                  <div class="s-article-title">창원 전입 예정이라면</div>
-                </div>
-              </div>
-            </div>
-          </div>
-            <div class="s-cta">
-              <div>
-                <div class="s-cta-text">매주 월요일, 창부레터가 도착합니다</div>
-                <div class="s-cta-sub">이번 주 부동산 뉴스 3가지를 이메일로 받아보세요</div>
-              </div>
-              <button class="s-cta-btn">무료 구독</button>
             </div>
           </div>
         </div>
+
       </div>
     </div>
 
