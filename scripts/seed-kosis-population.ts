@@ -10,7 +10,8 @@ const ORG_ID     = '101'
 const TBL_ID     = 'DT_1B040A3'
 const ITM_ID     = 'T20'
 
-const SGG_CODES = ['48121', '48123', '48125', '48127', '48129', '48250']
+const args = process.argv.slice(2)
+const sggArg = args.find(a => a.startsWith('--sgg='))?.split('=')[1]
 
 interface Row {
   sgg_code:   string
@@ -20,11 +21,28 @@ interface Row {
   fetched_at: string
 }
 
-async function fetchFromKosis(): Promise<Row[]> {
+async function getSggCodes(): Promise<string[]> {
+  if (sggArg) return sggArg.split(',').map(s => s.trim())
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!supabaseUrl) throw new Error('NEXT_PUBLIC_SUPABASE_URL not set')
+  if (!serviceKey)  throw new Error('SUPABASE_SERVICE_ROLE_KEY not set')
+
+  const res = await fetch(
+    `${supabaseUrl}/rest/v1/regions?select=sgg_code&is_active=eq.true&order=sgg_code`,
+    { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+  )
+  if (!res.ok) throw new Error(`regions 조회 실패: ${res.status} ${await res.text()}`)
+  const data = (await res.json()) as Array<{ sgg_code: string }>
+  return data.map(r => r.sgg_code)
+}
+
+async function fetchFromKosis(sggCodes: string[]): Promise<Row[]> {
   const key = process.env.KOSIS_API_KEY
   if (!key) throw new Error('KOSIS_API_KEY not set')
 
-  const objL1 = SGG_CODES.join('+') + '+'
+  const objL1 = sggCodes.join('+') + '+'
   const url =
     `${KOSIS_BASE}?method=getList` +
     `&apiKey=${encodeURIComponent(key)}` +
@@ -84,7 +102,10 @@ async function upsertToSupabase(rows: Row[]): Promise<void> {
 }
 
 async function main() {
-  const rows = await fetchFromKosis()
+  const sggCodes = await getSggCodes()
+  console.log(`대상 시군구: ${sggCodes.length}개 (${sggCodes.join(', ')})`)
+
+  const rows = await fetchFromKosis(sggCodes)
   console.log(`KOSIS에서 ${rows.length}건 수신`)
   rows.forEach(r => console.log(`  ${r.sgg_code} ${r.sgg_name} ${r.year}: ${r.population.toLocaleString('ko-KR')}명`))
 
