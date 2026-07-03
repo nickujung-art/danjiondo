@@ -1208,6 +1208,16 @@
 7. `npm run lint && npm run build` 통과
 
 ---
+### Phase 33: 전국 DB 확장 1단계 — 경남 전체 지역 확장 기반 구축
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 32
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 33 to break down)
+
 ---
 ## Milestone Summary
 
