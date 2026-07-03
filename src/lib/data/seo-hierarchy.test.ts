@@ -60,6 +60,19 @@ describe('getSiPageData', () => {
     expect(내동?.avgPrice).toBe(850)
   })
 
+  it('구 없는 신규 시군구(경남 확장) — 김해시와 동일하게 dongList 처리 (Phase 33 회귀 방지)', async () => {
+    const rows = [
+      { gu: null, dong: '평거동', avg_sale_per_pyeong: 750 },
+      { gu: null, dong: '충무공동', avg_sale_per_pyeong: 820 },
+    ]
+    const supabase = makeSupabaseMock({ data: rows, error: null })
+    const result = await getSiPageData('진주시', supabase)
+    expect(result).not.toBeNull()
+    expect(result!.guList.length).toBe(0)
+    expect(result!.dongList.length).toBe(2)
+    expect(result!.totalComplexes).toBe(2)
+  })
+
   it('데이터 없으면 null 반환', async () => {
     const supabase = makeSupabaseMock({ data: [], error: null })
     const result = await getSiPageData('없는시', supabase)
