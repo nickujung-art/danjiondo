@@ -1227,20 +1227,20 @@
 
 **Depends on:** Phase 32
 
-**Plans:** 1/11 plans executed
+**Plans:** 9/11 plans executed
 
 **Wave 0** *(독립 실행 가능 — 지역 마스터 시딩 + 공용 헬퍼)*
 - [x] 33-00-PLAN.md — regions 테이블 경남 16개 신규 시군구 시딩 + 법정동코드 단발 검증 + getActiveSggCodes/getActiveCityNames 공용 헬퍼 + seed-region.test.ts 갱신 (REGION-01)
 
 **Wave 1** *(blocked on Wave 0; 33-01~33-06, 33-09 전부 병렬 실행 가능 — files_modified 무중복)*
-- [ ] 33-01-PLAN.md — 투자/갭분석 페이지 동적 지역 필터 전환 + seed-kosis-population.ts --sgg 오버라이드 (REGION-02, REGION-10)
-- [ ] 33-02-PLAN.md — 랭킹 데이터 레이어(rankings.ts, rankings-page.ts) 동적 지역 필터 전환 (REGION-03)
-- [ ] 33-03-PLAN.md — 크론·청약홈·분양권전매 어댑터 동적 지역 필터 전환 (REGION-04)
-- [ ] 33-04-PLAN.md — 학군 랭킹/지역계층 무구 시군구 회귀 테스트 (REGION-05)
-- [ ] 33-05-PLAN.md — UI 지역 라벨 맵 경남 신규 시군구 라벨 기계적 추가 (REGION-06)
-- [ ] 33-06-PLAN.md — KAPT 단지목록 API로 경남 신규 시군구 Golden Record(complexes) 시딩 (REGION-01)
-- [ ] 33-09-PLAN.md — `/map` 페이지·광고 사이드바 API 동적 지역 필터 전환 (REGION-09, plan-checker 리비전 대응)
-- [ ] 33-10-PLAN.md — molit-unsold.ts/realprice-officetel.ts 하드코딩 지역 매핑 동적 전환 (REGION-11, plan-checker 2차 리비전 대응)
+- [x] 33-01-PLAN.md — 투자/갭분석 페이지 동적 지역 필터 전환 + seed-kosis-population.ts --sgg 오버라이드 (REGION-02, REGION-10)
+- [x] 33-02-PLAN.md — 랭킹 데이터 레이어(rankings.ts, rankings-page.ts) 동적 지역 필터 전환 (REGION-03)
+- [x] 33-03-PLAN.md — 크론·청약홈·분양권전매 어댑터 동적 지역 필터 전환 (REGION-04)
+- [x] 33-04-PLAN.md — 학군 랭킹/지역계층 무구 시군구 회귀 테스트 (REGION-05)
+- [x] 33-05-PLAN.md — UI 지역 라벨 맵 경남 신규 시군구 라벨 기계적 추가 (REGION-06)
+- [x] 33-06-PLAN.md — KAPT 단지목록 API로 경남 신규 시군구 Golden Record(complexes) 시딩 (REGION-01)
+- [x] 33-09-PLAN.md — `/map` 페이지·광고 사이드바 API 동적 지역 필터 전환 (REGION-09, plan-checker 리비전 대응)
+- [x] 33-10-PLAN.md — molit-unsold.ts/realprice-officetel.ts 하드코딩 지역 매핑 동적 전환 (REGION-11, plan-checker 2차 리비전 대응)
 
 **Wave 2** *(blocked on 33-06; checkpoint:human-action — 다회 분할 실행)*
 - [ ] 33-07-PLAN.md — 경남 신규 시군구 국토부 실거래가 10년 다회 분할 백필 `[CHECKPOINT]` (REGION-07)
