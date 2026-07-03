@@ -29,6 +29,22 @@ const REGION_OPTIONS = [
   { label: '마산회원구', sggCodes: ['48127'] },
   { label: '진해구', sggCodes: ['48129'] },
   { label: '김해시', sggCodes: ['48250'] },
+  { label: '진주시', sggCodes: ['48170'] },
+  { label: '통영시', sggCodes: ['48220'] },
+  { label: '사천시', sggCodes: ['48240'] },
+  { label: '밀양시', sggCodes: ['48270'] },
+  { label: '거제시', sggCodes: ['48310'] },
+  { label: '양산시', sggCodes: ['48330'] },
+  { label: '의령군', sggCodes: ['48720'] },
+  { label: '함안군', sggCodes: ['48730'] },
+  { label: '창녕군', sggCodes: ['48740'] },
+  { label: '고성군', sggCodes: ['48820'] },
+  { label: '남해군', sggCodes: ['48840'] },
+  { label: '하동군', sggCodes: ['48850'] },
+  { label: '산청군', sggCodes: ['48860'] },
+  { label: '함양군', sggCodes: ['48870'] },
+  { label: '거창군', sggCodes: ['48880'] },
+  { label: '합천군', sggCodes: ['48890'] },
 ]
 
 const SIZE_OPTIONS = [

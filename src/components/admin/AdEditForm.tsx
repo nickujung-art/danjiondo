@@ -16,6 +16,22 @@ const SGG_OPTIONS = [
   { code: '48127', label: '창원시 마산회원구' },
   { code: '48129', label: '창원시 진해구' },
   { code: '48250', label: '김해시' },
+  { code: '48170', label: '진주시' },
+  { code: '48220', label: '통영시' },
+  { code: '48240', label: '사천시' },
+  { code: '48270', label: '밀양시' },
+  { code: '48310', label: '거제시' },
+  { code: '48330', label: '양산시' },
+  { code: '48720', label: '의령군' },
+  { code: '48730', label: '함안군' },
+  { code: '48740', label: '창녕군' },
+  { code: '48820', label: '고성군' },
+  { code: '48840', label: '남해군' },
+  { code: '48850', label: '하동군' },
+  { code: '48860', label: '산청군' },
+  { code: '48870', label: '함양군' },
+  { code: '48880', label: '거창군' },
+  { code: '48890', label: '합천군' },
 ]
 
 const PLACEMENT_IMAGE_SPEC: Record<string, { label: string; w: number; h: number; ratio: string }> = {
