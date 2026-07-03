@@ -136,7 +136,9 @@ export async function fetchModelPrices(
  * 서버 필터: cond[SUBSCRPT_AREA_CODE::EQ]=621
  * 클라이언트 필터: HSSPLY_ADRES에 '창원' 또는 '김해' 포함 여부
  */
-export async function fetchCheongyakList(_sggCode?: string): Promise<CheongyakItem[]> {
+export async function fetchCheongyakList(
+  cities: readonly string[] = CHEONGYAK_CITIES,
+): Promise<CheongyakItem[]> {
   const all: CheongyakItem[] = []
   const first = await fetchListPage(1)
   all.push(...first.items)
@@ -149,7 +151,7 @@ export async function fetchCheongyakList(_sggCode?: string): Promise<CheongyakIt
     all.push(...result.items)
   }
   return all.filter(item =>
-    CHEONGYAK_CITIES.some(city => item.HSSPLY_ADRES?.includes(city)),
+    cities.some(city => item.HSSPLY_ADRES?.includes(city)),
   )
 }
 
@@ -194,7 +196,9 @@ async function fetchRemndrPage(
  * 잔여세대·무순위 공고 조회 후 창원·김해 주소 필터링.
  * rcept_endde 기준: CNTRCT_CNCLS_ENDDE(계약종료) — 가장 늦은 활동 시점.
  */
-export async function fetchRemndrList(): Promise<CheongyakRemndrItem[]> {
+export async function fetchRemndrList(
+  cities: readonly string[] = CHEONGYAK_CITIES,
+): Promise<CheongyakRemndrItem[]> {
   const all: CheongyakRemndrItem[] = []
   const first = await fetchRemndrPage(1)
   all.push(...first.items)
@@ -207,7 +211,7 @@ export async function fetchRemndrList(): Promise<CheongyakRemndrItem[]> {
     all.push(...result.items)
   }
   return all.filter(item =>
-    CHEONGYAK_CITIES.some(city => item.HSSPLY_ADRES?.includes(city)),
+    cities.some(city => item.HSSPLY_ADRES?.includes(city)),
   )
 }
 

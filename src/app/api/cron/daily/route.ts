@@ -11,7 +11,7 @@ import {
 import { fetchCheongyakList, fetchRemndrList, fetchCompetitionRate } from '@/services/cheongyak/client'
 import { normalizeCheongyakItem, normalizeRemndrItem } from '@/services/cheongyak/normalize'
 import { ingestOffiMonth } from '@/lib/data/realprice-officetel'
-import { getActiveSggCodes } from '@/lib/data/regions'
+import { getActiveSggCodes, getActiveCityNames } from '@/lib/data/regions'
 
 export const runtime = 'nodejs'
 
@@ -114,10 +114,11 @@ export async function GET(request: Request): Promise<Response> {
   totalUpserted += presaleUpserted
 
   // ── 청약홈 분양 공고 수집 (PRESALE-01, per T-13-06) ──────────────────────────
-  // fetchCheongyakList 내부에서 경남 전체 조회 후 창원·김해 필터링
+  // fetchCheongyakList 내부에서 경남 전체 조회 후 regions 기반 동적 도시명으로 필터링
+  const activeCityNames = await getActiveCityNames(supabase)
   const cheongyakPblancNos: string[] = []
   try {
-    const items = await fetchCheongyakList()
+    const items = await fetchCheongyakList(activeCityNames)
     for (const item of items) {
       const row = normalizeCheongyakItem(item)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -156,7 +157,7 @@ export async function GET(request: Request): Promise<Response> {
 
   // ── 청약홈 잔여세대·무순위 수집 (PRESALE-01-B) ────────────────────────────────
   try {
-    const remndrItems = await fetchRemndrList()
+    const remndrItems = await fetchRemndrList(activeCityNames)
     for (const item of remndrItems) {
       const row = normalizeRemndrItem(item)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
