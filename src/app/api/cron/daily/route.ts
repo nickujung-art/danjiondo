@@ -7,11 +7,11 @@ import {
   fetchPresaleTrades,
   parseAmount,
   currentYearMonth,
-  LAWD_CODES,
 } from '@/services/molit-presale'
 import { fetchCheongyakList, fetchRemndrList, fetchCompetitionRate } from '@/services/cheongyak/client'
 import { normalizeCheongyakItem, normalizeRemndrItem } from '@/services/cheongyak/normalize'
 import { ingestOffiMonth } from '@/lib/data/realprice-officetel'
+import { getActiveSggCodes } from '@/lib/data/regions'
 
 export const runtime = 'nodejs'
 
@@ -32,6 +32,7 @@ export async function GET(request: Request): Promise<Response> {
   // ── K-apt 부대시설 UPSERT (DATA-01) ──────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createSupabaseAdminClient() as any
+  const activeSggCodes = await getActiveSggCodes(supabase)
   const { data: complexesWithKaptCode } = await supabase
     .from('complexes')
     .select('id, kapt_code')
@@ -68,7 +69,7 @@ export async function GET(request: Request): Promise<Response> {
   const dealYmd = currentYearMonth()
   let presaleUpserted = 0
 
-  for (const lawdCd of LAWD_CODES) {
+  for (const lawdCd of activeSggCodes) {
     try {
       const trades = await fetchPresaleTrades(lawdCd, dealYmd)
       for (const trade of trades) {
@@ -227,10 +228,9 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   // ── 오피스텔 실거래 당월 수집 (OFFI-01) ──────────────────────────────────
-  const offiSggCodes = ['48121', '48123', '48125', '48127', '48129', '48250']
   const offiYm = currentYearMonth()
   let offiErrors = 0
-  for (const sggCode of offiSggCodes) {
+  for (const sggCode of activeSggCodes) {
     try {
       const result = await ingestOffiMonth(sggCode, offiYm, supabase)
       offiUpserted += result.rowsUpserted
@@ -244,7 +244,7 @@ export async function GET(request: Request): Promise<Response> {
     }
   }
   totalUpserted += offiUpserted
-  const offiStatus = offiErrors === 0 ? 'success' : offiErrors < offiSggCodes.length ? 'partial' : 'failed'
+  const offiStatus = offiErrors === 0 ? 'success' : offiErrors < activeSggCodes.length ? 'partial' : 'failed'
   const offiErrMsg = offiErrors > 0
     ? errors.filter(e => e.startsWith('offi')).slice(-3).join('; ')
     : undefined

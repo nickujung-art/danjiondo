@@ -3,9 +3,6 @@ import { z } from 'zod/v4'
 const BASE_URL =
   'https://apis.data.go.kr/1613000/RTMSDataSvcSilvTrade/getRTMSDataSvcSilvTrade'
 
-// LAWD_CD 상수 (창원·김해) — 경남 48, 창원시 48125, 김해시 48250
-export const LAWD_CODES = ['48125', '48250'] as const
-
 const PresaleTradeSchema = z.object({
   aptNm: z.string(),
   umdNm: z.string(),
