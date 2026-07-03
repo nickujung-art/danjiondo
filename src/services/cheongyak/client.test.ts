@@ -63,6 +63,18 @@ describe('fetchCheongyakList (PRESALE-01)', () => {
     }))
     await expect(fetchCheongyakList()).rejects.toThrow('Cheongyak API 500')
   })
+
+  it('커스텀 cities 배열로 필터링 가능', async () => {
+    process.env.MOLIT_API_KEY = 'test-key'
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockOdcloudResponse([
+      { PBLANC_NO: 'A', HOUSE_NM: '창원파크', HSSPLY_ADRES: '경상남도 창원시 의창구 ...' },
+      { PBLANC_NO: 'B', HOUSE_NM: '진주자이', HSSPLY_ADRES: '경상남도 진주시 ...' },
+      { PBLANC_NO: 'C', HOUSE_NM: '김해푸르지오', HSSPLY_ADRES: '경상남도 김해시 장유로 ...' },
+    ])))
+    const result = await fetchCheongyakList(['진주'])
+    expect(result).toHaveLength(1)
+    expect(result[0]?.PBLANC_NO).toBe('B')
+  })
 })
 
 describe('fetchCompetitionRate (PRESALE-02)', () => {
