@@ -1221,21 +1221,24 @@
 - REGION-06: UI 지역 라벨 맵(SGG_LABEL 등) 경남 신규 시군구 라벨 기계적 추가
 - REGION-07: 경남 신규 시군구 국토부 실거래가 다회 분할 백필 실행
 - REGION-08: Supabase DB 용량 실측 + Pro 플랜 전환 여부 결정 게이트
+- REGION-09: `/map` 페이지·광고 사이드바 API(`ads/sidebar/route.ts`)의 TARGET_SGG/VALID_SGG_CODES 하드코딩 → regions 동적 조회 전환 (plan-checker 리비전 대응, 2026-07-03)
+- REGION-10: `scripts/seed-kosis-population.ts` 인구 캐시 시딩 스크립트 --sgg CLI 오버라이드 + regions 동적 기본값 (plan-checker 리비전 대응, 2026-07-03)
 
 **Depends on:** Phase 32
 
-**Plans:** 9 plans / 4 waves
+**Plans:** 10 plans / 4 waves
 
 **Wave 0** *(독립 실행 가능 — 지역 마스터 시딩 + 공용 헬퍼)*
 - [ ] 33-00-PLAN.md — regions 테이블 경남 16개 신규 시군구 시딩 + 법정동코드 단발 검증 + getActiveSggCodes/getActiveCityNames 공용 헬퍼 + seed-region.test.ts 갱신 (REGION-01)
 
-**Wave 1** *(blocked on Wave 0; 33-01~33-06 전부 병렬 실행 가능 — files_modified 무중복)*
-- [ ] 33-01-PLAN.md — 투자/갭분석 페이지 동적 지역 필터 전환 (REGION-02)
+**Wave 1** *(blocked on Wave 0; 33-01~33-06, 33-09 전부 병렬 실행 가능 — files_modified 무중복)*
+- [ ] 33-01-PLAN.md — 투자/갭분석 페이지 동적 지역 필터 전환 + seed-kosis-population.ts --sgg 오버라이드 (REGION-02, REGION-10)
 - [ ] 33-02-PLAN.md — 랭킹 데이터 레이어(rankings.ts, rankings-page.ts) 동적 지역 필터 전환 (REGION-03)
 - [ ] 33-03-PLAN.md — 크론·청약홈·분양권전매 어댑터 동적 지역 필터 전환 (REGION-04)
 - [ ] 33-04-PLAN.md — 학군 랭킹/지역계층 무구 시군구 회귀 테스트 (REGION-05)
 - [ ] 33-05-PLAN.md — UI 지역 라벨 맵 경남 신규 시군구 라벨 기계적 추가 (REGION-06)
 - [ ] 33-06-PLAN.md — KAPT 단지목록 API로 경남 신규 시군구 Golden Record(complexes) 시딩 (REGION-01)
+- [ ] 33-09-PLAN.md — `/map` 페이지·광고 사이드바 API 동적 지역 필터 전환 (REGION-09, plan-checker 리비전 대응)
 
 **Wave 2** *(blocked on 33-06; checkpoint:human-action — 다회 분할 실행)*
 - [ ] 33-07-PLAN.md — 경남 신규 시군구 국토부 실거래가 10년 다회 분할 백필 `[CHECKPOINT]` (REGION-07)
@@ -1252,7 +1255,7 @@
 
 **Success Criteria:**
 1. regions 테이블에 경남 전체 22개 시군구가 존재하고 신규 16개가 is_active=true
-2. 투자·갭분석·랭킹·크론 파이프라인의 인라인 하드코딩 지역 필터가 모두 제거되고 regions 기반 동적 조회로 전환됨
+2. 투자·갭분석·랭킹·크론·지도·광고 파이프라인의 인라인 하드코딩 지역 필터가 모두 제거되고 regions 기반 동적 조회로 전환됨 (map/page.tsx, ads/sidebar/route.ts 포함 — 2026-07-03 리비전에서 추가 확인)
 3. 경남 신규 시군구의 Golden Record(complexes)와 10년치 실거래가가 확보됨
 4. Supabase DB 실측 용량 기반으로 Pro 플랜 전환 여부가 사용자에 의해 명시적으로 결정됨
 
