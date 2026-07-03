@@ -1,4 +1,7 @@
-import 'server-only'
+// server-only 미포함 — scripts/(seed-complexes.ts, kapt-enrich.ts 등 6개)에서 tsx로 직접 임포트해야 함
+// (naver-land.ts/presale-crawler.ts와 동일 패턴). 'server-only' 마커는 Node 스크립트 실행 시
+// exports 조건이 맞지 않아 무조건 throw하여 백필 스크립트를 깨뜨림. 클라이언트 컴포넌트에서
+// import된 적 없음(grep 검증: API route + scripts만 사용) — 노출 리스크 없음.
 import { z } from 'zod/v4'
 
 // 국토교통부_공동주택 단지 목록제공 서비스 (data.go.kr 승인 API)
