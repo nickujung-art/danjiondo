@@ -3,6 +3,8 @@ export const revalidate = 604800
 
 import Anthropic from '@anthropic-ai/sdk'
 import type { NextRequest } from 'next/server'
+import { createReadonlyClient } from '@/lib/supabase/readonly'
+import { getActiveSggCodes } from '@/lib/data/regions'
 
 export async function GET(request: NextRequest): Promise<Response> {
   const { searchParams } = request.nextUrl
@@ -11,8 +13,10 @@ export async function GET(request: NextRequest): Promise<Response> {
   const trend      = searchParams.get('trend')       ?? 'neutral'
   const mape       = parseFloat(searchParams.get('mape') ?? '0')
 
-  // 입력 검증 — allowlist (T-22-03-01)
-  const ALLOWED_SGG   = ['48121', '48123', '48125', '48127', '48129', '48250', '']
+  // 입력 검증 — allowlist (T-22-03-01, Phase 33에서 regions 테이블 기반 동적 조회로 전환)
+  const supabase      = createReadonlyClient()
+  const activeSggCodes = await getActiveSggCodes(supabase)
+  const ALLOWED_SGG   = [...activeSggCodes, '']
   const ALLOWED_AREA  = ['소형', '59', '84', '대형', '']
   const ALLOWED_TREND = ['up', 'down', 'neutral']
   if (!ALLOWED_SGG.includes(sggCode))    return Response.json({ commentary: null }, { status: 400 })
