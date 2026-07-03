@@ -55,6 +55,13 @@
 - `src/services/sgis.ts`의 `CHANGWON_GU_CODES`/`GIMHAE_CODE`는 코드베이스 전체에서 어디에도 import되지 않는 죽은 코드로 확인됨 — 조치 불필요
 - `src/app/api/worker/cafe-ingest/route.ts`의 `SGG_CODE_MAP`은 기존에 deferred 처리한 "naver-cafe 지역별 카페 소스 다중화" 범위에 포함되는 것으로 간주 — 이번 phase에서 손대지 않음. 단, 이 맵의 `'김해': '48720'` 항목은 실제로는 48720이 의령군이고 김해는 48250이므로 **기존 버그**임을 기록해둠 (이번 phase 원인 아님, 향후 카페 매칭 phase에서 같이 수정 권장)
 
+### plan-checker 3차(최종) 검증 발견 사항 반영 (2026-07-03 추가 결정 #3)
+- `scripts/backfill-officetel.ts`의 `SGG_CODES` 6개 하드코딩 기본값 — 3차 검증에서 발견된, 동일 버그 클래스(하드코딩 기본 지역 배열 + 미연결 `--sgg` 오버라이드)의 4번째 발생 사례. `scripts/backfill-realprice.ts`의 `getSggCodes()` 패턴(regions 테이블 `is_active=true` 동적 조회, `--sgg` 있으면 우선)을 그대로 이식하여 **오케스트레이터가 직접 수정 완료** (추가 planner 리비전 라운드 없이 직접 처리 — 동일 패턴 3회 반복 적용 후라 리스크 낮음 판단). 커밋에 포함됨.
+- 아래 3건은 **informational** — 실질적 위험 없음, 계획 변경 불필요, 문서화로 마무리:
+  - `scripts/link-transactions.ts`, `scripts/geocode-complexes.ts`, `scripts/enrich-apt-unmatched.ts`, `scripts/fix-coord-duplicates.ts` — 일회성/수동 유지보수 스크립트. 자동 스케줄 없음, `?? null`/`?? ''` 형태로 안전하게 degrade. 이번 phase 범위 아님 (신규 지역 실거래는 Phase 7 DATA-10의 `ingestMonth` 자동 매핑으로 처리되므로 이 스크립트들과 무관)
+  - `card-news/scripts/generate.js`(Phase 30 주간 인스타 카드뉴스 자동화)의 `ALL_SGG`/`SGG_MAP`/`AREA_GU_SERIES`/`CITY_SERIES` — 6개 지역 하드코딩이지만 "어느 지역을 주간 카드에 넣을지"는 콘텐츠/제품 결정이 필요한 사안이라 기계적 배열 교체로 끝날 문제가 아님. **별도 후속 phase(카드뉴스 지역 확장)로 defer**
+  - `src/services/lh/client.ts`의 `TARGET_REGIONS = ['창원','김해','경남','경상남도']` — 이미 '경남'/'경상남도' province-level 명칭을 포함하고 있어 22개 지역 전부에 자동으로 매칭됨. 코드 변경 불필요, informational로만 기록
+
 ### 매칭 품질
 - 신규 지역 실거래가 수집 시 `complex_match_queue`에 쌓이는 미매칭 건은 자동 승인하지 않는다 — 기존 창원·김해와 동일하게 검수 큐 방식 유지
 - 창원·김해 전용 수동 별칭(`20260518000002_manual_aliases.sql`)과 같은 지역 특화 보정 작업은 이번 phase 범위 밖 (신규 지역은 자연 매칭률로 우선 진행, 필요 시 후속 보정)

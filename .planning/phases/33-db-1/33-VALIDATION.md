@@ -1,8 +1,8 @@
 ---
 phase: 33
 slug: db-1
-status: draft
-nyquist_compliant: false
+status: approved
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-07-03
 ---
@@ -91,4 +91,4 @@ created: 2026-07-03
 - [ ] Feedback latency < 60s
 - [ ] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending — 리비전(3차, 33-10 신규: molit-unsold.ts/realprice-officetel.ts) 완료, plan-checker 재검증 대기 중.
+**Approval:** approved 2026-07-03 — plan-checker 3차 검증에서 마지막 블로커(`scripts/backfill-officetel.ts` 하드코딩) 1건 발견, 오케스트레이터가 동일 패턴(getSggCodes) 적용해 직접 수정(33-10-PLAN.md addendum 참고). 나머지 3건(카드뉴스 자동화, 수동 유지보수 스크립트, lh/client.ts)은 informational로 CONTEXT.md에 문서화, 계획 변경 불필요. 11개 plan 최종 확정.

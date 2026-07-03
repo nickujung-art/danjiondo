@@ -27,7 +27,16 @@ const fromArg   = args.find(a => a.startsWith('--from='))?.split('=')[1]
 const toArg     = args.find(a => a.startsWith('--to='))?.split('=')[1]
 const sggArg    = args.find(a => a.startsWith('--sgg='))?.split('=')[1]
 
-const SGG_CODES = ['48121', '48123', '48125', '48127', '48129', '48250']
+async function getSggCodes(): Promise<string[]> {
+  if (sggArg) return sggArg.split(',').map(s => s.trim())
+  const { data, error } = await supabase
+    .from('regions')
+    .select('sgg_code')
+    .eq('is_active', true)
+    .order('sgg_code')
+  if (error) throw new Error(`regions 조회 실패: ${error.message}`)
+  return (data ?? []).map((r: { sgg_code: string }) => r.sgg_code)
+}
 
 function monthRange(from: string, to: string): string[] {
   const months: string[] = []
@@ -65,7 +74,7 @@ async function main() {
   const from     = fromArg ?? defaultFrom
   const to       = toArg   ?? defaultTo
   const months   = monthRange(from, to)
-  const sggCodes = sggArg ? sggArg.split(',').map(s => s.trim()) : SGG_CODES
+  const sggCodes = await getSggCodes()
 
   console.log(`📅 기간: ${from} ~ ${to} (${months.length}개월)`)
   console.log(`📍 지역: ${sggCodes.join(', ')}`)
