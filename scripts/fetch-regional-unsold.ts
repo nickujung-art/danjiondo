@@ -4,6 +4,7 @@
  */
 import { createClient } from '@supabase/supabase-js'
 import { fetchGyeongnamUnsold, resolveSggCode } from '../src/services/molit-unsold'
+import { getActiveRegionAddrs } from '../src/lib/data/regions'
 
 function currentYearMonth(): string {
   const now = new Date()
@@ -21,6 +22,7 @@ async function main() {
 
   const yearMonth = currentYearMonth()
   console.log(`[fetch-regional-unsold] year_month=${yearMonth}`)
+  const regionAddrs = await getActiveRegionAddrs(supabase)
 
   // 전체 페이지 수집 (총 432건, 1회 요청으로 충분)
   const { items, totalCount } = await fetchGyeongnamUnsold(1, 1000)
@@ -31,7 +33,7 @@ async function main() {
   let skipped = 0
 
   for (const item of items) {
-    const sggCode = resolveSggCode(item)
+    const sggCode = resolveSggCode(item, regionAddrs)
     if (!sggCode) {
       skipped++
       continue

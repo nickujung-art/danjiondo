@@ -67,25 +67,21 @@ export async function fetchGyeongnamUnsold(pageNo = 1, numOfRows = 1000): Promis
   return { items: body.items.item, totalCount: body.totalCount }
 }
 
-// ── 시군구명 → sgg_code 매핑 ────────────────────────────────────
-// 창원시는 rdnmadr에서 구 이름 추출 필요
+// ── 시군구명 → sgg_code 매핑 (regions 테이블 기반 동적 역매칭) ──────
+// CHANGWON_GU_MAP 등 정적 배열 대신 활성 regions 행(si/gu)을 역매칭한다.
+// signgunm으로 si 후보를 좁히고, 창원처럼 si가 같은 복수 gu 후보가 있으면
+// rdnmadr에서 gu 이름을 찾아 단일 코드로 좁힌다.
 
-const CHANGWON_GU_MAP: Record<string, string> = {
-  '의창구': '48121',
-  '성산구': '48123',
-  '마산합포구': '48125',
-  '마산회원구': '48127',
-  '진해구': '48129',
+export interface RegionAddrEntry {
+  sgg_code: string
+  si: string
+  gu: string | null
 }
 
-export function resolveSggCode(item: UnsoldItem): string | null {
-  const sgg = item.signgunm
-  if (sgg.includes('김해')) return '48250'
-  if (sgg.includes('창원')) {
-    for (const [guName, code] of Object.entries(CHANGWON_GU_MAP)) {
-      if (item.rdnmadr.includes(guName)) return code
-    }
-    return null // 창원시이지만 구 파악 불가
-  }
-  return null // 서비스 범위 외 (진주시, 통영시 등)
+export function resolveSggCode(item: UnsoldItem, regions: RegionAddrEntry[]): string | null {
+  const candidates = regions.filter(r => item.signgunm.includes(r.si))
+  if (candidates.length === 0) return null // regions 테이블에 없는 시군구 (서비스 범위 외)
+  if (candidates.length === 1) return candidates[0]?.sgg_code ?? null
+  const guMatch = candidates.find(r => r.gu != null && item.rdnmadr.includes(r.gu))
+  return guMatch?.sgg_code ?? null // si는 같으나 구(rdnmadr) 파악 불가
 }

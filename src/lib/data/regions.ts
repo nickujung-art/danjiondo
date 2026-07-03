@@ -34,3 +34,25 @@ export async function getActiveCityNames(
   const names = new Set((data ?? []).map((r) => r.si.replace(/(시|군)$/, '')))
   return [...names]
 }
+
+/**
+ * regions 테이블에서 is_active=true인 전체 (sgg_code, si, gu) 행을 조회한다.
+ * CHANGWON_GU_MAP(molit-unsold.ts)/SGG_TO_ADDR(realprice-officetel.ts) 등
+ * 정적 시군구 주소 매핑 배열을 대체하는 유일한 지역 주소 마스터 접근 경로 (Phase 33 2차 리비전).
+ */
+export interface RegionAddr {
+  sgg_code: string
+  si: string
+  gu: string | null
+}
+
+export async function getActiveRegionAddrs(
+  supabase: SupabaseClient<Database>,
+): Promise<RegionAddr[]> {
+  const { data, error } = await supabase
+    .from('regions')
+    .select('sgg_code, si, gu')
+    .eq('is_active', true)
+  if (error) throw new Error(`regions 조회 실패: ${error.message}`)
+  return data ?? []
+}
