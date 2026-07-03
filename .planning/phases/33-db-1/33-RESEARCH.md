@@ -307,22 +307,25 @@ on conflict (sgg_code) do nothing;
 
 **A1은 두 개의 독립 웹 소스(apt-info.github.io, land.koreacharts.com)에서 교차 검증되었고 리서치 담당자의 학습 지식과도 일치하나, code.go.kr 원본 표를 직접 열람하지 못했으므로 MEDIUM confidence로 유지한다.**
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **`rankings.ts`의 `ACTIVE_SGG_CODES`를 이번 phase 리팩터 범위에 포함할 것인가?**
    - What we know: CONTEXT.md의 canonical_refs 9개 목록에는 없지만, 랜딩 페이지 랭킹(`getRecentDailyFeed`, `getChampionComplexes`, `getRegionalPriceRanking` 등 4곳에서 사용)에 직접 영향을 미치는 동일 패턴의 하드코딩이다. 코드 자체 주석이 이미 확장을 예견하고 있다.
    - What's unclear: 사용자가 이 파일을 의도적으로 제외했는지(예: 랜딩 랭킹은 여전히 창원·김해로 한정 유지하고 싶어서), 단순히 사전 조사에서 누락된 것인지 불명확.
    - Recommendation: planner가 discuss 단계 없이 진행한다면, `rankings.ts`도 동일 리팩터 대상에 포함하되 "랭킹 데이터 노출 범위가 경남 전체로 확대된다"는 것을 실행 전 사용자에게 한 줄 컨펌 받는 것을 권장 (CONTEXT.md 취지상 "UI 변경 없음"이지만 이건 UI가 아니라 노출되는 데이터 범위의 변경이므로 별개 이슈).
+   - **RESOLVED (2026-07-03, CONTEXT.md 추가 결정):** 사용자가 AskUserQuestion으로 확답 — `rankings.ts`도 포함. 33-02-PLAN.md에서 처리됨.
 
 2. **데이터 레이어 allowlist 동적화 시 UI `SGG_LABEL` 정적 맵을 어떻게 처리할 것인가?** (Pitfall 2 참고)
    - What we know: 최소 6개 파일(`invest/page.tsx`, `gap-analysis/page.tsx`, `PredictionSection.tsx`, `prediction-commentary/route.ts`, `AdCreateForm.tsx`, `AdEditForm.tsx`, `EnrichedPresaleCard.tsx`, `BuilderOptionsPanel.tsx`)이 창원·김해 6개 지역명을 정적으로 하드코딩하고 있다.
    - What's unclear: CONTEXT.md의 "UI 변경 없음" 원칙을 그대로 적용하면 이 파일들의 allowlist는 6개로 유지해야 하는데, 그러면 `invest.ts`/`gap-analysis.ts`의 데이터 레이어 allowlist를 동적으로 바꿔도 실질적으로 UI에서 필터링 가능한 지역은 여전히 6개로 제한된다 — 이게 사용자의 의도인지(즉 "데이터는 수집하되 이번엔 노출 안 함") 확인 필요.
    - Recommendation: plan 단계에서 "이번 phase는 데이터 수집·저장까지만, 신규 지역 데이터의 UI 노출은 프론트엔드 재기획 이후 별도 phase"라는 원칙을 PLAN.md에 명시적으로 기록해 향후 혼란을 방지.
+   - **RESOLVED (2026-07-03, CONTEXT.md 추가 결정):** 사용자가 AskUserQuestion으로 확답 — "라벨만 추가"(option a). SGG_LABEL 맵에 신규 시군구 이름만 기계적으로 추가, UI 구조·레이아웃 변경 없음. 33-05-PLAN.md에서 처리됨.
 
 3. **경남 신규 16개 시군구의 실제 국토부 실거래 데이터 존재 시점(농어촌 지역은 아파트 거래 자체가 희소할 수 있음)**
    - What we know: 의령군·산청군·합천군 등은 인구 3만 미만의 농어촌 군 지역으로, 아파트 단지 수 자체가 매우 적을 가능성이 높다 (K-apt/국토부 데이터가 애초에 희소할 수 있음).
    - What's unclear: 정확한 단지 수·거래량은 API를 실제로 호출해봐야 알 수 있다.
    - Recommendation: Pitfall 4의 단발 검증 단계에서 자연스럽게 확인됨 — 거래가 거의 없는 지역은 백필 우선순위를 낮추거나(선택적 defer) 시간 예산에서 무시 가능한 수준으로 처리.
+   - **RESOLVED (절차적):** 별도 사용자 확인 불필요 — 33-00 Task 2(법정동코드 단발 검증)에서 API 실호출 시 자연히 드러남. 거래 희소 지역은 33-07 백필 실행 시 낮은 우선순위로 처리.
 
 ## Environment Availability
 
