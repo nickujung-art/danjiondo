@@ -51,12 +51,14 @@ created: 2026-07-03
 | 33-06-* | 33-06 | 1 | KAPT 단지목록으로 complexes 경남 신규 시딩 | T-33-09 | accept — upsert, service_role 전용 | integration | `npm run db:seed:complexes -- --dry-run` (있다면) 또는 실행 로그 확인 | 확인 필요 | ⬜ pending |
 | 33-09-T1 | 33-09 | 1 | `map/page.tsx` TARGET_SGG 동적 전환 (리비전 Gap 1) | T-33-13 | accept — 사용자 입력 경로 없음, 서버 컴포넌트 내부 | tsc | `npx tsc --noEmit --pretty false \| grep -i "app/map/page"` | 확인 필요 (기존 파일 수정) | ⬜ pending |
 | 33-09-T2 | 33-09 | 1 | `ads/sidebar/route.ts` VALID_SGG_CODES 동적 전환 (리비전 Gap 1) | T-33-12 | mitigate — activeSggCodes.has(raw) 검증 유지 | tsc | `npx tsc --noEmit --pretty false \| grep -i "api/ads/sidebar"` | 확인 필요 (기존 파일 수정) | ⬜ pending |
+| 33-10-T1 | 33-10 | 1 | `molit-unsold.ts` resolveSggCode CHANGWON_GU_MAP 동적 전환 (2차 리비전 Fix 1) | T-33-15 | accept — data.go.kr 공식 API 응답, 사용자 입력 아님 | unit | `npx vitest run src/services/molit-unsold.test.ts` | ❌ 신규 작성 (molit-unsold.test.ts) | ⬜ pending |
+| 33-10-T2 | 33-10 | 1 | `realprice-officetel.ts` SGG_TO_ADDR 동적 전환 (2차 리비전 Fix 2) | T-33-16 | accept — service_role 전용 파이프라인, 공개 지역명 | tsc | `npx tsc --noEmit --pretty false \| grep -i "realprice-officetel"` | 확인 필요 (기존 파일 수정) | ⬜ pending |
 | 33-07-* | 33-07 | 2 `[CHECKPOINT]` | 국토부 실거래가 10년 다회 분할 백필 | T-33-10 | mitigate — cron 시간대 회피 + --resume 재개 | manual | GitHub Actions workflow_dispatch 로그 + `ingest_runs` 테이블 조회 | manual-only (multi-day) | ⬜ pending |
 | 33-08-* | 33-08 | 3 `[CHECKPOINT]` | Supabase 용량 실측 + Pro 플랜 결정 | T-33-11 | accept — 운영 메타데이터, service_role 전용 | manual | `SELECT pg_size_pretty(pg_database_size(current_database()))` 실행 후 사용자 확인 | manual-only | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
-*참고: 이 phase는 백엔드/데이터 파이프라인 성격이라 Threat Ref/Secure Behavior 컬럼은 대부분 N/A~accept — 이번 phase에 인증·인가·PII 처리 변경 없음 (33-RESEARCH.md Security Domain 섹션 참고). 리비전(33-09, 33-01-T3)에서 발견된 두 하드코딩 지점도 동일하게 사용자 입력 경로가 제한적이어서 위험도 낮음.*
+*참고: 이 phase는 백엔드/데이터 파이프라인 성격이라 Threat Ref/Secure Behavior 컬럼은 대부분 N/A~accept — 이번 phase에 인증·인가·PII 처리 변경 없음 (33-RESEARCH.md Security Domain 섹션 참고). 리비전(33-09, 33-01-T3, 33-10)에서 발견된 하드코딩 지점들도 동일하게 사용자 입력 경로가 제한적이어서 위험도 낮음.*
 
 ---
 
@@ -89,4 +91,4 @@ created: 2026-07-03
 - [ ] Feedback latency < 60s
 - [ ] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending — 리비전(2차, 33-09 신규 + 33-01-T3 추가) 완료, plan-checker 재검증 대기 중.
+**Approval:** pending — 리비전(3차, 33-10 신규: molit-unsold.ts/realprice-officetel.ts) 완료, plan-checker 재검증 대기 중.

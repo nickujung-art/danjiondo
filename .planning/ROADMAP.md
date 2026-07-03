@@ -1223,10 +1223,11 @@
 - REGION-08: Supabase DB 용량 실측 + Pro 플랜 전환 여부 결정 게이트
 - REGION-09: `/map` 페이지·광고 사이드바 API(`ads/sidebar/route.ts`)의 TARGET_SGG/VALID_SGG_CODES 하드코딩 → regions 동적 조회 전환 (plan-checker 리비전 대응, 2026-07-03)
 - REGION-10: `scripts/seed-kosis-population.ts` 인구 캐시 시딩 스크립트 --sgg CLI 오버라이드 + regions 동적 기본값 (plan-checker 리비전 대응, 2026-07-03)
+- REGION-11: `molit-unsold.ts`(CHANGWON_GU_MAP)·`realprice-officetel.ts`(SGG_TO_ADDR) 하드코딩 → regions 동적 조회 전환 (plan-checker 2차 리비전 대응, 2026-07-03)
 
 **Depends on:** Phase 32
 
-**Plans:** 10 plans / 4 waves
+**Plans:** 11 plans / 4 waves
 
 **Wave 0** *(독립 실행 가능 — 지역 마스터 시딩 + 공용 헬퍼)*
 - [ ] 33-00-PLAN.md — regions 테이블 경남 16개 신규 시군구 시딩 + 법정동코드 단발 검증 + getActiveSggCodes/getActiveCityNames 공용 헬퍼 + seed-region.test.ts 갱신 (REGION-01)
@@ -1239,6 +1240,7 @@
 - [ ] 33-05-PLAN.md — UI 지역 라벨 맵 경남 신규 시군구 라벨 기계적 추가 (REGION-06)
 - [ ] 33-06-PLAN.md — KAPT 단지목록 API로 경남 신규 시군구 Golden Record(complexes) 시딩 (REGION-01)
 - [ ] 33-09-PLAN.md — `/map` 페이지·광고 사이드바 API 동적 지역 필터 전환 (REGION-09, plan-checker 리비전 대응)
+- [ ] 33-10-PLAN.md — molit-unsold.ts/realprice-officetel.ts 하드코딩 지역 매핑 동적 전환 (REGION-11, plan-checker 2차 리비전 대응)
 
 **Wave 2** *(blocked on 33-06; checkpoint:human-action — 다회 분할 실행)*
 - [ ] 33-07-PLAN.md — 경남 신규 시군구 국토부 실거래가 10년 다회 분할 백필 `[CHECKPOINT]` (REGION-07)
