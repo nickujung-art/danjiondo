@@ -14,17 +14,8 @@ import {
   type OffiRentItem,
 } from '@/services/molit-officetel'
 import { nameNormalize } from './name-normalize'
+import { getActiveRegionAddrs, type RegionAddr } from './regions'
 import { upsertTransaction, type IngestResult } from './realprice'
-
-// ── 지역코드 → 시·구 매핑 (창원·김해 한정) ──────────────────
-const SGG_TO_ADDR: Record<string, { si: string; gu: string | null }> = {
-  '48121': { si: '창원시', gu: '의창구' },
-  '48123': { si: '창원시', gu: '성산구' },
-  '48125': { si: '창원시', gu: '마산합포구' },
-  '48127': { si: '창원시', gu: '마산회원구' },
-  '48129': { si: '창원시', gu: '진해구' },
-  '48250': { si: '김해시', gu: null },
-}
 
 // ── dedupe_key (APT와 충돌 방지: 'offi_' prefix) ──────────
 function makeOffiDedupeKey(params: {
@@ -51,6 +42,7 @@ async function getOrCreateOffiComplex(
   umdNm?: string,
   buildYear?: number,
   cache: Map<string, string | null> = new Map(),
+  regionAddrMap: Map<string, RegionAddr> = new Map(),
 ): Promise<string | null> {
   const nameNorm = nameNormalize(offiNm)
   const cacheKey = `${sggCd}:${nameNorm}:${umdNm ?? ''}`
@@ -70,7 +62,7 @@ async function getOrCreateOffiComplex(
   }
 
   // 2단계: 매칭 실패 → 오피스텔 단지 자동 생성
-  const addr = SGG_TO_ADDR[sggCd]
+  const addr = regionAddrMap.get(sggCd)
   const { data: newComplex, error } = await supabase
     .from('complexes')
     .insert({
@@ -133,6 +125,10 @@ export async function ingestOffiMonth(
   let zodFails     = 0
   let totalRows    = 0
 
+  // sgg_code → si/gu 매핑 (regions 테이블 기반, ingestOffiMonth 호출당 1회 조회 — SGG_TO_ADDR 정적 배열 대체)
+  const regionAddrsList = await getActiveRegionAddrs(supabase)
+  const regionAddrMap = new Map(regionAddrsList.map(r => [r.sgg_code, r]))
+
   // 단지 캐시 (ingestOffiMonth 호출 당 — 중복 INSERT 방지)
   const complexCache = new Map<string, string | null>()
 
@@ -151,7 +147,7 @@ export async function ingestOffiMonth(
 
       const complexId = await getOrCreateOffiComplex(
         supabase, item.offiNm, String(item.sggCd),
-        item.umdNm, item.buildYear, complexCache,
+        item.umdNm, item.buildYear, complexCache, regionAddrMap,
       )
 
       const outcome = await upsertTransaction({
@@ -197,7 +193,7 @@ export async function ingestOffiMonth(
 
       const complexId = await getOrCreateOffiComplex(
         supabase, item.offiNm, String(item.sggCd),
-        item.umdNm, item.buildYear, complexCache,
+        item.umdNm, item.buildYear, complexCache, regionAddrMap,
       )
 
       const outcome = await upsertTransaction({

@@ -1,4 +1,8 @@
-import 'server-only'
+// server-only 미포함 — scripts/(fetch-regional-unsold.ts, backfill-officetel.ts 등)에서 tsx로
+// 직접 임포트해야 함 (naver-land.ts/presale-crawler.ts/kapt.ts와 동일 패턴, 33-06 7be9031 선례).
+// 'server-only' 마커는 Node 스크립트 실행 시 exports 조건이 맞지 않아 무조건 throw하여
+// 백필/집계 스크립트를 깨뜨린다. 클라이언트 컴포넌트에서 import된 적 없음(grep 검증:
+// API route + RSC page(서버 컴포넌트) + scripts만 사용) — 노출 리스크 없음.
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 
