@@ -49,6 +49,12 @@
 - `src/__tests__/seed-region.test.ts`가 regions 6행을 하드코딩 검증 중 — 경남 확장 시 이 테스트도 함께 업데이트 필요 (RESEARCH.md에서 발견된 Wave 0 갭)
 - 학군 랭킹 RPC·`seo-hierarchy.ts`는 리서치 결과 코드 변경 없이 이미 구 없는 시군구를 처리 가능한 것으로 확인됨 — "일반화 작업"이 아니라 "확인 + 회귀 테스트"로 범위 축소
 
+### plan-checker 2차 검증 발견 사항 반영 (2026-07-03 추가 결정 #2)
+- `src/services/molit-unsold.ts`(`resolveSggCode`/`CHANGWON_GU_MAP`)와 `src/lib/data/realprice-officetel.ts`(`SGG_TO_ADDR`)에 6개 지역 하드코딩이 남아있었음 — 둘 다 **이번 phase 범위에 포함**하여 `regions` 테이블 기반 동적 조회로 전환한다 (33-03 확장 또는 신규 plan)
+- `src/services/reb.ts`(`SGG_TO_REB_CLS`, R-ONE 매매/전세가격지수)는 **이번 phase에서 처리하지 않고 명시적으로 defer**한다 — `clsId`는 sgg_code에서 기계적으로 유도 불가능한 외부 분류 코드라 16개 신규 지역분 신규 조사가 필요함(법정동코드 조사와 유사한 별도 리서치). `fetchPriceIndexSeries()`가 매핑 없는 지역에 대해 이미 `null`을 안전하게 반환하므로(페이지 크래시 없음) 신규 지역 상세페이지에서 이 섹션만 조용히 비어 보이는 정도로 허용
+- `src/services/sgis.ts`의 `CHANGWON_GU_CODES`/`GIMHAE_CODE`는 코드베이스 전체에서 어디에도 import되지 않는 죽은 코드로 확인됨 — 조치 불필요
+- `src/app/api/worker/cafe-ingest/route.ts`의 `SGG_CODE_MAP`은 기존에 deferred 처리한 "naver-cafe 지역별 카페 소스 다중화" 범위에 포함되는 것으로 간주 — 이번 phase에서 손대지 않음. 단, 이 맵의 `'김해': '48720'` 항목은 실제로는 48720이 의령군이고 김해는 48250이므로 **기존 버그**임을 기록해둠 (이번 phase 원인 아님, 향후 카페 매칭 phase에서 같이 수정 권장)
+
 ### 매칭 품질
 - 신규 지역 실거래가 수집 시 `complex_match_queue`에 쌓이는 미매칭 건은 자동 승인하지 않는다 — 기존 창원·김해와 동일하게 검수 큐 방식 유지
 - 창원·김해 전용 수동 별칭(`20260518000002_manual_aliases.sql`)과 같은 지역 특화 보정 작업은 이번 phase 범위 밖 (신규 지역은 자연 매칭률로 우선 진행, 필요 시 후속 보정)
