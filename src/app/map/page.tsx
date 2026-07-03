@@ -3,10 +3,9 @@ import { getComplexesForMap } from '@/lib/data/complexes-map'
 import { getPresalePinsForMap } from '@/lib/data/presale-pins'
 import { searchComplexes } from '@/lib/data/complex-search'
 import { getActiveAds } from '@/lib/data/ads'
+import { getActiveSggCodes } from '@/lib/data/regions'
 import { MapView } from '@/components/map/MapView'
 import { SidePanel } from '@/components/search/SidePanel'
-
-const TARGET_SGG = ['48121', '48123', '48125', '48127', '48129', '48250', '48720']
 
 export const revalidate = 0
 
@@ -17,13 +16,14 @@ interface Props {
 export default async function MapPage({ searchParams }: Props) {
   const { q = '' } = await searchParams
   const supabase = createReadonlyClient()
+  const activeSggCodes = await getActiveSggCodes(supabase)
 
   const [complexes, searchResults, presalePins, mapPopupAds, inFeedAds] = await Promise.all([
-    getComplexesForMap(TARGET_SGG, supabase).catch((err: unknown) => {
+    getComplexesForMap(activeSggCodes, supabase).catch((err: unknown) => {
       console.error('[map] getComplexesForMap failed:', err)
       return []
     }),
-    searchComplexes(q, TARGET_SGG, supabase).catch(() => []),
+    searchComplexes(q, activeSggCodes, supabase).catch(() => []),
     getPresalePinsForMap(supabase).catch(() => []),
     getActiveAds('map_popup', supabase).catch(() => []),
     getActiveAds('in_feed', supabase).catch(() => []),
