@@ -15,13 +15,13 @@ import {
   getRegionalPopulation,
   getRegionalGapItems,
   calcHAI,
-  ALLOWED_SGG_CODES,
   ALLOWED_AREA_BUCKETS,
   type AreaBucket,
   type PredictionPoint,
   type RegionalUnsoldPoint,
   type RegionalGapItem,
 } from '@/lib/data/invest'
+import { getActiveSggCodes } from '@/lib/data/regions'
 import { RegionChartSection } from '@/components/invest/RegionChartSection'
 import { RateSparklineWrapper } from '@/components/invest/RateSparklineWrapper'
 import { PopulationChart } from '@/components/invest/PopulationChart'
@@ -40,6 +40,10 @@ const SGG_LABEL: Record<string, string> = {
   '48127': '창원 마산회원구',
   '48129': '창원 진해구',
   '48250': '김해시',
+  '48170': '진주시', '48220': '통영시', '48240': '사천시', '48270': '밀양시',
+  '48310': '거제시', '48330': '양산시', '48720': '의령군', '48730': '함안군',
+  '48740': '창녕군', '48820': '고성군', '48840': '남해군', '48850': '하동군',
+  '48860': '산청군', '48870': '함양군', '48880': '거창군', '48890': '합천군',
 }
 
 interface Props {
@@ -173,13 +177,15 @@ export default async function RegionDetailPage({ params, searchParams }: Props) 
   const rawBucket = typeof sp.area_bucket === 'string' ? sp.area_bucket : ''
   const horizon = sp.horizon === '3' ? 3 : sp.horizon === '12' ? 12 : 6
 
-  if (!(ALLOWED_SGG_CODES as ReadonlyArray<string>).includes(sggCode)) notFound()
+  const supabase = createReadonlyClient()
+  const allowedSggCodes = await getActiveSggCodes(supabase)
+
+  if (!allowedSggCodes.includes(sggCode)) notFound()
 
   const areaBucket = (ALLOWED_AREA_BUCKETS as ReadonlyArray<string>).includes(rawBucket)
     ? (rawBucket as AreaBucket)
     : undefined
 
-  const supabase = createReadonlyClient()
   const label = SGG_LABEL[sggCode] ?? sggCode
 
   const [history, predTimeseries, jeonseData, complexRanking, unsoldHistory, incomeData, mortgageRateData, populationData, rateSeries, gapItems, priceIndexData] = await Promise.all([

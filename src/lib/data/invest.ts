@@ -17,7 +17,6 @@ export interface PredictionPoint {
 
 // ─── Allowlists ───────────────────────────────────────────────────────────────
 
-export const ALLOWED_SGG_CODES = ['48121', '48123', '48125', '48127', '48129', '48250'] as const
 export const ALLOWED_AREA_BUCKETS = ['소형', '59', '74', '84', '대형'] as const
 export type AreaBucket = typeof ALLOWED_AREA_BUCKETS[number]
 

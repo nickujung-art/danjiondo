@@ -6,10 +6,10 @@ import type { GapRankingRow } from '@/lib/data/gap-analysis'
 import {
   getTopPredictionComplexes,
   getRegionalPredictionSummary,
-  ALLOWED_SGG_CODES,
   ALLOWED_AREA_BUCKETS,
 } from '@/lib/data/invest'
 import type { AreaBucket } from '@/lib/data/invest'
+import { getActiveSggCodes } from '@/lib/data/regions'
 import { PredictionSection } from '@/components/invest/PredictionSection'
 import { formatPrice } from '@/lib/format'
 
@@ -26,7 +26,7 @@ interface Props {
 }
 
 // ─── allowlists ──────────────────────────────────────────────────────────────
-// ALLOWED_SGG_CODES, ALLOWED_AREA_BUCKETS는 @/lib/data/invest에서 import
+// ALLOWED_AREA_BUCKETS는 @/lib/data/invest에서 import, 지역 코드는 regions 테이블 동적 조회(getActiveSggCodes)로 대체됨
 const ALLOWED_RISK_LEVELS = ['safe', 'caution', 'danger'] as const
 type AllowedRiskLevel = (typeof ALLOWED_RISK_LEVELS)[number]
 
@@ -38,12 +38,11 @@ const SGG_LABEL: Record<string, string> = {
   '48127': '창원 마산회원구',
   '48129': '창원 진해구',
   '48250': '김해시',
+  '48170': '진주시', '48220': '통영시', '48240': '사천시', '48270': '밀양시',
+  '48310': '거제시', '48330': '양산시', '48720': '의령군', '48730': '함안군',
+  '48740': '창녕군', '48820': '고성군', '48840': '남해군', '48850': '하동군',
+  '48860': '산청군', '48870': '함양군', '48880': '거창군', '48890': '합천군',
 }
-
-const REGION_OPTIONS: Array<{ label: string; value: string }> = [
-  { label: '전체', value: '' },
-  ...ALLOWED_SGG_CODES.map((code) => ({ label: SGG_LABEL[code] ?? code, value: code })),
-]
 
 const RISK_OPTIONS: Array<{ label: string; value: string }> = [
   { label: '전체', value: '' },
@@ -105,7 +104,10 @@ export default async function InvestPage({ searchParams }: Props) {
   const rawRisk   = typeof params.risk_level === 'string' ? params.risk_level : ''
   const rawArea   = typeof params.area_type  === 'string' ? params.area_type  : ''
 
-  const sggCode   = (ALLOWED_SGG_CODES as ReadonlyArray<string>).includes(rawSgg)
+  const supabase = createReadonlyClient()
+  const allowedSggCodes = await getActiveSggCodes(supabase)
+
+  const sggCode   = allowedSggCodes.includes(rawSgg)
     ? rawSgg
     : undefined
   const riskLevel = (ALLOWED_RISK_LEVELS as ReadonlyArray<string>).includes(rawRisk)
@@ -116,7 +118,10 @@ export default async function InvestPage({ searchParams }: Props) {
     ? (rawArea as AreaBucket)
     : undefined
 
-  const supabase = createReadonlyClient()
+  const REGION_OPTIONS: Array<{ label: string; value: string }> = [
+    { label: '전체', value: '' },
+    ...allowedSggCodes.map((code) => ({ label: SGG_LABEL[code] ?? code, value: code })),
+  ]
 
   // 병렬 fetch: 갭랭킹 + 예측 랭킹 + 지역 예측 요약
   const [rows, rankingItems, regionalSummaries] = await Promise.all([
