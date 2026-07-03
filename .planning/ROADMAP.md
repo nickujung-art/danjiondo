@@ -1210,13 +1210,53 @@
 ---
 ### Phase 33: 전국 DB 확장 1단계 — 경남 전체 지역 확장 기반 구축
 
-**Goal:** [To be planned]
-**Requirements**: TBD
-**Depends on:** Phase 32
-**Plans:** 0 plans
+**Goal:** `regions` 테이블에 경남 전체 시군구를 시딩하고, 하드코딩된 지역 필터를 regions 테이블 기반 동적 조회로 전환하며, 경남 나머지 시군구에 대한 국토부 실거래가·K-apt 백필을 실행한 뒤 실측 DB 용량 기반으로 Supabase Pro 플랜 전환 여부를 결정한다.
 
-Plans:
-- [ ] TBD (run /gsd-plan-phase 33 to break down)
+**Requirements:**
+- REGION-01: regions 테이블에 경남 16개 신규 시군구 시딩 + KAPT 단지목록 API로 Golden Record(complexes) 초기 시딩
+- REGION-02: 투자(`invest.ts`)·갭분석(`gap-analysis.ts`) 데이터 레이어 하드코딩 지역 필터 → regions 동적 조회 전환
+- REGION-03: 랭킹 데이터 레이어(`rankings.ts`, `rankings-page.ts`) 동적 지역 필터 전환
+- REGION-04: 크론·청약홈·분양권전매 어댑터(`cron/daily/route.ts`, `molit-presale.ts`, `cheongyak/client.ts`) 동적 지역 필터 전환
+- REGION-05: 학군 랭킹 RPC·`seo-hierarchy.ts` 무구(無區) 시군구 처리 회귀 테스트
+- REGION-06: UI 지역 라벨 맵(SGG_LABEL 등) 경남 신규 시군구 라벨 기계적 추가
+- REGION-07: 경남 신규 시군구 국토부 실거래가 다회 분할 백필 실행
+- REGION-08: Supabase DB 용량 실측 + Pro 플랜 전환 여부 결정 게이트
+
+**Depends on:** Phase 32
+
+**Plans:** 9 plans / 4 waves
+
+**Wave 0** *(독립 실행 가능 — 지역 마스터 시딩 + 공용 헬퍼)*
+- [ ] 33-00-PLAN.md — regions 테이블 경남 16개 신규 시군구 시딩 + 법정동코드 단발 검증 + getActiveSggCodes/getActiveCityNames 공용 헬퍼 + seed-region.test.ts 갱신 (REGION-01)
+
+**Wave 1** *(blocked on Wave 0; 33-01~33-06 전부 병렬 실행 가능 — files_modified 무중복)*
+- [ ] 33-01-PLAN.md — 투자/갭분석 페이지 동적 지역 필터 전환 (REGION-02)
+- [ ] 33-02-PLAN.md — 랭킹 데이터 레이어(rankings.ts, rankings-page.ts) 동적 지역 필터 전환 (REGION-03)
+- [ ] 33-03-PLAN.md — 크론·청약홈·분양권전매 어댑터 동적 지역 필터 전환 (REGION-04)
+- [ ] 33-04-PLAN.md — 학군 랭킹/지역계층 무구 시군구 회귀 테스트 (REGION-05)
+- [ ] 33-05-PLAN.md — UI 지역 라벨 맵 경남 신규 시군구 라벨 기계적 추가 (REGION-06)
+- [ ] 33-06-PLAN.md — KAPT 단지목록 API로 경남 신규 시군구 Golden Record(complexes) 시딩 (REGION-01)
+
+**Wave 2** *(blocked on 33-06; checkpoint:human-action — 다회 분할 실행)*
+- [ ] 33-07-PLAN.md — 경남 신규 시군구 국토부 실거래가 10년 다회 분할 백필 `[CHECKPOINT]` (REGION-07)
+
+**Wave 3** *(blocked on Wave 2; checkpoint:decision)*
+- [ ] 33-08-PLAN.md — Supabase DB 용량 실측 + Pro 플랜 전환 여부 결정 `[CHECKPOINT]` (REGION-08)
+
+**Cross-cutting constraints:**
+- `regions` 테이블(`sgg_code` PK, `is_active` 플래그)이 유일한 지역 마스터 — 모든 인라인 하드코딩 배열은 `getActiveSggCodes()`/`getActiveCityNames()` 경유
+- 외부 API(국토부·K-apt) 호출은 기존 `src/services/` 어댑터만 재사용, 신규 어댑터 없음
+- 신규 지역 실거래가 매칭 실패 건은 `complex_match_queue`에 적재 후 검수, 자동 승인 금지
+- UI 레이아웃/구조 변경 없음 (사이트 재기획 회의 대기 중 — SGG_LABEL 라벨 추가만 허용)
+- 인접 광역시·전국 확장, `naver-cafe.ts` 다중화, 학군/seo-hierarchy 전국형 일반화는 이 phase 범위 밖(후속 phase)
+
+**Success Criteria:**
+1. regions 테이블에 경남 전체 22개 시군구가 존재하고 신규 16개가 is_active=true
+2. 투자·갭분석·랭킹·크론 파이프라인의 인라인 하드코딩 지역 필터가 모두 제거되고 regions 기반 동적 조회로 전환됨
+3. 경남 신규 시군구의 Golden Record(complexes)와 10년치 실거래가가 확보됨
+4. Supabase DB 실측 용량 기반으로 Pro 플랜 전환 여부가 사용자에 의해 명시적으로 결정됨
+
+**UI hint**: no (라벨 텍스트만 추가, 레이아웃 변경 없음)
 
 ---
 ## Milestone Summary
