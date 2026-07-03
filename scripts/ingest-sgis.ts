@@ -25,15 +25,25 @@ const supabase = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } },
 )
 
-// 창원 5개 구 + 김해시 (ASSUMED adm_cd — stage API로 검증 필요)
-const DISTRICTS = [
-  { si: '창원시', gu: '의창구', adm_cd: '48121' },
-  { si: '창원시', gu: '성산구', adm_cd: '48123' },
-  { si: '창원시', gu: '마산합포구', adm_cd: '48125' },
-  { si: '창원시', gu: '마산회원구', adm_cd: '48127' },
-  { si: '창원시', gu: '진해구', adm_cd: '48129' },
-  { si: '김해시', gu: '김해시', adm_cd: '48250' },
-] as const
+interface District {
+  si: string
+  gu: string
+  adm_cd: string
+}
+
+async function getActiveDistricts(): Promise<District[]> {
+  const { data, error } = await supabase
+    .from('regions')
+    .select('sgg_code, si, gu')
+    .eq('is_active', true)
+    .order('sgg_code')
+  if (error) throw new Error(`regions 조회 실패: ${error.message}`)
+  return (data ?? []).map((r: { sgg_code: string; si: string; gu: string | null }) => ({
+    si: r.si,
+    gu: r.gu ?? r.si,
+    adm_cd: r.sgg_code,
+  }))
+}
 
 function currentQuarter(): { year: number; quarter: number } {
   const now = new Date()
@@ -52,7 +62,10 @@ async function main() {
   const { year, quarter } = currentQuarter()
   console.log(`대상 연도: ${year}년 ${quarter}분기`)
 
-  for (const district of DISTRICTS) {
+  const districts = await getActiveDistricts()
+  console.log(`대상 지역: ${districts.length}개`)
+
+  for (const district of districts) {
     try {
       const [popResult, hhResult] = await Promise.all([
         fetchPopulation(token, district.adm_cd, year),

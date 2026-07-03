@@ -62,6 +62,12 @@
   - `card-news/scripts/generate.js`(Phase 30 주간 인스타 카드뉴스 자동화)의 `ALL_SGG`/`SGG_MAP`/`AREA_GU_SERIES`/`CITY_SERIES` — 6개 지역 하드코딩이지만 "어느 지역을 주간 카드에 넣을지"는 콘텐츠/제품 결정이 필요한 사안이라 기계적 배열 교체로 끝날 문제가 아님. **별도 후속 phase(카드뉴스 지역 확장)로 defer**
   - `src/services/lh/client.ts`의 `TARGET_REGIONS = ['창원','김해','경남','경상남도']` — 이미 '경남'/'경상남도' province-level 명칭을 포함하고 있어 22개 지역 전부에 자동으로 매칭됨. 코드 변경 불필요, informational로만 기록
 
+### 실행 직전 최종 점검 (2026-07-03 추가 결정 #4 — 오케스트레이터 직접 처리)
+`/gsd-execute-phase 33` 실행 전 마지막으로 `scripts/`·`card-news/` 전체로 sweep 범위를 넓혀 재확인. 3건 추가 발견:
+- **`scripts/ingest-sgis.ts`** — `DISTRICTS` 6개 지역 하드코딩. `.github/workflows/sgis-stats.yml`에서 **분기별(1·4·7·10월 15일) 실제 자동 실행되는 라이브 크론**이라 다음 실행(2026-07-15)에 신규 16개 지역이 조용히 누락될 뻔함. `backfill-officetel.ts`와 동일하게 `regions` 테이블 `is_active=true` 동적 조회로 **직접 수정 완료** (커밋에 포함)
+- `scripts/collect-district-stats.ts`, `scripts/enrich-officetel-bldrgst.ts` — grep으로는 6개 지역 하드코딩(`TARGETS`/`SGG_LABEL`)이 걸리지만, 어떤 GitHub Actions 워크플로에도 연결되어 있지 않은 수동 실행 전용 도구로 확인됨(`package.json`·`.github/workflows/*.yml` 전체 검색 결과 참조 없음) — 기존에 informational로 분류한 `link-transactions.ts`/`geocode-complexes.ts` 등과 동일한 급으로 판단, 조치 불필요
+- 이것으로 동일 버그 클래스(하드코딩 지역 배열)의 **5번째 발생**(원 9곳 + rankings.ts + map/ads-sidebar + molit-unsold/realprice-officetel + backfill-officetel + ingest-sgis) — `scripts/`·`card-news/`까지 포함한 전체 저장소 sweep을 완료했으므로 추가 발견 가능성은 낮다고 판단하고 실행 진행
+
 ### 매칭 품질
 - 신규 지역 실거래가 수집 시 `complex_match_queue`에 쌓이는 미매칭 건은 자동 승인하지 않는다 — 기존 창원·김해와 동일하게 검수 큐 방식 유지
 - 창원·김해 전용 수동 별칭(`20260518000002_manual_aliases.sql`)과 같은 지역 특화 보정 작업은 이번 phase 범위 밖 (신규 지역은 자연 매칭률로 우선 진행, 필요 시 후속 보정)
