@@ -2,6 +2,7 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import type { RiskLevel } from './gap-stats'
+import { getActiveSggCodes } from './regions'
 
 // ─── Ranking types (Wave 3) ──────────────────────────────────────────────────
 
@@ -26,7 +27,6 @@ export interface GapRankingRow {
   status: string | null
 }
 
-const ALLOWED_SGG_CODES = ['48121', '48123', '48125', '48127', '48129', '48250']
 const ALLOWED_RISK_LEVELS: ReadonlyArray<string> = ['safe', 'caution', 'danger']
 
 /**
@@ -47,8 +47,11 @@ export async function getGapRankings(
     .order('gap_ratio', { ascending: false })
     .limit(200)
 
-  if (filter.sggCode && ALLOWED_SGG_CODES.includes(filter.sggCode)) {
-    query = query.eq('complexes.sgg_code', filter.sggCode)
+  if (filter.sggCode) {
+    const allowedSggCodes = await getActiveSggCodes(supabase)
+    if (allowedSggCodes.includes(filter.sggCode)) {
+      query = query.eq('complexes.sgg_code', filter.sggCode)
+    }
   }
 
   if (filter.riskLevel && ALLOWED_RISK_LEVELS.includes(filter.riskLevel)) {

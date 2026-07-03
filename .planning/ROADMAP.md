@@ -1227,10 +1227,10 @@
 
 **Depends on:** Phase 32
 
-**Plans:** 11 plans / 4 waves
+**Plans:** 1/11 plans executed
 
 **Wave 0** *(독립 실행 가능 — 지역 마스터 시딩 + 공용 헬퍼)*
-- [ ] 33-00-PLAN.md — regions 테이블 경남 16개 신규 시군구 시딩 + 법정동코드 단발 검증 + getActiveSggCodes/getActiveCityNames 공용 헬퍼 + seed-region.test.ts 갱신 (REGION-01)
+- [x] 33-00-PLAN.md — regions 테이블 경남 16개 신규 시군구 시딩 + 법정동코드 단발 검증 + getActiveSggCodes/getActiveCityNames 공용 헬퍼 + seed-region.test.ts 갱신 (REGION-01)
 
 **Wave 1** *(blocked on Wave 0; 33-01~33-06, 33-09 전부 병렬 실행 가능 — files_modified 무중복)*
 - [ ] 33-01-PLAN.md — 투자/갭분석 페이지 동적 지역 필터 전환 + seed-kosis-population.ts --sgg 오버라이드 (REGION-02, REGION-10)

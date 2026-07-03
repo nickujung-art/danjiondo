@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createReadonlyClient } from '@/lib/supabase/readonly'
 import { getGapRankings } from '@/lib/data/gap-analysis'
 import type { GapRankingRow } from '@/lib/data/gap-analysis'
+import { getActiveSggCodes } from '@/lib/data/regions'
 import { complexHref } from '@/lib/format'
 
 export const revalidate = 3600
@@ -18,7 +19,7 @@ interface Props {
 }
 
 // ─── allowlists ──────────────────────────────────────────────────────────────
-const ALLOWED_SGG_CODES = ['48121', '48123', '48125', '48127', '48129', '48250']
+// 지역 코드는 regions 테이블 동적 조회(getActiveSggCodes)로 대체됨
 const ALLOWED_RISK_LEVELS = ['safe', 'caution', 'danger'] as const
 type AllowedRiskLevel = (typeof ALLOWED_RISK_LEVELS)[number]
 
@@ -30,12 +31,11 @@ const SGG_LABEL: Record<string, string> = {
   '48127': '창원 마산회원구',
   '48129': '창원 진해구',
   '48250': '김해시',
+  '48170': '진주시', '48220': '통영시', '48240': '사천시', '48270': '밀양시',
+  '48310': '거제시', '48330': '양산시', '48720': '의령군', '48730': '함안군',
+  '48740': '창녕군', '48820': '고성군', '48840': '남해군', '48850': '하동군',
+  '48860': '산청군', '48870': '함양군', '48880': '거창군', '48890': '합천군',
 }
-
-const REGION_OPTIONS: Array<{ label: string; value: string }> = [
-  { label: '전체', value: '' },
-  ...ALLOWED_SGG_CODES.map((code) => ({ label: SGG_LABEL[code] ?? code, value: code })),
-]
 
 const RISK_OPTIONS: Array<{ label: string; value: string }> = [
   { label: '전체', value: '' },
@@ -78,12 +78,20 @@ export default async function GapAnalysisPage({ searchParams }: Props) {
   const params    = await searchParams
   const rawSgg    = typeof params.sgg_code   === 'string' ? params.sgg_code   : ''
   const rawRisk   = typeof params.risk_level === 'string' ? params.risk_level : ''
-  const sggCode   = ALLOWED_SGG_CODES.includes(rawSgg)    ? rawSgg  : undefined
+
+  const supabase = createReadonlyClient()
+  const allowedSggCodes = await getActiveSggCodes(supabase)
+
+  const sggCode   = allowedSggCodes.includes(rawSgg)      ? rawSgg  : undefined
   const riskLevel = (ALLOWED_RISK_LEVELS as ReadonlyArray<string>).includes(rawRisk)
     ? (rawRisk as AllowedRiskLevel)
     : undefined
 
-  const supabase = createReadonlyClient()
+  const REGION_OPTIONS: Array<{ label: string; value: string }> = [
+    { label: '전체', value: '' },
+    ...allowedSggCodes.map((code) => ({ label: SGG_LABEL[code] ?? code, value: code })),
+  ]
+
   const rows: GapRankingRow[] = await getGapRankings(
     { sggCode, riskLevel },
     supabase,
