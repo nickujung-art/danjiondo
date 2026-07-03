@@ -1,9 +1,7 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
-
-// ── 창원·김해 활성 SGG 코드 ─────────────────────────────────────────────────
-const ACTIVE_SGG_CODES = ['48121', '48123', '48125', '48127', '48129', '48250'] as const
+import { getActiveSggCodes } from './regions'
 
 // 대장단지 구별 정의 (6개 sub-region)
 export const CHAMPION_REGIONS = [
@@ -149,6 +147,7 @@ export async function getRecentDailyFeed(
   maxPerDate = 20,  // 날짜당 최대 표시 건수 (초과 시 hasMore=true)
 ): Promise<DailyFeedGroup[]> {
   const since = nDaysAgo(lookbackDays)
+  const activeSggCodes = await getActiveSggCodes(supabase)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: feedData, error } = await (supabase as any)
@@ -157,7 +156,7 @@ export async function getRecentDailyFeed(
       id, price, area_m2, floor, deal_date,
       complexes!inner (id, canonical_name, dong, url_slug, sgg_code)
     `)
-    .in('complexes.sgg_code', [...ACTIVE_SGG_CODES])
+    .in('complexes.sgg_code', activeSggCodes)
     .gte('deal_date', since)
     .eq('deal_type', 'sale')
     .is('cancel_date', null)
@@ -273,11 +272,13 @@ export async function getRecentDailyFeed(
 export async function getChampionComplexes(
   supabase: SupabaseClient<Database>,
 ): Promise<RegionChampion[]> {
+  const activeSggCodes = await getActiveSggCodes(supabase)
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('complexes')
     .select('id, canonical_name, url_slug, si, gu, sgg_code, avg_sale_per_pyeong, price_change_30d')
-    .in('sgg_code', [...ACTIVE_SGG_CODES])
+    .in('sgg_code', activeSggCodes)
     .not('avg_sale_per_pyeong', 'is', null)
     .gt('avg_sale_per_pyeong', 0)
     .eq('status', 'active')
@@ -414,6 +415,7 @@ export async function getWeeklyHighlights(
 ): Promise<WeeklyHighlights> {
   const thirtyDaysAgo  = nDaysAgo(30)
   const ninetyDaysAgo  = nDaysAgo(90)
+  const activeSggCodes = await getActiveSggCodes(supabase)
 
   const [priceResult, volResult, surgeResult] = await Promise.all([
     // 최근 30일 최고가 거래 TOP 5
@@ -424,7 +426,7 @@ export async function getWeeklyHighlights(
         price, area_m2, deal_date,
         complexes!inner (id, canonical_name, url_slug, si, gu, dong, sgg_code)
       `)
-      .in('complexes.sgg_code', [...ACTIVE_SGG_CODES])
+      .in('complexes.sgg_code', activeSggCodes)
       .gte('deal_date', thirtyDaysAgo)
       .eq('deal_type', 'sale')
       .is('cancel_date', null)
@@ -440,7 +442,7 @@ export async function getWeeklyHighlights(
         complex_id,
         complexes!inner (id, canonical_name, url_slug, si, gu, dong, sgg_code)
       `)
-      .in('complexes.sgg_code', [...ACTIVE_SGG_CODES])
+      .in('complexes.sgg_code', activeSggCodes)
       .gte('deal_date', ninetyDaysAgo)
       .eq('deal_type', 'sale')
       .is('cancel_date', null)
@@ -452,7 +454,7 @@ export async function getWeeklyHighlights(
     (supabase as any)
       .from('complexes')
       .select('id, canonical_name, url_slug, si, gu, dong, price_change_30d')
-      .in('sgg_code', [...ACTIVE_SGG_CODES])
+      .in('sgg_code', activeSggCodes)
       .not('price_change_30d', 'is', null)
       .gte('price_change_30d', 0.03)
       .eq('status', 'active')
@@ -521,11 +523,13 @@ export async function getWeeklyHighlights(
 export async function getNewRecordCount(
   supabase: SupabaseClient<Database>,
 ): Promise<number> {
+  const activeSggCodes = await getActiveSggCodes(supabase)
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { count } = await (supabase as any)
     .from('complexes')
     .select('*', { count: 'exact', head: true })
-    .in('sgg_code', [...ACTIVE_SGG_CODES])
+    .in('sgg_code', activeSggCodes)
     .eq('is_new_record_30d', true)
     .eq('status', 'active')
 
@@ -537,11 +541,13 @@ export async function getNewRecordCount(
 export async function getRegionalTradingHeat(
   supabase: SupabaseClient<Database>,
 ): Promise<RegionalHeatRow[]> {
+  const activeSggCodes = await getActiveSggCodes(supabase)
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase as any)
     .from('complexes')
     .select('sgg_code, tx_count_30d')
-    .in('sgg_code', [...ACTIVE_SGG_CODES])
+    .in('sgg_code', activeSggCodes)
     .eq('status', 'active')
     .not('tx_count_30d', 'is', null)
 
