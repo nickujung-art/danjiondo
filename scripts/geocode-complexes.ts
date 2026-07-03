@@ -25,13 +25,17 @@ const supabase = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } },
 )
 
-const SGG_LABEL: Record<string, string> = {
-  '48121': '창원시 의창구',
-  '48123': '창원시 성산구',
-  '48125': '창원시 마산합포구',
-  '48127': '창원시 마산회원구',
-  '48129': '창원시 진해구',
-  '48250': '김해시',
+async function getSggLabel(): Promise<Record<string, string>> {
+  const { data, error } = await supabase
+    .from('regions')
+    .select('sgg_code, si, gu')
+    .eq('is_active', true)
+  if (error) throw new Error(`regions 조회 실패: ${error.message}`)
+  const label: Record<string, string> = {}
+  for (const r of (data ?? []) as { sgg_code: string; si: string; gu: string | null }[]) {
+    label[r.sgg_code] = r.gu ? `${r.si} ${r.gu}` : r.si
+  }
+  return label
 }
 
 async function searchKakao(query: string): Promise<{ lat: number; lng: number } | null> {
@@ -56,6 +60,8 @@ async function searchKakao(query: string): Promise<{ lat: number; lng: number } 
 }
 
 async function main() {
+  const SGG_LABEL = await getSggLabel()
+
   const { data: complexes, error } = await supabase
     .from('complexes')
     .select('id, canonical_name, sgg_code')

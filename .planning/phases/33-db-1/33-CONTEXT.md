@@ -68,6 +68,20 @@
 - `scripts/collect-district-stats.ts`, `scripts/enrich-officetel-bldrgst.ts` — grep으로는 6개 지역 하드코딩(`TARGETS`/`SGG_LABEL`)이 걸리지만, 어떤 GitHub Actions 워크플로에도 연결되어 있지 않은 수동 실행 전용 도구로 확인됨(`package.json`·`.github/workflows/*.yml` 전체 검색 결과 참조 없음) — 기존에 informational로 분류한 `link-transactions.ts`/`geocode-complexes.ts` 등과 동일한 급으로 판단, 조치 불필요
 - 이것으로 동일 버그 클래스(하드코딩 지역 배열)의 **5번째 발생**(원 9곳 + rankings.ts + map/ads-sidebar + molit-unsold/realprice-officetel + backfill-officetel + ingest-sgis) — `scripts/`·`card-news/`까지 포함한 전체 저장소 sweep을 완료했으므로 추가 발견 가능성은 낮다고 판단하고 실행 진행
 
+### "API 수집 + 카카오맵/네이버크롤링 DB 통일" 경로 집중 점검 (2026-07-03 추가 결정 #5 — 사용자 요청)
+사용자가 API 데이터 수집과 카카오맵·네이버크롤링을 통한 Golden Record 통일 작업에 우선순위를 두어 재점검을 요청. 이 경로에 특화해서 다시 확인한 결과:
+
+**실제 버그로 확인·수정 완료:**
+- `scripts/enrich-apt-unmatched.ts`의 `SGG_MAP`(sgg_code→si/gu) 하드코딩 — 신규 지역 단지를 카카오로 지오코딩할 때 **si/gu가 NULL로 저장되는 실질적 데이터 손상 버그**였음 (`realprice-officetel.ts`와 동일 패턴). `regions` 테이블 동적 조회로 수정 완료
+- `scripts/geocode-complexes.ts`의 `SGG_LABEL` 하드코딩 — si/gu는 안 건드리지만 카카오 검색 쿼리에 지역명을 못 넣어 신규 지역 검색 정확도가 떨어지는 문제. 동일하게 동적 조회로 수정
+- 네이버 크롤링 스크립트 7개(`crawl-naver-area-types.ts`, `crawl-naver-listings.ts`, `crawl-naver-realtrade.ts`, `discover-naver-area-api.ts`, `map-naver-complexes.ts`, `map-naver-search.ts`) 확인 — 지역 하드코딩 없음, 문제없음
+
+**기계적 수정 불가 — 명시적 defer (지리적 튜닝이 필요한 항목, 잘못 추측해 고치는 것보다 명확히 남겨두는 게 안전):**
+- `scripts/map-naver-complexes-playwright.ts`의 `BBOXES`(창원 4개 구역 + 김해, 각각 수동 튜닝된 lat/lng 범위) — 네이버 매물 단지번호(`naver_complex_no`) 매핑에 쓰이는 grid sweep 대상 지역. 신규 16개 지역은 각각 새로운 bbox를 지리적으로 튜닝해야 하는데, 이건 산술적 regions 테이블 치환이 아니라 실제 지도 좌표 조사가 필요함 — **이번 phase에서 처리하지 않음**. 영향: 이 스크립트를 신규 지역에 돌리기 전까지는 신규 지역 단지의 네이버 매물번호 매핑(→ 평형 정규화·호가 비교)이 안 됨. 후속 작업으로 명확히 남김
+- `scripts/enrich-apt-unmatched.ts`의 `BBOX`(창원/김해 좌표 범위, `--household-zero` 모드 오좌표 필터용) — 마찬가지로 경남 전체 범위로 정확히 넓히려면 지리적 재계산이 필요해 이번엔 손대지 않음. `--household-zero`는 opt-in 플래그라 즉시 영향 없음
+
+이것으로 API 수집(국토부·K-apt·SGIS·KOSIS)과 카카오맵 지오코딩 경로는 신규 지역에 대해 정상 동작하도록 확인·수정됨. 네이버 크롤링을 통한 매물번호 매핑만 지리적 튜닝이 남아있어 명시적으로 defer.
+
 ### 매칭 품질
 - 신규 지역 실거래가 수집 시 `complex_match_queue`에 쌓이는 미매칭 건은 자동 승인하지 않는다 — 기존 창원·김해와 동일하게 검수 큐 방식 유지
 - 창원·김해 전용 수동 별칭(`20260518000002_manual_aliases.sql`)과 같은 지역 특화 보정 작업은 이번 phase 범위 밖 (신규 지역은 자연 매칭률로 우선 진행, 필요 시 후속 보정)

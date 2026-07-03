@@ -50,23 +50,26 @@ const supabase = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } },
 )
 
-// ── sgg_code → si/gu 매핑 ──────────────────────────────────────
-const SGG_MAP: Record<string, { si: string; gu: string | null }> = {
-  '48121': { si: '창원시', gu: '의창구' },
-  '48123': { si: '창원시', gu: '성산구' },
-  '48125': { si: '창원시', gu: '마산합포구' },
-  '48127': { si: '창원시', gu: '마산회원구' },
-  '48129': { si: '창원시', gu: '진해구' },
-  '48250': { si: '김해시', gu: null },
+// ── sgg_code → si/gu 매핑 (regions 테이블 기반 동적 조회) ──────────
+async function getSggMap(): Promise<Record<string, { si: string; gu: string | null }>> {
+  const { data, error } = await supabase
+    .from('regions')
+    .select('sgg_code, si, gu')
+    .eq('is_active', true)
+  if (error) throw new Error(`regions 조회 실패: ${error.message}`)
+  const map: Record<string, { si: string; gu: string | null }> = {}
+  for (const r of (data ?? []) as { sgg_code: string; si: string; gu: string | null }[]) {
+    map[r.sgg_code] = { si: r.si, gu: r.gu }
+  }
+  return map
 }
 
-const SGG_LABEL: Record<string, string> = {
-  '48121': '창원시 의창구',
-  '48123': '창원시 성산구',
-  '48125': '창원시 마산합포구',
-  '48127': '창원시 마산회원구',
-  '48129': '창원시 진해구',
-  '48250': '김해시',
+function buildSggLabel(sggMap: Record<string, { si: string; gu: string | null }>): Record<string, string> {
+  const label: Record<string, string> = {}
+  for (const [code, { si, gu }] of Object.entries(sggMap)) {
+    label[code] = gu ? `${si} ${gu}` : si
+  }
+  return label
 }
 
 // ── 카카오 키워드 검색 ────────────────────────────────────────────
@@ -179,6 +182,9 @@ async function fetchUmdNmMap(ids: string[]): Promise<Map<string, string>> {
 async function main() {
   const modeLabel = HOUSEHOLD_ZERO ? ' [세대수-zero]' : BLDRGST_ONLY ? ' [건축물대장-only]' : RETRY_MODE ? ' [retry+동명]' : SKIP_BLD ? ' [건축물대장 생략]' : ''
   console.log(`🏠 아파트 단지 보강 시작${DRY_RUN ? ' [DRY-RUN]' : ''}${modeLabel}`)
+
+  const SGG_MAP = await getSggMap()
+  const SGG_LABEL = buildSggLabel(SGG_MAP)
 
   let query = supabase
     .from('complexes')
