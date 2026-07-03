@@ -1,10 +1,8 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
+import { getActiveSggCodes } from './regions'
 
-// 창원·김해 활성 sgg_code (RESEARCH.md Open Question 1 해소: 하드코딩)
-// 확장 시 regions 테이블에서 동적 조회로 변경 가능
-const ACTIVE_SGG_CODES = ['48121', '48123', '48125', '48127', '48129', '48250'] as const
 const WINDOW_DAYS = 30
 
 export type RankType = 'high_price' | 'volume' | 'price_per_pyeong' | 'interest'
@@ -71,7 +69,7 @@ interface AggRow {
   metadata?: Record<string, unknown>
 }
 
-async function aggregateHighPrice(supabase: SupabaseClient<Database>): Promise<AggRow[]> {
+async function aggregateHighPrice(supabase: SupabaseClient<Database>, activeSggCodes: string[]): Promise<AggRow[]> {
   const thirtyDaysAgo = new Date(Date.now() - WINDOW_DAYS * 86_400_000)
     .toISOString()
     .split('T')[0]!
@@ -83,7 +81,7 @@ async function aggregateHighPrice(supabase: SupabaseClient<Database>): Promise<A
     .is('superseded_by', null)
     .eq('deal_type', 'sale')
     .gte('deal_date', thirtyDaysAgo)
-    .in('sgg_code', ACTIVE_SGG_CODES)
+    .in('sgg_code', activeSggCodes)
     .not('complex_id', 'is', null)
     .order('price', { ascending: false })
     .limit(2000)
@@ -110,7 +108,7 @@ async function aggregateHighPrice(supabase: SupabaseClient<Database>): Promise<A
     }))
 }
 
-async function aggregateVolume(supabase: SupabaseClient<Database>): Promise<AggRow[]> {
+async function aggregateVolume(supabase: SupabaseClient<Database>, activeSggCodes: string[]): Promise<AggRow[]> {
   const thirtyDaysAgo = new Date(Date.now() - WINDOW_DAYS * 86_400_000)
     .toISOString()
     .split('T')[0]!
@@ -122,7 +120,7 @@ async function aggregateVolume(supabase: SupabaseClient<Database>): Promise<AggR
     .is('superseded_by', null)
     .eq('deal_type', 'sale')
     .gte('deal_date', thirtyDaysAgo)
-    .in('sgg_code', ACTIVE_SGG_CODES)
+    .in('sgg_code', activeSggCodes)
     .not('complex_id', 'is', null)
     .limit(5000)
 
@@ -141,7 +139,7 @@ async function aggregateVolume(supabase: SupabaseClient<Database>): Promise<AggR
     .map(([complex_id, score]) => ({ complex_id, score }))
 }
 
-async function aggregatePricePerPyeong(supabase: SupabaseClient<Database>): Promise<AggRow[]> {
+async function aggregatePricePerPyeong(supabase: SupabaseClient<Database>, activeSggCodes: string[]): Promise<AggRow[]> {
   const thirtyDaysAgo = new Date(Date.now() - WINDOW_DAYS * 86_400_000)
     .toISOString()
     .split('T')[0]!
@@ -153,7 +151,7 @@ async function aggregatePricePerPyeong(supabase: SupabaseClient<Database>): Prom
     .is('superseded_by', null)
     .eq('deal_type', 'sale')
     .gte('deal_date', thirtyDaysAgo)
-    .in('sgg_code', ACTIVE_SGG_CODES)
+    .in('sgg_code', activeSggCodes)
     .not('complex_id', 'is', null)
     .gt('area_m2', 0)
     .limit(5000)
@@ -178,7 +176,7 @@ async function aggregatePricePerPyeong(supabase: SupabaseClient<Database>): Prom
     .slice(0, 100)
 }
 
-async function aggregateInterest(supabase: SupabaseClient<Database>): Promise<AggRow[]> {
+async function aggregateInterest(supabase: SupabaseClient<Database>, activeSggCodes: string[]): Promise<AggRow[]> {
   // favorites JOIN complexes → sgg_code 필터 (favorites 테이블에 sgg_code 없음)
   const { data, error } = await supabase
     .from('favorites')
@@ -186,7 +184,7 @@ async function aggregateInterest(supabase: SupabaseClient<Database>): Promise<Ag
       complex_id,
       complexes!inner (sgg_code)
     `)
-    .in('complexes.sgg_code', ACTIVE_SGG_CODES)
+    .in('complexes.sgg_code', activeSggCodes)
     .limit(5000)
 
   if (error) throw new Error(`aggregateInterest failed: ${error.message}`)
@@ -212,10 +210,11 @@ export async function computeRankings(
   supabase: SupabaseClient<Database>,
 ): Promise<{ type: RankType; upserted: number }[]> {
   const computedAt = new Date().toISOString()
+  const activeSggCodes = await getActiveSggCodes(supabase)
 
   const aggregators: Array<{
     type: RankType
-    fn: (s: SupabaseClient<Database>) => Promise<AggRow[]>
+    fn: (s: SupabaseClient<Database>, codes: string[]) => Promise<AggRow[]>
   }> = [
     { type: 'high_price', fn: aggregateHighPrice },
     { type: 'volume', fn: aggregateVolume },
@@ -226,7 +225,7 @@ export async function computeRankings(
   const results: { type: RankType; upserted: number }[] = []
 
   for (const { type, fn } of aggregators) {
-    const rows = await fn(supabase)
+    const rows = await fn(supabase, activeSggCodes)
 
     if (rows.length === 0) {
       results.push({ type, upserted: 0 })
