@@ -43,6 +43,12 @@
 - Supabase 무료 티어(500MB) 초과가 확실시되는 시점(경남 전체 백필 완료 후 실측 용량)에 반드시 사용자에게 Pro 플랜 전환 여부를 확인 — 이 phase의 plan에 "실측 후 확인" 체크포인트를 포함할 것
 - 국토부 API 일 10,000회 한도로 인해 경남 전체 10년 백필은 여러 날에 걸쳐 분할 실행 (기존 05-00 phase에서 "창원+김해 전체 3일 분할, timeout 300분" 선례 있음 — 이 패턴을 확장 규모에 맞게 재사용)
 
+### RESEARCH.md 발견 사항 반영 (2026-07-03 추가 결정)
+- `src/lib/data/rankings.ts`의 `ACTIVE_SGG_CODES`(랜딩 페이지 랭킹 4개 함수용)도 이번 phase의 하드코딩 제거 범위에 **포함**한다 (원래 9곳 목록에 없었으나 리서치에서 발견됨)
+- UI `SGG_LABEL` 정적 맵 8개 파일(`invest/page.tsx`, `gap-analysis/page.tsx`, `PredictionSection.tsx`, `prediction-commentary/route.ts`, `AdCreateForm.tsx`, `AdEditForm.tsx`, `EnrichedPresaleCard.tsx`, `BuilderOptionsPanel.tsx`)은 **라벨만 추가**하는 기계적 데이터 변경으로 처리한다 — 경남 신규 시군구 이름을 각 맵에 추가하되, UI 구조·레이아웃은 변경하지 않는다 (재기획 동결 원칙 유지)
+- `src/__tests__/seed-region.test.ts`가 regions 6행을 하드코딩 검증 중 — 경남 확장 시 이 테스트도 함께 업데이트 필요 (RESEARCH.md에서 발견된 Wave 0 갭)
+- 학군 랭킹 RPC·`seo-hierarchy.ts`는 리서치 결과 코드 변경 없이 이미 구 없는 시군구를 처리 가능한 것으로 확인됨 — "일반화 작업"이 아니라 "확인 + 회귀 테스트"로 범위 축소
+
 ### 매칭 품질
 - 신규 지역 실거래가 수집 시 `complex_match_queue`에 쌓이는 미매칭 건은 자동 승인하지 않는다 — 기존 창원·김해와 동일하게 검수 큐 방식 유지
 - 창원·김해 전용 수동 별칭(`20260518000002_manual_aliases.sql`)과 같은 지역 특화 보정 작업은 이번 phase 범위 밖 (신규 지역은 자연 매칭률로 우선 진행, 필요 시 후속 보정)
