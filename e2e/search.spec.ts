@@ -7,7 +7,9 @@ import { test, expect } from '@playwright/test'
  * 별도의 /search 라우트는 없다.
  */
 test.describe('검색 기능', () => {
-  test('랜딩 페이지 검색 입력 창이 표시되고 활성화되어 있다', async ({ page }) => {
+  // TODO: 랜딩 페이지가 콘텐츠 피드형으로 리디자인되며 input[name="q"] 검색창이 제거됨.
+  // 검색 UX가 재확정되면 실제 진입 경로에 맞게 재작성할 것 (2026-07-06 skip 처리)
+  test.skip('랜딩 페이지 검색 입력 창이 표시되고 활성화되어 있다', async ({ page }) => {
     await page.goto('/')
     const searchInput = page.locator('input[name="q"]').first()
     await expect(searchInput).toBeVisible()
@@ -16,7 +18,7 @@ test.describe('검색 기능', () => {
     await expect(searchInput).toHaveAttribute('placeholder', /단지명|지역|검색|아파트/)
   })
 
-  test('검색어 입력 후 제출 시 /map?q= 으로 이동하고 에러가 없다', async ({ page }) => {
+  test.skip('검색어 입력 후 제출 시 /map?q= 으로 이동하고 에러가 없다', async ({ page }) => {
     await page.goto('/')
     const searchInput = page.locator('input[name="q"]').first()
     await expect(searchInput).toBeVisible()

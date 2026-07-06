@@ -17,7 +17,9 @@ test.describe('랜딩 페이지', () => {
     await expect(page.locator('text=Internal Server Error')).not.toBeVisible()
   })
 
-  test('검색 입력창이 표시된다', async ({ page }) => {
+  // TODO: 랜딩 페이지가 콘텐츠 피드형으로 리디자인되며 input[name="q"] 검색창이 제거됨.
+  // 검색 UX가 재확정되면 실제 진입 경로에 맞게 재작성할 것 (2026-07-06 skip 처리)
+  test.skip('검색 입력창이 표시된다', async ({ page }) => {
     await page.goto('/')
     // 랜딩 페이지의 검색 input: name="q", placeholder="단지명, 지역으로 검색"
     const searchInput = page.locator('input[name="q"]').first()
