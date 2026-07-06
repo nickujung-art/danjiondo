@@ -12,13 +12,14 @@ if (!KAKAO_KEY) {
   process.exit(1)
 }
 
-const SGG_LABEL: Record<string, string> = {
-  '48121': '창원시 의창구',
-  '48123': '창원시 성산구',
-  '48125': '창원시 마산합포구',
-  '48127': '창원시 마산회원구',
-  '48129': '창원시 진해구',
-  '48250': '김해시',
+async function fetchSggLabels(): Promise<Record<string, string>> {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/regions?select=sgg_code,si,gu&is_active=is.true`,
+    { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } },
+  )
+  if (!res.ok) throw new Error(`regions fetch failed: ${res.statusText}`)
+  const rows = await res.json() as Array<{ sgg_code: string; si: string; gu: string | null }>
+  return Object.fromEntries(rows.map(r => [r.sgg_code, r.gu ? `${r.si} ${r.gu}` : r.si]))
 }
 
 interface Complex {
@@ -66,7 +67,7 @@ async function searchKakao(query: string): Promise<{ lat: number; lng: number } 
 }
 
 async function main() {
-  const complexes = await fetchComplexes()
+  const [complexes, SGG_LABEL] = await Promise.all([fetchComplexes(), fetchSggLabels()])
   console.error(`📍 ${complexes.length}개 단지 지오코딩 시작`)
 
   const rows: string[] = []

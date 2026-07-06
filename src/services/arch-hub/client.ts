@@ -76,7 +76,10 @@ export async function searchArchHub(
  */
 export async function matchArchHub(name: string, sigunguCd?: string): Promise<ArchHubItem | null> {
   // 지역명 제거 후 핵심 단지명만 추출 (예: "창원 한신더휴 메가센텀" → "한신더휴 메가센텀")
-  const coreName = name.replace(/^(창원|김해|마산|진해)\s+/, '').trim()
+  const coreName = name.replace(
+    /^(창원|김해|마산|진해|진주|통영|사천|밀양|거제|양산|의령|함안|창녕|고성|남해|하동|산청|함양|거창|합천)\s+/,
+    '',
+  ).trim()
   const results = await searchArchHub(coreName, sigunguCd)
   if (results.length === 0) return null
   // 세대수 내림차순 정렬 후 최적 매칭

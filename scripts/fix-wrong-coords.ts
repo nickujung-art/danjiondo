@@ -12,6 +12,7 @@
  */
 import { loadEnvConfig } from '@next/env'
 import { createClient } from '@supabase/supabase-js'
+import { getActiveRegionAddrs, type RegionAddr } from '../src/lib/data/regions'
 
 loadEnvConfig(process.cwd(), true)
 
@@ -27,29 +28,26 @@ const supabase = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } },
 )
 
-const BBOX = { minLat: 34.8, maxLat: 35.7, minLng: 128.2, maxLng: 129.1 }
+// 경남 전체 유효 좌표 범위 (complexes-map.ts와 동일 기준, Phase 33 b59bd01)
+const BBOX = { minLat: 34.7, maxLat: 35.8, minLng: 127.7, maxLng: 129.3 }
 
-const SGG_LABEL: Record<string, string> = {
-  '48121': '창원시 의창구',
-  '48123': '창원시 성산구',
-  '48125': '창원시 마산합포구',
-  '48127': '창원시 마산회원구',
-  '48129': '창원시 진해구',
-  '48250': '김해시',
+let SGG_LABEL: Record<string, string> = {}
+let SGG_ADDR: Record<string, RegionAddr> = {}
+
+async function loadRegionMaps(): Promise<void> {
+  const rows = await getActiveRegionAddrs(supabase)
+  SGG_LABEL = Object.fromEntries(rows.map(r => [r.sgg_code, r.gu ? `${r.si} ${r.gu}` : r.si]))
+  SGG_ADDR = Object.fromEntries(rows.map(r => [r.sgg_code, r]))
 }
 
 // address_name에 해당 시군구 키워드가 포함되는지 확인
 function isInRegion(addressName: string, sggCode: string): boolean {
+  const region = SGG_ADDR[sggCode]
+  if (!region) return false
   const a = addressName
-  switch (sggCode) {
-    case '48121': return a.includes('창원') && a.includes('의창')
-    case '48123': return a.includes('창원') && a.includes('성산')
-    case '48125': return a.includes('창원') && (a.includes('합포') || a.includes('마산합포'))
-    case '48127': return a.includes('창원') && (a.includes('회원') || a.includes('마산회원'))
-    case '48129': return a.includes('창원') && a.includes('진해')
-    case '48250': return a.includes('김해')
-    default: return false
-  }
+  const siShort = region.si.replace(/(시|군)$/, '')
+  if (!region.gu) return a.includes(siShort)
+  return a.includes(siShort) && a.includes(region.gu.replace(/구$/, ''))
 }
 
 interface KakaoPlace {
@@ -85,6 +83,8 @@ async function kakaoSearch(query: string, sggCode: string): Promise<KakaoPlace |
 
 async function main() {
   console.log(`🗺️  오좌표 단지 자동 수정 시작${DRY_RUN ? ' [DRY-RUN]' : ''}`)
+
+  await loadRegionMaps()
 
   // bbox 밖 좌표를 가진 active 단지 조회
   const { data: complexes, error } = await supabase

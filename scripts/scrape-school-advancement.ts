@@ -24,10 +24,27 @@ const DRY_RUN     = process.argv.includes('--dry-run')
 const SCHOOL_TYPE = process.argv.includes('--school-type=high') ? 'high' : 'middle'
 const COOKIE_FILE = path.resolve(process.cwd(), '.schoolinfo-cookies.json')
 
-// 창원시/김해시
+// 경남 전체 (창원 5개 구는 학교알리미 GUGUN_CODE 상 창원시 단일 코드로 조회됨 + Phase 33 신규 16개 지역)
+// GUGUN_CODE 패턴 검증: sgg_code(regions 테이블) + '00000' — curl로 각 지역 실호출 확인 완료(2026-07-06)
 const TARGETS = [
   { name: '창원시', gugunCode: '4812000000' },
   { name: '김해시', gugunCode: '4825000000' },
+  { name: '진주시', gugunCode: '4817000000' },
+  { name: '통영시', gugunCode: '4822000000' },
+  { name: '사천시', gugunCode: '4824000000' },
+  { name: '밀양시', gugunCode: '4827000000' },
+  { name: '거제시', gugunCode: '4831000000' },
+  { name: '양산시', gugunCode: '4833000000' },
+  { name: '의령군', gugunCode: '4872000000' },
+  { name: '함안군', gugunCode: '4873000000' },
+  { name: '창녕군', gugunCode: '4874000000' },
+  { name: '고성군', gugunCode: '4882000000' },
+  { name: '남해군', gugunCode: '4884000000' },
+  { name: '하동군', gugunCode: '4885000000' },
+  { name: '산청군', gugunCode: '4886000000' },
+  { name: '함양군', gugunCode: '4887000000' },
+  { name: '거창군', gugunCode: '4888000000' },
+  { name: '합천군', gugunCode: '4889000000' },
 ]
 
 // hangmok_json.do?JG_YEAR=2025 에서 확인한 "06" 항목 고정 파라미터 (중/고 공통)

@@ -122,14 +122,16 @@ async function matchByJibun(
   return null  // 2건 이상 → 모호, 다음 단계로 넘김
 }
 
-// ── sgg_code → 지역명 (Kakao 주소 검색용) ────────────────────────
-const SGG_LABEL: Record<string, string> = {
-  '48121': '창원시 의창구',
-  '48123': '창원시 성산구',
-  '48125': '창원시 마산합포구',
-  '48127': '창원시 마산회원구',
-  '48129': '창원시 진해구',
-  '48250': '김해시',
+// ── sgg_code → 지역명 (Kakao 주소 검색용, regions 테이블에서 동적 로드) ────
+let SGG_LABEL: Record<string, string> = {}
+let SGG_CITY_SHORT: Record<string, string> = {}
+
+async function loadRegionMaps(supabase: ReturnType<typeof createClient>): Promise<void> {
+  const { data, error } = await supabase.from('regions').select('sgg_code, si, gu').eq('is_active', true)
+  if (error) throw new Error(`regions 조회 실패: ${error.message}`)
+  const rows = (data ?? []) as Array<{ sgg_code: string; si: string; gu: string | null }>
+  SGG_LABEL = Object.fromEntries(rows.map(r => [r.sgg_code, r.gu ? `${r.si} ${r.gu}` : r.si]))
+  SGG_CITY_SHORT = Object.fromEntries(rows.map(r => [r.sgg_code, r.si.replace(/(시|군)$/, '')]))
 }
 
 // 동일 umd_nm+jibun 반복 호출 방지
@@ -148,11 +150,12 @@ async function geocodeJibun(
 
   await new Promise(r => setTimeout(r, 100)) // Kakao API rate limit
 
-  // 1차: sgg_label 포함 전체 주소
+  // 1차: sgg_label 포함 전체 주소, 2차: 구 단위 생략한 시/군 단독 주소, 3차: 지역명 없이
   const sggLabel = SGG_LABEL[sggCode] ?? ''
+  const cityShort = SGG_CITY_SHORT[sggCode] ?? ''
   const queries = [
     `경남 ${sggLabel} ${umdNm} ${jibun}`.trim(),
-    `경상남도 창원 ${umdNm} ${jibun}`.trim(),
+    `경상남도 ${cityShort} ${umdNm} ${jibun}`.trim(),
     `경남 ${umdNm} ${jibun}`.trim(),
   ]
 
@@ -294,6 +297,7 @@ function printProgress(
 // ── 메인 로직 ───────────────────────────────────────────────────
 async function main(): Promise<void> {
   const supabase = createSupabaseClient()
+  await loadRegionMaps(supabase)
 
   console.log('== transactions.complex_id 일괄 연결 시작 (DATA-09) ==')
   console.log(`임계값: AUTO_THRESHOLD=${AUTO_THRESHOLD}, QUEUE_LOW_CONFIDENCE=${QUEUE_LOW_CONFIDENCE}`)

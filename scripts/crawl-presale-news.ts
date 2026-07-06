@@ -35,15 +35,27 @@ const supabase = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } },
 )
 
-// ── 검색 쿼리 ─────────────────────────────────────────────────────
-const QUERIES = [
-  '창원 아파트 분양 예정',
-  '창원 아파트 분양',
-  '김해 아파트 분양 예정',
-  '김해 아파트 분양',
-  '창원 분양 2026',
-  '김해 분양 2026',
-]
+interface RegionCity { short: string; full: string } // short: '진주' 접미사 제거, full: regions.si 원문('진주시')
+
+/** regions 테이블(is_active=true)에서 시/군 목록을 동적으로 로드. 창원 구 통합 이전 옛 지명(마산/진해)은 뉴스 검색 관행상 유지 */
+async function loadRegionCities(): Promise<RegionCity[]> {
+  const { data, error } = await supabase.from('regions').select('si').eq('is_active', true)
+  if (error) throw new Error(`regions 조회 실패: ${error.message}`)
+  const uniqueSi = [...new Set((data ?? []).map(r => r.si as string))]
+  const cities = uniqueSi.map(si => ({ short: si.replace(/(시|군)$/, ''), full: si }))
+  if (cities.some(c => c.short === '창원')) {
+    cities.push({ short: '마산', full: '창원시 마산' }, { short: '진해', full: '창원시 진해' })
+  }
+  return cities
+}
+
+function buildQueries(cities: RegionCity[]): string[] {
+  const queries: string[] = []
+  for (const { short } of cities) {
+    queries.push(`${short} 아파트 분양 예정`, `${short} 아파트 분양`, `${short} 분양 2026`)
+  }
+  return queries
+}
 
 // ── 아파트명 추출 패턴 ─────────────────────────────────────────────
 // 따옴표/꺾쇠 안의 단지명이 가장 신뢰도 높음
@@ -57,7 +69,6 @@ const EXTRACT_PATTERNS = [
 const NOISE_WORDS = ['거주자', '입주자', '분양권', '모집공고', '수익형', '오피스텔', '지식산업', '브랜드', '소형', '대형', '지방', '수도권', '분양시장']
 // 최소 글자 수 미달 또는 일반명사로만 구성된 이름 제외
 const GENERIC_NAMES = /^(아파트|분양|주택|단지|브랜드\s*아파트|소형\s*아파트|대단지\s*아파트|지방.+아파트)$/
-const TARGET_CITIES = ['창원', '마산', '진해', '김해']
 
 function cleanHtml(s: string): string {
   return s.replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim()
@@ -84,9 +95,9 @@ function extractAptNames(title: string, desc: string): string[] {
   return [...new Set(names)]
 }
 
-function isTargetCity(title: string, desc: string): boolean {
+function isTargetCity(title: string, desc: string, cities: RegionCity[]): boolean {
   const text = cleanHtml(title + ' ' + desc)
-  return TARGET_CITIES.some(c => text.includes(c))
+  return cities.some(c => text.includes(c.short))
 }
 
 // ── 네이버 뉴스 검색 ──────────────────────────────────────────────
@@ -124,17 +135,16 @@ async function geocode(query: string): Promise<{ lat: number; lng: number; addre
 }
 
 // ── 지역명 추출 ────────────────────────────────────────────────────
-function extractRegion(address: string | undefined, aptName: string): string {
+function extractRegion(address: string | undefined, aptName: string, cities: RegionCity[]): string {
+  // 마산/진해처럼 short가 짧고 겹칠 수 있는 지명을 먼저 매칭하도록 길이 내림차순 정렬
+  const sorted = [...cities].sort((a, b) => b.short.length - a.short.length)
   if (address) {
-    if (address.includes('김해')) return '김해시'
-    if (address.includes('마산')) return '창원시 마산'
-    if (address.includes('창원')) return '창원시'
+    const hit = sorted.find(c => address.includes(c.short))
+    if (hit) return hit.full
   }
   // 주소 없을 경우 단지명에서 지역 추출
-  if (aptName.includes('김해')) return '김해시'
-  if (aptName.includes('마산')) return '창원시 마산'
-  if (aptName.includes('창원')) return '창원시'
-  return '경남'
+  const hit = sorted.find(c => aptName.includes(c.short))
+  return hit ? hit.full : '경남'
 }
 
 // ── DB 존재 여부 확인 ─────────────────────────────────────────────
@@ -176,15 +186,20 @@ async function existsInDiscoveries(name: string, region: string): Promise<boolea
 async function main() {
   console.log(`== 분양 예정 뉴스 크롤링 시작 ${DRY_RUN ? '[DRY-RUN]' : ''} ==`)
 
+  const cities = await loadRegionCities()
+  const queries = buildQueries(cities)
+  console.log(`대상 지역(regions is_active=true + 창원 구지명): ${cities.map(c => c.short).join(', ')}`)
+
   // 1. 뉴스 수집
   const allItems: NaverNewsItem[] = []
-  for (const q of QUERIES) {
+  for (const q of queries) {
     try {
       const items = await searchNews(q, 20)
       allItems.push(...items)
     } catch (err) {
       console.warn(`  ⚠ "${q}" 검색 실패: ${String(err)}`)
     }
+    await new Promise(r => setTimeout(r, 150)) // 지역 확대(6→60개 쿼리)로 Naver 뉴스 API 429 방지
   }
 
   // 2. 중복 제거 (link 기준)
@@ -200,7 +215,7 @@ async function main() {
   // 3. 아파트명 추출
   const aptMap = new Map<string, { pubDate: string; link: string }>()
   for (const item of uniqueItems) {
-    if (!isTargetCity(item.title, item.description)) continue
+    if (!isTargetCity(item.title, item.description, cities)) continue
     const names = extractAptNames(item.title, item.description)
     for (const name of names) {
       if (!aptMap.has(name) || new Date(item.pubDate) > new Date(aptMap.get(name)!.pubDate)) {
@@ -250,7 +265,7 @@ async function main() {
     const geo = await geocode(name + ' 아파트')
     console.log(`  [GEO] ${name} → ${geo ? `${geo.address} (${geo.lat}, ${geo.lng})` : '위치 없음'}`)
 
-    const region = extractRegion(geo?.address, name)
+    const region = extractRegion(geo?.address, name, cities)
 
     // ── 4-4. presale_discoveries 중복 확인 ───────────────────────
     if (await existsInDiscoveries(name, region)) {

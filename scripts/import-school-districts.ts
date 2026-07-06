@@ -1,8 +1,8 @@
 /**
  * 통학구역 SHP/DBF 파일 파싱 후 school_districts / school_district_schools 테이블 임포트
  *
- * 대상 지역: 경남(SD_CD=48) 창원(SGG_CD=121) + 김해(SGG_CD=250)
- * 고등학교: SGG_CD 컬럼 없음 → EDU_NM LIKE '%창원%' OR '%김해%' 로 필터
+ * 대상 지역: 경남(SD_CD=48) 전체 22개 시군구 (Phase 33 신규 16개 지역 포함)
+ * 고등학교: SGG_CD 컬럼 없음 → EDU_NM(경상남도OO교육지원청)으로 필터
  *
  * 실행:
  *   npx tsx scripts/import-school-districts.ts               (실제 DB 임포트)
@@ -152,7 +152,6 @@ function parseShpFile(
 
   const fHakgudoId = fieldMap.get('HAKGUDO_ID')
   const fSdCd = fieldMap.get('SD_CD')
-  const fSggCd = fieldMap.get('SGG_CD') // null for high school
   const fEduNm = fieldMap.get('EDU_NM')
 
   if (!fHakgudoId) throw new Error(`DBF에 HAKGUDO_ID 컬럼 없음: ${dbfPath}`)
@@ -178,18 +177,26 @@ function parseShpFile(
     const recBuf = dbfBuf.slice(dbfRecStart + 1, dbfRecStart + 1 + dbfRecordSize)
 
     const sdCd = fSdCd ? readDbfField(recBuf, fSdCd) : ''
-    const sggCd = fSggCd ? readDbfField(recBuf, fSggCd) : ''
     const eduNm = fEduNm ? readDbfField(recBuf, fEduNm) : ''
     const hakgudoId = fHakgudoId ? readDbfField(recBuf, fHakgudoId) : ''
 
     // ── 지역 필터 ──────────────────────────────────────────────────────────
+    // 경남(SD_CD=48) 전체. SGG_CD는 SHP 원본 확인 결과 창원 5개 구(121/123/125/127/129)를
+    // 개별 코드로 구분해 담고 있어 sdCd==='48'만으로 경남 전체(Phase 33 신규 16개 지역 포함)를
+    // 정확히 포괄한다 — 기존 sggCd==='121' 단일 체크는 창원 의창구만 남기고 나머지 4개 구
+    // 학군 데이터를 누락시키던 기존 버그였음(Phase 33과 무관하게 이번에 함께 수정)
     let pass = false
     if (level === 'elementary' || level === 'middle') {
-      // 경남(48) + 창원(121) 또는 김해(250)
-      pass = sdCd === '48' && (sggCd === '121' || sggCd === '250')
+      pass = sdCd === '48'
     } else {
-      // 고등학교: SGG_CD 없음 → EDU_NM으로 필터
-      pass = eduNm.includes('창원') || eduNm.includes('김해')
+      // 고등학교: SGG_CD 없음 → EDU_NM(경상남도OO교육지원청)으로 필터.
+      // SHP 원본 확인 결과 고교 학교군 데이터는 거제/김해/진주/창원 4개 지역만 존재 —
+      // 나머지 18개 지역명 포함은 향후 데이터가 추가되어도 자동으로 잡히도록 방어적으로 유지
+      const EDU_OFFICE_CITIES = [
+        '창원', '김해', '진주', '통영', '사천', '밀양', '거제', '양산',
+        '의령', '함안', '창녕', '고성', '남해', '하동', '산청', '함양', '거창', '합천',
+      ]
+      pass = EDU_OFFICE_CITIES.some(city => eduNm.includes(city))
     }
     if (!pass) continue
     if (!hakgudoId) continue

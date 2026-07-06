@@ -13,6 +13,7 @@
  */
 import { loadEnvConfig } from '@next/env'
 import { createClient } from '@supabase/supabase-js'
+import { getActiveRegionAddrs } from '../src/lib/data/regions'
 
 loadEnvConfig(process.cwd(), true)
 
@@ -29,15 +30,14 @@ const supabase = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } },
 )
 
-const BBOX = { minLat: 34.8, maxLat: 35.7, minLng: 128.2, maxLng: 129.1 }
+// 경남 전체 유효 좌표 범위 (complexes-map.ts와 동일 기준, Phase 33 b59bd01)
+const BBOX = { minLat: 34.7, maxLat: 35.8, minLng: 127.7, maxLng: 129.3 }
 
-const SGG_LABEL: Record<string, string> = {
-  '48121': '창원시 의창구',
-  '48123': '창원시 성산구',
-  '48125': '창원시 마산합포구',
-  '48127': '창원시 마산회원구',
-  '48129': '창원시 진해구',
-  '48250': '김해시',
+let SGG_LABEL: Record<string, string> = {}
+
+async function loadRegionMaps(): Promise<void> {
+  const rows = await getActiveRegionAddrs(supabase)
+  SGG_LABEL = Object.fromEntries(rows.map(r => [r.sgg_code, r.gu ? `${r.si} ${r.gu}` : r.si]))
 }
 
 const HEADERS = { Authorization: `KakaoAK ${process.env.KAKAO_REST_API_KEY!}` }
@@ -103,6 +103,8 @@ async function buildJibunMap(ids: string[]): Promise<Map<string, { umd_nm: strin
 
 async function main() {
   console.log(`📍 lat=NULL 단지 지번주소 geocoding 시작${DRY_RUN ? ' [DRY-RUN]' : ''}${DEACTIVATE ? ' [+DEACTIVATE]' : ''}`)
+
+  await loadRegionMaps()
 
   const { data: complexes, error } = await supabase
     .from('complexes')

@@ -12,6 +12,7 @@
 import { loadEnvConfig } from '@next/env'
 import { createClient } from '@supabase/supabase-js'
 import { fetchComplexList } from '../src/services/kapt'
+import { getActiveSggCodes } from '../src/lib/data/regions'
 
 loadEnvConfig(process.cwd(), true)
 
@@ -45,16 +46,23 @@ function isMatch(dbName: string, kaptName: string): boolean {
 async function main() {
   console.log(`🔍 kapt_code 조회 시작${DRY_RUN ? ' [DRY-RUN]' : ''}`)
 
-  // kapt_code가 없는 active 단지 조회
-  const { data: complexes, error } = await supabase
-    .from('complexes')
-    .select('id, canonical_name, sgg_code')
-    .eq('status', 'active')
-    .is('kapt_code', null)
-    .in('sgg_code', ['48121', '48123', '48125', '48127', '48129', '48250'])
-
-  if (error) throw new Error(`조회 실패: ${error.message}`)
-  const rows = (complexes ?? []) as Array<{ id: string; canonical_name: string; sgg_code: string }>
+  // kapt_code가 없는 active 단지 조회 (PostgREST 1,000행 기본 캡 우회 — 페이지네이션)
+  const activeSggCodes = await getActiveSggCodes(supabase)
+  const rows: Array<{ id: string; canonical_name: string; sgg_code: string }> = []
+  const PAGE = 1000
+  for (let offset = 0; ; offset += PAGE) {
+    const { data: complexes, error } = await supabase
+      .from('complexes')
+      .select('id, canonical_name, sgg_code')
+      .eq('status', 'active')
+      .is('kapt_code', null)
+      .in('sgg_code', activeSggCodes)
+      .range(offset, offset + PAGE - 1)
+    if (error) throw new Error(`조회 실패: ${error.message}`)
+    if (!complexes || complexes.length === 0) break
+    rows.push(...(complexes as Array<{ id: string; canonical_name: string; sgg_code: string }>))
+    if (complexes.length < PAGE) break
+  }
   console.log(`📋 대상: ${rows.length}개 단지 (kapt_code 없음)\n`)
 
   // sgg_code별 K-apt 단지목록 캐시

@@ -1,7 +1,7 @@
 /**
  * NEIS 학원교습소정보(acaInsTiInfo) 전수 수집 배치
  *
- * 창원시·김해시 학원 전수를 NEIS Open API에서 수집하여 hagwon_db에 upsert.
+ * regions(is_active=true) 전체 시/군(경남 22개) 학원 전수를 NEIS Open API에서 수집하여 hagwon_db에 upsert.
  * 페이지네이션 1000건/페이지, INFO-200(데이터없음) 처리, 수강료 파싱 포함.
  *
  * 실행:
@@ -13,18 +13,24 @@
 import { createClient } from '@supabase/supabase-js'
 import * as dotenv from 'dotenv'
 import path from 'path'
+import { getActiveRegionAddrs } from '../src/lib/data/regions'
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
 
 const DRY_RUN = process.argv.includes('--dry-run')
 const ZONE_ARG = process.argv.find(a => a.startsWith('--zone='))?.split('=')[1]
 
-const ADMST_ZONE_NAMES = ZONE_ARG ? [ZONE_ARG] : ['창원시', '김해시']
-
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 )
+
+/** --zone 지정 시 해당 지역만, 없으면 regions(is_active=true) 전체 시/군 (Phase 33 신규 16개 지역 포함) */
+async function resolveAdmstZoneNames(): Promise<string[]> {
+  if (ZONE_ARG) return [ZONE_ARG]
+  const rows = await getActiveRegionAddrs(supabase)
+  return [...new Set(rows.map(r => r.si))]
+}
 
 interface NeisAcaRow {
   ACA_NM:           string
@@ -170,8 +176,9 @@ async function main() {
     process.exit(1)
   }
 
+  const admstZoneNames = await resolveAdmstZoneNames()
   let total = 0
-  for (const zoneName of ADMST_ZONE_NAMES) {
+  for (const zoneName of admstZoneNames) {
     total += await collectZone(zoneName)
   }
 
