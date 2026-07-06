@@ -12,7 +12,7 @@ jobs:
   kapt-facility-enrich:
     name: KAPT 단지 시설 정보 적재
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 180
 
     steps:
       - uses: actions/checkout@v4

@@ -16,6 +16,7 @@
  */
 import { config as dotenvConfig } from 'dotenv'
 import { createClient } from '@supabase/supabase-js'
+import { getActiveCityNames } from '../src/lib/data/regions'
 import * as XLSX from 'xlsx'
 import * as path from 'path'
 import * as fs from 'fs'
@@ -115,9 +116,11 @@ function decodeXmlEntities(str: string): string {
   return str.replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(parseInt(n, 10)))
 }
 
+let ACTIVE_CITY_NAMES: string[] = ['창원', '김해'] // getActiveCityNames() 로드 전 기본값(fallback)
+
 function rowFromArray(arr: unknown[]): RawRow | null {
   const sgg = String(arr[COL.sgg] ?? '')
-  if (!sgg.includes('창원') && !sgg.includes('김해')) return null
+  if (!ACTIVE_CITY_NAMES.some(name => sgg.includes(name))) return null
   const ym = toYearMonth(arr[COL.year_month])
   if (!ym) return null
   return {
@@ -376,6 +379,16 @@ async function main(): Promise<void> {
   if (DRY_RUN) console.log('[mgmt-cost] *** DRY RUN — DB 적재 없음 ***')
   if (SQL_OUTPUT) console.log(`[mgmt-cost] SQL 생성 모드 → ${SQL_OUTPUT}`)
 
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (url && key) {
+    const regionsClient = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+    ACTIVE_CITY_NAMES = await getActiveCityNames(regionsClient)
+    console.log(`[mgmt-cost] 대상 지역(regions is_active=true): ${ACTIVE_CITY_NAMES.join(', ')}`)
+  } else {
+    console.warn(`[mgmt-cost] Supabase 환경변수 없음 — 기본값(${ACTIVE_CITY_NAMES.join('/')})으로 필터링합니다`)
+  }
+
   const files = resolveFiles()
   console.log(`[mgmt-cost] 처리할 파일: ${files.length}개`)
   files.forEach(f => console.log(`  - ${path.basename(f)}`))
@@ -385,7 +398,7 @@ async function main(): Promise<void> {
   for (const file of files) {
     console.log(`\n[mgmt-cost] ▶ ${path.basename(file)}`)
     const rows = await parseFile(file)
-    console.log(`  창원/김해: ${rows.length}행`)
+    console.log(`  대상 지역: ${rows.length}행`)
     allRows.push(...rows)
   }
   console.log(`\n[mgmt-cost] 총 ${allRows.length}행`)
@@ -409,8 +422,6 @@ async function main(): Promise<void> {
   }
 
   // DB 직접 적재
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) {
     console.error('[mgmt-cost] Supabase 환경변수 없음. --generate-sql 옵션을 사용하세요.')
     process.exit(1)
