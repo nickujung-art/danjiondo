@@ -106,9 +106,9 @@ describe('buildNavItems — pending count 뱃지', () => {
     expect(shouldShowBadge).toBe(false)
   })
 
-  it('Test 6: buildNavItems — 10개 항목 반환', async () => {
+  it('Test 6: buildNavItems — 13개 항목 반환', async () => {
     const { buildNavItems } = await import('@/components/admin/AdminSidebar')
     const items = buildNavItems({ reports: 0, ads: 0, gps: 0, presale: 0 })
-    expect(items).toHaveLength(10)
+    expect(items).toHaveLength(13)
   })
 })

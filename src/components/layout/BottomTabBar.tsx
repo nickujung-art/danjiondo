@@ -29,7 +29,7 @@ const MORE_ITEMS: MoreItem[] = [
 const MORE_PREFIXES = ['/map', '/invest', '/favorites', '/legal']
 
 export function BottomTabBar() {
-  const pathname = usePathname()
+  const pathname = usePathname() ?? ''
   const [open, setOpen] = useState(false)
   const moreActive = MORE_PREFIXES.some(p => pathname.startsWith(p))
 

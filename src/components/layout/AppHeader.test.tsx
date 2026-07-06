@@ -1,6 +1,11 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { AppHeader } from '@/components/layout/AppHeader'
+
+// usePathname mock — AppHeader 내부에서 호출
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/',
+}))
 
 describe('AppHeader', () => {
   it('renders without crashing', () => {

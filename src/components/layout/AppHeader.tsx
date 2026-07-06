@@ -26,7 +26,7 @@ const MORE_ITEMS: MoreItem[] = [
 const MORE_PREFIXES = ['/map', '/invest', '/favorites', '/legal']
 
 export function AppHeader() {
-  const pathname = usePathname()
+  const pathname = usePathname() ?? ''
   const [open, setOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const moreActive = MORE_PREFIXES.some(p => pathname.startsWith(p))
