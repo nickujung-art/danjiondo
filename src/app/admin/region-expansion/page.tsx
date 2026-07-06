@@ -80,7 +80,10 @@ export default async function RegionExpansionDashboard() {
 
   const adminClient = createSupabaseAdminClient()
 
-  const [regionsRes, oldIngestRes, latestRun] = await Promise.all([
+  const [
+    regionsRes, oldIngestRes, latestRun,
+    coordRes, kaptRes, schoolRes, poiRes, areaTypeRes, populationRes, unsoldRes, listingRes,
+  ] = await Promise.all([
     adminClient
       .from('regions')
       .select('sgg_code, sgg_name, si, gu')
@@ -92,6 +95,40 @@ export default async function RegionExpansionDashboard() {
       .in('sgg_code', OLD_CODES)
       .eq('status', 'success'),
     getLatestWorkflowRun(GH_OWNER, GH_REPO, BACKFILL_WORKFLOW).catch(() => null),
+    // 아래는 "실거래가 외 다른 데이터" 완성도 — 전체 집계 (지역별 아님)
+    adminClient
+      .from('complexes')
+      .select('*', { count: 'exact', head: true })
+      .in('sgg_code', NEW_CODES)
+      .not('lat', 'is', null),
+    adminClient
+      .from('facility_kapt')
+      .select('id, complexes!inner(sgg_code)', { count: 'exact', head: true })
+      .in('complexes.sgg_code', NEW_CODES),
+    adminClient
+      .from('facility_school')
+      .select('id, complexes!inner(sgg_code)', { count: 'exact', head: true })
+      .in('complexes.sgg_code', NEW_CODES),
+    adminClient
+      .from('facility_poi')
+      .select('id, complexes!inner(sgg_code)', { count: 'exact', head: true })
+      .in('complexes.sgg_code', NEW_CODES),
+    adminClient
+      .from('complex_area_types')
+      .select('id, complexes!inner(sgg_code)', { count: 'exact', head: true })
+      .in('complexes.sgg_code', NEW_CODES),
+    adminClient
+      .from('region_population_cache')
+      .select('*', { count: 'exact', head: true })
+      .in('sgg_code', NEW_CODES),
+    adminClient
+      .from('regional_unsold')
+      .select('*', { count: 'exact', head: true })
+      .in('sgg_code', NEW_CODES),
+    adminClient
+      .from('new_listings')
+      .select('*', { count: 'exact', head: true })
+      .in('sgg_code', NEW_CODES),
   ])
 
   const regionRows = (regionsRes.data ?? []) as RegionRow[]
@@ -135,6 +172,17 @@ export default async function RegionExpansionDashboard() {
   const regionsFullyDone = perRegion.filter(r => r.ingestDone >= referenceTarget * 0.9).length
 
   const wavesDone = WAVE_PLANS.filter(p => p.done).length
+
+  const otherData: Array<{ label: string; done: number; total: number; note?: string }> = [
+    { label: '좌표(지오코딩)', done: coordRes.count ?? 0, total: totalComplexes, note: '지도 표시 전제조건 — 미실행' },
+    { label: '관리비 (K-apt)', done: kaptRes.count ?? 0, total: totalComplexes },
+    { label: '학군 매핑', done: schoolRes.count ?? 0, total: totalComplexes, note: '좌표 선행 필요' },
+    { label: '주변 편의시설(POI)', done: poiRes.count ?? 0, total: totalComplexes, note: '좌표 선행 필요' },
+    { label: '평형 정규화(네이버)', done: areaTypeRes.count ?? 0, total: totalComplexes, note: '지리적 튜닝 필요 — defer' },
+    { label: '인구통계(KOSIS)', done: populationRes.count ?? 0, total: NEW_CODES.length, note: '연도별 행 — 완료' },
+    { label: '미분양 현황', done: unsoldRes.count ?? 0, total: NEW_CODES.length, note: '월배치 cron 대기' },
+    { label: '청약/분양 공고', done: listingRes.count ?? 0, total: NEW_CODES.length, note: '공고 존재 시 cron이 자동 수집' },
+  ]
 
   return (
     <main className="admin-page-content">
@@ -276,6 +324,54 @@ export default async function RegionExpansionDashboard() {
               실행 이력을 불러오지 못했습니다 (GITHUB_PAT 미설정이거나 아직 트리거 전).
             </p>
           )}
+        </div>
+      </section>
+
+      {/* 실거래가 외 다른 데이터 완성도 */}
+      <section aria-labelledby="other-data-heading" style={{ marginBottom: 24 }}>
+        <h2 id="other-data-heading" style={{ font: '700 14px/1.4 var(--font-sans)', margin: '0 0 12px' }}>
+          실거래가 외 다른 데이터 완성도 (신규 16개 지역 전체 집계)
+        </h2>
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div className="admin-table-wrap">
+            <table style={{ width: '100%', minWidth: 480, borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--line-default)', background: 'var(--bg-surface-2)' }}>
+                  {['항목', '진행률', '건수', '비고'].map(h => (
+                    <th key={h} scope="col" style={{ padding: '8px 16px', font: '600 11px/1 var(--font-sans)', color: 'var(--fg-sec)', textAlign: 'left', whiteSpace: 'nowrap' }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {otherData.map((d, i) => {
+                  const pct = d.total > 0 ? Math.min(100, Math.round((d.done / d.total) * 100)) : 0
+                  return (
+                    <tr key={d.label} style={{ borderBottom: i === otherData.length - 1 ? 'none' : '1px solid var(--line-subtle)' }}>
+                      <td style={{ padding: '10px 16px', font: '500 13px/1.3 var(--font-sans)' }}>{d.label}</td>
+                      <td style={{ padding: '10px 16px', minWidth: 140 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'var(--bg-surface-2)', overflow: 'hidden' }}>
+                            <div style={{ width: `${pct}%`, height: '100%', background: pct >= 90 ? '#16a34a' : pct > 0 ? '#2563eb' : '#dc2626' }} />
+                          </div>
+                          <span className="tnum" style={{ font: '600 11px/1 var(--font-sans)', color: 'var(--fg-sec)', minWidth: 32, textAlign: 'right' }}>
+                            {pct}%
+                          </span>
+                        </div>
+                      </td>
+                      <td className="tnum" style={{ padding: '10px 16px', font: '500 12px/1 var(--font-sans)', color: 'var(--fg-sec)' }}>
+                        {d.done.toLocaleString('ko-KR')}/{d.total.toLocaleString('ko-KR')}
+                      </td>
+                      <td style={{ padding: '10px 16px', font: '500 11px/1.3 var(--font-sans)', color: 'var(--fg-tertiary)' }}>
+                        {d.note ?? '—'}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
