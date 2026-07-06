@@ -2,7 +2,7 @@
  * 체육도장 데이터 수집 배치 스크립트
  *
  * 출처: 행정안전부_생활_체육도장업 조회서비스 (data.go.kr)
- * 전략: 전국 32,644건 수집 → 창원/김해 주소 필터 → 카카오 지오코딩 → 단지 매칭
+ * 전략: 전국 32,644건 수집 → 경남 전체(창원·김해 + Phase 33 신규 16개 시군구) 주소 필터 → 카카오 지오코딩 → 단지 매칭
  *
  * 실행: npx tsx --env-file=.env.local scripts/fetch-sports-facilities.ts
  * 소요 시간: 약 5~10분 (API 327페이지 + 지오코딩)
@@ -11,7 +11,11 @@ import { createClient } from '@supabase/supabase-js'
 import { fetchSportsFacilitiesByAddress } from '../src/services/localdata-sports'
 import { classifySport } from '../src/lib/sports-category'
 
-const ADDRESS_KEYWORDS = ['창원시', '김해시']
+const ADDRESS_KEYWORDS = [
+  '창원시', '김해시',
+  '진주시', '통영시', '사천시', '밀양시', '거제시', '양산시',
+  '의령군', '함안군', '창녕군', '고성군', '남해군', '하동군', '산청군', '함양군', '거창군', '합천군',
+]
 const RADIUS_M = 1500
 
 interface Complex {
@@ -62,14 +66,21 @@ async function main() {
   )
   const kakaoKey = process.env.KAKAO_REST_API_KEY!
 
-  // ① 단지 좌표 로드
-  const { data: complexRows, error: cErr } = await supabase
-    .from('complexes')
-    .select('id, lat, lng')
-    .not('lat', 'is', null)
-    .not('lng', 'is', null)
-  if (cErr) { console.error('단지 로드 실패:', cErr.message); process.exit(1) }
-  const complexes: Complex[] = complexRows
+  // ① 단지 좌표 로드 (PostgREST 1,000행 기본 캡 우회 — 페이지네이션)
+  const PAGE = 1000
+  const complexes: Complex[] = []
+  for (let offset = 0; ; offset += PAGE) {
+    const { data: complexRows, error: cErr } = await supabase
+      .from('complexes')
+      .select('id, lat, lng')
+      .not('lat', 'is', null)
+      .not('lng', 'is', null)
+      .range(offset, offset + PAGE - 1)
+    if (cErr) { console.error('단지 로드 실패:', cErr.message); process.exit(1) }
+    if (!complexRows || complexRows.length === 0) break
+    complexes.push(...(complexRows as Complex[]))
+    if (complexRows.length < PAGE) break
+  }
   console.log(`단지 로드: ${complexes.length}개`)
 
   // ② 전국 수집 → 창원/김해 필터
