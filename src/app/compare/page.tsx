@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { createSearchParamsCache, parseAsArrayOf, parseAsString } from 'nuqs/server'
 import { createReadonlyClient } from '@/lib/supabase/readonly'
 import { buildCompareIds, getCompareData } from '@/lib/data/compare'

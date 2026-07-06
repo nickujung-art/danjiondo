@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { AdInquiryForm } from '@/components/ads/AdInquiryForm'
 
 export const metadata: Metadata = {
