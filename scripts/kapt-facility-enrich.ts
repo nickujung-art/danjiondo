@@ -54,18 +54,37 @@ async function main(): Promise<void> {
   console.log('[kapt-facility] 시작 —', new Date().toISOString())
   console.log('[kapt-facility] data_month =', DATA_MONTH)
 
-  const query = supabase
-    .from('complexes')
-    .select('id, kapt_code, canonical_name')
-    .not('kapt_code', 'is', null)
-    .order('canonical_name')
-
-  const limitedQuery = LIMIT ? query.limit(LIMIT) : query
-
-  const { data, error } = await limitedQuery
-  if (error) {
-    console.error('[kapt-facility] complexes 조회 실패:', error.message)
-    process.exit(1)
+  let data: ComplexRow[] = []
+  if (LIMIT) {
+    const { data: limited, error } = await supabase
+      .from('complexes')
+      .select('id, kapt_code, canonical_name')
+      .not('kapt_code', 'is', null)
+      .order('canonical_name')
+      .limit(LIMIT)
+    if (error) {
+      console.error('[kapt-facility] complexes 조회 실패:', error.message)
+      process.exit(1)
+    }
+    data = (limited ?? []) as ComplexRow[]
+  } else {
+    // PostgREST 1,000행 기본 캡 우회 — 페이지네이션
+    const PAGE = 1000
+    for (let offset = 0; ; offset += PAGE) {
+      const { data: page, error } = await supabase
+        .from('complexes')
+        .select('id, kapt_code, canonical_name')
+        .not('kapt_code', 'is', null)
+        .order('canonical_name')
+        .range(offset, offset + PAGE - 1)
+      if (error) {
+        console.error('[kapt-facility] complexes 조회 실패:', error.message)
+        process.exit(1)
+      }
+      if (!page || page.length === 0) break
+      data.push(...(page as ComplexRow[]))
+      if (page.length < PAGE) break
+    }
   }
 
   const complexes = data as ComplexRow[]
