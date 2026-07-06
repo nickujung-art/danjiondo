@@ -7,6 +7,10 @@ on:
         description: 'DEBUG 모드 (첫 3개 raw 응답 확인 후 종료)'
         type: boolean
         default: false
+      missing_only:
+        description: '이번 달 데이터가 없는 단지만 처리 (중단된 실행 재개용)'
+        type: boolean
+        default: false
 
 jobs:
   kapt-facility-enrich:
@@ -27,6 +31,8 @@ jobs:
         run: |
           if [ "${{ inputs.debug }}" = "true" ]; then
             npx tsx scripts/kapt-facility-enrich.ts --debug
+          elif [ "${{ inputs.missing_only }}" = "true" ]; then
+            npx tsx scripts/kapt-facility-enrich.ts --missing-only
           else
             npx tsx scripts/kapt-facility-enrich.ts
           fi

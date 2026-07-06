@@ -1,7 +1,7 @@
 /**
  * KAPT 단지 시설 정보 적재 스크립트
  *
- * 실행: npx tsx scripts/kapt-facility-enrich.ts [--debug] [--limit N]
+ * 실행: npx tsx scripts/kapt-facility-enrich.ts [--debug] [--limit N] [--missing-only]
  * 환경변수: KAPT_API_KEY, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
  *
  * 조건: complexes WHERE kapt_code IS NOT NULL (전체 단지)
@@ -10,6 +10,7 @@
  *
  * --debug : 첫 3개 단지 raw API 응답 출력 후 종료
  * --limit N: N개 단지만 처리
+ * --missing-only: 이번 달 data_month 레코드가 아직 없는 단지만 처리 (중단된 실행 재개용)
  */
 import { config as dotenvConfig } from 'dotenv'
 import path from 'path'
@@ -34,6 +35,7 @@ const supabase = createClient(
 )
 
 const DEBUG = process.argv.includes('--debug')
+const MISSING_ONLY = process.argv.includes('--missing-only')
 const limitArg = process.argv.indexOf('--limit')
 const LIMIT = limitArg !== -1 ? parseInt(process.argv[limitArg + 1] ?? '10', 10) : null
 const RATE_LIMIT_DELAY_MS = 100
@@ -87,7 +89,30 @@ async function main(): Promise<void> {
     }
   }
 
-  const complexes = data as ComplexRow[]
+  let complexes = data as ComplexRow[]
+
+  if (MISSING_ONLY) {
+    const doneIds = new Set<string>()
+    const PAGE = 1000
+    for (let offset = 0; ; offset += PAGE) {
+      const { data: page, error } = await supabase
+        .from('facility_kapt')
+        .select('complex_id')
+        .eq('data_month', DATA_MONTH)
+        .range(offset, offset + PAGE - 1)
+      if (error) {
+        console.error('[kapt-facility] facility_kapt 조회 실패:', error.message)
+        process.exit(1)
+      }
+      if (!page || page.length === 0) break
+      for (const row of page as { complex_id: string }[]) doneIds.add(row.complex_id)
+      if (page.length < PAGE) break
+    }
+    const before = complexes.length
+    complexes = complexes.filter(c => !doneIds.has(c.id))
+    console.log(`[kapt-facility] --missing-only: ${before}개 중 ${doneIds.size}개 완료됨, ${complexes.length}개 남음`)
+  }
+
   const total = complexes.length
   console.log(`[kapt-facility] 처리 대상: ${total}개 단지`)
 
