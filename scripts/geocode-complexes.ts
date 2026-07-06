@@ -59,12 +59,35 @@ async function searchKakao(query: string): Promise<{ lat: number; lng: number } 
   return { lat: parseFloat(doc.y), lng: parseFloat(doc.x) }
 }
 
+// 소규모/구형 단지는 카카오 "장소" DB에 미등록인 경우가 많아 키워드 검색이 실패함 —
+// road_address가 있으면 주소 검색(행정망 도로명 DB 기반)으로 재시도
+async function searchKakaoAddress(address: string): Promise<{ lat: number; lng: number } | null> {
+  const key = process.env.KAKAO_REST_API_KEY
+  if (!key) throw new Error('KAKAO_REST_API_KEY 없음')
+
+  const url = new URL('https://dapi.kakao.com/v2/local/search/address.json')
+  url.searchParams.set('query', address)
+  url.searchParams.set('size', '1')
+
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `KakaoAK ${key}` },
+    signal: AbortSignal.timeout(5_000),
+  })
+  if (!res.ok) return null
+
+  const json = await res.json() as { documents?: Array<{ y: string; x: string }> }
+  const doc = json.documents?.[0]
+  if (!doc) return null
+
+  return { lat: parseFloat(doc.y), lng: parseFloat(doc.x) }
+}
+
 async function main() {
   const SGG_LABEL = await getSggLabel()
 
   const { data: complexes, error } = await supabase
     .from('complexes')
-    .select('id, canonical_name, sgg_code')
+    .select('id, canonical_name, sgg_code, road_address')
     .is('lat', null)
     .order('sgg_code')
 
@@ -72,16 +95,20 @@ async function main() {
   if (!complexes?.length) { console.log('지오코딩할 단지 없음'); return }
 
   console.log(`📍 ${complexes.length}개 단지 지오코딩 시작`)
-  let success = 0, failed = 0
+  let success = 0, failed = 0, successViaAddress = 0
 
   for (let i = 0; i < complexes.length; i++) {
-    const c = complexes[i]!
+    const c = complexes[i]! as { id: string; canonical_name: string; sgg_code: string; road_address: string | null }
     const region = SGG_LABEL[c.sgg_code] ?? ''
     const query = `${c.canonical_name} ${region}`
 
     process.stdout.write(`\r[${i + 1}/${complexes.length}] ${c.canonical_name} ...`)
 
-    const coord = await searchKakao(query)
+    let coord = await searchKakao(query)
+    if (!coord && c.road_address) {
+      coord = await searchKakaoAddress(c.road_address)
+      if (coord) successViaAddress++
+    }
     if (coord) {
       const { error: updateErr } = await supabase
         .from('complexes')
@@ -100,7 +127,7 @@ async function main() {
     await new Promise(r => setTimeout(r, 100))
   }
 
-  console.log(`\n✅ 완료: ${success}개 성공, ${failed}개 실패`)
+  console.log(`\n✅ 완료: ${success}개 성공(주소 검색 폴백 ${successViaAddress}건 포함), ${failed}개 실패`)
 }
 
 main().catch((err: unknown) => { console.error(err); process.exit(1) })
