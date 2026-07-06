@@ -431,21 +431,23 @@ async function main(): Promise<void> {
     auth: { autoRefreshToken: false, persistSession: false },
   })
 
-  // complexes 매핑 로드
-  const { data: complexData, error: complexError } = await supabase
-    .from('complexes')
-    .select('id, kapt_code')
-    .not('kapt_code', 'is', null)
-
-  if (complexError) {
-    console.error('[mgmt-cost] complexes 조회 실패:', complexError.message)
-    console.error('힌트: --generate-sql mgmt_import.sql 로 SQL 생성 후 MCP로 실행하세요.')
-    process.exit(1)
-  }
-
+  // complexes 매핑 로드 (PostgREST 1,000행 기본 캡 우회 — 페이지네이션)
   const kaptToId = new Map<string, string>()
-  for (const c of complexData ?? []) {
-    kaptToId.set(c.kapt_code as string, c.id as string)
+  const PAGE = 1000
+  for (let offset = 0; ; offset += PAGE) {
+    const { data: complexData, error: complexError } = await supabase
+      .from('complexes')
+      .select('id, kapt_code')
+      .not('kapt_code', 'is', null)
+      .range(offset, offset + PAGE - 1)
+    if (complexError) {
+      console.error('[mgmt-cost] complexes 조회 실패:', complexError.message)
+      console.error('힌트: --generate-sql mgmt_import.sql 로 SQL 생성 후 MCP로 실행하세요.')
+      process.exit(1)
+    }
+    if (!complexData || complexData.length === 0) break
+    for (const c of complexData) kaptToId.set(c.kapt_code as string, c.id as string)
+    if (complexData.length < PAGE) break
   }
   console.log(`[mgmt-cost] complexes 매핑: ${kaptToId.size}개 단지`)
 
