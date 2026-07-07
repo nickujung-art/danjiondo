@@ -1,0 +1,51 @@
+name: 네이버 단지번호 매핑 (1회성)
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (DB 미저장)'
+        type: boolean
+        default: false
+      limit:
+        description: '매핑 대상 단지 수 제한 (비워두면 전체)'
+        default: ''
+
+jobs:
+  map:
+    name: naver_complex_no 매핑
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium + system deps
+        run: npx playwright install chromium --with-deps
+
+      - name: Run mapping
+        run: >-
+          npx tsx scripts/map-naver-complexes-playwright.ts
+          ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
+          ${{ github.event.inputs.limit != '' && format('--limit={0}', github.event.inputs.limit) || '' }}
+          2>&1 | tee map-naver-run.log
+        env:
+          NEXT_PUBLIC_SUPABASE_URL:  ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NAVER_COOKIE:              ${{ secrets.NAVER_COOKIE }}
+
+      - name: Upload run log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: map-naver-run-log-${{ github.run_id }}
+          path: map-naver-run.log
+          retention-days: 14
