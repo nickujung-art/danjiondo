@@ -32,13 +32,32 @@ const GRID_STEP   = 480   // 그리드 스텝 (픽셀)
 const SWEEP_DWELL = 600   // 각 포인트 대기 (ms)
 const EXACT_DIST  = 200   // exact match 거리 (m)
 
-// 창원/김해 커버 BBOX
+// 경남 전체 22개 시군구 커버 BBOX (Phase 33 신규 16개 지역 포함, 2026-07-07)
+// 신규 16개 지역은 수동 지도 확인 대신 이미 지오코딩된 complexes.lat/lng의
+// 실측 min/max에 여유(padding)를 더해 산출 — 단지가 실제로 모여있는 범위만
+// 정확히 커버하므로 행정구역 전체를 추측하는 것보다 스윕 효율이 높음
 const BBOXES = [
   { name: '창원북부', latMin: 35.22, latMax: 35.30, lngMin: 128.60, lngMax: 128.72 },
   { name: '마산',    latMin: 35.17, latMax: 35.24, lngMin: 128.52, lngMax: 128.60 },
   { name: '진해',    latMin: 35.12, latMax: 35.20, lngMin: 128.66, lngMax: 128.78 },
   { name: '창원남부', latMin: 35.19, latMax: 35.25, lngMin: 128.60, lngMax: 128.70 },
   { name: '김해',    latMin: 35.18, latMax: 35.35, lngMin: 128.74, lngMax: 128.95 },
+  { name: '진주',    latMin: 35.10, latMax: 35.26, lngMin: 128.02, lngMax: 128.31 },
+  { name: '통영',    latMin: 34.80, latMax: 34.97, lngMin: 128.38, lngMax: 128.49 },
+  { name: '사천',    latMin: 34.91, latMax: 35.11, lngMin: 128.02, lngMax: 128.14 },
+  { name: '밀양',    latMin: 35.35, latMax: 35.53, lngMin: 128.70, lngMax: 128.79 },
+  { name: '거제',    latMin: 34.81, latMax: 34.98, lngMin: 128.49, lngMax: 128.75 },
+  { name: '양산',    latMin: 35.28, latMax: 35.51, lngMin: 128.97, lngMax: 129.20 },
+  { name: '의령',    latMin: 35.29, latMax: 35.35, lngMin: 128.22, lngMax: 128.30 },
+  { name: '함안',    latMin: 35.25, latMax: 35.33, lngMin: 128.37, lngMax: 128.55 },
+  { name: '창녕',    latMin: 35.37, latMax: 35.56, lngMin: 128.45, lngMax: 128.52 },
+  { name: '고성',    latMin: 34.95, latMax: 35.01, lngMin: 128.29, lngMax: 128.42 },
+  { name: '남해',    latMin: 34.81, latMax: 34.86, lngMin: 127.87, lngMax: 127.91 },
+  { name: '하동',    latMin: 34.94, latMax: 35.09, lngMin: 127.72, lngMax: 127.92 },
+  { name: '산청',    latMin: 35.28, latMax: 35.43, lngMin: 127.85, lngMax: 127.99 },
+  { name: '함양',    latMin: 35.50, latMax: 35.54, lngMin: 127.71, lngMax: 127.75 },
+  { name: '거창',    latMin: 35.66, latMax: 35.71, lngMin: 127.88, lngMax: 127.94 },
+  { name: '합천',    latMin: 35.55, latMax: 35.59, lngMin: 128.14, lngMax: 128.18 },
 ]
 const CENTER_STEP = 0.06  // 중심점 간격 (도)
 
@@ -343,6 +362,39 @@ async function main() {
     return
   }
 
+  // ⑦(사전 정의) 매칭 + UPDATE — 죽어도 유실 없게 존 경계마다 즉시 flush
+  // matchedTargetIds: 이미 DB에 반영된 단지는 다시 매칭/UPDATE 하지 않음 (idempotent 겸 속도)
+  const matchedTargetIds = new Set<string>()
+  const flushedMarkerNos  = new Set<string>()
+  const stats = { exact: 0, miss: 0 }
+
+  async function flushMatches(label: string) {
+    const remainingTargets = targets.filter(t => !matchedTargetIds.has(t.id))
+    let newlyMatched = 0
+
+    for (const [markerNo, marker] of collected) {
+      if (flushedMarkerNos.has(markerNo)) continue
+      const match = matchComplex(marker, remainingTargets)
+      if (!match) continue
+
+      const { row, dist } = match
+      if (isDryRun) {
+        console.log(`\n[EXACT] ${row.canonical_name} → ${marker.complexNo} (${Math.round(dist)}m)`)
+      } else {
+        const { error } = await supabase
+          .from('complexes').update({ naver_complex_no: marker.complexNo }).eq('id', row.id)
+        if (error) console.error(`\n[ERROR] ${row.canonical_name}: ${error.message}`)
+      }
+      matchedTargetIds.add(row.id)
+      flushedMarkerNos.add(markerNo)
+      stats.exact++
+      newlyMatched++
+    }
+    if (newlyMatched > 0) {
+      console.log(`\n[flush:${label}] +${newlyMatched}건 반영 (누적 매핑 ${stats.exact}건)`)
+    }
+  }
+
   // ⑥ 각 중심점 탐색: goto() → state 초기화 → humanLikeRecenter → gridSweep
   for (let i = 0; i < centers.length; i++) {
     const { name, lat, lng } = centers[i]
@@ -368,35 +420,20 @@ async function main() {
     // human-like 미세 조정 후 grid sweep
     await humanLikeRecenter(page, state, lat, lng, ZOOM)
     await gridSweep(page, state)
+
+    // 존(bbox) 경계마다 즉시 DB 반영 — 백그라운드 프로세스가 도중에 죽어도 그때까지의
+    // 진행분은 이미 DB에 저장되어 있음 (재실행 시 매칭된 단지는 자동으로 대상에서 빠짐)
+    const isLastCenter = i === centers.length - 1
+    const isZoneBoundary = !isLastCenter && centers[i + 1].name !== name
+    if (isZoneBoundary || isLastCenter) {
+      await flushMatches(name)
+    }
   }
 
   await browser.close()
   console.log(`\n수집된 네이버 단지: ${collected.size}개`)
 
-  if (collected.size === 0) {
-    console.log('⚠️  마커 0개. debug-naver-init.png 확인 — 차단 or URL 패턴 문제')
-    return
-  }
-
-  // ⑦ 매칭 + UPDATE
-  console.log('DB 매칭 중...')
-  const stats = { exact: 0, miss: 0 }
-
-  for (const [, marker] of collected) {
-    const match = matchComplex(marker, targets)
-    if (!match) { stats.miss++; continue }
-
-    const { row, dist } = match
-    if (isDryRun) {
-      console.log(`[EXACT] ${row.canonical_name} → ${marker.complexNo} (${Math.round(dist)}m)`)
-    } else {
-      const { error } = await supabase
-        .from('complexes').update({ naver_complex_no: marker.complexNo }).eq('id', row.id)
-      if (error) console.error(`[ERROR] ${row.canonical_name}: ${error.message}`)
-    }
-    stats.exact++
-  }
-
+  stats.miss = collected.size - flushedMarkerNos.size
   const unmapped = targets.length - stats.exact
   console.log(`\n=== 결과 ===`)
   console.log(`수집: ${collected.size}개 / 매핑 성공: ${stats.exact} / DB미매칭: ${stats.miss}`)
