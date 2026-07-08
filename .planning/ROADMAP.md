@@ -1263,6 +1263,16 @@
 
 **UI hint**: no (라벨 텍스트만 추가, 레이아웃 변경 없음)
 
+### Phase 34: 전국 DB 확장 2단계 — 인접 광역시(부산·울산) 지역 확장 기반 구축
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 33
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 34 to break down)
+
 ---
 ## Milestone Summary
 
