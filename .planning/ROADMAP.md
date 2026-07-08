@@ -1265,8 +1265,8 @@
 
 ### Phase 34: 전국 DB 확장 2단계 — 인접 광역시(부산·울산) 지역 확장 기반 구축
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** `regions` 테이블에 부산광역시 16개 구·군을 시딩하고, Phase 33과 동일한 패턴(하드코딩 지역 필터 재스윕·KAPT Golden Record 시딩·국토부 백필·네이버 매핑·용량 체크포인트)으로 부산을 확장한다. 울산은 부산 완료 후 별도 phase(35)로 분리.
+**Requirements**: TBD (CONTEXT.md D-01~D-11 참고, 계획 시 REGION-1x로 부여 예정)
 **Depends on:** Phase 33
 **Plans:** 0 plans
 
