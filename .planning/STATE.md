@@ -19,7 +19,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-06)
 
 **Core value:** 창원·김해 실수요자가 "이 단지 사도 되는지" 데이터와 이웃 의견으로 30분 안에 결정 짓게 한다.
-**Current focus:** Phase 33(전국 DB 확장 1단계 — 경남 전체 지역 확장) 진행 중 — Wave 0·1(33-00~33-06,33-09,33-10, 총 9개 plan) 완료. Wave 2(33-07 국토부 백필 체크포인트) 진행 대기. 프론트엔드 재기획 회의 대기 중이라 백엔드/데이터 파이프라인 확장에 집중.
+**Current focus:** Phase 33(전국 DB 확장 1단계 — 경남 전체 지역 확장) 진행 중 — Wave 0·1·2(33-00~33-07,33-09,33-10, 총 10개 plan) 완료. Wave 3(33-08 Supabase 용량 결정 체크포인트) 진행 중 — 488MB/500MB 도달 확인 후 VACUUM FULL로 420MB까지 축소, Pro 플랜 전환은 보류하고 재모니터링. 프론트엔드 재기획 회의 대기 중이라 백엔드/데이터 파이프라인 확장에 집중.
 
 ## Current Phase
 
@@ -29,7 +29,7 @@ Goal: `regions` 테이블에 경남 전체 시군구를 시딩하고, 하드코�
 
 Requirements: REGION-01~11
 
-Plans: 9/11 complete (33-00~33-06, 33-09, 33-10 done) — Wave 0·1 완료 2026-07-03. 남은: 33-07(Wave 2, 국토부 백필 체크포인트), 33-08(Wave 3, Supabase 용량 결정 체크포인트)
+Plans: 10/11 complete (33-00~33-07, 33-09, 33-10 done) — Wave 0·1 완료 2026-07-03, Wave 2(33-07 국토부 백필: 4,080/4,080 combo, 249,574건) 완료 2026-07-08. 남은: 33-08(Wave 3, Supabase 용량 결정 체크포인트 — 진행 중)
 
 Wave 1 결과 하이라이트: regions 22행 시딩, complexes 788개 신규(2,031→2,822), KAPT enrich 99.5%, kapt.ts/regions.ts의 `server-only` import 버그 2건 발견·수정(스크립트 6개+CI 워크플로 2개 차단 해소), prediction-commentary route의 ALLOWED_SGG 하드코딩 추가 발견·수정
 
@@ -288,6 +288,7 @@ Key notes: MOLIT_API_KEY (기존 data.go.kr 키) 재사용. B552555 청약홈 �
 | 2026-06-25 | DataQualityWarning: ranking.length > 0 조건 추가 — 데이터 조회 전 빈 배열에 "0건 미만" 경고 방지 | 31-04 |
 | 2026-07-03 | regions 동적 조회 공용 헬퍼(getActiveSggCodes/getActiveCityNames)를 backfill-realprice.ts 기존 검증 패턴 그대로 이식 — Wave 1 8개 plan(33-01~33-06,33-09,33-10) 공용 계약 | 33-00 |
 | 2026-07-03 | seed-region.test.ts count>=22 검증(정확히 =22 아님) — upsert 기반 시딩 특성상 향후 재확장(2단계 인접 광역시 등) 대비 | 33-00 |
+| 2026-07-08 | Supabase Free tier DB 488MB/500MB 도달 확인 (transactions 271MB) — Pro 전환 대신 VACUUM FULL 우선 실행, transactions 271MB→202MB, DB 전체 488MB→420MB. Pro 전환은 보류, 재모니터링으로 대응 | 33-08 |
 
 ---
 

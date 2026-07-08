@@ -17,6 +17,7 @@ import { chromium, type Page } from 'playwright'
 import { createClient }        from '@supabase/supabase-js'
 import * as dotenv             from 'dotenv'
 import path                    from 'path'
+import fs                      from 'fs'
 import { normalizeComplexName, haversineDistanceM } from '../src/services/naver-land'
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
@@ -29,6 +30,9 @@ const LIMIT    = limitArg ? parseInt(limitArg.split('=')[1], 10) : Infinity
 // 훑고 싶을 때 사용
 const newOnly = process.argv.includes('--new-only')
 const OLD_ZONE_NAMES = new Set(['창원북부', '마산', '진해', '창원남부', '김해'])
+// 미매핑 target마다 이름 무관 최근접 마커를 찾아 "이름 불일치 / 지오코딩 오차 / 커버리지 밖"을
+// 구분하는 진단 리포트를 scratchpad에 남김 — DB 변경 없음, 순수 사후 분석
+const diagnose = process.argv.includes('--diagnose')
 
 // ─── 설정 (anti_bot_scraper 기본값) ─────────────────────────────────────────
 const ZOOM        = 14    // 단지(complex) 마커 줌 레벨 (15+ = 개별 매물 마커로 전환됨)
@@ -460,6 +464,102 @@ async function main() {
   console.log(`미매핑 DB 단지: ${unmapped}개`)
   console.log(`매핑률: ${((stats.exact / targets.length) * 100).toFixed(1)}%`)
   if (isDryRun) console.log('\n(dry-run — DB 업데이트 없음)')
+
+  if (diagnose) await runDiagnostics(targets, matchedTargetIds, collected)
+}
+
+// ─── 진단: 미매핑 target마다 이름 무관 최근접 마커 탐색 (DB 변경 없음) ─────────
+
+interface DiagnosisRow {
+  target_id: string
+  target_name: string
+  nearest_marker_no: string | null
+  nearest_marker_name: string | null
+  dist_m: number | null
+  name_match: boolean
+  bucket: '이름불일치' | '지오코딩오차의심' | '먼후보' | '커버리지밖'
+}
+
+async function runDiagnostics(
+  targets: ComplexRow[],
+  matchedTargetIds: Set<string>,
+  collected: Map<string, NaverMarker>,
+) {
+  const markers = [...collected.values()]
+  const rows: DiagnosisRow[] = []
+
+  for (const target of targets) {
+    if (matchedTargetIds.has(target.id)) continue
+    const normTarget = normalizeComplexName(target.canonical_name)
+
+    let nearest: { marker: NaverMarker; dist: number } | null = null
+    for (const marker of markers) {
+      const dist = haversineDistanceM(
+        { lat: target.lat, lng: target.lng },
+        { lat: marker.lat, lng: marker.lng },
+      )
+      if (!nearest || dist < nearest.dist) nearest = { marker, dist }
+    }
+
+    if (!nearest) {
+      rows.push({
+        target_id: target.id, target_name: target.canonical_name,
+        nearest_marker_no: null, nearest_marker_name: null, dist_m: null,
+        name_match: false, bucket: '커버리지밖',
+      })
+      continue
+    }
+
+    const normMarker = normalizeComplexName(nearest.marker.complexName)
+    const nameMatch  = normTarget.includes(normMarker) || normMarker.includes(normTarget)
+    const dist       = Math.round(nearest.dist)
+    let bucket: DiagnosisRow['bucket']
+    if (dist <= EXACT_DIST) bucket = nameMatch ? '먼후보' /* 이론상 도달 안 함 */ : '이름불일치'
+    else if (dist <= 1000)  bucket = '지오코딩오차의심'
+    else if (dist <= 3000)  bucket = '먼후보'
+    else                    bucket = '커버리지밖'
+
+    rows.push({
+      target_id: target.id, target_name: target.canonical_name,
+      nearest_marker_no: nearest.marker.complexNo, nearest_marker_name: nearest.marker.complexName,
+      dist_m: dist, name_match: nameMatch, bucket,
+    })
+  }
+
+  const counts = rows.reduce<Record<string, number>>((acc, r) => {
+    acc[r.bucket] = (acc[r.bucket] ?? 0) + 1
+    return acc
+  }, {})
+
+  console.log(`\n=== 진단 리포트 (${rows.length}개 미매핑 target) ===`)
+  for (const [bucket, n] of Object.entries(counts)) {
+    console.log(`  ${bucket}: ${n}개`)
+  }
+
+  const nameMismatchExamples = rows
+    .filter(r => r.bucket === '이름불일치')
+    .slice(0, 20)
+  if (nameMismatchExamples.length > 0) {
+    console.log(`\n[이름불일치 샘플 최대 20개] (거리 ≤${EXACT_DIST}m인데 정규화 이름이 안 겹침)`)
+    for (const r of nameMismatchExamples) {
+      console.log(`  DB "${r.target_name}" ↔ 네이버 "${r.nearest_marker_name}" (${r.dist_m}m)`)
+    }
+  }
+
+  const geoMismatchExamples = rows
+    .filter(r => r.bucket === '지오코딩오차의심')
+    .sort((a, b) => (a.dist_m ?? 0) - (b.dist_m ?? 0))
+    .slice(0, 20)
+  if (geoMismatchExamples.length > 0) {
+    console.log(`\n[지오코딩오차의심 샘플 최대 20개] (${EXACT_DIST}~1000m, 이름 일치 여부 포함)`)
+    for (const r of geoMismatchExamples) {
+      console.log(`  DB "${r.target_name}" ↔ 네이버 "${r.nearest_marker_name}" (${r.dist_m}m, 이름일치:${r.name_match})`)
+    }
+  }
+
+  const outPath = path.resolve(process.cwd(), 'naver-mapping-diagnosis.json')
+  fs.writeFileSync(outPath, JSON.stringify({ generatedAt: new Date().toISOString(), counts, rows }, null, 2))
+  console.log(`\n전체 진단 결과 저장: ${outPath}`)
 }
 
 main().catch(e => { console.error(e); process.exit(1) })

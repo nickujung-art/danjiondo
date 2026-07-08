@@ -1227,7 +1227,7 @@
 
 **Depends on:** Phase 32
 
-**Plans:** 9/11 plans executed
+**Plans:** 10/11 plans executed
 
 **Wave 0** *(독립 실행 가능 — 지역 마스터 시딩 + 공용 헬퍼)*
 - [x] 33-00-PLAN.md — regions 테이블 경남 16개 신규 시군구 시딩 + 법정동코드 단발 검증 + getActiveSggCodes/getActiveCityNames 공용 헬퍼 + seed-region.test.ts 갱신 (REGION-01)
@@ -1243,10 +1243,10 @@
 - [x] 33-10-PLAN.md — molit-unsold.ts/realprice-officetel.ts 하드코딩 지역 매핑 동적 전환 (REGION-11, plan-checker 2차 리비전 대응)
 
 **Wave 2** *(blocked on 33-06; checkpoint:human-action — 다회 분할 실행)*
-- [ ] 33-07-PLAN.md — 경남 신규 시군구 국토부 실거래가 10년 다회 분할 백필 `[CHECKPOINT]` (REGION-07)
+- [x] 33-07-PLAN.md — 경남 신규 시군구 국토부 실거래가 10년 다회 분할 백필 `[CHECKPOINT]` (REGION-07) — 완료 2026-07-08, 4,080/4,080 combo, 249,574건
 
 **Wave 3** *(blocked on Wave 2; checkpoint:decision)*
-- [ ] 33-08-PLAN.md — Supabase DB 용량 실측 + Pro 플랜 전환 여부 결정 `[CHECKPOINT]` (REGION-08)
+- [ ] 33-08-PLAN.md — Supabase DB 용량 실측 + Pro 플랜 전환 여부 결정 `[CHECKPOINT]` (REGION-08) — 진행 중: 488MB/500MB 도달 확인 → VACUUM FULL로 420MB 축소, Pro 전환은 보류하고 재모니터링 중
 
 **Cross-cutting constraints:**
 - `regions` 테이블(`sgg_code` PK, `is_active` 플래그)이 유일한 지역 마스터 — 모든 인라인 하드코딩 배열은 `getActiveSggCodes()`/`getActiveCityNames()` 경유
