@@ -363,10 +363,12 @@ async function main() {
   }
 
   // ⑦(사전 정의) 매칭 + UPDATE — 죽어도 유실 없게 존 경계마다 즉시 flush
-  // matchedTargetIds: 이미 DB에 반영된 단지는 다시 매칭/UPDATE 하지 않음 (idempotent 겸 속도)
+  // matchedTargetIds: 실제로 DB UPDATE가 성공한 단지만 추가 (idempotent 겸 속도)
+  // flushedMarkerNos: 성공/실패 관계없이 시도한 마커는 재시도 안 함 (같은 마커가 매번
+  // 동일 duplicate-key 충돌을 내며 무한 재시도되는 것 방지 — 원인은 Golden Record 중복 행 추정)
   const matchedTargetIds = new Set<string>()
   const flushedMarkerNos  = new Set<string>()
-  const stats = { exact: 0, miss: 0 }
+  const stats = { exact: 0, miss: 0, dupError: 0 }
 
   async function flushMatches(label: string) {
     const remainingTargets = targets.filter(t => !matchedTargetIds.has(t.id))
@@ -378,20 +380,29 @@ async function main() {
       if (!match) continue
 
       const { row, dist } = match
+      flushedMarkerNos.add(markerNo) // 성공/실패 무관 — 이 마커는 이번 실행에서 재시도 안 함
+
       if (isDryRun) {
         console.log(`\n[EXACT] ${row.canonical_name} → ${marker.complexNo} (${Math.round(dist)}m)`)
-      } else {
-        const { error } = await supabase
-          .from('complexes').update({ naver_complex_no: marker.complexNo }).eq('id', row.id)
-        if (error) console.error(`\n[ERROR] ${row.canonical_name}: ${error.message}`)
+        matchedTargetIds.add(row.id)
+        stats.exact++
+        newlyMatched++
+        continue
+      }
+
+      const { error } = await supabase
+        .from('complexes').update({ naver_complex_no: marker.complexNo }).eq('id', row.id)
+      if (error) {
+        console.error(`\n[ERROR] ${row.canonical_name}: ${error.message}`)
+        stats.dupError++
+        continue // UPDATE 실패 — matchedTargetIds에 넣지 않음(다음 실행에서 재시도 가능하게)
       }
       matchedTargetIds.add(row.id)
-      flushedMarkerNos.add(markerNo)
       stats.exact++
       newlyMatched++
     }
     if (newlyMatched > 0) {
-      console.log(`\n[flush:${label}] +${newlyMatched}건 반영 (누적 매핑 ${stats.exact}건)`)
+      console.log(`\n[flush:${label}] +${newlyMatched}건 반영 (누적 매핑 ${stats.exact}건, 실패 ${stats.dupError}건)`)
     }
   }
 
@@ -438,7 +449,7 @@ async function main() {
   stats.miss = collected.size - flushedMarkerNos.size
   const unmapped = targets.length - stats.exact
   console.log(`\n=== 결과 ===`)
-  console.log(`수집: ${collected.size}개 / 매핑 성공: ${stats.exact} / DB미매칭: ${stats.miss}`)
+  console.log(`수집: ${collected.size}개 / 매핑 성공: ${stats.exact} / DB미매칭: ${stats.miss} / 중복키 실패: ${stats.dupError}`)
   console.log(`미매핑 DB 단지: ${unmapped}개`)
   console.log(`매핑률: ${((stats.exact / targets.length) * 100).toFixed(1)}%`)
   if (isDryRun) console.log('\n(dry-run — DB 업데이트 없음)')
