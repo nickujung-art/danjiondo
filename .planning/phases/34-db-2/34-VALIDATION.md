@@ -41,10 +41,11 @@ created: 2026-07-08
 | 34-00-03 | 00 | 0 | REGION-12 | T-34-01/02 | 부산 16개 sgg_code가 regions에 존재(is_active=true, gu non-null 16건, count>=38) | integration | `npx vitest run src/__tests__/seed-region.test.ts` | ✅ 기존 파일, 부산 assertion 추가 | ⬜ |
 | 34-01-01 | 01 | 1 | REGION-13 | T-34-03/04 | 하드코딩 지역 배열 3-pass 재스윕 + 동적 전환, admin 대시보드 부산 추적 | static+lint | `npm run lint` + grep 재스윕 | ✅ 기존 파일 수정 | ⬜ |
 | 34-02-01 | 02 | 1 | REGION-14 | T-34-05/06 | 부산 16개 구 라벨 추가, prediction-commentary 동적 allowlist 유지 | lint | `npm run lint` + grep 26350 | ✅ 기존 파일 수정 | ⬜ |
-| 34-03-01 | 03 | 1 | REGION-15 | T-34-07 | dup-detection RPC 라이브 적용(BLOCKING, 시딩 전) | integration | `select find_nearby_similar_complexes(...)` 에러 없음 | ❌ W1 신규 마이그레이션 | ⬜ |
-| 34-03-02 | 03 | 1 | REGION-15 | T-34-07/08 | detectPotentialDuplicate log-only, coord null 시 스킵, error 시 빈 배열 | unit | `npx vitest run src/lib/data/complex-matching.test.ts` | ❌ W1 신규 테스트 | ⬜ |
+| 34-03-01 | 03 | 1 | REGION-15 | T-34-07 | dup-detection RPC 라이브 적용(BLOCKING, 34-05 탐지 전) | integration | `select find_nearby_similar_complexes(...)` 에러 없음 | ❌ W1 신규 마이그레이션 | ⬜ |
+| 34-03-02 | 03 | 1 | REGION-15 | T-34-07/08 | detectPotentialDuplicate log-only: 좌표 부재 시 RPC 미호출 스킵, **좌표 존재(실좌표값) 시 RPC를 정확한 인자로 호출**, error 시 빈 배열. seed-complexes.ts에는 배선 안 함(KAPT 좌표 부재) | unit | `npx vitest run src/lib/data/complex-matching.test.ts` | ❌ W1 신규 테스트 | ⬜ |
 | 34-04-01 | 04 | 1 | REGION-18 | T-34-10 | school_ranking RPC `p_si='부산광역시'` 에러 없음 + 모든 행 gu=null | integration | `npx vitest run src/__tests__/school-ranking-regional.test.ts` | ✅ 기존 파일, 부산 케이스 추가 | ⬜ |
-| 34-05-02 | 05 | 2 | REGION-16 | T-34-11 | complexes-map BBOX 부산 실측 범위 포함(과확장 금지) | lint | `npm run lint` + grep 129.4 | ✅ 기존 파일 수정 | ⬜ |
+| 34-05-02 | 05 | 2 | REGION-15 | T-34-07/09 | 지오코딩 후 부산 실좌표 row(WHERE lat IS NOT NULL) 순회 → detectPotentialDuplicate 실행 → busan-dup-candidates.csv log-only. 처리 건수 N>0 가드로 좌표 선행 검증 | ops+static | `npx tsx --env-file=.env.local scripts/detect-busan-dup-candidates.ts` + `grep -c detectPotentialDuplicate scripts/detect-busan-dup-candidates.ts` | ❌ W2 신규 스크립트 | ⬜ |
+| 34-05-03 | 05 | 2 | REGION-16 | T-34-11 | complexes-map BBOX 부산 실측 범위 포함(과확장 금지) | lint | `npm run lint` + grep 129.4 | ✅ 기존 파일 수정 | ⬜ |
 | 34-06-01 | 06 | 2 | REGION-17 | T-34-13/14 | 백필 각 배치마다 DB 용량 체크(450MB 경고, 500MB 초과 방지) | ops (checkpoint) | `gh run list` + `pg_database_size` SQL | ✅ 기존 워크플로 재사용 | ⬜ |
 | 34-07-01 | 07 | 3 | REGION-19 | T-34-15/16 | enrichment 스크립트 1,000행 캡 방어, 처리 건수 예상치 대조 | static+ops | `grep -c "\.range(" scripts/collect-facility-edu.ts` | ✅/❌ 확인·보강 | ⬜ |
 | 34-08-01 | 08 | 3 | REGION-20 | T-34-17/18 | OLD_ZONE_NAMES 21개 갱신, 부산 BBOX, --check-cookie 값 로그 금지 | lint+ops | `npm run lint` + `--check-cookie` 스모크런 | ✅ 기존 파일 수정 | ⬜ |
@@ -58,8 +59,9 @@ created: 2026-07-08
 ## Wave 0 / 신규 테스트 Gaps
 
 - [ ] `src/__tests__/seed-region.test.ts` — 부산 16개 구 assertion 추가 (count>=38, gu non-null) — **34-00**
-- [ ] `src/lib/data/complex-matching.test.ts` — detectPotentialDuplicate 신규 유닛 테스트 (신규 파일) — **34-03**
-- [ ] `supabase/migrations/20260708000001_find_nearby_similar_complexes.sql` — dup-detection RPC 신규 마이그레이션 [BLOCKING, 시딩 전 적용] — **34-03**
+- [ ] `src/lib/data/complex-matching.test.ts` — detectPotentialDuplicate 신규 유닛 테스트 (신규 파일, 실좌표 RPC 호출 케이스 포함) — **34-03**
+- [ ] `supabase/migrations/20260708000001_find_nearby_similar_complexes.sql` — dup-detection RPC 신규 마이그레이션 [BLOCKING, 34-05 탐지 전 적용] — **34-03**
+- [ ] `scripts/detect-busan-dup-candidates.ts` — 지오코딩 후 부산 실좌표 순회 dup-detection 신규 스크립트 (좌표 선행 필수) — **34-05**
 - [ ] `src/__tests__/school-ranking-regional.test.ts` — `p_si='부산광역시'` 케이스 추가 — **34-04**
 
 *(nyquist_validation 기본 활성화 — 모든 auto 태스크에 `<automated>` verify 존재, checkpoint 태스크는 ops 검증)*
@@ -81,7 +83,7 @@ created: 2026-07-08
 
 - [x] All tasks have `<automated>` verify or checkpoint ops verification
 - [x] Sampling continuity: no 3 consecutive tasks without automated verify
-- [x] Wave 0 / 신규 테스트 gaps 식별됨 (seed-region, complex-matching, school-ranking, dup-RPC 마이그레이션)
+- [x] Wave 0 / 신규 테스트 gaps 식별됨 (seed-region, complex-matching, school-ranking, dup-RPC 마이그레이션, detect-busan-dup 스크립트)
 - [x] No watch-mode flags
 - [x] Feedback latency < 수 분
 - [x] `nyquist_compliant: true` set in frontmatter
