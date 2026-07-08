@@ -19,7 +19,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-06)
 
 **Core value:** 창원·김해 실수요자가 "이 단지 사도 되는지" 데이터와 이웃 의견으로 30분 안에 결정 짓게 한다.
-**Current focus:** Phase 33(전국 DB 확장 1단계 — 경남 전체 지역 확장) 진행 중 — Wave 0·1·2(33-00~33-07,33-09,33-10, 총 10개 plan) 완료. Wave 3(33-08 Supabase 용량 결정 체크포인트) 진행 중 — 488MB/500MB 도달 확인 후 VACUUM FULL로 420MB까지 축소, Pro 플랜 전환은 보류하고 재모니터링. 프론트엔드 재기획 회의 대기 중이라 백엔드/데이터 파이프라인 확장에 집중.
+**Current focus:** Phase 33(전국 DB 확장 1단계 — 경남 전체 지역 확장) Wave 0·1·2 완료, Wave 3(33-08 용량 결정 체크포인트) 진행 중 — 420MB로 축소 후 재모니터링. Phase 34(전국 DB 확장 2단계 — 부산광역시) CONTEXT.md 작성 완료(2026-07-08), `/gsd-plan-phase 34` 대기 중. 프론트엔드 재기획 회의 대기 중이라 백엔드/데이터 파이프라인 확장에 집중.
 
 ## Current Phase
 
@@ -289,6 +289,7 @@ Key notes: MOLIT_API_KEY (기존 data.go.kr 키) 재사용. B552555 청약홈 �
 | 2026-07-03 | regions 동적 조회 공용 헬퍼(getActiveSggCodes/getActiveCityNames)를 backfill-realprice.ts 기존 검증 패턴 그대로 이식 — Wave 1 8개 plan(33-01~33-06,33-09,33-10) 공용 계약 | 33-00 |
 | 2026-07-03 | seed-region.test.ts count>=22 검증(정확히 =22 아님) — upsert 기반 시딩 특성상 향후 재확장(2단계 인접 광역시 등) 대비 | 33-00 |
 | 2026-07-08 | Supabase Free tier DB 488MB/500MB 도달 확인 (transactions 271MB) — Pro 전환 대신 VACUUM FULL 우선 실행, transactions 271MB→202MB, DB 전체 488MB→420MB. Pro 전환은 보류, 재모니터링으로 대응 | 33-08 |
+| 2026-07-08 | Phase 34(부산) 대상범위·Pro전환타이밍·네이버크롤러·중복행 4개 영역 논의 완료 — 부산 우선 단독 진행(울산 후속 phase), 33-08과 동일하게 백필후 실측 결정 반복(단 450MB 경고 태스크 추가), 네이버 매핑 이번 phase 포함(로컬 프로세스 불안정 근본원인 재조사, 실패시 restart-loop 폴백), 111쌍 중복행 병합은 defer(탐지로그만 추가) | 34-db-2 |
 
 ---
 
