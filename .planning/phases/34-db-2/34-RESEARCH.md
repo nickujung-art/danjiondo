@@ -358,20 +358,16 @@ async function checkCookieValidity(page: Page): Promise<boolean> {
 
 ## Open Questions
 
+**(RESOLVED — planner + plan-checker 재검증 과정에서 전부 확정, 2026-07-08)**
+
 1. **Busan 미분양(regional_unsold) 데이터 파이프라인을 이번 phase 범위에 포함할 것인가?**
-   - What we know: 기존 `molit-unsold.ts`는 경남 전용 API(`6480000/gyeongnamunsold`)를 쓰며, 부산은 별도 서비스(`6260000/UnSellStusService`)가 존재함(WebSearch로 확인, MEDIUM confidence).
-   - What's unclear: CONTEXT.md 어디에도 미분양이 부산 phase의 명시적 deliverable로 언급되지 않았다 — 사용자가 의도적으로 제외했는지, 아니면 놓친 것인지 불명확.
-   - Recommendation: `reb.ts`(R-ONE 가격지수)를 처리한 것과 동일한 패턴으로 명시적으로 defer 처리하고 RESEARCH.md에 기록만 남기는 것을 권장(이번 phase는 이미 범위가 크다) — 사용자 확인 후 planner가 최종 결정.
+   - **결정: Defer.** `reb.ts`와 동일 패턴으로 이번 phase 범위 밖 처리. `34-CONTEXT.md` Deferred Ideas에 명시적으로 기록됨(plan-checker 재검증에서 미기록 상태가 지적되어 보완). `/admin/region-expansion` 대시보드의 "미분양 현황" 행은 부산 기준 0/16으로 남는 것이 정상(오류 아님).
 
 2. **school_ranking RPC의 "부산 구별 순위" 미지원을 이번 phase에서 코드로 고칠 것인가, 회귀 테스트로만 고정할 것인가?**
-   - What we know: CONTEXT.md는 "전국형 일반화는 범위 밖"이라 명시했고, 프로젝트 메모리(`project_school_ranking_next.md`)에도 "구별 순위 + 시 전체 순위 동시 표시"가 이미 별도 미해결 과제로 기록돼 있어 창원조차 완성되지 않은 기능이다.
-   - What's unclear: 부산은 16개 구 전부가 구 있는 지역이라 이 제약이 창원보다 훨씬 크게 체감될 수 있음(부산 전체 학군 랭킹에서 지역 구분이 전혀 안 보임).
-   - Recommendation: 이번 phase는 회귀 테스트 추가(REGION-18)로 "현재 동작이 안전하게 유지됨"만 확정하고, 실제 구별 라벨 지원은 기존 미해결 과제(`project_school_ranking_next.md`)와 통합해 별도 phase로 처리 권장.
+   - **결정: 회귀 테스트만 (34-04, REGION-18).** 실제 구별 라벨 지원은 기존 미해결 과제(`project_school_ranking_next.md`)와 통합해 별도 phase로 처리.
 
 3. **`src/app/admin/region-expansion/page.tsx`(임시 대시보드)를 삭제할 것인가, 부산 대응까지 확장할 것인가?**
-   - What we know: 파일 자체 주석이 "Phase 33 완료 후 삭제 예정"이라 명시함. 아직 삭제되지 않았고, 최근 커�밋(61d8623)에서 오히려 기능이 추가됨(데이터 완성도 섹션).
-   - What's unclear: 사용자가 이 대시보드를 부산 확장 진행 상황 추적용으로 계속 쓰고 싶어할 수도 있음(현재도 진행 상황 참고용으로 유용해 보임).
-   - Recommendation: planner가 사용자에게 "삭제 vs 부산 지원 확장" 중 선택하도록 짧게 확인 — 만약 유지한다면 재스윕 grep 패턴에 `NEW_CODES`/`OLD_CODES` 변수명도 추가해야 함(Pitfall 1).
+   - **결정: 확장 유지 (34-01 Task 1).** 재스윕 grep 패턴에 `NEW_CODES`/`OLD_CODES` 변수명 포함하여 부산 대응까지 확장.
 
 ## Environment Availability
 

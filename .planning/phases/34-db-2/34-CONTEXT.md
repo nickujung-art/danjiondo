@@ -129,6 +129,7 @@ Phase 33(경남 전체 확장, 완료)의 후속 phase. 33-CONTEXT.md에 명시�
 - 경남 기존 데이터 111쌍/303건 중복 Golden Record 행 병합 — 여러 테이블 FK 재연결이 필요한 위험 작업이라 별도 후속 phase로 명시적 defer
 - `naver-cafe.ts` 지역별 카페 소스 다중화 — 기존과 동일하게 defer, 이번 phase 범위 아님
 - 학군 랭킹/`seo-hierarchy.ts` 전국형 일반화 — RESEARCH.md에서 부산 케이스 확인만 하고, 코드 변경이 필요하면 별도 범위로 분리 검토
+- 부산 미분양(regional_unsold) 데이터 — `molit-unsold.ts`는 경남 전용 서비스ID만 지원, 부산은 별도 API(`6260000/UnSellStusService`)가 필요함(RESEARCH.md Open Question 1). `reb.ts`(R-ONE 가격지수)와 동일하게 이번 phase에서 명시적으로 defer — `/admin/region-expansion` 대시보드의 "미분양 현황" 행은 부산 기준 `0/16`으로 표시되는 것이 정상(오류 아님), 후속 phase에서 별도 어댑터 조사 필요
 
 </deferred>
 
