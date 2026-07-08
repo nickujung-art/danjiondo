@@ -19,7 +19,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-06)
 
 **Core value:** 창원·김해 실수요자가 "이 단지 사도 되는지" 데이터와 이웃 의견으로 30분 안에 결정 짓게 한다.
-**Current focus:** Phase 33(전국 DB 확장 1단계 — 경남 전체 지역 확장) Wave 0·1·2 완료, Wave 3(33-08 용량 결정 체크포인트) 진행 중 — 420MB로 축소 후 재모니터링. Phase 34(전국 DB 확장 2단계 — 부산광역시) CONTEXT.md 작성 완료(2026-07-08), `/gsd-plan-phase 34` 대기 중. 프론트엔드 재기획 회의 대기 중이라 백엔드/데이터 파이프라인 확장에 집중.
+**Current focus:** Phase 33(전국 DB 확장 1단계 — 경남 전체 지역 확장) Wave 0·1·2 완료, Wave 3(33-08 용량 결정 체크포인트) 진행 중 — 420MB로 축소 후 재모니터링. Phase 34(전국 DB 확장 2단계 — 부산광역시) 계획 완료(2026-07-08) — 11 plans, 5 waves, plan-checker 검증 통과(1차 블로커 수정 후 재검증 PASS). `/gsd-execute-phase 34` 실행 대기 중. 프론트엔드 재기획 회의 대기 중이라 백엔드/데이터 파이프라인 확장에 집중.
 
 ## Current Phase
 
@@ -165,7 +165,8 @@ Waves:
 | 30 | 인스타 카드뉴스 생성기 | ✅ Complete |
 | 31 | 어드민 카드뉴스 빌더 | ✅ Complete |
 | 32 | 카드뉴스 어드민 대시보드 | ✅ Complete |
-| 33 | 전국 DB 확장 1단계 — 경남 전체 지역 확장 기반 구축 | 🔄 In Progress (1/11 plans) |
+| 33 | 전국 DB 확장 1단계 — 경남 전체 지역 확장 기반 구축 | 🔄 In Progress (10/11 plans — 33-08 용량 결정 체크포인트만 남음) |
+| 34 | 전국 DB 확장 2단계 — 부산광역시 지역 확장 기반 구축 | 📋 Planned (0/11 plans executed, 계획 완료·검증 통과) |
 
 ---
 
@@ -290,6 +291,7 @@ Key notes: MOLIT_API_KEY (기존 data.go.kr 키) 재사용. B552555 청약홈 �
 | 2026-07-03 | seed-region.test.ts count>=22 검증(정확히 =22 아님) — upsert 기반 시딩 특성상 향후 재확장(2단계 인접 광역시 등) 대비 | 33-00 |
 | 2026-07-08 | Supabase Free tier DB 488MB/500MB 도달 확인 (transactions 271MB) — Pro 전환 대신 VACUUM FULL 우선 실행, transactions 271MB→202MB, DB 전체 488MB→420MB. Pro 전환은 보류, 재모니터링으로 대응 | 33-08 |
 | 2026-07-08 | Phase 34(부산) 대상범위·Pro전환타이밍·네이버크롤러·중복행 4개 영역 논의 완료 — 부산 우선 단독 진행(울산 후속 phase), 33-08과 동일하게 백필후 실측 결정 반복(단 450MB 경고 태스크 추가), 네이버 매핑 이번 phase 포함(로컬 프로세스 불안정 근본원인 재조사, 실패시 restart-loop 폴백), 111쌍 중복행 병합은 defer(탐지로그만 추가) | 34-db-2 |
+| 2026-07-08 | Phase 34 계획 완료 — 11 plans/5 waves. plan-checker 1차 검증에서 블로커 발견(34-03이 KAPT API에 없는 coordX/coordY로 dup-check를 시딩 루프에 배선 — TS2339 컴파일 에러 + null-guard로 인해 항상 0건 출력되는 논리 결함): 지오코딩 이후(34-05)로 실제 탐지 로직 이동, 34-03은 RPC+헬퍼만 남기는 것으로 수정 후 재검증 PASS(경고 2건은 직접 수정 — grep 대상 오류, 부산 미분양 defer 명시 누락) | 34-db-2 |
 
 ---
 
