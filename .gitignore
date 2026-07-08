@@ -74,3 +74,4 @@ scripts/seed-dev-users.sql
 # Claude Code 내부 상태/메모리 파일
 data/state_store.db/
 data/stream_store/
+naver-mapping-diagnosis.json
