@@ -1263,16 +1263,76 @@
 
 **UI hint**: no (라벨 텍스트만 추가, 레이아웃 변경 없음)
 
-### Phase 34: 전국 DB 확장 2단계 — 인접 광역시(부산·울산) 지역 확장 기반 구축
+### Phase 34: 전국 DB 확장 2단계 — 부산광역시 지역 확장 기반 구축
 
-**Goal:** `regions` 테이블에 부산광역시 16개 구·군을 시딩하고, Phase 33과 동일한 패턴(하드코딩 지역 필터 재스윕·KAPT Golden Record 시딩·국토부 백필·네이버 매핑·용량 체크포인트)으로 부산을 확장한다. 울산은 부산 완료 후 별도 phase(35)로 분리.
-**Requirements**: TBD (CONTEXT.md D-01~D-11 참고, 계획 시 REGION-1x로 부여 예정)
+**Goal:** `regions` 테이블에 부산광역시 16개 구·군을 시딩하고, Phase 33과 동일한 패턴(하드코딩 지역 필터 재스윕·UI 라벨 추가·KAPT Golden Record 시딩·좌표 지오코딩·국토부 백필·enrichment·네이버 매핑·용량 체크포인트)으로 부산을 확장한다. 울산은 부산 완료 후 별도 phase(35)로 분리(D-01/D-02).
+
+**Requirements:**
+- REGION-12: regions 테이블에 부산 16개 구·군 시딩 + 법정동코드 단발 검증 + seed-region.test.ts 부산 assertion
+- REGION-13: 하드코딩 지역 필터 전체 재스윕(grep 3-pass) + enrichment 스크립트 regions 동적 전환 + admin/region-expansion 대시보드 부산 추적 전환
+- REGION-14: UI/데이터 라우트 지역 라벨 맵 7개 파일에 부산 16개 구 라벨 기계적 추가
+- REGION-15: 부산 KAPT Golden Record(complexes) 시딩 + dup-detection RPC(find_nearby_similar_complexes) + 좌표+이름유사 중복 후보 탐지 로그(병합 없음, D-10/D-11)
+- REGION-16: 부산 좌표 카카오 지오코딩 + complexes-map.ts BBOX 부산 실측 범위 확장
+- REGION-17: 부산 국토부 실거래가 10년 다회 분할 백필 + 백필 중 주기적 DB 용량 체크(450MB 경고, D-04) `[CHECKPOINT]`
+- REGION-18: school_ranking RPC 부산 "구 있는 광역시" 회귀 테스트(현재 gu=NULL 동작 고정, 전국형 일반화는 deferred)
+- REGION-19: 부산 관리비(K-apt)/학군/POI enrichment 파이프라인 실행 + PostgREST 1,000행 캡 재확인
+- REGION-20: NAVER_COOKIE 프리플라이트(D-09) + 네이버 매핑 부산 BBOX 튜닝 + OLD_ZONE_NAMES 21개 zone 갱신 + --diagnose 1회(D-08)
+- REGION-21: 네이버 매핑 실제 실행(--new-only, D-05) + self-hosted runner PoC 시간박스 재조사(D-06), 실패 시 restart-loop 폴백(D-07)
+- REGION-22: Supabase DB 용량 실측 + Pro 플랜 전환 여부 결정(D-03/D-04) `[CHECKPOINT]`
+
 **Depends on:** Phase 33
-**Plans:** 0 plans
+**Plans:** 11 plans
+
+**Wave 0** *(독립 실행 가능 — 지역 마스터 시딩)*
+- [ ] 34-00-PLAN.md — regions 부산 16개 구·군 시딩 + 법정동코드 단발 검증 + seed-region.test.ts 갱신 (REGION-12)
+
+**Wave 1** *(blocked on 34-00; 34-01~34-04 전부 병렬 실행 가능 — files_modified 무중복)*
+- [ ] 34-01-PLAN.md — 하드코딩 지역 필터 재스윕 + enrichment 스크립트 동적 전환 + admin 대시보드 부산 추적 (REGION-13)
+- [ ] 34-02-PLAN.md — UI/라우트 지역 라벨 맵 7개 파일 부산 16개 구 라벨 추가 (REGION-14)
+- [ ] 34-03-PLAN.md — KAPT Golden Record 시딩 + dup-detection RPC `[BLOCKING 마이그레이션]` + 중복 탐지 로그 (REGION-15)
+- [ ] 34-04-PLAN.md — school_ranking RPC 부산 "구 있는 광역시" 회귀 테스트 (REGION-18)
+
+**Wave 2** *(blocked on 34-03)*
+- [ ] 34-05-PLAN.md — 부산 좌표 지오코딩 + complexes-map.ts BBOX 확장 (REGION-16)
+- [ ] 34-06-PLAN.md — 부산 국토부 실거래가 10년 백필 + 백필 중 주기적 용량 체크 `[CHECKPOINT]` (REGION-17)
+
+**Wave 3** *(34-07/34-08 blocked on 34-05; 34-09 blocked on 34-06)*
+- [ ] 34-07-PLAN.md — 부산 관리비/학군/POI enrichment 파이프라인 + PostgREST 1,000행 캡 재확인 (REGION-19)
+- [ ] 34-08-PLAN.md — NAVER_COOKIE 프리플라이트 + 네이버 BBOX 부산 튜닝 + OLD_ZONE_NAMES 갱신 + --diagnose `[CHECKPOINT]` (REGION-20)
+- [ ] 34-09-PLAN.md — Supabase DB 용량 실측 + Pro 플랜 전환 결정 `[CHECKPOINT]` (REGION-22)
+
+**Wave 4** *(blocked on 34-08)*
+- [ ] 34-10-PLAN.md — 네이버 매핑 실제 실행(--new-only) + self-hosted runner PoC (실패 시 restart-loop 폴백) `[CHECKPOINT]` (REGION-21)
+
+**Cross-cutting constraints:**
+- `regions` 테이블이 유일한 지역 마스터 — 모든 인라인 하드코딩 배열은 `getActiveSggCodes()`/`getActiveCityNames()`/`getActiveRegionAddrs()` 경유
+- 외부 API(국토부·K-apt·카카오·학교알리미·네이버) 호출은 기존 `src/services/` 어댑터만 재사용, 신규 어댑터 없음
+- `complexes` Golden Record 좌표+이름 복합 매칭 유지 — dup-detection도 log-only, 병합은 별도 후속 phase로 defer(D-10)
+- 부산 미분양(regional_unsold, 별도 서비스 ID `6260000/UnSellStusService`)은 이번 phase 범위 밖(RESEARCH.md Open Question 1, defer)
+- UI 레이아웃/구조 변경 없음 (재기획 회의 대기 중 — 지역 라벨 데이터 추가만 허용)
+- 울산 확장, 111쌍 중복 행 병합, naver-cafe 다중화, seo-hierarchy 전국형 일반화는 이 phase 범위 밖(후속 phase)
+
+**Success Criteria:**
+1. regions 테이블에 부산 16개 구가 존재하고 is_active=true, gu non-null (구 있는 광역시 패턴)
+2. 부산 Golden Record(complexes) + 좌표 + 10년치 실거래가 + 관리비/학군/POI enrichment + 네이버 매핑이 확보됨
+3. 부산 확장 전 구간에서 DB 용량이 각 배치마다 체크되고 500MB 초과 서비스 장애 없이 진행됨
+4. Supabase DB 실측 용량 기반으로 Pro 플랜 전환 여부가 사용자에 의해 명시적으로 결정됨
+5. 로컬 프로세스 불안정 근본 원인이 self-hosted runner PoC로 시간박스 재조사됨(실패 시 restart-loop 폴백으로 phase 미차단)
+
+**UI hint**: no (지역 라벨 데이터만 추가, 레이아웃 변경 없음)
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 34 to break down)
-
+- [ ] 34-00-PLAN.md — regions 부산 16개 구·군 시딩 + 법정동코드 검증 + 테스트 갱신
+- [ ] 34-01-PLAN.md — 하드코딩 재스윕 + enrichment 스크립트 동적 전환 + admin 대시보드
+- [ ] 34-02-PLAN.md — UI/라우트 지역 라벨 부산 16개 구 추가
+- [ ] 34-03-PLAN.md — KAPT Golden Record 시딩 + dup-detection RPC + 중복 로그
+- [ ] 34-04-PLAN.md — school_ranking RPC 부산 회귀 테스트
+- [ ] 34-05-PLAN.md — 부산 좌표 지오코딩 + complexes-map BBOX 확장
+- [ ] 34-06-PLAN.md — 국토부 실거래가 백필 + 주기적 용량 체크
+- [ ] 34-07-PLAN.md — 관리비/학군/POI enrichment 파이프라인
+- [ ] 34-08-PLAN.md — NAVER 쿠키 프리플라이트 + BBOX 튜닝 + diagnose
+- [ ] 34-09-PLAN.md — Supabase 용량 실측 + Pro 전환 결정
+- [ ] 34-10-PLAN.md — 네이버 매핑 실제 실행 + self-hosted runner PoC
 ---
 ## Milestone Summary
 
