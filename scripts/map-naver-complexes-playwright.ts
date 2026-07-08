@@ -421,11 +421,13 @@ async function main() {
     await humanLikeRecenter(page, state, lat, lng, ZOOM)
     await gridSweep(page, state)
 
-    // 존(bbox) 경계마다 즉시 DB 반영 — 백그라운드 프로세스가 도중에 죽어도 그때까지의
-    // 진행분은 이미 DB에 저장되어 있음 (재실행 시 매칭된 단지는 자동으로 대상에서 빠짐)
+    // 존(bbox) 경계 또는 5개 중심점마다 즉시 DB 반영 — 프로세스가 도중에 죽어도 그때까지의
+    // 진행분은 이미 DB에 저장되어 있음 (재실행 시 매칭된 단지는 자동으로 대상에서 빠짐).
+    // 존 하나가 큰 경우(예: 김해) 경계까지 오래 걸려 유실 위험이 커서 5개 단위로도 강제 flush
     const isLastCenter = i === centers.length - 1
     const isZoneBoundary = !isLastCenter && centers[i + 1].name !== name
-    if (isZoneBoundary || isLastCenter) {
+    const isEveryFive = (i + 1) % 5 === 0
+    if (isZoneBoundary || isLastCenter || isEveryFive) {
       await flushMatches(name)
     }
   }
