@@ -24,6 +24,11 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
 const isDryRun = process.argv.includes('--dry-run')
 const limitArg = process.argv.find(a => a.startsWith('--limit='))
 const LIMIT    = limitArg ? parseInt(limitArg.split('=')[1], 10) : Infinity
+// 창원/김해 존은 이미 거의 다 매핑됨 — 남은 target은 대부분 duplicate-key로 영구 실패하는
+// Golden Record 중복 행이라, 재시작마다 앞쪽 존을 다시 훑느라 시간을 낭비함. 새 지역만
+// 훑고 싶을 때 사용
+const newOnly = process.argv.includes('--new-only')
+const OLD_ZONE_NAMES = new Set(['창원북부', '마산', '진해', '창원남부', '김해'])
 
 // ─── 설정 (anti_bot_scraper 기본값) ─────────────────────────────────────────
 const ZOOM        = 14    // 단지(complex) 마커 줌 레벨 (15+ = 개별 매물 마커로 전환됨)
@@ -257,8 +262,10 @@ async function main() {
   if (targets.length === 0) { console.log('매핑할 단지 없음'); return }
 
   // ② 중심점 격자 생성 (0.06° 간격)
+  const activeBboxes = newOnly ? BBOXES.filter(b => !OLD_ZONE_NAMES.has(b.name)) : BBOXES
+  if (newOnly) console.log(`--new-only: 창원/김해 제외, ${activeBboxes.length}개 존만 탐색\n`)
   const centers: { name: string; lat: number; lng: number }[] = []
-  for (const bbox of BBOXES) {
+  for (const bbox of activeBboxes) {
     for (let lat = bbox.latMin + CENTER_STEP / 2; lat < bbox.latMax; lat += CENTER_STEP) {
       for (let lng = bbox.lngMin + CENTER_STEP / 2; lng < bbox.lngMax; lng += CENTER_STEP) {
         centers.push({ name: bbox.name, lat, lng })
