@@ -1281,16 +1281,16 @@
 - REGION-22: Supabase DB 용량 실측 + Pro 플랜 전환 여부 결정(D-03/D-04) `[CHECKPOINT]`
 
 **Depends on:** Phase 33
-**Plans:** 1/11 plans executed
+**Plans:** 5/11 plans executed
 
 **Wave 0** *(독립 실행 가능 — 지역 마스터 시딩)*
 - [x] 34-00-PLAN.md — regions 부산 16개 구·군 시딩 + 법정동코드 단발 검증 + seed-region.test.ts 갱신 (REGION-12)
 
 **Wave 1** *(blocked on 34-00; 34-01~34-04 전부 병렬 실행 가능 — files_modified 무중복)*
-- [ ] 34-01-PLAN.md — 하드코딩 지역 필터 재스윕 + enrichment 스크립트 동적 전환 + admin 대시보드 부산 추적 (REGION-13)
-- [ ] 34-02-PLAN.md — UI/라우트 지역 라벨 맵 7개 파일 부산 16개 구 라벨 추가 (REGION-14)
-- [ ] 34-03-PLAN.md — KAPT Golden Record 시딩 + dup-detection RPC `[BLOCKING 마이그레이션]` + detectPotentialDuplicate 헬퍼(실탐지는 34-05) (REGION-15)
-- [ ] 34-04-PLAN.md — school_ranking RPC 부산 "구 있는 광역시" 회귀 테스트 (REGION-18)
+- [x] 34-01-PLAN.md — 하드코딩 지역 필터 재스윕 + enrichment 스크립트 동적 전환 + admin 대시보드 부산 추적 (REGION-13)
+- [x] 34-02-PLAN.md — UI/라우트 지역 라벨 맵 7개 파일 부산 16개 구 라벨 추가 (REGION-14)
+- [x] 34-03-PLAN.md — KAPT Golden Record 시딩 + dup-detection RPC `[BLOCKING 마이그레이션]` + detectPotentialDuplicate 헬퍼(실탐지는 34-05) (REGION-15)
+- [x] 34-04-PLAN.md — school_ranking RPC 부산 "구 있는 광역시" 회귀 테스트 (REGION-18)
 
 **Wave 2** *(blocked on 34-03)*
 - [ ] 34-05-PLAN.md — 부산 좌표 지오코딩 + 좌표+이름유사 중복 후보 탐지 로그(D-11) + complexes-map.ts BBOX 확장 (REGION-16, REGION-15)
@@ -1322,7 +1322,7 @@
 **UI hint**: no (지역 라벨 데이터만 추가, 레이아웃 변경 없음)
 
 Plans:
-- [ ] 34-00-PLAN.md — regions 부산 16개 구·군 시딩 + 법정동코드 검증 + 테스트 갱신
+- [x] 34-00-PLAN.md — regions 부산 16개 구·군 시딩 + 법정동코드 검증 + 테스트 갱신
 - [ ] 34-01-PLAN.md — 하드코딩 재스윕 + enrichment 스크립트 동적 전환 + admin 대시보드
 - [ ] 34-02-PLAN.md — UI/라우트 지역 라벨 부산 16개 구 추가
 - [ ] 34-03-PLAN.md — KAPT Golden Record 시딩 + dup-detection RPC + 중복 로그
