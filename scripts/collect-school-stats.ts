@@ -26,32 +26,27 @@ const API_TYPE_TEACHERS     = '22'  // 직위별 교원 현황 (COL_S: 총 교�
 const API_TYPE_BASIC        = '08'  // 학교 기본 현황 (FOND_SC_CODE: 설립구분)
 const API_TYPE_STUDENT_LIST = '10'  // 학급·학생수 현황 (STDNT_SUM: 총학생수)
 
-// ─── 경남 시군구 코드 (창원 5개 구 + 김해 + Phase 33 경남 전체 확장 16개) ────
-const GYEONGNAM_SGG: Array<{ name: string; sggCode: string; schulKndCodes: string[] }> = [
-  { name: '창원시 의창구',   sggCode: '48121', schulKndCodes: ['02','03','04'] },
-  { name: '창원시 성산구',   sggCode: '48123', schulKndCodes: ['02','03','04'] },
-  { name: '창원시 마산합포구', sggCode: '48125', schulKndCodes: ['02','03','04'] },
-  { name: '창원시 마산회원구', sggCode: '48127', schulKndCodes: ['02','03','04'] },
-  { name: '창원시 진해구',   sggCode: '48129', schulKndCodes: ['02','03','04'] },
-  { name: '김해시',          sggCode: '48250', schulKndCodes: ['02','03','04'] },
-  { name: '진주시',          sggCode: '48170', schulKndCodes: ['02','03','04'] },
-  { name: '통영시',          sggCode: '48220', schulKndCodes: ['02','03','04'] },
-  { name: '사천시',          sggCode: '48240', schulKndCodes: ['02','03','04'] },
-  { name: '밀양시',          sggCode: '48270', schulKndCodes: ['02','03','04'] },
-  { name: '거제시',          sggCode: '48310', schulKndCodes: ['02','03','04'] },
-  { name: '양산시',          sggCode: '48330', schulKndCodes: ['02','03','04'] },
-  { name: '의령군',          sggCode: '48720', schulKndCodes: ['02','03','04'] },
-  { name: '함안군',          sggCode: '48730', schulKndCodes: ['02','03','04'] },
-  { name: '창녕군',          sggCode: '48740', schulKndCodes: ['02','03','04'] },
-  { name: '고성군',          sggCode: '48820', schulKndCodes: ['02','03','04'] },
-  { name: '남해군',          sggCode: '48840', schulKndCodes: ['02','03','04'] },
-  { name: '하동군',          sggCode: '48850', schulKndCodes: ['02','03','04'] },
-  { name: '산청군',          sggCode: '48860', schulKndCodes: ['02','03','04'] },
-  { name: '함양군',          sggCode: '48870', schulKndCodes: ['02','03','04'] },
-  { name: '거창군',          sggCode: '48880', schulKndCodes: ['02','03','04'] },
-  { name: '합천군',          sggCode: '48890', schulKndCodes: ['02','03','04'] },
-]
-const SIDO_CODE = '48'
+// ─── 대상 지역: regions 테이블 동적 조회 (is_active=true) ────────────────
+// 경남 전용 정적 지역 배열을 제거하고 활성 지역을 런타임 조회한다.
+// sidoCode는 각 지역의 sggCode 앞 2자리로 유도(경남=48, 부산=26 등) — 신규
+// 광역시 확장 시 코드 변경 없이 자동 대응.
+async function loadTargetRegions(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+): Promise<Array<{ name: string; sggCode: string; sidoCode: string; schulKndCodes: string[] }>> {
+  const { data, error } = await supabase
+    .from('regions')
+    .select('sgg_code, sgg_name')
+    .eq('is_active', true)
+    .order('sgg_code')
+  if (error) throw new Error(`regions 조회 실패: ${error.message}`)
+  return (data ?? []).map((r: { sgg_code: string; sgg_name: string }) => ({
+    name:          r.sgg_name,
+    sggCode:       r.sgg_code,
+    sidoCode:      r.sgg_code.slice(0, 2),
+    schulKndCodes: ['02', '03', '04'],
+  }))
+}
 
 const SCHOOL_KND_TYPE: Record<string, string> = {
   '02': 'elementary',
@@ -65,14 +60,14 @@ function parseArg(name: string): string | undefined {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function callSchoolInfoApi(apiKey: string, apiType: string, pbanYr: string, schulKndCode: string, sggCode: string): Promise<any[] | null> {
+async function callSchoolInfoApi(apiKey: string, apiType: string, pbanYr: string, schulKndCode: string, sggCode: string, sidoCode: string): Promise<any[] | null> {
   try {
     const body = new URLSearchParams({
       apiKey,
       apiType,
       pbanYr,
       schulKndCode,
-      sidoCode: SIDO_CODE,
+      sidoCode,
       sggCode,
     })
     const res = await fetch(API_BASE, {
@@ -114,17 +109,20 @@ async function main() {
   const supabase = createClient(supabaseUrl, serviceKey) as any
   console.log(`[수집] year=${dataYear}, dry-run=${isDryRun}`)
 
+  const targetRegions = await loadTargetRegions(supabase)
+  console.log(`[대상 지역] ${targetRegions.length}개 (regions.is_active=true 동적 조회)`)
+
   // ─── 1단계: 학년별·학급별 학생수(apiType=09) 수집 ──────────────────────────
   console.log('\n[1/3] 학년별·학급별 학생수(apiType=09) 수집...')
 
   // school_code → { students_per_class, teachers_ratio, school_name, school_type }
   const statsMap = new Map<string, { students_per_class: number | null; teachers_ratio: number | null; school_name: string; school_type: string }>()
 
-  for (const area of GYEONGNAM_SGG) {
+  for (const area of targetRegions) {
     process.stdout.write(`  ${area.name}: `)
     let areaCount = 0
     for (const knd of area.schulKndCodes) {
-      const rows = await callSchoolInfoApi(apiKey, API_TYPE_STUDENTS, dataYear, knd, area.sggCode)
+      const rows = await callSchoolInfoApi(apiKey, API_TYPE_STUDENTS, dataYear, knd, area.sggCode, area.sidoCode)
       if (!rows) continue
       for (const r of rows) {
         if (!r.SCHUL_CODE) continue
@@ -150,13 +148,13 @@ async function main() {
   // school_code → { establishment_type, total_students }
   const basicMap = new Map<string, { establishment_type: string | null; total_students: number | null }>()
 
-  for (const area of GYEONGNAM_SGG) {
+  for (const area of targetRegions) {
     process.stdout.write(`  ${area.name}: `)
     let areaCount = 0
     for (const knd of area.schulKndCodes) {
       const [basicRows, listRows] = await Promise.all([
-        callSchoolInfoApi(apiKey, API_TYPE_BASIC, dataYear, knd, area.sggCode),
-        callSchoolInfoApi(apiKey, API_TYPE_STUDENT_LIST, dataYear, knd, area.sggCode),
+        callSchoolInfoApi(apiKey, API_TYPE_BASIC, dataYear, knd, area.sggCode, area.sidoCode),
+        callSchoolInfoApi(apiKey, API_TYPE_STUDENT_LIST, dataYear, knd, area.sggCode, area.sidoCode),
       ])
       // apiType=08: 설립구분
       for (const r of basicRows ?? []) {

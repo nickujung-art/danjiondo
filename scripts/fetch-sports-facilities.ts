@@ -2,7 +2,7 @@
  * 체육도장 데이터 수집 배치 스크립트
  *
  * 출처: 행정안전부_생활_체육도장업 조회서비스 (data.go.kr)
- * 전략: 전국 32,644건 수집 → 경남 전체(창원·김해 + Phase 33 신규 16개 시군구) 주소 필터 → 카카오 지오코딩 → 단지 매칭
+ * 전략: 전국 32,644건 수집 → regions.is_active=true 동적 조회 기반 주소(si) 필터 → 카카오 지오코딩 → 단지 매칭
  *
  * 실행: npx tsx --env-file=.env.local scripts/fetch-sports-facilities.ts
  * 소요 시간: 약 5~10분 (API 327페이지 + 지오코딩)
@@ -11,11 +11,20 @@ import { createClient } from '@supabase/supabase-js'
 import { fetchSportsFacilitiesByAddress } from '../src/services/localdata-sports'
 import { classifySport } from '../src/lib/sports-category'
 
-const ADDRESS_KEYWORDS = [
-  '창원시', '김해시',
-  '진주시', '통영시', '사천시', '밀양시', '거제시', '양산시',
-  '의령군', '함안군', '창녕군', '고성군', '남해군', '하동군', '산청군', '함양군', '거창군', '합천군',
-]
+// 대상 지역: regions 테이블 동적 조회 (is_active=true) — si 이름 목록 중복 제거
+// 정적 지역 배열 대신 런타임 조회하여 신규 광역시 확장 시 코드 변경 불필요
+async function loadAddressKeywords(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('regions')
+    .select('si')
+    .eq('is_active', true)
+  if (error) throw new Error(`regions 조회 실패: ${error.message}`)
+  return [...new Set((data ?? []).map((r: { si: string }) => r.si))] as string[]
+}
+
 const RADIUS_M = 1500
 
 interface Complex {
@@ -83,19 +92,20 @@ async function main() {
   }
   console.log(`단지 로드: ${complexes.length}개`)
 
-  // ② 전국 수집 → 창원/김해 필터
-  console.log('\n체육도장 수집 중 (전국 ~327페이지, 약 3~5분)...')
+  // ② 전국 수집 → 활성 지역(si) 필터 (regions 동적 조회)
+  const addressKeywords = await loadAddressKeywords(supabase)
+  console.log(`\n체육도장 수집 중 (전국 ~327페이지, 약 3~5분, 대상: ${addressKeywords.join('/')})...`)
   let lastLog = 0
   const facilities = await fetchSportsFacilitiesByAddress(
-    ADDRESS_KEYWORDS,
+    addressKeywords,
     (page, total) => {
       if (page === total || page - lastLog >= 50) {
-        console.log(`  페이지 ${page}/${total} (창원/김해 누적: ${page === 1 ? '?' : '...'}개)`)
+        console.log(`  페이지 ${page}/${total} (누적: ${page === 1 ? '?' : '...'}개)`)
         lastLog = page
       }
     },
   )
-  console.log(`\n창원+김해 체육도장: ${facilities.length}개`)
+  console.log(`\n대상 지역 체육도장: ${facilities.length}개`)
 
   if (facilities.length === 0) {
     console.log('결과 없음 — 주소 키워드 또는 API 응답 확인 필요')
