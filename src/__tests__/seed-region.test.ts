@@ -14,6 +14,11 @@ const GYEONGNAM_EXPANSION_SGG_CODES = [
   '48170', '48220', '48240', '48270', '48310', '48330',
   '48720', '48730', '48740', '48820', '48840', '48850', '48860', '48870', '48880', '48890',
 ] as const
+// 부산 확장 16개 구·군코드 (Phase 34 — 중구~기장군, '구 있는' 광역시 패턴)
+const BUSAN_EXPANSION_SGG_CODES = [
+  '26110', '26140', '26170', '26200', '26230', '26260', '26290', '26320',
+  '26350', '26380', '26410', '26440', '26470', '26500', '26530', '26710',
+] as const
 const LAWD_CD_REGEX = /^\d{5}$/
 
 describe('step3: sgg_code 형식 (unit)', () => {
@@ -73,8 +78,8 @@ describe.skipIf(!SKEY)('step3: DB 시드 (integration)', () => {
       .from('regions')
       .select('sgg_code', { count: 'exact', head: true })
     expect(error).toBeNull()
-    // upsert 기반 시딩이므로 이후 재확장 대비 >= 사용
-    expect(count).toBeGreaterThanOrEqual(22)
+    // upsert 기반 시딩이므로 이후 재확장 대비 >= 사용 (부산 16 추가로 38 이상)
+    expect(count).toBeGreaterThanOrEqual(38)
   })
 
   it('regions: 경남 확장 16개 시군구 gu=null', async () => {
@@ -86,6 +91,19 @@ describe.skipIf(!SKEY)('step3: DB 시드 (integration)', () => {
     expect(data).toHaveLength(16)
     for (const row of data ?? []) {
       expect(row.gu, `sgg_code '${row.sgg_code}' gu must be null`).toBeNull()
+    }
+  })
+
+  it('regions: 부산 16개 구가 존재하고 모두 gu가 채워져 있다 (구 있는 광역시 패턴)', async () => {
+    const { data, error } = await admin
+      .from('regions')
+      .select('sgg_code, si, gu')
+      .in('sgg_code', [...BUSAN_EXPANSION_SGG_CODES])
+    expect(error).toBeNull()
+    expect(data?.length).toBe(16)
+    for (const row of data ?? []) {
+      expect(row.si).toBe('부산광역시')
+      expect(row.gu).not.toBeNull()  // 부산은 전부 구가 있음 — 경남 무구 시군과 반대
     }
   })
 
