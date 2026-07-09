@@ -5,15 +5,19 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { getLatestWorkflowRun } from '@/services/github-actions'
 
 export const revalidate = 0
-export const metadata: Metadata = { title: '관리자 · 전국 DB 확장 (Phase 33)' }
+export const metadata: Metadata = { title: '관리자 · 전국 DB 확장 (Phase 34 · 부산)' }
 
-// 임시 운영 대시보드 — Phase 33(경남 전체 확장) 완료 후 삭제 예정.
+// 임시 운영 대시보드 — Phase 34(부산광역시 확장) 완료 후 삭제 예정.
 // 지역 코드 구분은 scripts/seed.ts / seed-region.test.ts와 동일한 기준을 따른다.
-const OLD_CODES = ['48121', '48123', '48125', '48127', '48129', '48250']
-const NEW_CODES = [
+const OLD_CODES = [
+  '48121', '48123', '48125', '48127', '48129', '48250',
   '48170', '48220', '48240', '48270', '48310', '48330',
   '48720', '48730', '48740', '48820', '48840', '48850',
   '48860', '48870', '48880', '48890',
+]
+const NEW_CODES = [
+  '26110', '26140', '26170', '26200', '26230', '26260', '26290', '26320',
+  '26350', '26380', '26410', '26440', '26470', '26500', '26530', '26710',
 ]
 
 const GH_OWNER = 'nickujung-art'
@@ -36,17 +40,17 @@ interface RegionProgress {
 }
 
 const WAVE_PLANS: Array<{ id: string; label: string; done: boolean }> = [
-  { id: '33-00', label: 'regions 경남 16개 신규 시딩 + 공용 헬퍼', done: true },
-  { id: '33-01', label: 'invest/gap-analysis 동적 지역 필터', done: true },
-  { id: '33-02', label: 'rankings.ts/rankings-page.ts 동적 전환', done: true },
-  { id: '33-03', label: 'cron/청약홈/분양권전매 동적 전환', done: true },
-  { id: '33-04', label: '학군 무구(無區) 시군구 회귀 테스트', done: true },
-  { id: '33-05', label: 'UI 지역 라벨 10개 파일 추가', done: true },
-  { id: '33-06', label: 'KAPT Golden Record 시딩 (complexes 788건)', done: true },
-  { id: '33-09', label: '/map · 광고 사이드바 동적 전환', done: true },
-  { id: '33-10', label: '미분양·오피스텔 Golden Record 동적 전환', done: true },
-  { id: '33-07', label: '국토부 실거래가 10년 다회 분할 백필', done: false },
-  { id: '33-08', label: 'Supabase 용량 실측 + Pro 플랜 결정', done: false },
+  { id: '34-00', label: 'regions 부산 16개 시딩 + 법정동코드 단발 검증', done: true },
+  { id: '34-01', label: '하드코딩 재스윕 + admin 대시보드 부산 전환', done: true },
+  { id: '34-02', label: 'UI 지역 라벨 부산 16개 구 추가', done: false },
+  { id: '34-03', label: 'KAPT 중복 탐지 인프라(RPC) 준비', done: false },
+  { id: '34-04', label: 'school_ranking RPC 부산 회귀 테스트', done: false },
+  { id: '34-05', label: '부산 좌표 지오코딩 + 중복탐지 + BBOX 확장', done: false },
+  { id: '34-06', label: '국토부 실거래가 10년 백필 [CHECKPOINT]', done: false },
+  { id: '34-07', label: '관리비·학군·POI enrichment', done: false },
+  { id: '34-08', label: '네이버 매핑 준비 (쿠키·BBOX·diagnose)', done: false },
+  { id: '34-09', label: 'Supabase 용량 실측 + Pro 플랜 결정 [CHECKPOINT]', done: false },
+  { id: '34-10', label: '네이버 매핑 실행 + self-hosted runner PoC', done: false },
 ]
 
 function formatDateTime(s: string): string {
@@ -187,10 +191,10 @@ export default async function RegionExpansionDashboard() {
   return (
     <main className="admin-page-content">
       <h1 style={{ font: '700 22px/1.3 var(--font-sans)', letterSpacing: '-0.02em', margin: '0 0 4px' }}>
-        전국 DB 확장 — Phase 33 진행 현황
+        전국 DB 확장 — Phase 34 진행 현황
       </h1>
       <p style={{ font: '500 12px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', margin: '0 0 20px' }}>
-        임시 운영 대시보드 · 경남 전체 확장 1단계 · Phase 33 완료 후 삭제 예정
+        임시 운영 대시보드 · 부산광역시 확장 2단계 · Phase 34 완료 후 삭제 예정
       </p>
 
       {/* 개요 카드 */}
@@ -222,7 +226,7 @@ export default async function RegionExpansionDashboard() {
 
         <div className="card" style={{ padding: 16, marginBottom: 16 }}>
           <div style={{ font: '600 12px/1.4 var(--font-sans)', color: 'var(--fg-sec)', marginBottom: 8 }}>
-            Phase 33 계획 진행 ({wavesDone}/{WAVE_PLANS.length})
+            Phase 34 계획 진행 ({wavesDone}/{WAVE_PLANS.length})
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {WAVE_PLANS.map(p => (
@@ -251,7 +255,7 @@ export default async function RegionExpansionDashboard() {
               국토부 실거래가 백필 진행률 (지역별)
             </div>
             <div style={{ font: '400 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', marginTop: 2 }}>
-              참고 기준치: 기존 완료 지역(창원·김해) 평균 {referenceTarget.toLocaleString('ko-KR')}건 성공 = 100%
+              참고 기준치: 기존 완료 지역(경남 전체 22개 시군구) 평균 {referenceTarget.toLocaleString('ko-KR')}건 성공 = 100%
             </div>
           </div>
           <div className="admin-table-wrap">
@@ -383,7 +387,7 @@ export default async function RegionExpansionDashboard() {
 
         <div className="card" style={{ padding: 16, marginBottom: 12, border: '1px solid #d97706' }}>
           <div style={{ font: '700 13px/1.4 var(--font-sans)', marginBottom: 6 }}>
-            33-07 · 국토부 실거래가 10년 백필
+            34-06 · 국토부 실거래가 10년 백필 [CHECKPOINT]
           </div>
           <p style={{ font: '500 12px/1.5 var(--font-sans)', color: 'var(--fg-sec)', margin: '0 0 8px' }}>
             API 일 10,000회 한도로 1회 실행(최대 300분)으로 끝나지 않을 수 있습니다. 위 진행률 표에서 100%에 못 미친 지역이 남아있으면,
@@ -391,23 +395,24 @@ export default async function RegionExpansionDashboard() {
           </p>
           <pre style={{ font: '400 11px/1.6 var(--font-mono)', background: 'var(--bg-surface-2)', padding: '10px 12px', borderRadius: 6, overflowX: 'auto', margin: 0 }}>
 {`gh workflow run molit-backfill-once.yml \\
-  -f sgg_codes=48170,48220,48240,48270,48310,48330,48720,48730,48740,48820,48840,48850,48860,48870,48880,48890`}
+  -f sgg_codes=26110,26140,26170,26200,26230,26260,26290,26320,26350,26380,26410,26440,26470,26500,26530,26710`}
           </pre>
         </div>
 
         <div className="card" style={{ padding: 16, border: '1px solid #d97706' }}>
           <div style={{ font: '700 13px/1.4 var(--font-sans)', marginBottom: 6 }}>
-            33-08 · Supabase 용량 실측 + Pro 플랜 결정
+            34-09 · Supabase 용량 실측 + Pro 플랜 결정 [CHECKPOINT]
           </div>
           <p style={{ font: '500 12px/1.5 var(--font-sans)', color: 'var(--fg-sec)', margin: 0 }}>
-            33-07 백필 완료 후 진행. 참고: 2026-07-03 실측 기준 DB 총 용량 375MB / 무료 한도 500MB(75%) — 경남 전체 백필 완료 시 500~580MB 예상되어
-            Supabase Pro($25/월, 8GB) 전환 필요 가능성이 높습니다.
+            34-06 백필 완료 후 진행. 참고: 2026-07-08 실측 기준 DB 총 용량 420MB / 무료 한도 500MB(84%, VACUUM FULL 적용 후) — 부산은 창원·김해보다
+            밀집도가 높은 순수 도심 광역시라 500MB 초과 리스크가 매우 높습니다. 백필 배치마다 용량을 촘촘히 체크하고, 450MB 도달 시 VACUUM FULL 재실행
+            또는 Supabase Pro($25/월, 8GB) 전환 중 하나를 즉시 결정하세요.
           </p>
         </div>
       </section>
 
       <p style={{ font: '400 11px/1.4 var(--font-sans)', color: 'var(--fg-tertiary)', margin: 0 }}>
-        이 페이지는 Phase 33(전국 DB 확장 1단계) 진행 상황을 확인하기 위한 임시 운영 도구입니다. 별도 리서치/계획/검증 없이 빠르게 구현되었으며, Phase 33 완료 후 삭제 예정입니다.
+        이 페이지는 Phase 34(전국 DB 확장 2단계 · 부산광역시) 진행 상황을 확인하기 위한 임시 운영 도구입니다. 별도 리서치/계획/검증 없이 빠르게 구현되었으며, Phase 34 완료 후 삭제 예정입니다.
       </p>
     </main>
   )
