@@ -50,4 +50,18 @@ describe.skipIf(!SKEY)('school_ranking RPC: 무구(無區) 시군구 처리 (int
       expect(validGu).toContain(row.gu)
     }
   })
+
+  it('부산광역시(구 있으나 RPC gu 라벨 미대응) — 에러 없이 응답, 모든 행 gu=null (현재 동작 고정)', async () => {
+    const { data, error } = await admin.rpc('school_ranking', {
+      p_si: '부산광역시',
+      p_school_type: 'elementary',
+      p_metric: 'students_per_class',
+    })
+    expect(error).toBeNull()
+    // 부산 학교 road_address는 창원 5-CASE 패턴에 매칭 안 됨 → gu 항상 NULL
+    // ⚠ 구별 라벨 지원은 CONTEXT.md 범위 밖(deferred) — 이 테스트는 현재 안전 동작을 고정만 함
+    for (const row of data ?? []) {
+      expect(row.gu).toBeNull()
+    }
+  })
 })
