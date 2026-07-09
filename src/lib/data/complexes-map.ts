@@ -83,9 +83,10 @@ async function fetchAllComplexRows(
       .not('lat', 'is', null)
       .not('lng', 'is', null)
       .not('status', 'in', '(demolished,merged,rental)')
-      // 경상남도 전체 유효 좌표 범위 — 잘못된 지오코딩 결과 제외 (Phase 33, 창원·김해 전용 범위에서 확장)
+      // 경남+부산 전체 유효 좌표 범위 — 잘못된 지오코딩 결과 제외
+      // (Phase 33에서 경남 전체로 확장, Phase 34에서 부산 실측 lng max 129.284 + 여유 0.05 이상을 반영해 129.3→129.4 상향)
       .gte('lat', 34.7).lte('lat', 35.8)
-      .gte('lng', 127.7).lte('lng', 129.3)
+      .gte('lng', 127.7).lte('lng', 129.4)
       .or('building_type.neq.officetel,tx_count_30d.gt.0,household_count.gte.100')
       .range(offset, offset + PAGE - 1)
 
