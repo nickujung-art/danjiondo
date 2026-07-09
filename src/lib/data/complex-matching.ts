@@ -209,6 +209,41 @@ export async function matchByAdminCode(
   return { complexId: row.id, confidence, axis: 'admin_code' }
 }
 
+// ── 좌표+이름유사 중복 후보 탐지 (D-11, log-only) ──────────────
+// ⚠ scripts/seed-complexes.ts에는 배선하지 않는다 — KAPT 단지목록 API에는
+// 좌표(coordX/coordY)가 없어 시딩 시점 호출은 항상 좌표 null로 스킵된다.
+// 실제 호출은 34-05(카카오 지오코딩 후) DB의 실좌표 row를 순회하며 수행한다.
+
+export interface DuplicateCandidate {
+  id: string
+  canonical_name: string
+  kapt_code: string
+  dist_m: number
+}
+
+export async function detectPotentialDuplicate(
+  supabase: SupabaseClient,
+  candidate: { coordX?: number; coordY?: number; nameNormalized: string; kaptCode: string },
+): Promise<DuplicateCandidate[]> {
+  if (candidate.coordX == null || candidate.coordY == null) return []
+
+  const { data, error } = await supabase.rpc('find_nearby_similar_complexes', {
+    p_lat: candidate.coordY,
+    p_lng: candidate.coordX,
+    p_name_normalized: candidate.nameNormalized,
+    p_exclude_kapt_code: candidate.kaptCode,
+    p_radius_m: 30,
+    p_similarity_threshold: 0.4,
+  })
+
+  if (error) {
+    console.warn(`[dup-check] RPC 실패: ${error.message}`)
+    return []
+  }
+
+  return (data ?? []) as DuplicateCandidate[]
+}
+
 // ── 큐 적재 ────────────────────────────────────────────────
 
 async function enqueueMatch(
