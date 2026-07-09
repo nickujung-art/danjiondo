@@ -32,6 +32,22 @@ const REGIONS = [
   { sgg_code: '48870', sgg_name: '함양군', si: '함양군', gu: null },
   { sgg_code: '48880', sgg_name: '거창군', si: '거창군', gu: null },
   { sgg_code: '48890', sgg_name: '합천군', si: '합천군', gu: null },
+  { sgg_code: '26110', sgg_name: '중구',     si: '부산광역시', gu: '중구' },
+  { sgg_code: '26140', sgg_name: '서구',     si: '부산광역시', gu: '서구' },
+  { sgg_code: '26170', sgg_name: '동구',     si: '부산광역시', gu: '동구' },
+  { sgg_code: '26200', sgg_name: '영도구',   si: '부산광역시', gu: '영도구' },
+  { sgg_code: '26230', sgg_name: '부산진구', si: '부산광역시', gu: '부산진구' },
+  { sgg_code: '26260', sgg_name: '동래구',   si: '부산광역시', gu: '동래구' },
+  { sgg_code: '26290', sgg_name: '남구',     si: '부산광역시', gu: '남구' },
+  { sgg_code: '26320', sgg_name: '북구',     si: '부산광역시', gu: '북구' },
+  { sgg_code: '26350', sgg_name: '해운대구', si: '부산광역시', gu: '해운대구' },
+  { sgg_code: '26380', sgg_name: '사하구',   si: '부산광역시', gu: '사하구' },
+  { sgg_code: '26410', sgg_name: '금정구',   si: '부산광역시', gu: '금정구' },
+  { sgg_code: '26440', sgg_name: '강서구',   si: '부산광역시', gu: '강서구' },
+  { sgg_code: '26470', sgg_name: '연제구',   si: '부산광역시', gu: '연제구' },
+  { sgg_code: '26500', sgg_name: '수영구',   si: '부산광역시', gu: '수영구' },
+  { sgg_code: '26530', sgg_name: '사상구',   si: '부산광역시', gu: '사상구' },
+  { sgg_code: '26710', sgg_name: '기장군',   si: '부산광역시', gu: '기장군' },
 ] as const
 
 const DATA_SOURCES = [
