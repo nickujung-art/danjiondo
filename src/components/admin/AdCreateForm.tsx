@@ -28,6 +28,12 @@ const SGG_OPTIONS = [
   { code: '48870', label: '함양군' },
   { code: '48880', label: '거창군' },
   { code: '48890', label: '합천군' },
+  { code: '26110', label: '중구' }, { code: '26140', label: '서구' }, { code: '26170', label: '동구' },
+  { code: '26200', label: '영도구' }, { code: '26230', label: '부산진구' }, { code: '26260', label: '동래구' },
+  { code: '26290', label: '남구' }, { code: '26320', label: '북구' }, { code: '26350', label: '해운대구' },
+  { code: '26380', label: '사하구' }, { code: '26410', label: '금정구' }, { code: '26440', label: '강서구' },
+  { code: '26470', label: '연제구' }, { code: '26500', label: '수영구' }, { code: '26530', label: '사상구' },
+  { code: '26710', label: '기장군' },
 ]
 
 const PLACEMENT_IMAGE_SPEC: Record<string, { label: string; w: number; h: number; ratio: string }> = {

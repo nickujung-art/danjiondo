@@ -45,6 +45,12 @@ const REGION_OPTIONS = [
   { label: '함양군', sggCodes: ['48870'] },
   { label: '거창군', sggCodes: ['48880'] },
   { label: '합천군', sggCodes: ['48890'] },
+  { label: '중구', sggCodes: ['26110'] }, { label: '서구', sggCodes: ['26140'] }, { label: '동구', sggCodes: ['26170'] },
+  { label: '영도구', sggCodes: ['26200'] }, { label: '부산진구', sggCodes: ['26230'] }, { label: '동래구', sggCodes: ['26260'] },
+  { label: '남구', sggCodes: ['26290'] }, { label: '북구', sggCodes: ['26320'] }, { label: '해운대구', sggCodes: ['26350'] },
+  { label: '사하구', sggCodes: ['26380'] }, { label: '금정구', sggCodes: ['26410'] }, { label: '강서구', sggCodes: ['26440'] },
+  { label: '연제구', sggCodes: ['26470'] }, { label: '수영구', sggCodes: ['26500'] }, { label: '사상구', sggCodes: ['26530'] },
+  { label: '기장군', sggCodes: ['26710'] },
 ]
 
 const SIZE_OPTIONS = [
