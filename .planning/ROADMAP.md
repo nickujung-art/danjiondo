@@ -1281,10 +1281,10 @@
 - REGION-22: Supabase DB 용량 실측 + Pro 플랜 전환 여부 결정(D-03/D-04) `[CHECKPOINT]`
 
 **Depends on:** Phase 33
-**Plans:** 11 plans
+**Plans:** 1/11 plans executed
 
 **Wave 0** *(독립 실행 가능 — 지역 마스터 시딩)*
-- [ ] 34-00-PLAN.md — regions 부산 16개 구·군 시딩 + 법정동코드 단발 검증 + seed-region.test.ts 갱신 (REGION-12)
+- [x] 34-00-PLAN.md — regions 부산 16개 구·군 시딩 + 법정동코드 단발 검증 + seed-region.test.ts 갱신 (REGION-12)
 
 **Wave 1** *(blocked on 34-00; 34-01~34-04 전부 병렬 실행 가능 — files_modified 무중복)*
 - [ ] 34-01-PLAN.md — 하드코딩 지역 필터 재스윕 + enrichment 스크립트 동적 전환 + admin 대시보드 부산 추적 (REGION-13)
