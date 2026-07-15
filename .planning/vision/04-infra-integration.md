@@ -71,7 +71,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<Supabase 대시보드 또는 MCP로 조회>
 ## 스택 (참고: `03-realtrade-story-design-system.md`, bds `CLAUDE.md`)
 
 - Next.js 15 App Router · TypeScript strict · Tailwind **3.4**(v4 아님, danjiondo와 통일) · Pretendard Variable 폰트
-- `@supabase/ssr` + `@supabase/supabase-js` — 클라이언트(`src/lib/supabase/client.ts`)는 실시간 구독 전용, 일반 조회는 서버(`src/lib/supabase/server.ts`)에서
+- `@supabase/ssr` + `@supabase/supabase-js` 권장 패턴(bds `src/lib/supabase/client.ts`·`server.ts` 참고해서 새로 만들 것 — 실거래이야기 쪽엔 아직 파일 자체가 없음, §GitHub 참고): 클라이언트는 실시간 구독 전용, 일반 조회는 서버 컴포넌트/서버 액션에서
 
 ---
 
