@@ -2,6 +2,7 @@
 
 > 버전 v1.1 · 2026년 7월 기준
 > 창부레터(콘텐츠 미디어) 전에 먼저 출시하는 데이터 중심 실거래가 서비스
+> **실제 구현 저장소**: `C:\Users\jung\coding\realtrade-story` / https://github.com/nickujung-art/realtrade-story (2026-07-15 생성). 이 문서는 bds에 원본으로 남아있고, 신규 저장소엔 스냅샷 사본이 있음 — 향후 기획 갱신은 이 원본 파일에서 계속
 
 ---
 
