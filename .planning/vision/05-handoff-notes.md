@@ -67,7 +67,7 @@ DB 쪽(마이그레이션 적용분: `site_id`·`area_type_id`·`price_drop_rate
 
 | 항목 | 상태 |
 |---|---|
-| `realtrade-story` 로컬 폴더 | 비어있음 + `.planning/vision/`에 문서 4개(01~04 관련, 실제론 02·03·04) |
+| `realtrade-story` 로컬 폴더 | 코드 없음 + `.planning/vision/`에 문서 4개(`02-realtrade-story.md`, `03-realtrade-story-design-system.md`, `04-infra-integration.md`, `05-handoff-notes.md` — 이 파일 자신도 포함) |
 | `realtrade-story` GitHub repo | 삭제됨 — `/new-project`가 재생성하거나 수동 생성 필요 |
 | Supabase | free 플랜, 470MB/500MB(2026-07-15 재확인, 어제와 거의 동일 — **Pro 전환 여전히 미반영**) |
 | Supabase 스키마 변경 | 적용 완료(`site_id`, `area_type_id`, `price_drop_rate_threshold`) |
@@ -83,6 +83,7 @@ DB 쪽(마이그레이션 적용분: `site_id`·`area_type_id`·`price_drop_rate
 2. 새 Supabase 프로젝트 만들지 말 것 — 기존 `auoravdadyzvuoxunogh` 재사용(`04` 참고)
 3. 크론/알림 로직은 이 저장소에 안 만듦 — bds가 계속 전담(§1·§2 참고)
 4. Tailwind는 3.4로 (v4 아님)
+5. `02-realtrade-story.md` §10(리스크 점검)에 "기존 재사용 가능"이라던 기획이 실제 코드 확인 결과 아니었던 것 8건이 정리돼 있음(동/호수·site_id·알림스키마·Supabase용량·급등락·법적문서·알림크론·AI코멘트) — 새로 뭔가를 "기존 거 그대로 쓰면 됨"이라고 판단하기 전에 이 표부터 확인할 것
 
 ---
 

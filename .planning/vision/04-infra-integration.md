@@ -30,6 +30,14 @@
 - 기존 Naver OAuth + 이메일 Magic Link OTP 설정 그대로 재사용 — Supabase Auth 프로바이더 신규 등록 불필요.
 - `auth.users`/`profiles`도 공유 — danjiondo 계정 보유자는 실거래이야기에 별도 가입 없이 로그인됨(의도된 동작).
 
+### 권한 확인됨 (2026-07-15)
+- `search_complexes`, `increment_view_count`, `complex_monthly_prices`, `complex_transactions_for_chart`, `refresh_complex_price_stats` RPC 전부 `anon`·`authenticated` role EXECUTE 권한 확인됨.
+- `complexes`, `transactions`, `complex_rankings`, `complex_area_types`, `notifications`, `management_cost_monthly` 테이블 전부 `anon` SELECT 권한 확인됨(RLS 활성화 상태, 정책 자체는 각 테이블별로 다를 수 있으니 실제 쿼리 시 빈 결과가 나오면 RLS 정책도 같이 확인).
+- 즉 **비로그인 조회 기능(검색·단지상세·랭킹 등)은 추가 권한 설정 없이 바로 동작 가능.** `favorites`·`ad_campaigns` 같은 로그인 전용 쓰기는 기존 RLS(`auth.uid() = user_id`)가 그대로 적용됨 — site_id는 RLS가 아니라 애플리케이션 코드에서 직접 필터링해야 함(DB가 자동으로 막아주지 않음, 위 "site_id 분리 완료" 항목 참고).
+
+### 알림(주의)
+- 조건부 가격알림 체크 로직은 **아직 없다** — DB 컬럼(`price_alert_threshold`·`price_drop_rate_threshold`·`area_type_id`)은 있지만 이걸 읽는 크론 코드가 없음. 즐겨찾기 기능 개발 시점에 bds 쪽(`src/lib/notifications/generate-alerts.ts`) 수정이 별도로 필요 — 자세한 내용·요청 문구는 `05-handoff-notes.md` §2.
+
 ---
 
 ## .env 변수
@@ -47,7 +55,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<Supabase 대시보드 또는 MCP로 조회>
 
 ## GitHub
 
-- **repo**: `nickujung-art/realtrade-story` (private) — 2026-07-15 생성했다가 `/new-project` 셋업을 위해 삭제 예정/삭제됨. `/new-project` 스킬이 새로 만들 수도 있고, 같은 이름으로 재생성해도 됨.
+- **repo**: `nickujung-art/realtrade-story` (private) — 2026-07-15 생성했다가 `/new-project` 하네스 셋업을 위해 **삭제 완료 확인됨**(`gh repo view` 404 확인). `/new-project` 스킬이 새로 만들거나, 같은 이름으로 수동 재생성해도 됨.
 - 소유자 계정: `nickujung-art` (bds와 동일 계정)
 - bds와는 **완전히 별개 저장소** — 코드 히스토리 공유 없음.
 
@@ -56,7 +64,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<Supabase 대시보드 또는 MCP로 조회>
 ## Vercel
 
 - **아직 미설정.** danjiondo는 기존 Vercel 프로젝트(`danjiondo`)로 배포 중이지만, 실거래이야기는 **신규 Vercel 프로젝트**로 별도 배포해야 한다(도메인도 별도, `02-realtrade-story.md` §2 참고 — 도메인 미등록 상태).
-- 크론잡(molit-daily 등)은 danjiondo Vercel 프로젝트에만 존재 — 실거래이야기 Vercel 프로젝트엔 크론 설정 불필요(데이터 수집은 bds가 계속 전담).
+- **정정(2026-07-15)**: 크론은 danjiondo Vercel 프로젝트가 아니라 **bds GitHub Actions**가 주체다 — 일부(`molit-daily` 등)는 GitHub Actions 러너 안에서 스크립트를 직접 실행하고, 일부(`notify-worker` 등)만 GitHub Actions가 트리거해서 danjiondo Vercel의 API Route를 호출하는 방식이다. 어느 쪽이든 실거래이야기 Vercel 프로젝트엔 크론 설정이 전혀 불필요(데이터 수집·알림 발송은 bds가 계속 전담). 자세한 인벤토리는 `05-handoff-notes.md` §1 참고
 
 ---
 
