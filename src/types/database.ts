@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       activity_logs: {
@@ -82,6 +57,7 @@ export type Database = {
           image_url: string
           link_url: string
           placement: string
+          site_id: string
           starts_at: string
           status: Database["public"]["Enums"]["ad_status"]
           target_lat: number | null
@@ -100,6 +76,7 @@ export type Database = {
           image_url: string
           link_url: string
           placement: string
+          site_id?: string
           starts_at: string
           status?: Database["public"]["Enums"]["ad_status"]
           target_lat?: number | null
@@ -118,6 +95,7 @@ export type Database = {
           image_url?: string
           link_url?: string
           placement?: string
+          site_id?: string
           starts_at?: string
           status?: Database["public"]["Enums"]["ad_status"]
           target_lat?: number | null
@@ -1211,29 +1189,45 @@ export type Database = {
       favorites: {
         Row: {
           alert_enabled: boolean
+          area_type_id: string | null
           complex_id: string
           created_at: string
           id: string
           price_alert_threshold: number | null
+          price_drop_rate_threshold: number | null
+          site_id: string
           user_id: string
         }
         Insert: {
           alert_enabled?: boolean
+          area_type_id?: string | null
           complex_id: string
           created_at?: string
           id?: string
           price_alert_threshold?: number | null
+          price_drop_rate_threshold?: number | null
+          site_id?: string
           user_id: string
         }
         Update: {
           alert_enabled?: boolean
+          area_type_id?: string | null
           complex_id?: string
           created_at?: string
           id?: string
           price_alert_threshold?: number | null
+          price_drop_rate_threshold?: number | null
+          site_id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "favorites_area_type_id_fkey"
+            columns: ["area_type_id"]
+            isOneToOne: false
+            referencedRelation: "complex_area_types"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "favorites_complex_id_fkey"
             columns: ["complex_id"]
@@ -1357,6 +1351,8 @@ export type Database = {
           address_detail: string | null
           admst_zone_nm: string | null
           age_groups: string[] | null
+          blog_snippet: string | null
+          blog_tags: string[] | null
           capacity: number | null
           created_at: string
           established_at: string | null
@@ -1385,6 +1381,8 @@ export type Database = {
           address_detail?: string | null
           admst_zone_nm?: string | null
           age_groups?: string[] | null
+          blog_snippet?: string | null
+          blog_tags?: string[] | null
           capacity?: number | null
           created_at?: string
           established_at?: string | null
@@ -1413,6 +1411,8 @@ export type Database = {
           address_detail?: string | null
           admst_zone_nm?: string | null
           age_groups?: string[] | null
+          blog_snippet?: string | null
+          blog_tags?: string[] | null
           capacity?: number | null
           created_at?: string
           established_at?: string | null
@@ -2795,6 +2795,7 @@ export type Database = {
             }
             Returns: string
           }
+      assign_area_types: { Args: never; Returns: undefined }
       award_daily_login_points: {
         Args: { p_user_id: string }
         Returns: boolean
@@ -2828,6 +2829,7 @@ export type Database = {
           area_m2: number
           area_type_id: string
           deal_date: string
+          exclusive_area_m2: number
           price: number
           pyeong_name: string
           year_month: string
@@ -2887,6 +2889,22 @@ export type Database = {
         | { Args: { table_name: string }; Returns: string }
       enablelongtransactions: { Args: never; Returns: string }
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
+      find_nearby_similar_complexes: {
+        Args: {
+          p_exclude_kapt_code: string
+          p_lat: number
+          p_lng: number
+          p_name_normalized: string
+          p_radius_m: number
+          p_similarity_threshold: number
+        }
+        Returns: {
+          canonical_name: string
+          dist_m: number
+          id: string
+          kapt_code: string
+        }[]
+      }
       geometry: { Args: { "": string }; Returns: unknown }
       geometry_above: {
         Args: { geom1: unknown; geom2: unknown }
@@ -3017,6 +3035,10 @@ export type Database = {
           training_count: number
           tx_count_30d: number
         }[]
+      }
+      get_complex_review_avg: {
+        Args: { p_complex_id: string }
+        Returns: number
       }
       get_hagwon_grade: { Args: { p_complex_id: string }; Returns: string }
       get_quadrant_data: {
@@ -3231,6 +3253,34 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      recommend_hagwon_candidates: {
+        Args: {
+          p_age_group?: string
+          p_home_lat: number
+          p_home_lng: number
+          p_limit?: number
+          p_school_lat?: number
+          p_school_lng?: number
+          p_subject?: string
+        }
+        Returns: {
+          address: string
+          age_groups: string[]
+          blog_snippet: string
+          blog_tags: string[]
+          dist_home: number
+          fee_tier: string
+          hagwon_lat: number
+          hagwon_lng: number
+          id: string
+          le_crse_nm: string
+          name: string
+          naver_blog_count: number
+          popularity_score: number
+          realm_sc_nm: string
+          subject_category: string
+        }[]
+      }
       recommend_hagwons:
         | {
             Args: {
@@ -4084,9 +4134,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       ad_status: [
