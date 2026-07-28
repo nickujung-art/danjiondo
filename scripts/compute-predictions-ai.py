@@ -105,19 +105,36 @@ def select_paginated(table: str, columns: str, extra_params: dict | None = None)
     return rows
 
 
+UPSERT_MAX_RETRIES = 3
+
+
 def upsert_batch(table: str, rows: list, on_conflict: str = "") -> None:
+    """일시적 네트워크 지연/오류에 대비한 재시도 포함.
+    max_retries 소진 후에도 실패하면 예외를 그대로 올려 호출부가 판단하게 함
+    (Stage 2는 이 예외를 잡아 배치 하나만 건너뛰고 계속 진행 — 전체 run이 죽지 않도록)."""
     if not rows:
         return
     url = f"{SUPABASE_URL}/rest/v1/{table}"
     if on_conflict:
         url += f"?on_conflict={on_conflict}"
-    r = _session().post(
-        url,
-        headers={**HEADERS, "Prefer": "resolution=merge-duplicates,return=minimal"},
-        json=rows,
-        timeout=60,
-    )
-    r.raise_for_status()
+
+    last_err: Exception | None = None
+    for attempt in range(UPSERT_MAX_RETRIES):
+        try:
+            r = _session().post(
+                url,
+                headers={**HEADERS, "Prefer": "resolution=merge-duplicates,return=minimal"},
+                json=rows,
+                timeout=90,
+            )
+            r.raise_for_status()
+            return
+        except requests.exceptions.RequestException as e:
+            last_err = e
+            if attempt < UPSERT_MAX_RETRIES - 1:
+                time.sleep(2 ** attempt)  # 1s, 2s
+    assert last_err is not None
+    raise last_err
 
 # ─── 유틸리티 ─────────────────────────────────────────────────────────────────
 
@@ -298,9 +315,23 @@ def main() -> None:
     # ── Stage 2: 순차 모델 추론 ───────────────────────────────────────────────
     # 데드라인은 job_start(모델 로드+Stage 1 포함) 기준 — Stage 1이 오래 걸려도
     # 90분 하드킬 전에 Stage 2가 안전하게 flush하고 종료하도록 보장
-    processed = infer_errors = 0
+    processed = infer_errors = upsert_errors = 0
     deadline_hit = False
     pending: list[dict] = []
+
+    def flush_pending() -> None:
+        nonlocal pending, upsert_errors
+        if not pending:
+            return
+        try:
+            upsert_batch("complex_price_predictions", pending,
+                         "complex_id,area_bucket,predicted_month")
+        except Exception as e:
+            # 재시도까지 소진한 뒤에도 실패 — 이 배치만 유실, 나머지 Stage 2는 계속 진행
+            # (Stage 1의 6분대 성과를 여기서 통째로 날리지 않는 게 핵심)
+            print(f"[warn] upsert 실패(재시도 소진, {len(pending)}행 유실): {e}", flush=True)
+            upsert_errors += 1
+        pending = []
 
     for i, q in enumerate(qualifying):
         if time.monotonic() - job_start > STAGE2_DEADLINE_S:
@@ -324,9 +355,7 @@ def main() -> None:
             infer_errors += 1
 
         if len(pending) >= UPSERT_BATCH:
-            upsert_batch("complex_price_predictions", pending,
-                         "complex_id,area_bucket,predicted_month")
-            pending = []
+            flush_pending()
 
         if (i + 1) % 200 == 0:
             print(
@@ -334,11 +363,9 @@ def main() -> None:
                 flush=True,
             )
 
-    if pending:
-        upsert_batch("complex_price_predictions", pending,
-                     "complex_id,area_bucket,predicted_month")
+    flush_pending()
 
-    errors = fetch_errors + infer_errors
+    errors = fetch_errors + infer_errors + upsert_errors
     print(
         f"[done] 처리:{processed}  스킵:{skipped}  오류:{errors}"
         f"{'  (소프트 데드라인으로 조기 종료)' if deadline_hit else ''}",
