@@ -16,13 +16,14 @@ const BASE = 'https://sgisapi.kostat.go.kr/OpenAPI3'
 
 // ── 인증 토큰 ─────────────────────────────────────────────────
 
+// SGIS API는 숫자 필드도 JSON 문자열로 내려줌(실측 확인, 2026-07-28) — coerce 필수
 const TokenResponseSchema = z.object({
   result: z.object({
     accessToken: z.string(),
-    accessTimeout: z.number(),
+    accessTimeout: z.coerce.number(),
   }),
   errMsg: z.string(),
-  errCd: z.number(),
+  errCd: z.coerce.number(),
 })
 
 /**
@@ -79,7 +80,7 @@ export async function fetchPopulation(
   if (!res.ok) throw new Error(`SGIS population HTTP ${res.status}`)
 
   const json = (await res.json()) as { result?: unknown[]; errMsg?: string; errCd?: number }
-  if ((json.errCd ?? -1) !== 0) throw new Error(`SGIS population error: ${json.errMsg}`)
+  if (Number(json.errCd ?? -1) !== 0) throw new Error(`SGIS population error: ${json.errMsg}`)
 
   const item = PopulationItemSchema.parse((json.result ?? [])[0])
   return { population: item.population, adm_nm: item.adm_nm }
@@ -117,7 +118,7 @@ export async function fetchHouseholds(
   if (!res.ok) throw new Error(`SGIS household HTTP ${res.status}`)
 
   const json = (await res.json()) as { result?: unknown[]; errMsg?: string; errCd?: number }
-  if ((json.errCd ?? -1) !== 0) throw new Error(`SGIS household error: ${json.errMsg}`)
+  if (Number(json.errCd ?? -1) !== 0) throw new Error(`SGIS household error: ${json.errMsg}`)
 
   const item = HouseholdItemSchema.parse((json.result ?? [])[0])
   return { households: item.household_cnt }
