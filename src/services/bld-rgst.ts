@@ -1,4 +1,7 @@
-import 'server-only'
+// server-only 미포함 — scripts/enrich-apt-unmatched.ts, scripts/enrich-officetel-bldrgst.ts에서
+// tsx로 직접 임포트해야 함(kapt.ts/sgis.ts와 동일 패턴). 'server-only' 마커는 Node 스크립트
+// 실행 시 exports 조건이 맞지 않아 무조건 throw함. Next.js 라우트/컴포넌트에서는 import되지
+// 않으므로 서버 전용 가드가 애초에 불필요.
 
 /**
  * 국토부 건축물대장 API 어댑터

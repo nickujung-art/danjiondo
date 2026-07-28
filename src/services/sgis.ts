@@ -1,4 +1,8 @@
-import 'server-only'
+// server-only 미포함 — scripts/ingest-sgis.ts에서 tsx로 직접 임포트해야 함
+// (kapt.ts/naver-land.ts와 동일 패턴). 'server-only' 마커는 Node 스크립트 실행 시
+// exports 조건이 맞지 않아 무조건 throw하여 SGIS 분기 배치를 깨뜨림(2026-07-15 실패 원인).
+// 이 모듈은 scripts/ingest-sgis.ts에서만 사용되고 Next.js 라우트/컴포넌트에서는
+// import되지 않으므로 서버 전용 가드가 애초에 불필요.
 
 /**
  * SGIS 통계지리정보서비스 API 어댑터 (얇은 래퍼 — 비즈니스 로직 없음)
