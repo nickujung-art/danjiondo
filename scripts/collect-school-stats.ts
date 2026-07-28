@@ -244,9 +244,33 @@ async function main() {
   console.log(`  미매칭: ${notFound}건`)
   if (isDryRun) console.log('  (DRY-RUN — DB 변경 없음)')
   console.log('\n완료.')
+
+  // dry-run은 실제 갱신이 아니므로 last_synced_at을 건드리지 않음
+  if (!isDryRun) {
+    await supabase.from('data_sources')
+      .update({ last_synced_at: new Date().toISOString(), last_status: 'success', consecutive_failures: 0 })
+      .eq('id', 'school_alimi')
+  }
 }
 
-main().catch(err => {
+main().catch(async err => {
   console.error('[FATAL]', err)
+  try {
+    const supabaseUrl = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (supabaseUrl && serviceKey) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const supabase = createClient(supabaseUrl, serviceKey) as any
+      const { data } = await supabase.from('data_sources')
+        .select('consecutive_failures').eq('id', 'school_alimi').maybeSingle()
+      await supabase.from('data_sources')
+        .update({
+          last_synced_at: new Date().toISOString(),
+          last_status: 'failed',
+          consecutive_failures: (data?.consecutive_failures ?? 0) + 1,
+        })
+        .eq('id', 'school_alimi')
+    }
+  } catch { /* 상태 기록 실패는 무시 — 원본 에러로 종료 */ }
   process.exit(1)
 })

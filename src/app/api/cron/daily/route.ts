@@ -40,6 +40,7 @@ export async function GET(request: Request): Promise<Response> {
     .limit(50)
 
   let kaptUpserted = 0
+  let kaptErrors = 0
   for (const complex of complexesWithKaptCode ?? []) {
     if (!complex.kapt_code) continue
     try {
@@ -59,11 +60,15 @@ export async function GET(request: Request): Promise<Response> {
         { onConflict: 'complex_id' },
       ) as { error: { message: string } | null }
       if (!error) kaptUpserted++
+      else kaptErrors++
     } catch (err) {
       errors.push(`kapt=${complex.kapt_code}: ${err instanceof Error ? err.message : String(err)}`)
+      kaptErrors++
     }
   }
   totalUpserted += kaptUpserted
+  await markCronStatus(supabase, 'kapt', kaptErrors === 0 ? 'success' : 'partial')
+    .catch(() => {/* kapt source 미등록이면 무시 */})
 
   // ── MOLIT 분양권전매 UPSERT (DATA-02) ────────────────────────────────
   const dealYmd = currentYearMonth()

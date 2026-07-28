@@ -32,11 +32,16 @@ const CRON_GROUPS: CronGroup[] = [
   {
     title: 'Vercel 일배치',
     note: '매일 04:00 KST (K-apt·분양·청약홈·오피스텔·갭통계)',
-    ids: ['daily-batch', 'gap-stats'],
+    ids: ['daily-batch', 'gap-stats', 'kapt'],
   },
   {
     title: 'GitHub Actions 워커',
     ids: ['notify-worker', 'rankings', 'cafe-articles'],
+  },
+  {
+    title: '수동 배치',
+    note: '학교알리미 — 연 1회, workflow_dispatch로 수동 실행',
+    ids: ['school_alimi'],
   },
 ]
 

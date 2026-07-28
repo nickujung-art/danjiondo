@@ -1,0 +1,12 @@
+-- 크론 전수조사 중 발견: data_sources에 실제 대응되는 배치 스텝이 없는 항목 3개가
+-- seed_data_sources.sql(20260508000005)에서 만들어진 채 방치돼 있었음. /admin/status
+-- 화면의 CRON_GROUPS에도 안 걸려 있어 화면에 노출된 적은 없지만(관측성 버그 아님),
+-- 테이블에 죽은 메타데이터로 남아 있어 정리한다.
+--
+-- - molit_rent: 전월세 데이터는 molit_trade(ingestMonth)가 매매와 함께 이미 처리 —
+--   별도 배치 스텝이 존재한 적 없음
+-- - kakao_poi / juso: 특정 반복 배치에 묶여있지 않은 애드혹 사용, 추적 대상 아님
+--
+-- kapt·school_alimi는 실제 배치가 있어서 삭제하지 않고 대신 정상적으로 마킹하도록
+-- 코드 쪽을 수정함(daily/route.ts, collect-school-stats.ts).
+delete from public.data_sources where id in ('molit_rent', 'kakao_poi', 'juso');
