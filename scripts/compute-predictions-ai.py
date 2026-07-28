@@ -9,6 +9,12 @@ model_name = 'chronos-bolt-small'
 같은 UNIQUE 키(complex_id, area_bucket, predicted_month)로 upsert하므로
 Chronos 결과가 Holt-Winters 결과를 덮어씁니다.
 
+Stage 1(조회)은 스레드풀로 병렬 수행 — 대부분의 조합이 데이터 부족으로 스킵되지만
+그 판단 자체도 네트워크 왕복이 필요해, 순차 처리 시 왕복시간 합만으로 시간 예산을
+다 씀. Stage 2(모델 추론)는 순차 유지(Chronos 파이프라인 공유, CPU 바운드라 스레드
+이점 없음). 갱신 안 된 지 오래된 단지를 우선 처리해 시간 예산 내에 끝나지 못해도
+매일 같은 단지만 방치되지 않도록 함.
+
 환경변수:
   NEXT_PUBLIC_SUPABASE_URL
   SUPABASE_SERVICE_ROLE_KEY
@@ -16,11 +22,13 @@ Chronos 결과가 Holt-Winters 결과를 덮어씁니다.
 
 import os
 import sys
+import time
 import datetime
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
 import torch
-import numpy as np
 from chronos import ChronosBoltPipeline
 
 # ─── 환경변수 ─────────────────────────────────────────────────────────────────
@@ -49,11 +57,25 @@ MODEL_HF_ID      = "amazon/chronos-bolt-small"
 MODEL_NAME_DB    = "chronos-bolt-small"
 PAGE_SIZE        = 1000
 UPSERT_BATCH     = 200     # DB upsert 묶음 크기
+FETCH_WORKERS    = 16      # Stage 1 병렬 조회 스레드 수
+STAGE2_DEADLINE_S = 80 * 60  # Stage 2(추론) 소프트 데드라인 — 초과 시 남은 건 다음날로 이월
 
 # ─── Supabase REST 헬퍼 ───────────────────────────────────────────────────────
 
+_thread_local = threading.local()
+
+
+def _session() -> requests.Session:
+    """스레드별 세션 재사용 — 매 호출마다 새 TCP/TLS 핸드셰이크 여는 것 방지."""
+    sess = getattr(_thread_local, "session", None)
+    if sess is None:
+        sess = requests.Session()
+        _thread_local.session = sess
+    return sess
+
+
 def rpc(fn: str, params: dict) -> list:
-    r = requests.post(
+    r = _session().post(
         f"{SUPABASE_URL}/rest/v1/rpc/{fn}",
         headers=HEADERS,
         json=params,
@@ -63,14 +85,15 @@ def rpc(fn: str, params: dict) -> list:
     return r.json() or []
 
 
-def select_paginated(table: str, columns: str) -> list:
+def select_paginated(table: str, columns: str, extra_params: dict | None = None) -> list:
     rows, offset = [], 0
     while True:
-        r = requests.get(
+        params = {"select": columns, **(extra_params or {})}
+        r = _session().get(
             f"{SUPABASE_URL}/rest/v1/{table}",
             headers={**HEADERS, "Range-Unit": "items",
                      "Range": f"{offset}-{offset + PAGE_SIZE - 1}"},
-            params={"select": columns},
+            params=params,
             timeout=30,
         )
         r.raise_for_status()
@@ -88,7 +111,7 @@ def upsert_batch(table: str, rows: list, on_conflict: str = "") -> None:
     url = f"{SUPABASE_URL}/rest/v1/{table}"
     if on_conflict:
         url += f"?on_conflict={on_conflict}"
-    r = requests.post(
+    r = _session().post(
         url,
         headers={**HEADERS, "Prefer": "resolution=merge-duplicates,return=minimal"},
         json=rows,
@@ -111,6 +134,26 @@ def calc_mape(actual: list[float], predicted: list[float]) -> float:
         return 0.0
     return sum(abs(a - p) / a for a, p in pairs) / len(pairs)
 
+
+def fetch_last_updated() -> dict[str, str]:
+    """model_name='chronos-bolt-small' 기준 단지별 최신 computed_at.
+    단지별 개별 조회가 아니라 전체를 페이지네이션으로 한 번에 가져와 클라이언트에서 축약."""
+    rows = select_paginated(
+        "complex_price_predictions",
+        "complex_id,computed_at",
+        extra_params={
+            "model_name": "eq.chronos-bolt-small",
+            # computed_at은 그날 실행 전체가 공유하는 값이라 동률이 흔함 — id로 타이브레이크
+            "order":      "computed_at.desc,id.asc",
+        },
+    )
+    last_updated: dict[str, str] = {}
+    for r in rows:
+        cid = r["complex_id"]
+        if cid not in last_updated:   # order=desc이므로 각 단지의 첫 등장이 최신값
+            last_updated[cid] = r["computed_at"]
+    return last_updated
+
 # ─── 모델 로드 ────────────────────────────────────────────────────────────────
 
 print(f"[init] 모델 로드: {MODEL_HF_ID}", flush=True)
@@ -121,15 +164,9 @@ pipeline = ChronosBoltPipeline.from_pretrained(
 )
 print("[init] 모델 준비 완료", flush=True)
 
-# ─── 단지×버킷 예측 ───────────────────────────────────────────────────────────
+# ─── Stage 1: 실거래 이력 조회 + 임계값 체크 (I/O 바운드, 병렬) ───────────────
 
-def process_bucket(
-    complex_id: str,
-    bucket: str,
-    computed_at: str,
-) -> list[dict] | None:
-
-    # 실거래 이력 조회 (전체 데이터)
+def fetch_history(complex_id: str, bucket: str) -> dict | None:
     raw = rpc("compute_predictions", {
         "p_complex_id":  complex_id,
         "p_area_bucket": bucket,
@@ -138,12 +175,24 @@ def process_bucket(
     if not raw:
         return None
 
-    raw   = sorted(raw, key=lambda r: r["year_month"])
+    raw    = sorted(raw, key=lambda r: r["year_month"])
     prices = [float(r["avg_price"]) for r in raw]
     tx_sum = sum(int(r["tx_count"]) for r in raw)
 
     if len(prices) < MIN_MONTHS or tx_sum < MIN_TX_TOTAL:
         return None
+
+    return {"complex_id": complex_id, "bucket": bucket, "raw": raw, "prices": prices}
+
+# ─── Stage 2: Chronos 모델 추론 (CPU 바운드, 순차) ────────────────────────────
+
+def run_inference(
+    complex_id: str,
+    bucket: str,
+    raw: list[dict],
+    prices: list[float],
+    computed_at: str,
+) -> list[dict]:
 
     # ── MAPE 계산 (hold-out) ──────────────────────────────────────────────────
     mape = 0.0
@@ -164,12 +213,10 @@ def process_bucket(
         prediction_length=FORECAST_MONTHS,
         quantile_levels=[0.1, 0.9],
     )
-    # quantiles: (1, FORECAST_MONTHS, 2)  /  mean: (1, FORECAST_MONTHS)
     lower_arr = quantiles[0, :, 0].numpy()
     upper_arr = quantiles[0, :, 1].numpy()
     mean_arr  = mean[0].numpy()
 
-    # ── 예측 월 계산 ─────────────────────────────────────────────────────────
     last_ym = raw[-1]["year_month"]           # 'YYYY-MM'
     yr, mo  = int(last_ym[:4]), int(last_ym[5:7])
 
@@ -193,41 +240,97 @@ def process_bucket(
 # ─── 메인 ─────────────────────────────────────────────────────────────────────
 
 def main() -> None:
+    job_start = time.monotonic()  # 데드라인 기준점 — 모델 로드·Stage 1 소요시간까지 포함
     computed_at = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
     print(f"[start] {computed_at}", flush=True)
 
-    complexes   = select_paginated("complexes", "id")
+    complexes   = select_paginated("complexes", "id", extra_params={"order": "id.asc"})
     complex_ids = [r["id"] for r in complexes if r.get("id")]
-    total       = len(complex_ids) * len(AREA_BUCKETS)
-    print(f"[info] 단지 {len(complex_ids)}개 × {len(AREA_BUCKETS)}버킷 = {total}조합", flush=True)
 
-    processed = skipped = errors = 0
+    print("[info] 갱신 우선순위 조회 중...", flush=True)
+    last_updated = fetch_last_updated()
+    # 미갱신(빈 문자열, 항상 최우선)·오래된 단지 순으로 정렬
+    complex_ids.sort(key=lambda cid: last_updated.get(cid, ""))
+    priority_index = {cid: i for i, cid in enumerate(complex_ids)}
+
+    total = len(complex_ids) * len(AREA_BUCKETS)
+    print(
+        f"[info] 단지 {len(complex_ids)}개 × {len(AREA_BUCKETS)}버킷 = {total}조합 "
+        f"(미갱신·오래된 순 우선)",
+        flush=True,
+    )
+
+    # ── Stage 1: 병렬 조회 ────────────────────────────────────────────────────
+    combos = [(cid, bucket) for cid in complex_ids for bucket in AREA_BUCKETS]
+    qualifying: list[dict] = []
+    fetch_errors = 0
+    fetch_done = 0
+
+    with ThreadPoolExecutor(max_workers=FETCH_WORKERS) as executor:
+        futures = {executor.submit(fetch_history, cid, b): (cid, b) for cid, b in combos}
+        for future in as_completed(futures):
+            cid, bucket = futures[future]
+            fetch_done += 1
+            try:
+                result = future.result()
+                if result:
+                    qualifying.append(result)
+            except Exception as e:
+                print(f"[warn] fetch {cid}/{bucket}: {e}", flush=True)
+                fetch_errors += 1
+
+            if fetch_done % 2000 == 0:
+                print(
+                    f"[fetch] {fetch_done}/{total} 조회 완료, 예측 대상 {len(qualifying)}건",
+                    flush=True,
+                )
+
+    # Stage 1은 as_completed() 완료 순서라 뒤섞임 — 우선순위(오래된 단지 먼저) 순으로 재정렬
+    qualifying.sort(key=lambda q: priority_index.get(q["complex_id"], len(complex_ids)))
+
+    skipped = total - len(qualifying) - fetch_errors
+    print(
+        f"[info] 조회 완료 — 예측 대상 {len(qualifying)}/{total}조합 "
+        f"(스킵 {skipped}, 조회오류 {fetch_errors})",
+        flush=True,
+    )
+
+    # ── Stage 2: 순차 모델 추론 ───────────────────────────────────────────────
+    # 데드라인은 job_start(모델 로드+Stage 1 포함) 기준 — Stage 1이 오래 걸려도
+    # 90분 하드킬 전에 Stage 2가 안전하게 flush하고 종료하도록 보장
+    processed = infer_errors = 0
+    deadline_hit = False
     pending: list[dict] = []
 
-    for ci, cid in enumerate(complex_ids):
-        for bucket in AREA_BUCKETS:
-            try:
-                rows = process_bucket(cid, bucket, computed_at)
-                if rows:
-                    pending.extend(rows)
-                    processed += 1
-                else:
-                    skipped += 1
-            except Exception as e:
-                print(f"[warn] {cid}/{bucket}: {e}", flush=True)
-                errors += 1
-
-            if len(pending) >= UPSERT_BATCH:
-                upsert_batch("complex_price_predictions", pending,
-                             "complex_id,area_bucket,predicted_month")
-                pending = []
-
-        if (ci + 1) % 50 == 0:
-            done = (ci + 1) * len(AREA_BUCKETS)
-            pct  = done / total * 100
+    for i, q in enumerate(qualifying):
+        if time.monotonic() - job_start > STAGE2_DEADLINE_S:
+            deadline_hit = True
             print(
-                f"[progress] {done}/{total} ({pct:.0f}%)"
-                f"  처리:{processed}  스킵:{skipped}  오류:{errors}",
+                f"[info] Stage 2 소프트 데드라인({STAGE2_DEADLINE_S}s) 도달 — "
+                f"{i}/{len(qualifying)} 처리 후 조기 종료, 나머지는 다음 실행에서 "
+                f"우선 처리됨(미갱신 우선순위 정렬)",
+                flush=True,
+            )
+            break
+
+        try:
+            rows = run_inference(
+                q["complex_id"], q["bucket"], q["raw"], q["prices"], computed_at,
+            )
+            pending.extend(rows)
+            processed += 1
+        except Exception as e:
+            print(f"[warn] infer {q['complex_id']}/{q['bucket']}: {e}", flush=True)
+            infer_errors += 1
+
+        if len(pending) >= UPSERT_BATCH:
+            upsert_batch("complex_price_predictions", pending,
+                         "complex_id,area_bucket,predicted_month")
+            pending = []
+
+        if (i + 1) % 200 == 0:
+            print(
+                f"[predict] {i + 1}/{len(qualifying)}  처리:{processed}  오류:{infer_errors}",
                 flush=True,
             )
 
@@ -235,8 +338,10 @@ def main() -> None:
         upsert_batch("complex_price_predictions", pending,
                      "complex_id,area_bucket,predicted_month")
 
+    errors = fetch_errors + infer_errors
     print(
-        f"[done] 처리:{processed}  스킵:{skipped}  오류:{errors}",
+        f"[done] 처리:{processed}  스킵:{skipped}  오류:{errors}"
+        f"{'  (소프트 데드라인으로 조기 종료)' if deadline_hit else ''}",
         flush=True,
     )
     if errors > total * 0.1:
