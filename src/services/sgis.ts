@@ -39,7 +39,7 @@ export async function fetchSgisToken(): Promise<string> {
   url.searchParams.set('consumer_key', key)
   url.searchParams.set('consumer_secret', secret)
 
-  const res = await fetch(url.toString(), { signal: AbortSignal.timeout(10_000) })
+  const res = await fetch(url.toString(), { signal: AbortSignal.timeout(20_000) })
   if (!res.ok) throw new Error(`SGIS auth HTTP ${res.status}`)
 
   const json = TokenResponseSchema.parse(await res.json())
@@ -63,7 +63,8 @@ export interface SgisPopulationResult {
 /**
  * 시군구 인구 조회
  * @param accessToken fetchSgisToken()으로 발급한 토큰
- * @param adm_cd 행정구역 코드 (5자리, 예: '48121' 창원 의창구)
+ * @param adm_cd SGIS 자체 행정구역 코드(표준 법정동코드 아님, 예: '38111' 창원 의창구 —
+ *   scripts/ingest-sgis.ts의 SGG_TO_SGIS_ADM_CD 매핑 참고)
  * @param year 기준 연도 (예: 2023)
  */
 export async function fetchPopulation(
@@ -76,7 +77,7 @@ export async function fetchPopulation(
   url.searchParams.set('year', String(year))
   url.searchParams.set('adm_cd', adm_cd)
 
-  const res = await fetch(url.toString(), { signal: AbortSignal.timeout(10_000) })
+  const res = await fetch(url.toString(), { signal: AbortSignal.timeout(20_000) })
   if (!res.ok) throw new Error(`SGIS population HTTP ${res.status}`)
 
   const json = (await res.json()) as { result?: unknown[]; errMsg?: string; errCd?: number }
@@ -114,7 +115,7 @@ export async function fetchHouseholds(
   url.searchParams.set('year', String(year))
   url.searchParams.set('adm_cd', adm_cd)
 
-  const res = await fetch(url.toString(), { signal: AbortSignal.timeout(10_000) })
+  const res = await fetch(url.toString(), { signal: AbortSignal.timeout(20_000) })
   if (!res.ok) throw new Error(`SGIS household HTTP ${res.status}`)
 
   const json = (await res.json()) as { result?: unknown[]; errMsg?: string; errCd?: number }
