@@ -123,17 +123,3 @@ export async function fetchHouseholds(
   const item = HouseholdItemSchema.parse((json.result ?? [])[0])
   return { households: item.household_cnt }
 }
-
-// ── 창원·김해 시군구 ADM_CD 상수 ────────────────────────────────
-// 검증 방법: GET ${BASE}/addr/stage.json?accessToken=...&cd=48&pg_yn=1
-// 상태: ASSUMED — 실제 SGIS stage API 응답으로 검증 필요 (Wave 2 분기 적재 시 확인)
-
-export const CHANGWON_GU_CODES: Record<string, string> = {
-  의창구: '48121',
-  성산구: '48123',
-  마산합포구: '48125',
-  마산회원구: '48127',
-  진해구: '48129',
-}
-
-export const GIMHAE_CODE = '48250'
