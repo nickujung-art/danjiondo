@@ -18,7 +18,7 @@ jobs:
   ingest:
     name: 실거래가 수집 (전월+당월)
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
 
     steps:
       - uses: actions/checkout@v4
