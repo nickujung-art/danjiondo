@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>창부레터 — 모바일 (홈 · 콘텐츠)</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<style>
+  :root{
+    --g-900:#122E22; --g-800:#173D2C; --g-700:#1B4332; --g-600:#245C43; --g-500:#2D6A4F;
+    --g-100:#E7F0EA; --g-50:#F3F7F4;
+    --orange:#F59E0B; --orange-600:#D97706;
+    --ink:#14181B; --gray-700:#3A4149; --gray-500:#6B7280; --gray-400:#9AA0A6;
+    --line:#EAE8E2; --line-2:#F1EFEA; --bg:#FFFFFF; --bg-warm:#F8F7F3;
+    --r:14px; --r-sm:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{font-family:'Pretendard Variable',Pretendard,-apple-system,system-ui,"Apple SD Gothic Neo",sans-serif;
+    background:#E9E7E1; color:var(--ink); letter-spacing:-0.01em; -webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(circle at 50% 0,#F1EFEA,#E4E1DA); min-height:100vh;}
+  button{font-family:inherit; cursor:pointer; border:none; background:none; color:inherit;}
+  img{display:block; max-width:100%;}
+  a{color:inherit; text-decoration:none;}
+
+  .stage{max-width:1000px; margin:0 auto; padding:40px 20px 70px;}
+  .stage-head{text-align:center; margin-bottom:32px;}
+  .stage-logo{font-size:24px; font-weight:800; color:var(--g-700); letter-spacing:-0.03em;}
+  .stage-logo b{color:var(--orange);}
+  .stage-sub{font-size:14px; color:var(--gray-500); margin-top:6px;}
+  .phones{display:flex; gap:48px; justify-content:center; flex-wrap:wrap; align-items:flex-start;}
+  .phone-wrap{display:flex; flex-direction:column; align-items:center; gap:16px;}
+  .phone-label{font-size:13px; font-weight:700; color:var(--g-700); background:#fff; padding:7px 16px; border-radius:999px; box-shadow:0 2px 8px rgba(16,24,40,.08);}
+
+  /* iPhone frame */
+  .phone{width:390px; height:844px; background:#0b0b0d; border-radius:52px; padding:12px;
+    box-shadow:0 30px 60px rgba(16,24,40,.28), inset 0 0 0 2px #2a2a2e; position:relative;}
+  .phone-screen{width:100%; height:100%; background:var(--bg-warm); border-radius:42px; overflow:hidden; position:relative;}
+  .notch{position:absolute; top:12px; left:50%; transform:translateX(-50%); width:126px; height:32px; background:#0b0b0d; border-radius:0 0 18px 18px; z-index:60;}
+
+  /* App shell inside screen */
+  .m-app{position:absolute; inset:0; display:flex; flex-direction:column;}
+  .m-screen{flex:1; display:flex; flex-direction:column; min-height:0; position:relative;}
+  .m-scroll{flex:1; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch;}
+  .m-scroll::-webkit-scrollbar{display:none;}
+
+  /* Top bar */
+  .m-topbar{height:56px; padding:8px 18px 0; display:flex; align-items:center; gap:10px; flex:none; background:var(--bg-warm);}
+  .m-logo{font-size:19px; font-weight:800; color:var(--g-700); letter-spacing:-0.03em;}
+  .m-logo b{color:var(--orange);}
+  .m-topbar-title{font-size:16px; font-weight:700;}
+  .m-topbar-right{margin-left:auto; display:flex; gap:6px;}
+  .m-icon{width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--gray-700);}
+  .m-icon:active{background:var(--g-50);}
+
+  /* Bits */
+  .m-badge{display:inline-block; font-size:11.5px; font-weight:700; color:#3A2A00; background:var(--orange); padding:5px 11px; border-radius:999px;}
+  .m-cat{font-size:11.5px; font-weight:800; color:var(--g-600);}
+  .cbl-meta{font-size:12px; color:var(--gray-500);}
+  .cbl-chg{font-size:12.5px; font-weight:700;}
+  .cbl-chg.up{color:#C2410C;} .cbl-chg.down{color:#4B5563;}
+  .m-sec{padding:22px 18px 0;}
+  .m-sec-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
+  .m-sec-title{font-size:16px; font-weight:800; letter-spacing:-0.02em; display:flex; align-items:center; gap:6px;}
+  .m-more{font-size:13px; font-weight:700; color:var(--g-600);}
+
+  .m-btn{display:inline-flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; padding:13px 18px; border-radius:12px; transition:background .15s;}
+  .m-btn-orange{background:var(--orange); color:#3A2A00;} .m-btn-orange:active{background:var(--orange-600); color:#fff;}
+  .m-btn-green{background:var(--g-700); color:#fff;}
+  .m-btn-block{width:100%;}
+
+  /* Hero card */
+  .m-hero{display:block; width:calc(100% - 36px); text-align:left; margin:8px 18px 0; padding:22px; border-radius:20px;
+    background:linear-gradient(155deg,#245C43,#122E22); color:#fff; box-shadow:0 14px 30px rgba(18,46,34,.28);}
+  .m-hero-title{font-size:27px; font-weight:800; line-height:1.18; letter-spacing:-0.03em; margin:14px 0 16px;}
+  .m-hero-stats{display:flex; align-items:center; gap:16px; padding:14px 0; border-top:1px solid rgba(255,255,255,.16); border-bottom:1px solid rgba(255,255,255,.16);}
+  .m-hero-stats>div{display:flex; flex-direction:column; gap:3px;}
+  .m-hs-num{font-size:24px; font-weight:800; letter-spacing:-0.03em;}
+  .m-hs-num.up{color:#FFB74D;}
+  .m-hs-label{font-size:11.5px; color:rgba(255,255,255,.7);}
+  .m-hs-div{width:1px; height:34px; background:rgba(255,255,255,.16);}
+  .m-hero-cta{display:inline-block; margin-top:16px; font-size:14.5px; font-weight:700; color:var(--orange);}
+
+  /* Rank mini */
+  .m-ranklist{background:var(--bg); border:1px solid var(--line); border-radius:var(--r); overflow:hidden;}
+  .m-rankrow{display:flex; align-items:center; gap:12px; padding:13px 14px; border-bottom:1px solid var(--line-2);}
+  .m-rankrow:last-child{border-bottom:none;} .m-rankrow:active{background:var(--g-50);}
+  .m-rno{width:22px; height:22px; flex:none; border-radius:6px; background:var(--g-700); color:#fff; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center;}
+  .m-rbody{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;}
+  .m-rbody b{font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .m-rbody em{font-style:normal; font-size:11.5px; color:var(--gray-500);}
+
+  /* Horizontal scroll cards */
+  .m-hscroll{display:flex; gap:12px; overflow-x:auto; padding:2px 18px 4px; margin:0 -18px; scroll-snap-type:x mandatory;}
+  .m-hscroll::-webkit-scrollbar{display:none;}
+  .m-hcard{flex:none; width:200px; text-align:left; scroll-snap-align:start; display:flex; flex-direction:column; gap:7px;}
+  .m-hcard-media{position:relative; aspect-ratio:4/3; border-radius:12px; overflow:hidden; background:var(--g-50); margin-bottom:2px;}
+  .m-hcard-media img{width:100%; height:100%; object-fit:cover;}
+  .m-hcard-tag{position:absolute; left:8px; top:8px; background:rgba(18,46,34,.85); color:#fff; font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:999px;}
+  .m-hcard-title{font-size:14.5px; font-weight:700; line-height:1.34; letter-spacing:-0.01em;}
+
+  /* Feed */
+  .m-feed{display:flex; flex-direction:column; gap:6px;}
+  .m-feeditem{display:grid; grid-template-columns:96px 1fr; gap:13px; text-align:left; padding:10px 0; border-bottom:1px solid var(--line-2);}
+  .m-feeditem:last-child{border-bottom:none;}
+  .m-feeditem-media{aspect-ratio:1/1; border-radius:10px; overflow:hidden; background:var(--g-50);}
+  .m-feeditem-media img{width:100%; height:100%; object-fit:cover;}
+  .m-feeditem-body{display:flex; flex-direction:column; gap:5px; justify-content:center; min-width:0;}
+  .m-feeditem-title{font-size:15px; font-weight:700; line-height:1.34; letter-spacing:-0.01em;}
+
+  /* Sub card */
+  .m-subcard{background:var(--g-700); color:#fff; border-radius:18px; padding:22px; display:flex; flex-direction:column; gap:12px;}
+  .m-subcard-title{font-size:18px; font-weight:800; line-height:1.35;}
+  .m-subcard-sub{font-size:12.5px; color:rgba(255,255,255,.72); margin-top:-6px;}
+
+  /* Article */
+  .m-art-hero{background:var(--g-700); color:#fff; padding:18px 18px 24px;}
+  .m-art-title{font-size:25px; font-weight:800; line-height:1.32; letter-spacing:-0.03em; margin:12px 0 12px;}
+  .m-art-meta{font-size:12.5px; color:rgba(255,255,255,.7);}
+  .m-art-body{padding:20px 18px 0;}
+  .m-prose p{font-size:15.5px; line-height:1.75; color:var(--gray-700); margin:0 0 16px;}
+  .m-lede{font-size:17px !important; color:var(--ink) !important; font-weight:600; line-height:1.65 !important;}
+  .m-figure{margin:20px 0;}
+  .m-figure img{width:100%; border-radius:12px; aspect-ratio:16/10; object-fit:cover;}
+  .m-figure figcaption{font-size:11.5px; color:var(--gray-400); text-align:center; margin-top:7px;}
+  .m-quote{border-left:3px solid var(--orange); margin:20px 0; padding:2px 0 2px 16px; font-size:17px; font-weight:700; line-height:1.5; color:var(--g-700);}
+  .m-related-wrap{margin-top:26px;}
+  .m-related{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 15px; background:var(--bg); border:1px solid var(--line); border-radius:12px; margin-bottom:8px;}
+  .m-related:active{border-color:var(--g-500);}
+  .m-related b{font-size:14.5px; font-weight:700;}
+  .m-related em{display:block; font-style:normal; font-size:11.5px; color:var(--gray-500); margin-top:3px;}
+  .m-related-arrow{color:var(--g-600); font-weight:800;}
+
+  /* Card news mobile */
+  .m-cardnews{background:var(--g-900); border-radius:16px; padding:20px 0 16px; margin-bottom:6px;}
+  .m-cn-track{display:flex; overflow-x:auto; scroll-snap-type:x mandatory; gap:0;}
+  .m-cn-track::-webkit-scrollbar{display:none;}
+  .m-cn-slide{flex:none; width:100%; scroll-snap-align:center; display:flex; justify-content:center; padding:0 20px;}
+  .m-cn-card{width:100%; aspect-ratio:4/5; background:var(--g-700); border-radius:16px; padding:24px; color:#fff; display:flex; flex-direction:column; position:relative; overflow:hidden;}
+  .m-cn-card::after{content:""; position:absolute; right:-40px; bottom:-40px; width:150px; height:150px; border-radius:50%; background:rgba(245,158,11,.16);}
+  .m-cn-brand{font-size:14px; font-weight:800; letter-spacing:-0.03em;}
+  .m-cn-kicker{margin-top:auto; font-size:13px; color:var(--orange); font-weight:700;}
+  .m-cn-big{font-size:52px; font-weight:800; letter-spacing:-0.04em; line-height:1; margin:6px 0 4px;}
+  .m-cn-label{font-size:16px; font-weight:700;}
+  .m-cn-sub{font-size:12.5px; color:rgba(255,255,255,.72); margin-top:6px;}
+  .m-cn-foot{font-size:10.5px; color:rgba(255,255,255,.5); margin-top:12px;}
+  .m-cn-dots{display:flex; gap:6px; justify-content:center; margin-top:16px;}
+  .m-cn-dot{width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.3);}
+  .m-cn-dot.on{background:var(--orange); width:18px; border-radius:999px;}
+
+  /* Sticky CTA on article */
+  .m-sticky-cta{position:absolute; left:0; right:0; bottom:0; padding:12px 16px calc(12px + env(safe-area-inset-bottom)); background:linear-gradient(180deg,rgba(248,247,243,0),var(--bg-warm) 32%); z-index:40;}
+
+  /* Tab bar */
+  .m-tabbar{flex:none; height:64px; display:flex; background:rgba(255,255,255,.98); border-top:1px solid var(--line); padding-bottom:0;}
+  .m-tab{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; color:var(--gray-400); font-size:10.5px; font-weight:600;}
+  .m-tab.on{color:var(--g-700);}
+
+  /* Sheet */
+  .m-sheet-scrim{position:absolute; inset:0; z-index:80; background:rgba(18,46,34,.5); display:flex; align-items:flex-end; animation:mfade .2s ease;}
+  @keyframes mfade{from{opacity:0;}to{opacity:1;}}
+  .m-sheet{width:100%; background:#fff; border-radius:22px 22px 0 0; padding:10px 22px 26px; animation:mup .26s cubic-bezier(.2,.8,.2,1);}
+  @keyframes mup{from{transform:translateY(100%);}to{transform:none;}}
+  .m-sheet-grip{width:40px; height:4px; border-radius:999px; background:var(--line); margin:0 auto 16px;}
+  .m-sheet-kicker{font-size:12px; font-weight:800; color:var(--orange);}
+  .m-sheet-title{font-size:20px; font-weight:800; letter-spacing:-0.02em; margin:6px 0 6px;}
+  .m-sheet-sub{font-size:13.5px; color:var(--gray-700); margin-bottom:16px; line-height:1.5;}
+  .m-input{width:100%; font-family:inherit; font-size:15px; padding:13px 15px; border-radius:12px; border:1px solid var(--line); background:#fff; outline:none;}
+  .m-input:focus{border-color:var(--g-500); box-shadow:0 0 0 3px rgba(45,106,79,.16);}
+  .m-sheet-done{text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px; padding:14px 0 4px;}
+  .m-check{width:52px; height:52px; border-radius:50%; background:var(--g-100); color:var(--g-700); display:flex; align-items:center; justify-content:center; font-size:26px;}
+
+  /* Toast */
+  .m-toast{position:absolute; left:50%; bottom:84px; transform:translateX(-50%); z-index:90; background:var(--ink); color:#fff; font-size:13px; font-weight:600; padding:10px 16px; border-radius:999px; white-space:nowrap; animation:mfade .2s ease;}
+
+  @media (prefers-reduced-motion:reduce){*{animation:none !important;}}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="stage-head">
+    <div class="stage-logo">창부레터<b>.</b> 모바일</div>
+    <div class="stage-sub">홈 피드 · 콘텐츠 상세 — 탭바와 카드가 실제로 동작합니다. 카드뉴스는 좌우로 넘겨보세요.</div>
+  </div>
+  <div class="phones">
+    <div class="phone-wrap">
+      <div class="phone"><div class="notch"></div><div class="phone-screen"><div id="mHome"></div></div></div>
+      <div class="phone-label">모바일 홈 피드</div>
+    </div>
+    <div class="phone-wrap">
+      <div class="phone"><div class="notch"></div><div class="phone-screen"><div id="mArticle"></div></div></div>
+      <div class="phone-label">모바일 콘텐츠 상세</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="data.js"></script>
+<script type="text/babel" src="mobile-app.jsx"></script>
+<script type="text/babel">
+  ReactDOM.createRoot(document.getElementById('mHome')).render(<window.MobileApp initialRoute="home" />);
+  ReactDOM.createRoot(document.getElementById('mArticle')).render(<window.MobileApp initialRoute="article" initialArticleKey="cardnews" />);
+</script>
+</body>
+</html>
