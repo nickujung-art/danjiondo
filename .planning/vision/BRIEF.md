@@ -186,13 +186,37 @@ content_votes     — content_id, user_id, choice(left|right)
 | 콘텐츠 재사용 | 창부레터의 "주간 카드뉴스"는 `bds`에 이미 자동화된 인스타 카드뉴스
   파이프라인(Phase 30, `docs/FEATURES.json` 참고)을 재사용/확장하는 방향 — 콘텐츠
   프로덕션을 처음부터 새로 만들 필요 없음 |
-| 백엔드 공유 여부 | 미정 — 다음 단계에서 결정 필요(같은 Supabase 프로젝트 재사용 vs
-  신규, 인증 공유 여부 등. `realtrade-story`가 이미 겪은 site_id 분리 패턴 참고 가치 있음) |
+| 백엔드 공유 여부 | **같은 Supabase 프로젝트 공유** (`auoravdadyzvuoxunogh`) — 아래 §12 참고 |
 
-**미정 항목 (다음 세션에서 결정 필요)**:
-- 창부레터 신규 저장소 부트스트랩 방식 (bds에서 직접? realtrade-story처럼 별도
-  도구/세션에서 `/new-project`?)
-- Supabase 프로젝트 공유 여부 (공유 시 `favorites`/`ad_campaigns`처럼 site_id 분리
-  필요 — `supabase/migrations/20260715000001_realtrade_story_site_scoping.sql` 참고)
-- 도메인 (changbuletter.com 확보 여부 미확인)
-- 인증 공유 여부 (danjiondo/realtrade-story 계정 공유 중 — 창부레터도 포함할지)
+---
+
+## 12. 인프라·연동 결정 (2026-07-29)
+
+카드뉴스 파이프라인 실사용 확인: `card-news/`가 별도 Node 프로젝트로
+`fetch-data.js`(데이터 조회) → `templates.js`(HTML 생성) → `capture.js`
+(Puppeteer PNG 캡처) → `post-instagram.js`(인스타 포스팅) 단계로 분리돼
+있음. 창부레터는 `capture.js` 단계를 건너뛰고 `fetch-data.js`+`templates.js`를
+재사용해 **HTML로 직접 렌더링**하면 됨 — §10의 "카드뉴스 → HTML 슬라이드
+뷰어(PNG 아닌 HTML, SEO 대응)" 계획과 정확히 일치.
+
+| 항목 | 결정 |
+|------|------|
+| Supabase 공유 | **같은 프로젝트 재사용** — `favorites`/`ad_campaigns`에 이미 쓰는
+  `site_id` 분리 패턴을 확장, 창부레터용 `site_id='changbuletter'` 추가 예정
+  (`supabase/migrations/20260715000001_realtrade_story_site_scoping.sql` 패턴 참고).
+  카드뉴스 원본 데이터(`transactions`/`complexes`)도 별도 동기화 없이 바로 조회 가능 |
+| 관련 단지 카드 ↔ 실거래이야기 연동 | **가격 미리보기 카드** — 단순 링크가 아니라
+  실거래이야기 API로 최신가·변동률을 가져와 카드에 표시(예: "84A 8.5억, 최근 3개월
+  -2%"). **다음 단계에서 두 사이트 간 API 계약(엔드포인트·응답 스키마·인증 방식)을
+  실거래이야기 쪽과 맞춰 설계해야 함** — 창부레터 부트스트랩 시점에 realtrade-story
+  담당 세션과 조율 필요 |
+| 인증/구독 분리 | 뉴스레터 구독은 **로그인 없이 이메일만**으로 전환장벽 최소화.
+  VS 투표·북마크처럼 로그인이 필요한 기능은 danjiondo/realtrade-story와 공유하는
+  기존 계정 시스템(`auth.users`/`profiles`) 재사용 |
+| 저장소 부트스트랩 | realtrade-story와 동일 패턴 — **별도 세션/도구에서 GSD
+  `/new-project`**로 시작. 이 bds 세션과 무관하게 진행 |
+
+**남은 미정 항목**:
+- 도메인 (changbuletter.com 확보 여부 미확인 — 사용자가 직접 확인/구매 필요)
+- 실거래이야기 ↔ 창부레터 API 계약 상세 설계 (엔드포인트·응답 스키마·인증) —
+  창부레터 부트스트랩 세션에서 진행
