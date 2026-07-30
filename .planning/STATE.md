@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
-status: Executing Phase 36
-last_updated: "2026-07-30T07:20:00.000Z"
+status: Phase 36 Complete
+last_updated: "2026-07-30T07:45:00.000Z"
 progress:
   total_phases: 32
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 46
-  completed_plans: 35
-  percent: 76
+  completed_plans: 36
+  percent: 78
 ---
 
 # Project State — 단지온도
@@ -19,7 +19,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-06)
 
 **Core value:** 창원·김해 실수요자가 "이 단지 사도 되는지" 데이터와 이웃 의견으로 30분 안에 결정 짓게 한다.
-**Current focus:** Phase 36 — 창부레터 DB 기반 구축 (Wave 1 완료, Wave 2 = 36-02 RLS 즉시 후속 필요)
+**Current focus:** Phase 36 ✅ 완료 (3/3 plans — RLS 적용 + anon 실측 10항목 PASS). 창부레터 저장소 블로커 해제 — 실데이터 적재 가능
 
 ## Current Phase
 
@@ -167,7 +167,7 @@ Waves:
 | 32 | 카드뉴스 어드민 대시보드 | ✅ Complete |
 | 33 | 전국 DB 확장 1단계 — 경남 전체 지역 확장 기반 구축 | 🔄 In Progress (10/11 plans — 33-08 용량 결정 체크포인트만 남음) |
 | 34 | 전국 DB 확장 2단계 — 부산광역시 지역 확장 기반 구축 | 📋 Planned (0/11 plans executed, 계획 완료·검증 통과) |
-| 36 | 창부레터 DB 기반 구축 — 공유 Supabase 콘텐츠 스키마 | 🔄 In Progress (2/3 plans — 36-00·36-01 완료, 36-02 RLS 남음) |
+| 36 | 창부레터 DB 기반 구축 — 공유 Supabase 콘텐츠 스키마 | ✅ Complete (3/3 plans — CHECK 확장 + 테이블 5개 + RLS 7정책, anon 실측 10항목 PASS) |
 
 ---
 
@@ -295,6 +295,9 @@ Key notes: MOLIT_API_KEY (기존 data.go.kr 키) 재사용. B552555 청약홈 �
 | 2026-07-08 | Phase 34 계획 완료 — 11 plans/5 waves. plan-checker 1차 검증에서 블로커 발견(34-03이 KAPT API에 없는 coordX/coordY로 dup-check를 시딩 루프에 배선 — TS2339 컴파일 에러 + null-guard로 인해 항상 0건 출력되는 논리 결함): 지오코딩 이후(34-05)로 실제 탐지 로직 이동, 34-03은 RPC+헬퍼만 남기는 것으로 수정 후 재검증 PASS(경고 2건은 직접 수정 — grep 대상 오류, 부산 미분양 defer 명시 누락) | 34-db-2 |
 | 2026-07-30 | 마이그레이션 원장 drift로 `npm run db:push` 사용 불가 확인 → 적용 경로를 MCP `execute_sql`(단일 트랜잭션) + `npx supabase migration repair --status applied <파일과 같은 버전>` 조합으로 변경. MCP `apply_migration`은 자기 타임스탬프를 버전으로 기록해 drift를 만들므로 금지. 별건: 저장소에 파일이 없는 프로덕션 스키마 6건 발견(36-00-SUMMARY.md 참조) | 36-00, 36-01 |
 | 2026-07-30 | 창부레터 콘텐츠 스키마 5개 테이블 + 인덱스 4개 프로덕션 적용 완료(D-03 DDL 전 항목 일치, `complexes` 4,285행 무영향). `src/types/database.ts` CLI 재생성 4,180→4,394행. **RLS는 미적용 상태(relrowsecurity=false 5건)로 36-02 즉시 후속 실행 필요** | 36-01 |
+| 2026-07-30 | 신규 5개 테이블 RLS 정책 7개 적용 완료(전부 `TO` 절 명시 → `roles={public}` 0건, `subscribers` SELECT 정책 0건, `contents`에 `using (true)` 미사용). **테이블 레벨 `grant`/`revoke`는 쓰지 않았다**(plan-checker BLOCKER로 제거, 커밋 `ee62402`) — 이 프로젝트는 Supabase 기본 권한이 `anon`에 부여된 상태(`has_table_privilege('anon','subscribers','select')=true`)이므로 차단은 전적으로 RLS가 담당. 재도입 시 D-04 개정 + 창부레터 `ADR-003` 동기화 선행 필수(bds 단독 추가 금지 — 저장소 간 드리프트) | 36-02 |
+| 2026-07-30 | RLS 검증은 `anon` 키 클라이언트 실측만이 증거라는 원칙 확립 — `scripts/verify-cbl-rls.ts`(admin/anon 클라이언트 분리 + positive control 3건 + `finally` cleanup). 10항목 전부 PASS. `TO` 절 누락 버그·권한 회수 없는 차단은 DDL·`has_table_privilege` 조회로는 판정 불가 | 36-02 |
+| 2026-07-30 | 별건 발견: 프로덕션 `ad_events` 정책이 이미 `{authenticated}` + `with check (auth.uid() IS NOT NULL)`로 수정돼 있다(로컬 `20260430000009_rls.sql:151-153`은 여전히 `TO` 절 없는 버그 버전). 저장소에 없는 remote 전용 마이그레이션(`20260728074553 realtrade_story_ads_admin` 추정)이 적용한 것 — `36-00-SUMMARY.md`의 "저장소에 없는 프로덕션 스키마 6건" 후속에 포함. `db reset` 시 버그 버전으로 회귀 | 36-02 |
 | 2026-07-10 | 부산 백필(34-06) 중 VACUUM FULL 효과 급감 확인(68MB→8MB→2MB 회수, 25% 진행 시점) — real data growth가 지배적 요인으로 판단. 사용자 확인 후 `complex_embeddings`(55MB, AI챗 fallback 전용·실사용 안 됨·5월 이후 stale) TRUNCATE로 45MB 즉시 회수, DB 448MB→403MB. Pro 전환은 계속 보류, 백필 재개 | 34-06 |
 
 ---

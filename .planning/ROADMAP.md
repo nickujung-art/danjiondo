@@ -1350,7 +1350,7 @@ Plans:
 - CBL-07: 회귀·보안 검증 — `anon` draft 차단 · `subscribers` SELECT 차단 · `changbuletter` insert 성공 · 기존 행 무영향
 
 **Depends on:** 없음 (Phase 33·34와 독립 트랙 — 건드리는 테이블이 겹치지 않음)
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans executed ✅ **Complete (2026-07-30)**
 
 **Wave 0** *(선행 — CHECK 제약 확장. 짧은 테이블 락 발생)*
 - [x] 36-00-PLAN.md — `site_id` CHECK 2건 + `profiles.role` CHECK 1건 확장 `[BLOCKING 마이그레이션]` (CBL-01, CBL-02)
@@ -1359,7 +1359,7 @@ Plans:
 - [x] 36-01-PLAN.md — 신규 테이블 5개 + 인덱스 생성 (CBL-03, CBL-04, CBL-05)
 
 **Wave 2** *(blocked on 36-01)*
-- [ ] 36-02-PLAN.md — RLS 정책 전체 + `anon`/`authenticated` 권한 검증 테스트 (CBL-06, CBL-07)
+- [x] 36-02-PLAN.md — RLS 정책 전체 + `anon`/`authenticated` 권한 검증 테스트 (CBL-06, CBL-07)
 
 **Cross-cutting constraints:**
 - **운영 중인 서비스 2개(danjiondo·realtrade-story)가 쓰는 프로덕션 DB**다. 신규 테이블 생성은 additive라 안전하나, CHECK 제약 변경은 `DROP CONSTRAINT` → `ADD CONSTRAINT`로 **짧은 ACCESS EXCLUSIVE 락**이 걸린다. 대상은 `favorites`·`ad_campaigns`·`profiles`로 전부 작은 테이블이라 실무상 무해하지만 계획에 락 구간을 명시할 것
@@ -1390,7 +1390,16 @@ Plans:
 Plans:
 - [x] 36-00-PLAN.md — `site_id`·`profiles.role` CHECK 제약 확장 (`20260730000001_cbl_site_id_role_check.sql`) `[BLOCKING db:push]` (CBL-01, CBL-02)
 - [x] 36-01-PLAN.md — 콘텐츠 스키마 5개 테이블 + 인덱스 4개 (`20260730000002_cbl_content_schema.sql`) + `src/types/database.ts` 재생성 `[BLOCKING db:push]` (CBL-03, CBL-04, CBL-05)
-- [ ] 36-02-PLAN.md — RLS 정책 7개 + 테이블 권한 (`20260730000003_cbl_content_rls.sql`) + `scripts/verify-cbl-rls.ts` anon 실측 검증 9항목 `[BLOCKING db:push]` (CBL-06, CBL-07)
+- [x] 36-02-PLAN.md — RLS 정책 7개 (테이블 권한 구문 없음 — D-04 그대로) (`20260730000003_cbl_content_rls.sql`) + `scripts/verify-cbl-rls.ts` anon 실측 검증 **10항목 전부 PASS** `[BLOCKING — execute_sql 승인]` (CBL-06, CBL-07)
+
+> ✅ **Phase 36 완료 (2026-07-30)**: 창부레터 0단계 0-1~0-3 전부 적용. 신규 5개 테이블
+> `relrowsecurity=true`, `pg_policies` 7행(`roles={public}` 0건), `subscribers` SELECT 정책 0건.
+> anon 실측 10항목 PASS(차단 7 + positive control 3), fixture 잔여 0건, `complexes` 4,285 불변.
+> 테이블 레벨 `grant`/`revoke`는 쓰지 않았다 — 차단은 전적으로 RLS가 담당하며, 재도입 시
+> D-04 개정 + 창부레터 `ADR-003` 동기화가 선행돼야 한다(bds 단독 추가 금지).
+> 🟡 별건 발견: 프로덕션 `ad_events` 정책은 이미 `{authenticated}`로 수정돼 있으나 로컬 파일은
+> 버그 버전 그대로다 — `36-00-SUMMARY.md`의 "저장소에 없는 프로덕션 스키마 6건" 후속에 포함.
+> 남은 창부레터 선행 작업: 0-4·0-5·0-6(사용자 결정 대기)·0-7 — 별도 Phase.
 
 ---
 ## Milestone Summary
