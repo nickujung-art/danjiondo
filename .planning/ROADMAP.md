@@ -1380,10 +1380,12 @@ Plans:
 
 **UI hint**: no (DB 전용 — 애플리케이션 코드 변경 없음)
 
+**Plans:** 3 plans / 3 waves (전부 `autonomous: false` — 프로덕션 DB `npm run db:push` 승인 필요)
+
 Plans:
-- [ ] 36-00-PLAN.md — `site_id`·`profiles.role` CHECK 제약 확장
-- [ ] 36-01-PLAN.md — 콘텐츠 스키마 5개 테이블 + 인덱스
-- [ ] 36-02-PLAN.md — RLS 정책 + 권한 검증
+- [ ] 36-00-PLAN.md — `site_id`·`profiles.role` CHECK 제약 확장 (`20260730000001_cbl_site_id_role_check.sql`) `[BLOCKING db:push]` (CBL-01, CBL-02)
+- [ ] 36-01-PLAN.md — 콘텐츠 스키마 5개 테이블 + 인덱스 4개 (`20260730000002_cbl_content_schema.sql`) + `src/types/database.ts` 재생성 `[BLOCKING db:push]` (CBL-03, CBL-04, CBL-05)
+- [ ] 36-02-PLAN.md — RLS 정책 7개 + 테이블 권한 (`20260730000003_cbl_content_rls.sql`) + `scripts/verify-cbl-rls.ts` anon 실측 검증 9항목 `[BLOCKING db:push]` (CBL-06, CBL-07)
 
 ---
 ## Milestone Summary
