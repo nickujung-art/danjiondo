@@ -1333,6 +1333,58 @@ Plans:
 - [ ] 34-08-PLAN.md — NAVER 쿠키 프리플라이트 + BBOX 튜닝 + diagnose
 - [ ] 34-09-PLAN.md — Supabase 용량 실측 + Pro 전환 결정
 - [ ] 34-10-PLAN.md — 네이버 매핑 실제 실행 + self-hosted runner PoC
+### Phase 36: 창부레터 DB 기반 구축 — 공유 Supabase 콘텐츠 스키마
+
+> Phase 35는 울산 지역 확장용으로 예약됨(Phase 34 참고). 이 Phase는 그와 무관한
+> 독립 트랙이므로 36번을 사용한다.
+
+**Goal:** 창부레터(콘텐츠 미디어 사이트, 별도 저장소 `C:\Users\jung\coding\changbuletter`)가 실데이터로 개발을 시작할 수 있도록, 공유 Supabase 프로젝트(`auoravdadyzvuoxunogh`)에 콘텐츠 스키마 5개 테이블 + RLS를 추가하고 `site_id`·`profiles.role` CHECK 제약을 확장한다. 설계는 `changbuletter/docs/adr/ADR-002`·`ADR-003`에서 이미 확정됐으므로 **즉석 설계 없이 DDL을 그대로 적용**한다.
+
+**Requirements:**
+- CBL-01: `site_id` CHECK 제약 확장 — `favorites_site_id_check`, `ad_campaigns_site_id_check` 2건에 `'changbuletter'` 추가
+- CBL-02: `profiles.role` CHECK 제약(`profiles_role_check`)에 `'cbl_editor'` 추가 — `admin` 재사용 금지(bds 어드민 콘솔 권한 노출)
+- CBL-03: `contents` 테이블 + 인덱스 3개(발행 피드 부분·`region_tags` GIN·`category` 부분)
+- CBL-04: `content_complexes` · `content_votes` · `content_bookmarks` 생성
+- CBL-05: `subscribers` 테이블 — 더블 옵트인 4상태 + `confirm_token` DB 기본값 + `requested_at`/`confirmed_at` 분리
+- CBL-06: 신규 테이블 5개 RLS — 모든 정책에 `TO` 절 명시, `contents` `using (true)` 금지, `subscribers` SELECT 정책 미생성
+- CBL-07: 회귀·보안 검증 — `anon` draft 차단 · `subscribers` SELECT 차단 · `changbuletter` insert 성공 · 기존 행 무영향
+
+**Depends on:** 없음 (Phase 33·34와 독립 트랙 — 건드리는 테이블이 겹치지 않음)
+**Plans:** 0/3 plans executed
+
+**Wave 0** *(선행 — CHECK 제약 확장. 짧은 테이블 락 발생)*
+- [ ] 36-00-PLAN.md — `site_id` CHECK 2건 + `profiles.role` CHECK 1건 확장 `[BLOCKING 마이그레이션]` (CBL-01, CBL-02)
+
+**Wave 1** *(blocked on 36-00 — `contents.site_id` 기본값과 RLS의 `cbl_editor` 참조가 Wave 0에 의존)*
+- [ ] 36-01-PLAN.md — 신규 테이블 5개 + 인덱스 생성 (CBL-03, CBL-04, CBL-05)
+
+**Wave 2** *(blocked on 36-01)*
+- [ ] 36-02-PLAN.md — RLS 정책 전체 + `anon`/`authenticated` 권한 검증 테스트 (CBL-06, CBL-07)
+
+**Cross-cutting constraints:**
+- **운영 중인 서비스 2개(danjiondo·realtrade-story)가 쓰는 프로덕션 DB**다. 신규 테이블 생성은 additive라 안전하나, CHECK 제약 변경은 `DROP CONSTRAINT` → `ADD CONSTRAINT`로 **짧은 ACCESS EXCLUSIVE 락**이 걸린다. 대상은 `favorites`·`ad_campaigns`·`profiles`로 전부 작은 테이블이라 실무상 무해하지만 계획에 락 구간을 명시할 것
+- **모든 RLS 정책에 `TO` 절 명시 필수.** 저장소 유일한 anon-insert 선례 `20260430000009_rls.sql:151-153`(`ad_events`)는 `TO` 절 누락으로 이름과 달리 `anon`에도 적용되는 **버그**다 — 베끼지 말 것 (그 버그 자체 수정은 이 Phase 범위 밖)
+- `contents` 공개 읽기는 `status='published' AND published_at <= now()`. 기존 저장소 관행인 `using (true)` + 앱 레이어 필터는 **채택하지 않는다**(draft 유출이 앱 코드 실수 하나에 달림)
+- `subscribers`에 **SELECT 정책을 만들지 않는다** — 이메일 목록 덤프 및 존재 여부 오라클 방지. 구독 중복 판정은 창부레터 Server Action(`service_role`)에서만
+- DDL은 `changbuletter/docs/adr/ADR-002`·`ADR-003`에 전문이 있다. **변경하지 말고 그대로 적용** — 이 스키마는 2차 전수감사에서 확정됐고 `.planning/vision/BRIEF.md` §25-1·§25-6이 원본
+- 0-4(카드뉴스 슬라이드 데이터 저장) · 0-5(`rank_type='price_change'` 배치) · 0-6(카드 템플릿 리브랜딩 + 비율 1080→1350) · 0-7(`refresh_complex_price_stats()` 소유권 이전)은 **이 Phase 범위 밖** — 별도 Phase
+- 애플리케이션 코드 변경 없음. bds UI·API·크론에 손대지 않는다
+
+**Success Criteria:**
+1. `site_id='changbuletter'` insert가 `favorites`·`ad_campaigns`에서 성공하고, 기존 `danjiondo`·`realtrade-story` 행은 영향 없음
+2. `profiles.role='cbl_editor'` 설정이 성공하고, 해당 role로는 bds 어드민 콘솔(`/admin/*`)에 진입 불가
+3. 신규 테이블 5개 + 인덱스가 존재하고 `ADR-002`의 DDL과 일치
+4. `anon` 역할로 `draft`·`scheduled` 상태 `contents` 조회가 **0행**이고, `subscribers` SELECT가 거부되며, `subscribers` INSERT는 `status='pending'`만 통과
+5. `npm run lint`(ESLint + tsc) 통과 — 생성된 DB 타입(`src/types/database.ts`) 갱신 포함
+6. 기존 danjiondo·realtrade-story 기능 회귀 없음 (기존 테스트 스위트 통과)
+
+**UI hint**: no (DB 전용 — 애플리케이션 코드 변경 없음)
+
+Plans:
+- [ ] 36-00-PLAN.md — `site_id`·`profiles.role` CHECK 제약 확장
+- [ ] 36-01-PLAN.md — 콘텐츠 스키마 5개 테이블 + 인덱스
+- [ ] 36-02-PLAN.md — RLS 정책 + 권한 검증
+
 ---
 ## Milestone Summary
 

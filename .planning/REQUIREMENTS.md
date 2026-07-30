@@ -133,6 +133,22 @@
 
 ---
 
+## v9 Requirements (창부레터 DB 기반 — 공유 Supabase 콘텐츠 스키마)
+
+> 설계 확정 문서: `changbuletter/docs/adr/ADR-002-content-schema.md`(DDL 전문),
+> `ADR-003-rls-and-data-security.md`(RLS 전문). 원본은 `.planning/vision/BRIEF.md` §25-1·§25-6.
+> **즉석 설계 금지** — ADR의 DDL을 그대로 적용한다.
+
+- [ ] **CBL-01**: `site_id` CHECK 제약에 `'changbuletter'` 추가. 현재 `20260715000001_realtrade_story_site_scoping.sql`이 `check (site_id in ('danjiondo','realtrade-story'))`로 제한해 창부레터 insert가 제약 위반으로 실패한다. 대상 테이블 전수 확인 후 일괄 확장.
+- [ ] **CBL-02**: `profiles.role` CHECK 제약에 `'cbl_editor'` 추가. **`admin`을 재사용하지 않는다** — `src/app/admin/layout.tsx:25`가 `role in ('admin','superadmin')`으로 게이트하므로 편집자에게 `admin`을 주면 bds 어드민 콘솔 전체 권한(광고 승인·회원 관리·GPS 승인·공인중개사 관리)이 열린다.
+- [ ] **CBL-03**: `contents` 테이블 생성 — `category`+`region_tags`(text[]) 분리, `status`(draft/scheduled/published)+`scheduled_at`, `cafe_post_url`, `is_featured`, `excerpt`/`read_minutes`/`cover_image`, VS 투표 3필드. 인덱스 3개(발행 피드 부분 인덱스, `region_tags` GIN, `category` 부분 인덱스).
+- [ ] **CBL-04**: `content_complexes`(콘텐츠↔단지 다대다) · `content_votes`(VS 투표) · `content_bookmarks`(콘텐츠 북마크) 생성. `favorites`는 `complex_id` 기반이라 콘텐츠 북마크에 재사용 불가.
+- [ ] **CBL-05**: `subscribers` 테이블 생성 — 더블 옵트인 4상태(pending/confirmed/unsubscribed/bounced), `confirm_token` DB 기본값(`encode(gen_random_bytes(24),'hex')`), `requested_at`/`confirmed_at` 분리(후자가 정보통신망법 수신동의의 법적 근거), `unique (site_id, email)`.
+- [ ] **CBL-06**: 신규 테이블 5개 RLS 정책. **모든 정책에 `TO` 절 명시 필수** — 기존 선례 `20260430000009_rls.sql:151-153`(`ad_events`)는 `TO` 절 누락 버그라 이름과 달리 `anon`에도 적용된다. `contents`는 `using (true)` 금지, `status='published' AND published_at <= now()`로 draft·예약발행을 DB 레벨 차단. **`subscribers`에 SELECT 정책을 만들지 않는다**(이메일 목록 덤프 + 존재 여부 오라클 방지).
+- [ ] **CBL-07**: 회귀·보안 검증 — `anon`으로 draft·scheduled `contents` 조회 불가, `subscribers` SELECT 불가·INSERT는 `status='pending'`만 가능, `site_id='changbuletter'` insert 성공, `role='cbl_editor'` 설정 성공, CHECK 제약 변경이 기존 danjiondo·realtrade-story 행에 영향 없음.
+
+---
+
 ## Out of Scope
 
 - NextAuth.js 전환 — Supabase Auth로 이미 완전 구현됨. 전환 시 이득 없이 재작성 비용만 발생
