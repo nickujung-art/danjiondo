@@ -1,6 +1,30 @@
 # 창부레터 기획안 — 논의 요약
 
-> 버전 v2.0 · 2026-07-29 최종 갱신
+> ## ✅ 핸드오프 완료 (2026-07-30)
+>
+> 이 문서는 **논의 이력·폐기된 대안·감사 근거를 담은 원본**입니다. 실제 개발은
+> 별도 저장소로 핸드오프됐습니다.
+>
+> **→ `C:\Users\jung\coding\changbuletter`** (git 초기화 완료, 커밋 `ec57a19`)
+>
+> | 이 문서 | 핸드오프 저장소 |
+> |---|---|
+> | §1~§10, §14~§22, §24 | `docs/prd/PRD-001-changbuletter.md` |
+> | §11·§12·§25-5 | `docs/adr/ADR-001-repo-and-backend-topology.md` |
+> | §25-1 | `docs/adr/ADR-002-content-schema.md` |
+> | §25-6 | `docs/adr/ADR-003-rls-and-data-security.md` |
+> | §23-1·§23-2·§25-2·§25-3 | `docs/adr/ADR-004-cardnews-viewer-and-branding.md` |
+> | §23-4·§25-4 | `docs/adr/ADR-005-ranking-data-source.md` |
+> | §18·§20 | `docs/adr/ADR-006-community-and-newsletter.md` |
+> | §13·§23-4·§25-0 | `docs/specs/SPEC-001-screen-data-sources.md` |
+> | §21 0단계·§23-7·§25-7 | `docs/specs/SPEC-002-prerequisites.md` |
+> | §21 | `docs/specs/SPEC-003-mvp-scope.md` |
+> | `design-handoff/` | `design/` (복사본) |
+>
+> **bds 저장소에 남은 작업은 §25-7의 0-1~0-7** (마이그레이션·슬라이드 저장·등락률
+> 배치·리브랜딩). 이건 GSD Phase 단위 작업이며 이 저장소에서 수행합니다.
+
+> 버전 v2.1 · 2026-07-30 최종 갱신
 > 슬라이드 원본: `.planning/vision/01-overview.html` (2026-06 작성 — §11 이후 결정과
 > 어긋나는 부분이 있으니 이 문서를 우선함)
 > 디자인 핸드오프: `.planning/vision/design-handoff/`
