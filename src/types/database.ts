@@ -886,6 +886,163 @@ export type Database = {
           },
         ]
       }
+      content_bookmarks: {
+        Row: {
+          content_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          content_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          content_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_bookmarks_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "contents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_complexes: {
+        Row: {
+          complex_id: string
+          content_id: string
+        }
+        Insert: {
+          complex_id: string
+          content_id: string
+        }
+        Update: {
+          complex_id?: string
+          content_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_complexes_complex_id_fkey"
+            columns: ["complex_id"]
+            isOneToOne: false
+            referencedRelation: "complexes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_complexes_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "contents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_votes: {
+        Row: {
+          choice: string
+          content_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          choice: string
+          content_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          choice?: string
+          content_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_votes_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "contents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contents: {
+        Row: {
+          body: Json | null
+          cafe_post_url: string | null
+          category: string
+          cover_image: string | null
+          created_at: string
+          excerpt: string | null
+          id: string
+          is_featured: boolean
+          published_at: string | null
+          read_minutes: number | null
+          region_tags: string[]
+          scheduled_at: string | null
+          site_id: string
+          slug: string
+          status: string
+          title: string
+          type: string
+          updated_at: string
+          vote_left: string | null
+          vote_question: string | null
+          vote_right: string | null
+        }
+        Insert: {
+          body?: Json | null
+          cafe_post_url?: string | null
+          category: string
+          cover_image?: string | null
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          is_featured?: boolean
+          published_at?: string | null
+          read_minutes?: number | null
+          region_tags?: string[]
+          scheduled_at?: string | null
+          site_id?: string
+          slug: string
+          status?: string
+          title: string
+          type: string
+          updated_at?: string
+          vote_left?: string | null
+          vote_question?: string | null
+          vote_right?: string | null
+        }
+        Update: {
+          body?: Json | null
+          cafe_post_url?: string | null
+          category?: string
+          cover_image?: string | null
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          is_featured?: boolean
+          published_at?: string | null
+          read_minutes?: number | null
+          region_tags?: string[]
+          scheduled_at?: string | null
+          site_id?: string
+          slug?: string
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+          vote_left?: string | null
+          vote_question?: string | null
+          vote_right?: string | null
+        }
+        Relationships: []
+      }
       data_sources: {
         Row: {
           cadence: string
@@ -2457,6 +2614,27 @@ export type Database = {
         }
         Relationships: []
       }
+      site_admin_roles: {
+        Row: {
+          created_at: string
+          role: string
+          site_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          role?: string
+          site_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          role?: string
+          site_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       spatial_ref_sys: {
         Row: {
           auth_name: string | null
@@ -2478,6 +2656,42 @@ export type Database = {
           proj4text?: string | null
           srid?: number
           srtext?: string | null
+        }
+        Relationships: []
+      }
+      subscribers: {
+        Row: {
+          confirm_token: string
+          confirmed_at: string | null
+          email: string
+          id: string
+          requested_at: string
+          site_id: string
+          source: string | null
+          status: string
+          unsubscribed_at: string | null
+        }
+        Insert: {
+          confirm_token?: string
+          confirmed_at?: string | null
+          email: string
+          id?: string
+          requested_at?: string
+          site_id?: string
+          source?: string | null
+          status?: string
+          unsubscribed_at?: string | null
+        }
+        Update: {
+          confirm_token?: string
+          confirmed_at?: string | null
+          email?: string
+          id?: string
+          requested_at?: string
+          site_id?: string
+          source?: string | null
+          status?: string
+          unsubscribed_at?: string | null
         }
         Relationships: []
       }
