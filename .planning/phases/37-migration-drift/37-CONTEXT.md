@@ -312,8 +312,22 @@ npx supabase db push --dry-run          # 에러 없이 통과, 적용 대상 �
 | `complex_area_types` | 3,472행 |
 | 신규 창부레터 테이블 5개 | RLS on, 정책 7개, 전부 0행 |
 
-**remote 전용 18건 / local 전용 4건** (`20260618000001`·`20260618000002`·`20260619000002`
-중복 파일 3개 + Phase 36 이후 없음). Phase 37 종료 시 양쪽 0건.
+**remote 전용 18건 / local 전용 3건** — 오케스트레이터가 `migration list --linked`로 실측 확인
+(2026-07-30, Phase 36 완료 후).
+
+local 전용 3건은 **전부 중복 타임스탬프 쌍의 두 번째 파일**이다. 정체 미확인 항목은 없다:
+
+| local 전용 | 정체 |
+|---|---|
+| `20260618000001` | 중복 쌍 — `_complex_area_types.sql` / `_fix_avg_sale_per_pyeong_formula.sql` |
+| `20260618000002` | 중복 쌍 — `_area_type_chart_rpc.sql` / `_fix_prediction_model_priority.sql` |
+| `20260619000002` | 중복 쌍 — `_phase28_subject_v2.sql` / `_recommend_hagwon_candidates_rpc.sql` |
+
+Phase 36의 `20260730000001`·`2`·`3`은 전부 local==remote 매칭 상태다(신규 drift 없음 재확인).
+
+→ **DRIFT-04(리네이밍 3쌍)만 처리하면 local 전용이 0건이 된다.** 추가 조사 대상 없음.
+
+Phase 37 종료 시 양쪽 0건.
 
 </baseline>
 
