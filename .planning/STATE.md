@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
-status: Executing Phase 34
-last_updated: "2026-07-09T05:07:37.426Z"
+status: Executing Phase 36
+last_updated: "2026-07-30T07:20:00.000Z"
 progress:
-  total_phases: 31
+  total_phases: 32
   completed_phases: 5
-  total_plans: 43
-  completed_plans: 33
-  percent: 77
+  total_plans: 46
+  completed_plans: 35
+  percent: 76
 ---
 
 # Project State — 단지온도
@@ -19,7 +19,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-06)
 
 **Core value:** 창원·김해 실수요자가 "이 단지 사도 되는지" 데이터와 이웃 의견으로 30분 안에 결정 짓게 한다.
-**Current focus:** Phase 34 — 전국 DB 확장 2단계 — 부산광역시 지역 확장 기반 구축
+**Current focus:** Phase 36 — 창부레터 DB 기반 구축 (Wave 1 완료, Wave 2 = 36-02 RLS 즉시 후속 필요)
 
 ## Current Phase
 
@@ -167,6 +167,7 @@ Waves:
 | 32 | 카드뉴스 어드민 대시보드 | ✅ Complete |
 | 33 | 전국 DB 확장 1단계 — 경남 전체 지역 확장 기반 구축 | 🔄 In Progress (10/11 plans — 33-08 용량 결정 체크포인트만 남음) |
 | 34 | 전국 DB 확장 2단계 — 부산광역시 지역 확장 기반 구축 | 📋 Planned (0/11 plans executed, 계획 완료·검증 통과) |
+| 36 | 창부레터 DB 기반 구축 — 공유 Supabase 콘텐츠 스키마 | 🔄 In Progress (2/3 plans — 36-00·36-01 완료, 36-02 RLS 남음) |
 
 ---
 
@@ -292,6 +293,8 @@ Key notes: MOLIT_API_KEY (기존 data.go.kr 키) 재사용. B552555 청약홈 �
 | 2026-07-08 | Supabase Free tier DB 488MB/500MB 도달 확인 (transactions 271MB) — Pro 전환 대신 VACUUM FULL 우선 실행, transactions 271MB→202MB, DB 전체 488MB→420MB. Pro 전환은 보류, 재모니터링으로 대응 | 33-08 |
 | 2026-07-08 | Phase 34(부산) 대상범위·Pro전환타이밍·네이버크롤러·중복행 4개 영역 논의 완료 — 부산 우선 단독 진행(울산 후속 phase), 33-08과 동일하게 백필후 실측 결정 반복(단 450MB 경고 태스크 추가), 네이버 매핑 이번 phase 포함(로컬 프로세스 불안정 근본원인 재조사, 실패시 restart-loop 폴백), 111쌍 중복행 병합은 defer(탐지로그만 추가) | 34-db-2 |
 | 2026-07-08 | Phase 34 계획 완료 — 11 plans/5 waves. plan-checker 1차 검증에서 블로커 발견(34-03이 KAPT API에 없는 coordX/coordY로 dup-check를 시딩 루프에 배선 — TS2339 컴파일 에러 + null-guard로 인해 항상 0건 출력되는 논리 결함): 지오코딩 이후(34-05)로 실제 탐지 로직 이동, 34-03은 RPC+헬퍼만 남기는 것으로 수정 후 재검증 PASS(경고 2건은 직접 수정 — grep 대상 오류, 부산 미분양 defer 명시 누락) | 34-db-2 |
+| 2026-07-30 | 마이그레이션 원장 drift로 `npm run db:push` 사용 불가 확인 → 적용 경로를 MCP `execute_sql`(단일 트랜잭션) + `npx supabase migration repair --status applied <파일과 같은 버전>` 조합으로 변경. MCP `apply_migration`은 자기 타임스탬프를 버전으로 기록해 drift를 만들므로 금지. 별건: 저장소에 파일이 없는 프로덕션 스키마 6건 발견(36-00-SUMMARY.md 참조) | 36-00, 36-01 |
+| 2026-07-30 | 창부레터 콘텐츠 스키마 5개 테이블 + 인덱스 4개 프로덕션 적용 완료(D-03 DDL 전 항목 일치, `complexes` 4,285행 무영향). `src/types/database.ts` CLI 재생성 4,180→4,394행. **RLS는 미적용 상태(relrowsecurity=false 5건)로 36-02 즉시 후속 실행 필요** | 36-01 |
 | 2026-07-10 | 부산 백필(34-06) 중 VACUUM FULL 효과 급감 확인(68MB→8MB→2MB 회수, 25% 진행 시점) — real data growth가 지배적 요인으로 판단. 사용자 확인 후 `complex_embeddings`(55MB, AI챗 fallback 전용·실사용 안 됨·5월 이후 stale) TRUNCATE로 45MB 즉시 회수, DB 448MB→403MB. Pro 전환은 계속 보류, 백필 재개 | 34-06 |
 
 ---

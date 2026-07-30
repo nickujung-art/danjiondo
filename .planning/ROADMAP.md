@@ -1350,13 +1350,13 @@ Plans:
 - CBL-07: 회귀·보안 검증 — `anon` draft 차단 · `subscribers` SELECT 차단 · `changbuletter` insert 성공 · 기존 행 무영향
 
 **Depends on:** 없음 (Phase 33·34와 독립 트랙 — 건드리는 테이블이 겹치지 않음)
-**Plans:** 0/3 plans executed
+**Plans:** 2/3 plans executed
 
 **Wave 0** *(선행 — CHECK 제약 확장. 짧은 테이블 락 발생)*
-- [ ] 36-00-PLAN.md — `site_id` CHECK 2건 + `profiles.role` CHECK 1건 확장 `[BLOCKING 마이그레이션]` (CBL-01, CBL-02)
+- [x] 36-00-PLAN.md — `site_id` CHECK 2건 + `profiles.role` CHECK 1건 확장 `[BLOCKING 마이그레이션]` (CBL-01, CBL-02)
 
 **Wave 1** *(blocked on 36-00 — `contents.site_id` 기본값과 RLS의 `cbl_editor` 참조가 Wave 0에 의존)*
-- [ ] 36-01-PLAN.md — 신규 테이블 5개 + 인덱스 생성 (CBL-03, CBL-04, CBL-05)
+- [x] 36-01-PLAN.md — 신규 테이블 5개 + 인덱스 생성 (CBL-03, CBL-04, CBL-05)
 
 **Wave 2** *(blocked on 36-01)*
 - [ ] 36-02-PLAN.md — RLS 정책 전체 + `anon`/`authenticated` 권한 검증 테스트 (CBL-06, CBL-07)
@@ -1380,11 +1380,16 @@ Plans:
 
 **UI hint**: no (DB 전용 — 애플리케이션 코드 변경 없음)
 
-**Plans:** 3 plans / 3 waves (전부 `autonomous: false` — 프로덕션 DB `npm run db:push` 승인 필요)
+**Plans:** 3 plans / 3 waves (전부 `autonomous: false` — 프로덕션 DB 적용 승인 필요)
+
+> ⚠️ **적용 경로 정정**: 마이그레이션 원장 drift로 `npm run db:push`가 실패한다
+> (`36-00-SUMMARY.md` 참조). 실제 적용은 MCP `execute_sql` 단일 트랜잭션 +
+> `npx supabase migration repair --status applied <파일과 같은 버전>` 조합으로 수행한다.
+> MCP `apply_migration`은 자기 타임스탬프를 버전으로 기록해 drift를 만들므로 금지.
 
 Plans:
-- [ ] 36-00-PLAN.md — `site_id`·`profiles.role` CHECK 제약 확장 (`20260730000001_cbl_site_id_role_check.sql`) `[BLOCKING db:push]` (CBL-01, CBL-02)
-- [ ] 36-01-PLAN.md — 콘텐츠 스키마 5개 테이블 + 인덱스 4개 (`20260730000002_cbl_content_schema.sql`) + `src/types/database.ts` 재생성 `[BLOCKING db:push]` (CBL-03, CBL-04, CBL-05)
+- [x] 36-00-PLAN.md — `site_id`·`profiles.role` CHECK 제약 확장 (`20260730000001_cbl_site_id_role_check.sql`) `[BLOCKING db:push]` (CBL-01, CBL-02)
+- [x] 36-01-PLAN.md — 콘텐츠 스키마 5개 테이블 + 인덱스 4개 (`20260730000002_cbl_content_schema.sql`) + `src/types/database.ts` 재생성 `[BLOCKING db:push]` (CBL-03, CBL-04, CBL-05)
 - [ ] 36-02-PLAN.md — RLS 정책 7개 + 테이블 권한 (`20260730000003_cbl_content_rls.sql`) + `scripts/verify-cbl-rls.ts` anon 실측 검증 9항목 `[BLOCKING db:push]` (CBL-06, CBL-07)
 
 ---
