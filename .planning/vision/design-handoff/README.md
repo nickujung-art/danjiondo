@@ -20,6 +20,27 @@
 >
 > 아래 원본 문서는 위 표의 항목을 제외하고는 그대로 유효합니다(디자인 토큰·타이포·모션·카피 톤 등).
 
+> ## 🔴 2026-07-30 2차 전수감사 — 착수 전 반드시 읽을 것
+>
+> 위 07-29 수정 사항 자체에 **사실이 아닌 전제 3건**이 섞여 있었고, 코드로 확인해
+> 정정했습니다. 자세한 근거와 최종 결정은 `../BRIEF.md` **§25**에 있습니다.
+>
+> | # | 잘못된 전제 (07-29 문서) | 확인된 사실 |
+> |---|---|---|
+> | 1 | 카드뉴스는 "이미 자동화됨" — `card-news/`를 그대로 소비하면 됨 | PNG 발행만 자동화. **슬라이드 텍스트가 DB에 저장되지 않음** → 웹 뷰어가 소비할 데이터가 없다. bds 선행 작업 필요 |
+> | 2 | "실거래이야기가 이미 쓰는 가격 계산 로직을 재사용" | `avg_sale_per_pyeong`·`price_change_30d`는 **RPC가 아니라 컬럼**이고, 실거래이야기는 안 쓰며, **값의 의미가 디자인 요구와 다름**(단지 전체 평당가 / 30일 롤링) |
+> | 3 | `data.js`가 `cat`/`tag`를 분리해 쓰므로 지역 추천이 성립 | `tag` 값은 `분양`·`재건축`·`랭킹` — **전부 주제이고 지역 태그는 하나도 없음**. `region_tags` 신규 필드 필요 |
+>
+> **추가로 발견된 착수 차단 항목**
+>
+> | 항목 | 내용 |
+> |---|---|
+> | `riseRank`·`avgRise`·`hotArea` | 홈 히어로의 핵심 지표 3개에 **백킹 집계가 전무**. `complex_rankings`의 `rank_type` CHECK는 `('high_price','volume','price_per_pyeong','interest')` 뿐 |
+> | 카드 비율 분기 | 두 템플릿 코드베이스의 비율이 **1:1 vs 4:5로 불일치**, 문서가 언급한 **9:16은 존재하지 않음** → **4:5 단일 통일** 확정 |
+> | `site_id` DB 제약 | `check (site_id in ('danjiondo','realtrade-story'))` — `'changbuletter'` insert는 **제약 위반으로 실패**. bds 마이그레이션 선행 |
+> | 편집자 권한 | 공유 `profiles`에 `role='admin'`을 주면 **bds 어드민 콘솔 전체 권한이 즉시 열림**(`src/app/admin/layout.tsx:25`) → **`role='cbl_editor'` 신규 값** 사용 |
+> | `contents` 스키마 | 본문 §DB 구조는 **초안**이며 `status`·`category`·`region_tags`·`excerpt` 등이 없다. **`../BRIEF.md` §25-1의 최종 스키마를 사용할 것** |
+
 ## Overview
 
 창원·김해 지역 부동산 **로컬 미디어** 서비스의 프론트엔드 리디자인 목업입니다. 네이버카페 "창원부동산이야기"(20만 회원)를 기반으로, 콘텐츠 미디어 + 부동산 데이터 사이트를 결합한 형태입니다.
@@ -416,21 +437,48 @@ font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFon
 
 | 키 | 내용 | 실 데이터 소스 |
 |----|------|----------------|
-| `weekly` | 주차, 평균 상승률, 거래량, 최고 단지/가격 | bds/실거래이야기와 공유하는 Supabase의 `complexes`/`transactions` 직접 조회 (2026-07-29 수정 — 창부레터 자체 집계 아님) |
-| `volumeRank` | 거래량 TOP 5 (단지명, 지역, 건수, 가격, 변동률) | 동일 — 공유 Supabase 직접 조회 |
-| `riseRank` | 상승률 TOP 5 | 동일 |
-| `features` | 기획기사 (제목, 요약, 날짜, 읽는 시간, 이미지, 관련 단지) | CMS |
-| `side` | 사이드 아이템 (분양/재건축/랭킹) | CMS |
-| `cardnews` | 카드뉴스 슬라이드 (키커, 대형 숫자, 라벨, 서브) | 자동 생성 파이프라인 — `bds` 저장소의 `card-news/`(`fetch-data.js`+`templates.js`, Puppeteer PNG 캡처 단계는 건너뜀). 이미 자동화됨 |
+> ⚠️ **2026-07-30 전수감사 정정** — 아래 표의 이전 버전은 "이미 자동화됨",
+> "기존 로직 재사용" 등 **사실이 아닌 전제**를 담고 있었다. 현재 표가 확인된
+> 실제 상태다. `선행 필요` 표시가 붙은 항목은 **창부레터 구현 전에 bds 쪽
+> 작업이 끝나야** 화면을 채울 수 있다.
+
+| 키 | 내용 | 실 데이터 소스 |
+|----|------|----------------|
+| `weekly.volume` | 이번 주 거래건수 | 공유 Supabase `transactions` 직접 집계. **`cancel_date IS NULL AND superseded_by IS NULL` 필수** |
+| `weekly.avgRise` / `weekly.hotArea` | 평균 상승률 / 가장 뜨거운 동네 | ❌ **백킹 집계 없음 — 선행 필요.** `complex_rankings.rank_type`에 `'price_change'` 추가 + 배치 계산이 선행 조건 |
+| `volumeRank` | 거래량 TOP 5 (단지명, 지역, 건수, 가격, 변동률) | `complex_rankings` (`rank_type='volume'`) — 기존 배치가 채움. 단 행의 `chg`(변동률)는 위 `price_change`에 의존 |
+| `riseRank` | 상승률 TOP 5 | ❌ **백킹 집계 없음 — 선행 필요.** 현행 `rank_type` CHECK 제약은 `('high_price','volume','price_per_pyeong','interest')` 뿐 (`20260507000001_complex_rankings.sql:7`) |
+| `features` | 기획기사 (제목, 요약, 날짜, 읽는 시간, 이미지, 관련 단지) | CMS (`contents` 테이블 — BRIEF.md §25-1 최종 스키마) |
+| `side` | 사이드 아이템 (분양/재건축/랭킹) | CMS. `tag` 값(분양·재건축·랭킹)은 **주제**이고 지역이 아님 — 지역 추천은 별도 `region_tags` 필드 사용 |
+| `cardnews` | 카드뉴스 슬라이드 (키커, 대형 숫자, 라벨, 서브) | ❌ **슬라이드 데이터가 DB에 없음 — 선행 필요.** `card-news/`는 PNG를 만들어 배포할 뿐 슬라이드 텍스트를 저장하지 않는다. bds 파이프라인에 "슬라이드 데이터를 Supabase에 저장" 단계 추가가 선행 조건 |
 | `nav` | 메뉴 4개(2026-07-29 수정, 원래 6개) | 정적 |
 
-카드뉴스는 **주 1회 자동 생성 → 인스타그램 + 네이버카페 배포**가 이미 운영 중입니다. 웹 뷰어는 같은 데이터를 소비해야 하며, 이미지가 아닌 DOM으로 렌더해 SEO·접근성을 확보하는 것이 목표입니다.
+카드뉴스 **PNG 발행**(주 1회 자동 생성 → 인스타그램 + 네이버카페 배포)은 운영 중이지만,
+**웹 뷰어가 소비할 슬라이드 데이터는 아직 어디에도 저장되지 않는다.** 웹 뷰어는 이미지가
+아닌 DOM으로 렌더해 SEO·접근성을 확보하는 것이 목표이므로, 슬라이드의 구조화된
+텍스트(kicker/big/label/sub)가 DB에 남아야 한다.
 
-**"관련 단지" 가격 미리보기 데이터 소스** (2026-07-29 추가): 창부레터·bds·실거래이야기가
+**카드 비율** (2026-07-30 확정): **1080×1350 (4:5) 단일 통일.** 현재 저장소에는
+`card-news/scripts/templates.js`가 4:5, `src/lib/cardnews/card-templates.ts`가
+**1:1(1080×1080)** 로 갈라져 있고 9:16 템플릿은 존재하지 않는다. 어드민 빌더 CSS를
+1350으로 맞추고, 9:16(인스타 스토리)은 MVP 범위에서 제외한다.
+
+**"관련 단지" 가격 미리보기 데이터 소스** (2026-07-30 정정): 창부레터·bds·실거래이야기가
 같은 Supabase 프로젝트를 공유하므로 `complex_id`가 세 프로젝트에서 동일한 값이다.
-별도 HTTP API 계약 없이 창부레터가 `complexes`/`transactions`를 직접 조회해 최신가·
-변동률을 가져오면 된다(`cbl-article.jsx`의 `RelatedComplex` 참고). 실거래이야기가
-이미 쓰는 가격 계산 로직(`avg_sale_per_pyeong`, `price_change_30d` 등)을 재사용할 것.
+별도 HTTP API 계약 없이 창부레터가 `complexes`/`transactions`를 직접 조회하면 된다
+(`cbl-article.jsx`의 `RelatedComplex` 참고).
+
+단, **기존 컬럼을 그대로 재사용할 수 없다**:
+- `avg_sale_per_pyeong` / `price_change_30d`는 **RPC가 아니라 `complexes`의 컬럼**이며
+  (`20260516000001_phase11_map_columns.sql`), 배치 함수 `refresh_complex_price_stats()`가 채운다
+- 실거래이야기는 이 컬럼들을 **쓰고 있지 않다** (해당 저장소 코드는 삭제 후 재시작 중)
+- **값의 의미가 다르다**: `avg_sale_per_pyeong`은 단지 전체 평당가(평형별 최신 실거래가가
+  아님), `price_change_30d`는 30일 롤링(3개월이 아님)
+- 디자인이 요구하는 **평형별 최신가는 `transactions` × `complex_area_types` 신규 쿼리**이며,
+  **`cancel_date IS NULL AND superseded_by IS NULL`을 반드시 포함**해야 한다
+  (취소·정정된 거래가 현재가로 노출되는 사고 방지 — bds CLAUDE.md 필수 규칙)
+- **숨은 결합**: 이 컬럼들은 danjiondo Vercel 배포의 일배치가 갱신한다. danjiondo를
+  sunset하면 창부레터 홈 히어로·랭킹이 조용히 얼어붙는다 — 소유권 이전 필요
 
 ## Assets
 

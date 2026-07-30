@@ -193,8 +193,13 @@ depth↓: 지도 (메인 네비에서 빠짐)
 
 ### DB 구조
 
-> ⚠️ **이 스키마는 §23-6에서 확장됨** — 아래는 07-01 초안이고, 이후 결정(임시저장·
-> 예약발행·지역 추천·북마크·구독자)을 담지 못한다. **현행 스키마는 §23-6 참고.**
+> 🔴 **이 블록은 폐기된 07-01 초안이다. 구현에 쓰지 말 것.**
+>
+> 이후 결정(임시저장·예약발행·지역 추천·북마크·구독자·카페 링크·피드 배치)을 담지
+> 못한다. §23-6은 **추가분만 나열한 델타 표**여서 그것만 봐도 테이블을 만들 수 없다
+> (`slug`·`body`·`type`이 빠짐).
+>
+> **→ 유일한 유효 스키마는 §25-1 (2026-07-30 확정)이다.**
 
 ```
 contents          — id, slug, type(card_news|article), title, tag, body(JSON), published_at
@@ -207,9 +212,13 @@ content_votes     — content_id, user_id, choice(left|right)
 
 | 항목 | 결정 |
 |------|------|
-| 랭킹 인포그래픽 타입 | **`card_news` 타입에 통합**, `tag="랭킹"`으로 구분 — 둘 다 자동생성·멀티슬라이드
-  구조가 동일해 HTML 슬라이드뷰어 컴포넌트를 그대로 재사용. 인스타 스토리용 9:16
-  비율은 콘텐츠 타입이 아니라 템플릿 선택(레이아웃)으로만 분기 |
+| 랭킹 인포그래픽 타입 | **`card_news` 타입에 통합** — 둘 다 자동생성·멀티슬라이드
+  구조가 동일해 HTML 슬라이드뷰어 컴포넌트를 그대로 재사용.
+  🔴 **2026-07-30 정정 2건**: (1) 구분자는 `tag="랭킹"`이 아니라 **`category='랭킹'`**
+  이다 — §23-6이 `tag`를 `category`+`region_tags`로 분리했고 두 결정이 같은 날짜라
+  날짜 기준으로는 우선순위를 가릴 수 없어 여기서 명시적으로 §25-1을 따른다.
+  (2) **9:16 템플릿은 존재하지 않는다** — 저장소의 두 템플릿 코드베이스는 1:1과 4:5뿐.
+  §25-2에서 **4:5 단일 통일**로 확정했으므로 "9:16은 템플릿 선택으로 분기" 서술은 폐기 |
 | 공유 기능 | **카카오톡 공유 + 링크 복사 버튼 둘 다 추가** (Kakao SDK + clipboard API) —
   바이럴 성장 전략과 직결되는 저비용 고효과 기능 |
 | OG 이미지 | **카드뉴스는 첫 슬라이드를 OG 이미지로 사용.** 기획기사(article)는 첫
@@ -902,3 +911,246 @@ check (site_id in ('danjiondo', 'realtrade-story'))
   간주 |
 | **§21 로드맵** | 지역가이드를 "나중에"로 미룬 결정(#8)의 **진짜 이유가 이것**임을
   명시 — 개발 난이도가 아니라 콘텐츠 생산 여력 문제 |
+
+---
+
+## 25. 2차 전수감사 정정 및 최종 확정 (2026-07-30)
+
+> 핸드오프 문서 작성 직전 기획안 전체를 코드와 대조해 재감사한 결과다. §23(1차 감사)
+> 자체에도 사실 오류가 있었고, §10과 §23-6이 **같은 날짜로 서로 충돌**해 문서만으로는
+> 우선순위를 가릴 수 없는 상태였다.
+>
+> **이 섹션이 §10·§23-6의 스키마·비율 관련 서술을 모두 대체한다.** 충돌 시 §25가 우선.
+
+### 25-0. 확인된 오류 요약
+
+| # | 위치 | 잘못된 서술 | 확인된 사실 (코드 근거) |
+|---|------|------------|----------------------|
+| 1 | `design-handoff/README.md` 데이터 표 | "카드뉴스는 이미 자동화됨", "실거래이야기가 이미 쓰는 가격 로직 재사용" | §23에서 이미 폐기한 전제가 **핸드오프 문서에는 그대로 남아 있었다.** 구현자는 BRIEF가 아니라 핸드오프를 보고 코딩하므로 §23 정정을 볼 수 없었음 → **07-30에 정정 완료** |
+| 2 | §10 DB 구조 + §23-6 | "현행 스키마는 §23-6 참고" | §23-6은 **추가분만 나열한 델타 표**다. `slug`·`body`·`type`을 다시 적지 않아, 그대로 읽으면 **렌더 불가능한 테이블**이 만들어진다 → **§25-1로 통합** |
+| 3 | §10 상세 결정 표 | `tag="랭킹"`으로 랭킹 구분 | §23-6은 `tag`를 `category`+`region_tags`로 **분리**하며 `tag` 단일 필드로는 불가능하다고 결정. **두 결정이 모두 2026-07-29** → 날짜 기준 우선순위 실패 → §25-1이 `category`로 확정 |
+| 4 | §10 상세 결정 표 | "9:16 비율은 템플릿 선택으로 분기" | **9:16(1080×1920) 템플릿은 저장소에 존재하지 않는다.** 게다가 두 템플릿 코드베이스의 비율이 서로 다름: `card-news/scripts/templates.js`=1080×1350(4:5), `src/lib/cardnews/card-templates.ts`=1080×1080(1:1) |
+| 5 | §23-1 리브랜딩 범위 | `card-news/scripts/templates.js`만 대상 | `src/lib/cardnews/card-templates.ts:47,359`에도 창원부동산랩 브랜딩이 있다. **어드민 빌더용 두 번째 독립 템플릿 코드베이스(TypeScript)를 누락** |
+| 6 | §23-6 근거 | "`data.js`도 `cat`/`tag`를 별개로 써서 목업과 일치" | 실제 `tag` 값은 `분양`·`재건축`·`랭킹` — **전부 주제이며 지역 태그는 하나도 없다.** 분리 결론은 맞지만 근거가 사실이 아님 |
+| 7 | 히어로 데이터 | `riseRank`·`weekly.avgRise`·`weekly.hotArea` | **백킹 집계가 전무.** `20260507000001_complex_rankings.sql:7`의 CHECK는 `('high_price','volume','price_per_pyeong','interest')` 뿐 — 등락률 타입이 없다 |
+| 8 | §20 구독자 | "자체 테이블(이메일·동의일시·상태)" | §23-6이 "테이블 정의가 문서 어디에도 없음"이라 지적했으나 **§23-6 자신도 정의하지 않았다** → §25-1에서 정의 |
+| 9 | 전 섹션 | 신규 테이블 RLS | **어느 테이블에도 RLS 정책이 명시되지 않았다.** 저장소의 유일한 anon-insert 선례 (`20260430000009_rls.sql:151-153` `ad_events`)는 **`TO` 절이 없어 이름은 "authenticated"인데 실제로는 `anon`에도 적용되는 버그** — 베끼면 안 됨 |
+| 10 | §18 카페 연동 | "카페로 리다이렉트" 버튼 필수 | 버튼이 링크할 **`cafe_post_url` 필드가 스키마에 없다.** 디자인의 lead/feed/side/grid 4개 슬롯을 구분할 필드도 없음 |
+| 11 | 편집자 권한 | 명시 없음 | `src/app/admin/layout.tsx:25`가 `role in ('admin','superadmin')`으로 게이트. 공유 `profiles`에서 편집자에게 `admin`을 주면 **bds 광고 승인·회원 관리·GPS 승인·공인중개사 관리 권한이 즉시 열린다** |
+
+### 25-1. `contents` 최종 스키마 — 이것만 사용할 것
+
+> ⚠️ 이 테이블들은 **운영 중인 서비스가 함께 쓰는 공유 프로덕션 DB**에 들어간다.
+> 실행 세션이 즉석 설계하지 말고 아래를 그대로 적용한다.
+
+```sql
+-- 콘텐츠 본체
+create table public.contents (
+  id            uuid primary key default gen_random_uuid(),
+  site_id       text not null default 'changbuletter',
+  slug          text not null unique,
+  type          text not null check (type in ('card_news', 'article')),
+  category      text not null,          -- 랭킹 / 동네분석 / 분양뉴스 / 기획 …
+  region_tags   text[] not null default '{}',   -- 의창구, 중동, 내외동 …
+  title         text not null,
+  excerpt       text,                   -- 목록·OG 요약문
+  body          jsonb,                  -- article: Tiptap JSON / card_news: 슬라이드 배열
+  cover_image   text,                   -- 썸네일 URL
+  read_minutes  int,                    -- 읽는 시간
+  status        text not null default 'draft'
+                check (status in ('draft', 'scheduled', 'published')),
+  scheduled_at  timestamptz,            -- 예약 발행 시각
+  published_at  timestamptz,
+  cafe_post_url text,                   -- 있으면 "카페에서 이어보기" 버튼 노출 (§18)
+  is_featured   boolean not null default false,  -- true면 홈 lead 슬롯
+  -- VS 투표 (§10)
+  vote_question text,
+  vote_left     text,
+  vote_right    text,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+
+create index contents_feed_idx
+  on public.contents (published_at desc)
+  where status = 'published';
+create index contents_region_tags_idx
+  on public.contents using gin (region_tags);   -- §13 지역 추천 (&& 교집합)
+create index contents_category_idx
+  on public.contents (category, published_at desc)
+  where status = 'published';
+
+-- 콘텐츠 ↔ 단지 (다대다) — "관련 단지" 섹션
+create table public.content_complexes (
+  content_id uuid not null references public.contents(id) on delete cascade,
+  complex_id uuid not null references public.complexes(id) on delete cascade,
+  primary key (content_id, complex_id)
+);
+
+-- VS 투표 응답
+create table public.content_votes (
+  content_id uuid not null references public.contents(id) on delete cascade,
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  choice     text not null check (choice in ('left', 'right')),
+  created_at timestamptz not null default now(),
+  primary key (content_id, user_id)
+);
+
+-- 콘텐츠 북마크 (favorites는 complex_id 기반이라 못 씀 — §23-3)
+create table public.content_bookmarks (
+  content_id uuid not null references public.contents(id) on delete cascade,
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (content_id, user_id)
+);
+
+-- 뉴스레터 구독자 (더블 옵트인 — §20)
+create table public.subscribers (
+  id              uuid primary key default gen_random_uuid(),
+  site_id         text not null default 'changbuletter',
+  email           text not null,
+  status          text not null default 'pending'
+                  check (status in ('pending', 'confirmed', 'unsubscribed', 'bounced')),
+  confirm_token   text not null default encode(gen_random_bytes(24), 'hex'),
+  requested_at    timestamptz not null default now(),  -- 신청 시각
+  confirmed_at    timestamptz,                         -- 동의 완료 시각 (법적 근거)
+  unsubscribed_at timestamptz,
+  source          text,                                -- 유입 경로 (home_cta / article_cta …)
+  unique (site_id, email)
+);
+create index subscribers_send_idx
+  on public.subscribers (site_id) where status = 'confirmed';
+```
+
+**필드 결정 근거**
+
+| 필드 | 왜 |
+|------|-----|
+| `category` + `region_tags` 분리 | `tag` 하나로 "랭킹"이면서 동시에 "의창구"일 수 없음. §13 지역 추천 알고리즘이 `region_tags && $1`을 질의 |
+| `region_tags text[]` (정규화 안 함) | 월 수 건 규모라 GIN 인덱스로 충분. 조인 테이블 2개를 추가할 비용 대비 이득 없음 (YAGNI) |
+| `status` 3값 + `scheduled_at` | §19 임시저장·§21 #4 예약발행이 MVP 필수 |
+| `cafe_post_url` nullable | §18 "카페로 리다이렉트" 버튼. `null`이면 버튼 미노출 — 모든 글에 카페 원문이 있는 건 아님 |
+| `is_featured` (placement enum 아님) | 4슬롯 enum은 슬롯이 비거나 중복될 때 폴백 로직이 필요. lead 하나만 수동 지정하고 나머지는 `category`+`published_at` 자동 배치 |
+| `subscribers.requested_at`/`confirmed_at` 분리 | 더블 옵트인의 법적 근거는 **`confirmed_at`**. 신청만 하고 미확인인 상태를 구분해야 §22의 "이미 구독 중이에요" 분기가 성립 |
+| `confirm_token` DB 기본값 | 앱에서 토큰을 만들면 생성 누락 시 확인 불가 레코드가 남음 |
+
+**§22 "이미 구독 중이에요" 분기 확정** (§20 더블 옵트인과의 모순 해소):
+
+- `status='confirmed'` → "이미 구독 중이에요"
+- `status='pending'` → **"확인 메일을 다시 보냈어요"** (`confirm_token` 재사용, 재발송)
+- `status='unsubscribed'` → `pending`으로 되돌리고 확인 메일 발송 (재구독)
+- 레코드 없음 → 신규 `pending` + 확인 메일
+
+### 25-2. 카드 비율 — 4:5 단일 통일
+
+**확정: 1080×1350 (4:5) 단일.** 9:16(인스타 스토리)은 MVP 범위 제외.
+
+| 코드베이스 | 현재 | 조치 |
+|-----------|------|------|
+| `card-news/scripts/templates.js` | 1080×1350 (4:5) | 유지 |
+| `src/lib/cardnews/card-templates.ts` | **1080×1080 (1:1)** | **1350으로 수정** (`html,body` + 각 `.card` 총 6곳) |
+| 9:16 (1080×1920) | 없음 | 만들지 않음. §10의 관련 서술 폐기 |
+
+### 25-3. 리브랜딩 범위 — 두 코드베이스 모두
+
+`card-news/scripts/templates.js`(스탠드얼론 주간 자동화)와
+`src/lib/cardnews/card-templates.ts`(bds 어드민 빌더) **둘 다 창부레터 브랜딩으로**.
+어느 도구로 생성해도 결과물이 일관되어야 한다.
+
+확인된 창원부동산랩 잔존 위치: `src/lib/cardnews/card-templates.ts:47`, `:359`
+(§23-1이 잡은 `templates.js` 외에 추가). **착수 전 두 파일 전체 재grep 필수** —
+잔존 위치가 더 있을 수 있다.
+
+### 25-4. 등락률 데이터 — `rank_type='price_change'` 신설
+
+`riseRank`·`weekly.avgRise`·`weekly.hotArea`를 위해 **bds 쪽 선행 작업**:
+
+1. `complex_rankings.rank_type` CHECK 제약에 `'price_change'` 추가 (마이그레이션)
+2. 기존 랭킹 배치에 등락률 계산 추가 — `transactions` 기반,
+   **`cancel_date IS NULL AND superseded_by IS NULL` 필수**
+3. `weekly.hotArea`는 지역 단위 집계이므로 `complex_rankings`(단지 단위)로는 부족 →
+   **`sgg_code`/지역 단위 주간 집계를 별도로 산출**하거나, MVP에서는
+   "등락률 1위 단지의 지역명"으로 근사 (부트스트랩 시점 확정)
+
+실거래이야기 랭킹 페이지에서도 재사용 가능해 투자 대비 효용이 크다.
+RPC 실시간 집계는 채택하지 않음 — PostgREST `statement_timeout=8s` 제약에서
+`compute_gap_stats(12)`가 이미 3.14초였던 전례가 있어 위험.
+
+### 25-5. 편집자 권한 — `role='cbl_editor'`
+
+`profiles.role` CHECK 제약에 **`'cbl_editor'` 값만 추가**한다.
+`src/app/admin/layout.tsx:25`의 `['admin','superadmin']` 게이트는 **손대지 않는다** →
+창부레터 편집자는 bds 어드민 콘솔에 구조적으로 진입 불가.
+
+창부레터 어드민은 자체 게이트에서 `role in ('cbl_editor','superadmin')`을 검사한다
+(`superadmin`은 양쪽 모두 접근 — 운영자 본인용).
+
+### 25-6. RLS 정책 — 모든 정책에 `TO` 절 명시
+
+> ⚠️ `20260430000009_rls.sql:151-153`의 `ad_events` 정책은 `TO` 절이 없어
+> 이름과 달리 `anon`에도 적용된다(PostgreSQL 기본값 `TO public`). **이 패턴을
+> 베끼지 말 것.** 저장소의 기존 버그이며 별건으로 수정 대상.
+
+```sql
+alter table public.contents enable row level security;
+
+-- 발행된 것만 공개 읽기 (draft·scheduled는 anon에 절대 안 보임)
+create policy "contents: public read published"
+  on public.contents for select
+  to anon, authenticated
+  using (status = 'published' and published_at <= now());
+
+-- 편집자 전체 접근
+create policy "contents: editor all"
+  on public.contents for all
+  to authenticated
+  using (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.role in ('cbl_editor', 'superadmin')
+    )
+  );
+
+alter table public.subscribers enable row level security;
+
+-- 구독 신청: anon INSERT만 허용. SELECT 정책을 만들지 않으므로 목록 조회 불가
+create policy "subscribers: anon subscribe"
+  on public.subscribers for insert
+  to anon, authenticated
+  with check (site_id = 'changbuletter' and status = 'pending');
+```
+
+**핵심 원칙**
+
+- 신규 정책은 **예외 없이 `TO` 절을 명시**한다
+- `subscribers`에 **`SELECT` 정책을 만들지 않는다** — 이메일 목록 덤프 방지.
+  확인·해지·발송은 모두 `service_role`(Server Action / 발송 워커) 경유
+- 구독 신청 시 "이미 구독 중" 판정은 **`anon` SELECT가 아니라 Server Action에서**
+  수행한다 (§25-1의 분기 로직). anon이 임의 이메일의 구독 여부를 확인할 수 있으면
+  이메일 존재 여부 오라클이 된다
+- `content_bookmarks`·`content_votes`는 `using (auth.uid() = user_id)` + `TO authenticated`
+- 기존 저장소 관행인 `using (true)`는 **채택하지 않는다** — draft 유출이 앱 코드
+  실수 하나에 달리는 구조가 됨
+
+### 25-7. bds 선행 작업 목록 (창부레터 착수 전 완료 필요)
+
+§21의 0단계를 이 감사 결과로 갱신한다.
+
+| # | 작업 | 근거 |
+|---|------|------|
+| 0-1 | `site_id` CHECK에 `'changbuletter'` 추가 | §23-3 — 없으면 insert 자체가 실패 |
+| 0-2 | `profiles.role` CHECK에 `'cbl_editor'` 추가 | §25-5 |
+| 0-3 | `contents` 외 4개 테이블 + `subscribers` + 인덱스 + RLS 생성 | §25-1, §25-6 |
+| 0-4 | 카드뉴스 **슬라이드 데이터 Supabase 저장 단계** 추가 | §23-2 — 웹 뷰어가 소비할 데이터가 현재 없음 |
+| 0-5 | `rank_type='price_change'` 추가 + 배치 계산 | §25-4 — 홈 히어로 지표 3개가 여기 의존 |
+| 0-6 | 두 카드 템플릿 리브랜딩 + `card-templates.ts` 비율 1080→1350 | §25-2, §25-3 |
+| 0-7 | `refresh_complex_price_stats()` 배치 **소유권 이전 검토** | §23-4 숨은 결합 — danjiondo sunset 시 창부레터가 조용히 얼어붙음 |
+
+**사용자 직접 작업** (개발로 대체 불가)
+
+| 항목 | 상태 |
+|------|------|
+| `changbuletter.com` 도메인 취득 | ⬜ 미완 |
+| DNS/SPF/DKIM → Resend 발신 도메인 인증 | ⬜ 미완 (더블 옵트인의 선행 조건) |
+| Supabase Pro 전환 | ⬜ 미완 |
+| 네이버 카페 외부 링크 정책 확인 | ⬜ 미완 (§18 크로스 프로모션 전제) |
