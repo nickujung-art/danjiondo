@@ -1401,6 +1401,48 @@ Plans:
 > 버그 버전 그대로다 — `36-00-SUMMARY.md`의 "저장소에 없는 프로덕션 스키마 6건" 후속에 포함.
 > 남은 창부레터 선행 작업: 0-4·0-5·0-6(사용자 결정 대기)·0-7 — 별도 Phase.
 
+### Phase 37: 마이그레이션 원장·저장소 정합성 회복
+
+**Goal:** 프로덕션에만 존재하는 스키마 객체 5건을 로컬 마이그레이션 파일로 복원하고, 원장의 중복·구버전 기록 13건을 정리하고, 로컬 타임스탬프 중복 3쌍을 리네이밍해 **`supabase db reset`이 프로덕션을 재현하고 `npm run db:push`가 정상 작동하는 상태**를 회복한다. **스키마 변경 0** — 저장소가 현실을 반영하게 만드는 작업이다.
+
+**Requirements:**
+- DRIFT-01: 프로덕션 전용 스키마 5건을 원장 `statements`에서 추출해 로컬 파일로 복원 (파일명 = remote 버전)
+- DRIFT-02: 복원은 프로덕션 그대로 재현 — `TO` 절 누락·`using (true)` 등을 고치지 않음
+- DRIFT-03: remote 전용 13건(중복 12 + 덮인 1) `repair --status reverted` — DRIFT-01 완료 후에만
+- DRIFT-04: 로컬 타임스탬프 중복 3쌍 리네이밍 (의존 순서 보존 필수)
+- DRIFT-05: `migration list` local-only·remote-only 0건 + `db push --dry-run` 통과 + 스키마 무변경 확인
+
+**Depends on:** Phase 36 (그 실행 중 drift가 발견됐고 `36-00-SUMMARY.md`에 진단이 기록됨)
+**Plans:** 0/2 plans executed
+
+**Wave 0** *(복원 — 이게 선행되어야 DRIFT-03이 안전해짐)*
+- [ ] 37-00-PLAN.md — 프로덕션 전용 5건 로컬 파일 복원 + 라이브 대조 (DRIFT-01, DRIFT-02)
+
+**Wave 1** *(blocked on 37-00)*
+- [ ] 37-01-PLAN.md — 원장 13건 reverted + 타임스탬프 중복 3쌍 리네이밍 + 회복 검증 (DRIFT-03, DRIFT-04, DRIFT-05)
+
+**Cross-cutting constraints:**
+- **스키마를 변경하지 않는다.** 이 Phase의 모든 작업은 (a) 파일 생성/리네이밍 (b) 원장 조작뿐이다. `execute_sql`로 DDL을 실행하는 일이 없어야 한다. 검증 목적의 읽기 조회만 허용
+- **복원은 충실 재현.** `TO` 절 누락(`ad_events`·`ad_campaigns`·`site_admin_roles` 정책), `using (true)`(`regional_income`·`complex_area_types`) 등 현행 패턴을 개선하지 않는다. 개선하면 로컬≠프로덕션이 되어 목적이 무너진다. 하드닝 후보는 SUMMARY에 기록만
+- **DRIFT-03은 DRIFT-01 이후.** 순서를 어기면 프로덕션 전용 5건의 유일한 기록이 원장에서 사라진다
+- **DRIFT-04 리네이밍은 의존 순서 보존.** `20260619000002_recommend_hagwon_candidates_rpc.sql`은 이를 DROP·재생성하는 `20260619000003_..._v2.sql`보다 앞이어야 하므로 이동 금지 — 짝인 `phase28_subject_v2.sql`을 옮긴다. 나머지 2쌍도 두 파일을 읽고 판단
+- `npm run db:push`를 검증 목적 외에 실행하지 않는다. Phase 36과 달리 이 Phase에는 적용할 신규 스키마가 없다
+- 애플리케이션 코드 변경 없음 (`src/**` 무접촉)
+
+**Success Criteria:**
+1. 프로덕션 전용 5건이 로컬 `supabase/migrations/`에 remote 버전 파일명으로 존재하고, 내용이 원장 `statements`와 일치
+2. `npx supabase migration list --linked`에서 local-only 0건, remote-only 0건
+3. `npx supabase db push --dry-run`이 에러 없이 통과 (적용 대상 없음)
+4. 로컬 마이그레이션 파일에 타임스탬프 중복 0건
+5. 스키마 무변경 — `site_admin_roles`·`get_complex_review_avg`·`regional_income` RLS·`cardnews-payloads` 정책·`check_gps_proximity` `search_path` 전부 실행 전후 동일, `complexes` 4285 불변
+6. `npm run lint` 통과, `git status --porcelain src/` 빈 출력
+
+**UI hint**: no (마이그레이션 파일·원장 전용)
+
+Plans:
+- [ ] 37-00-PLAN.md — 프로덕션 전용 5건 복원
+- [ ] 37-01-PLAN.md — 원장 정리 + 리네이밍 + 회복 검증
+
 ---
 ## Milestone Summary
 
