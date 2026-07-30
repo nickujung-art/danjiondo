@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
-status: Phase 36 Complete
-last_updated: "2026-07-30T07:45:00.000Z"
+status: Phase 37 In Progress (1/2 plans)
+last_updated: "2026-07-30T09:20:00.000Z"
 progress:
-  total_phases: 32
+  total_phases: 34
   completed_phases: 6
-  total_plans: 46
-  completed_plans: 36
-  percent: 78
+  total_plans: 50
+  completed_plans: 44
+  percent: 18
 ---
 
 # Project State — 단지온도
@@ -19,7 +19,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-06)
 
 **Core value:** 창원·김해 실수요자가 "이 단지 사도 되는지" 데이터와 이웃 의견으로 30분 안에 결정 짓게 한다.
-**Current focus:** Phase 36 ✅ 완료 (3/3 plans — RLS 적용 + anon 실측 10항목 PASS). 창부레터 저장소 블로커 해제 — 실데이터 적재 가능
+**Current focus:** Phase 37 🔄 진행 중 (1/2 plans — Wave 0 완료: 프로덕션 전용 마이그레이션 5건 로컬 복원, remote-only 18→13). Wave 1(37-01: reverted 13건 + 타임스탬프 중복 3쌍 리네이밍) 대기
 
 ## Current Phase
 
@@ -168,6 +168,7 @@ Waves:
 | 33 | 전국 DB 확장 1단계 — 경남 전체 지역 확장 기반 구축 | 🔄 In Progress (10/11 plans — 33-08 용량 결정 체크포인트만 남음) |
 | 34 | 전국 DB 확장 2단계 — 부산광역시 지역 확장 기반 구축 | 📋 Planned (0/11 plans executed, 계획 완료·검증 통과) |
 | 36 | 창부레터 DB 기반 구축 — 공유 Supabase 콘텐츠 스키마 | ✅ Complete (3/3 plans — CHECK 확장 + 테이블 5개 + RLS 7정책, anon 실측 10항목 PASS) |
+| 37 | 마이그레이션 원장·저장소 정합성 회복 | 🔄 In Progress (1/2 plans — Wave 0 완료: 프로덕션 전용 5건 복원, remote-only 18→13. Wave 1 대기) |
 
 ---
 
@@ -299,6 +300,7 @@ Key notes: MOLIT_API_KEY (기존 data.go.kr 키) 재사용. B552555 청약홈 �
 | 2026-07-30 | RLS 검증은 `anon` 키 클라이언트 실측만이 증거라는 원칙 확립 — `scripts/verify-cbl-rls.ts`(admin/anon 클라이언트 분리 + positive control 3건 + `finally` cleanup). 10항목 전부 PASS. `TO` 절 누락 버그·권한 회수 없는 차단은 DDL·`has_table_privilege` 조회로는 판정 불가 | 36-02 |
 | 2026-07-30 | 별건 발견: 프로덕션 `ad_events` 정책이 이미 `{authenticated}` + `with check (auth.uid() IS NOT NULL)`로 수정돼 있다(로컬 `20260430000009_rls.sql:151-153`은 여전히 `TO` 절 없는 버그 버전). 저장소에 없는 remote 전용 마이그레이션(`20260728074553 realtrade_story_ads_admin` 추정)이 적용한 것 — `36-00-SUMMARY.md`의 "저장소에 없는 프로덕션 스키마 6건" 후속에 포함. `db reset` 시 버그 버전으로 회귀 | 36-02 |
 | 2026-07-10 | 부산 백필(34-06) 중 VACUUM FULL 효과 급감 확인(68MB→8MB→2MB 회수, 25% 진행 시점) — real data growth가 지배적 요인으로 판단. 사용자 확인 후 `complex_embeddings`(55MB, AI챗 fallback 전용·실사용 안 됨·5월 이후 stale) TRUNCATE로 45MB 즉시 회수, DB 448MB→403MB. Pro 전환은 계속 보류, 백필 재개 | 34-06 |
+| 2026-07-30 | Wave 0 복원 5건을 `execute_sql` MCP 대신 `supabase db query --linked`(Management API, DB 비밀번호 불필요)로 조회 — D-07 재량 범위. baseline 11항목·원장 md5 전부 CONTEXT와 일치 확인, 스키마 변경 0건으로 5개 파일 복원 완료(커밋 `4e70a7e`). remote-only 18→13이 D-04 표와 완전 일치 — Wave 1(reverted 처리)이 안전하게 시작 가능 | 37-00 |
 
 ---
 

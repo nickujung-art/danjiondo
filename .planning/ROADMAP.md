@@ -1413,12 +1413,12 @@ Plans:
 - DRIFT-05: `migration list` local-only·remote-only 0건 + `db push --dry-run` 통과 + 스키마 무변경 확인
 
 **Depends on:** Phase 36 (그 실행 중 drift가 발견됐고 `36-00-SUMMARY.md`에 진단이 기록됨)
-**Plans:** 0/2 plans executed
+**Plans:** 1/2 plans executed
 
-**Wave 0** *(복원 — 이게 선행되어야 DRIFT-03이 안전해짐)*
-- [ ] 37-00-PLAN.md — 프로덕션 전용 5건 로컬 파일 복원 + 라이브 대조 (DRIFT-01, DRIFT-02)
+**Wave 0** *(복원 — 이게 선행되어야 DRIFT-03이 안전해짐)* ✅ Complete (2026-07-30)
+- [x] 37-00-PLAN.md — 프로덕션 전용 5건 로컬 파일 복원 + 라이브 대조 (DRIFT-01, DRIFT-02) — 5/5 원장 md5 일치, baseline 11항목 무변경, remote-only 18→13. 커밋 `4e70a7e`
 
-**Wave 1** *(blocked on 37-00)*
+**Wave 1** *(blocked on 37-00 — 이제 unblocked)*
 - [ ] 37-01-PLAN.md — 원장 13건 reverted + 타임스탬프 중복 3쌍 리네이밍 + 회복 검증 (DRIFT-03, DRIFT-04, DRIFT-05)
 
 **Cross-cutting constraints:**
