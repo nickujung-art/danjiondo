@@ -380,6 +380,19 @@ async function main() {
   console.log(
     `[regional-commentary] 완료 — 성공 ${ok}(템플릿 대체 ${fellBack}) / 건너뜀 ${skipped} / 실패 ${failed}`,
   )
+
+  // **전부 템플릿이면 모델에 아예 닿지 못한 것으로 본다.**
+  // 이 배치는 모델 호출이 다 실패해도 폴백 덕에 "성공"으로 끝나 데이터까지 갱신된다.
+  // 로그를 안 보면 정상처럼 보이는데 실제로는 AI 문장이 한 줄도 없는 상태다
+  // (예: GEMINI_API_KEY 는 등록됐지만 지출 한도로 429, GROQ_API_KEY 는 미등록).
+  // 문장 품질이 이 배치의 존재 이유이므로 조용히 넘어가지 않는다.
+  if (ok > 0 && fellBack === ok) {
+    console.error(
+      `[regional-commentary] ⚠ ${ok}개 지역이 전부 템플릿으로 나갔습니다 — 모델 호출이 한 번도 성공하지 못했습니다. ` +
+        `GROQ_API_KEY / GEMINI_API_KEY 등록 상태와 위 호출 에러를 확인하세요.`,
+    )
+  }
+
   if (failed > 0) process.exit(1)
 }
 
