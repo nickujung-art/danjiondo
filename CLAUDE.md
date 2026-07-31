@@ -134,6 +134,9 @@ Next.js 15 App Router · TypeScript strict · Tailwind 3.4 · Supabase (Postgres
 - **CRITICAL** `CREATE INDEX CONCURRENTLY`는 `npm run db:push`로 적용 불가하다 (`CONCURRENTLY`는 트랜잭션 블록에서 실행 불가한데 Supabase CLI가 마이그레이션을 트랜잭션으로 감싼다)
   - 별도 경로로 적용한 뒤 `npx supabase migration repair --status applied <version>`을 반드시 실행해 원장에 기록한다
   - 누락하면 마이그레이션 원장 drift가 된다 (선례: `20260728120000`·`20260731000001`)
+- **CRITICAL** UNIQUE 제약·인덱스를 바꾸는 마이그레이션은 **같은 커밋에서** 해당 테이블의 `.upsert(…, { onConflict: '…' })` 호출부를 함께 갱신한다 (Phase 39 고장 4건이 전부 이 누락에서 나왔다)
+  - `onConflict`는 **비부분(non-partial) UNIQUE 인덱스**만 추론할 수 있다. 부분 인덱스(`WHERE …`)를 만들면 컬럼 목록을 어떻게 맞춰도 PostgREST upsert는 `42P10`으로 실패한다 → 그 테이블은 upsert 대신 명시적 select→insert/update를 쓴다
+  - 검증 2층: ① `src/lib/db/onconflict-audit.test.ts` — **DB 불필요·항상 실행.** 부분 인덱스 오판 방지 + 실물 `src/` 스캐너 건전성 ② `src/__tests__/onconflict-constraint-gate.test.ts` — 실제 카탈로그 대조. **라이브 DB 필요하고 CI에는 자격증명이 없어 skip된다** → `TEST_SUPABASE_URL=… TEST_SUPABASE_SKEY=… npx vitest run src/__tests__/onconflict-constraint-gate.test.ts`로 수동 실행
 - **CRITICAL** `complexes`가 Golden Record. 단지명 단독 매칭 금지 — 항상 좌표+이름 복합 매칭. 별칭은 `complex_aliases`에 누적
 - **CRITICAL** 광고 쿼리: `now() BETWEEN starts_at AND ends_at AND status='approved'` 필수
 - 거래 조회: `WHERE cancel_date IS NULL AND superseded_by IS NULL` 필수 (취소·정정 제외)

@@ -311,4 +311,17 @@ describe('실물 src/ 스캐너 건전성 (DB 불필요 — CI 에서도 항상 
     const self = collectUpsertSites(SRC_DIR).filter((s) => s.file.endsWith('src/lib/db/onconflict-audit.ts'))
     expect(self.map((s) => `${s.file}:${s.line} ${s.table}`)).toEqual([])
   })
+
+  it('🔴 카탈로그 RPC 마이그레이션이 원장에 남아 있다', () => {
+    // 라이브 게이트는 unique_indexes_for_table 이 없으면 (마이그레이션 미적용 환경으로 보고)
+    // skip 된다. 그래서 "마이그레이션이 정의돼 있다" 는 사실만큼은 DB 없이 못 박아 둔다 —
+    // 마이그레이션 파일이 사라지면 게이트가 조용히 skip 으로 전락하기 때문이다.
+    const migrations = path.resolve(SRC_DIR, '../supabase/migrations')
+    const found = fs.readdirSync(migrations).filter((f) => f.includes('unique_indexes_for_table'))
+    expect(found, `supabase/migrations 에 unique_indexes_for_table 마이그레이션이 없다`).not.toHaveLength(0)
+
+    const sql = fs.readFileSync(path.join(migrations, found[0]!), 'utf8')
+    expect(sql).toContain('indpred') //  is_partial 의 근거
+    expect(sql).toContain('grant  execute on function public.unique_indexes_for_table(text) to service_role')
+  })
 })
