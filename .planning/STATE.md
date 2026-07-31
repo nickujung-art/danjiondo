@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
-status: Phase 37 Complete (2/2 plans)
-last_updated: "2026-07-30T10:05:00.000Z"
+status: Phase 38 In Progress (1/2 plans — Wave 0 완료)
+last_updated: "2026-07-31T00:00:00.000Z"
 progress:
   total_phases: 34
   completed_phases: 7
-  total_plans: 50
-  completed_plans: 45
+  total_plans: 52
+  completed_plans: 46
   percent: 21
 ---
 
@@ -19,9 +19,10 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-06)
 
 **Core value:** 창원·김해 실수요자가 "이 단지 사도 되는지" 데이터와 이웃 의견으로 30분 안에 결정 짓게 한다.
-**Current focus:** Phase 37 ✅ 완료 (2/2 plans, 2026-07-30) — 마이그레이션 원장·저장소 정합성 회복. `migration list --linked` local-only 0 / remote-only 0, `db push --dry-run` upToDate, 타임스탬프 중복 0건, baseline 11/11 무변경(스키마 변경 0). `npm run db:push` 정상 작동 상태 복구.
+**Current focus:** Phase 38 🔄 진행 중 (1/2 plans) — Wave 0 ✅ 완료 (2026-07-31). 🔴 **보안 수정 HARD-01 완료**: `ad_images_service_write` 정책에 역할 검사가 없어 anon 키 보유자가 `ad-images` 버킷(`public=true`)에 임의 파일을 업로드할 수 있던 취약점을 닫았다. 수정 전 `--expect=allow` 실측에서 **anon 업로드 성공**(취약점 실증) → 수정 후 `--expect=deny`에서 **403 RLS 거부**로 뒤집힘 확인. positive control 2건(공개 읽기·service_role 업로드) 양쪽 실행 모두 통과 — 어드민 업로드(`uploadAdImage()`) 회귀 없음. `npm run db:push` 정상 경로 적용(Phase 37 복구 실증 첫 사례), 원장 0/0 유지.
 
-> ⚠️ **후속 필수(별도 Phase)** — O-3: `hagwon_db.blog_tags`·`blog_snippet` `ADD COLUMN` DDL이 로컬 마이그레이션에 없어 `supabase db reset`이 `20260619000003`에서 실패할 가능성이 높다(프로덕션은 정상). 원문은 `.planning/phases/37-migration-drift/ledger-backup-13-reverted.sql`의 `20260619043107` 블록에 보존. 그 외 O-1(`recommend_hagwons` 오버로드 2개), O-2(`TO` 절 누락 정책 하드닝)도 이월.
+> ⚠️ **Wave 1 남은 작업** — HARD-02(`hagwon_db.blog_*` ADD COLUMN DDL 복원 + `db reset` 실측), HARD-03(`recommend_hagwons` 구버전 오버로드 DROP), HARD-04(`CLAUDE.md`에 신규 RLS `TO` 절 + `CREATE INDEX CONCURRENTLY` repair 규약 추가).
+> 🔴 Wave 0 시점에 **Docker Desktop이 실행 중이 아니었다** — `supabase db reset` 실측은 Wave 1에서 별도 확인이 필요하며, 실행 불가 시 "통과"가 아니라 **미검증으로 명시**해야 한다(Phase 37이 이 실수로 `gaps_found`).
 
 ## Current Phase
 
@@ -170,7 +171,8 @@ Waves:
 | 33 | 전국 DB 확장 1단계 — 경남 전체 지역 확장 기반 구축 | 🔄 In Progress (10/11 plans — 33-08 용량 결정 체크포인트만 남음) |
 | 34 | 전국 DB 확장 2단계 — 부산광역시 지역 확장 기반 구축 | 📋 Planned (0/11 plans executed, 계획 완료·검증 통과) |
 | 36 | 창부레터 DB 기반 구축 — 공유 Supabase 콘텐츠 스키마 | ✅ Complete (3/3 plans — CHECK 확장 + 테이블 5개 + RLS 7정책, anon 실측 10항목 PASS) |
-| 37 | 마이그레이션 원장·저장소 정합성 회복 | 🔄 In Progress (1/2 plans — Wave 0 완료: 프로덕션 전용 5건 복원, remote-only 18→13. Wave 1 대기) |
+| 37 | 마이그레이션 원장·저장소 정합성 회복 | ✅ Complete (2/2 plans — local-only 0 / remote-only 0, `db push` 정상 복구) |
+| 38 | 스토리지 정책 보안 수정 · db reset 복구 · 데드 오버로드 정리 | 🔄 In Progress (1/2 plans — Wave 0 완료: HARD-01 anon 업로드 차단 실측 대조 5/5 PASS. Wave 1 대기, Docker 미실행으로 `db reset` 미검증) |
 
 ---
 
@@ -303,6 +305,9 @@ Key notes: MOLIT_API_KEY (기존 data.go.kr 키) 재사용. B552555 청약홈 �
 | 2026-07-30 | 별건 발견: 프로덕션 `ad_events` 정책이 이미 `{authenticated}` + `with check (auth.uid() IS NOT NULL)`로 수정돼 있다(로컬 `20260430000009_rls.sql:151-153`은 여전히 `TO` 절 없는 버그 버전). 저장소에 없는 remote 전용 마이그레이션(`20260728074553 realtrade_story_ads_admin` 추정)이 적용한 것 — `36-00-SUMMARY.md`의 "저장소에 없는 프로덕션 스키마 6건" 후속에 포함. `db reset` 시 버그 버전으로 회귀 | 36-02 |
 | 2026-07-10 | 부산 백필(34-06) 중 VACUUM FULL 효과 급감 확인(68MB→8MB→2MB 회수, 25% 진행 시점) — real data growth가 지배적 요인으로 판단. 사용자 확인 후 `complex_embeddings`(55MB, AI챗 fallback 전용·실사용 안 됨·5월 이후 stale) TRUNCATE로 45MB 즉시 회수, DB 448MB→403MB. Pro 전환은 계속 보류, 백필 재개 | 34-06 |
 | 2026-07-30 | Wave 0 복원 5건을 `execute_sql` MCP 대신 `supabase db query --linked`(Management API, DB 비밀번호 불필요)로 조회 — D-07 재량 범위. baseline 11항목·원장 md5 전부 CONTEXT와 일치 확인, 스키마 변경 0건으로 5개 파일 복원 완료(커밋 `4e70a7e`). remote-only 18→13이 D-04 표와 완전 일치 — Wave 1(reverted 처리)이 안전하게 시작 가능 | 37-00 |
+| 2026-07-31 | 🔴 **보안**: `ad_images_service_write`에 `auth.role() = 'service_role'` 추가 + `TO authenticated`로 역할 좁힘. 정책 DROP(등가 대안 b)이 아니라 조건 추가(a)를 채택 — `realtor_profiles_service_insert`·`cardnews-payloads service insert` 패턴과 일치하고 "여기는 서버만 쓴다"는 의도가 코드에 남는다. `ad-images` 버킷·정책 2개는 로컬 마이그레이션 기록이 아예 없었으므로 `20260731000003`이 최초 로컬 기록. `public=true`는 유지(공개 읽기는 의도) | 38-00 |
+| 2026-07-31 | 스토리지 RLS도 테이블 RLS와 동일하게 **anon 키 실측만이 증거**라는 원칙 확장 적용 — `scripts/verify-ad-images-rls.ts`(admin/anon 분리 + `--expect=allow\|deny` 전후 대조 + positive control 2건 + `finally` cleanup + `zz-ad-verify-` 접두어). service_role은 `BYPASSRLS`라 그걸로 검증하면 전부 통과로 보인다. 최종 권한 구조: anon은 `TO authenticated` 미매칭으로 거부, 일반 authenticated는 `auth.role()`이 `'authenticated'`라 check 실패로 거부, service_role만 RLS 우회로 업로드 가능 | 38-00 |
+| 2026-07-31 | `npm run db:push` 정상 경로 사용 — Phase 36의 `execute_sql`+`repair` 우회를 쓰지 않은 첫 사례로, Phase 37의 원장 복구가 실제로 유효함을 실증. `--dry-run`에 신규 파일 1건만 떴고 push 후 원장 0/0 유지 | 38-00 |
 
 ---
 

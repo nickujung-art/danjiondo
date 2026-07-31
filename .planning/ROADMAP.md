@@ -1459,10 +1459,14 @@ Plans:
 - HARD-04: 신규 RLS 정책에 `TO` 절 명시 규약을 `CLAUDE.md`에 추가 (기존 96개 일괄 수정은 범위 밖)
 
 **Depends on:** Phase 37 (백업 파일 `ledger-backup-13-reverted.sql`이 HARD-02의 DDL 원본)
-**Plans:** 0/2 plans executed
+**Plans:** 1/2 plans executed
 
-**Wave 0** *(보안 — 단독 선행)*
-- [ ] 38-00-PLAN.md — `ad_images_service_write` 수정 + 버킷·정책 로컬 기록 + 업로드 파일 2개 점검 (HARD-01)
+**Wave 0** *(보안 — 단독 선행)* ✅ 완료 (2026-07-31)
+- [x] 38-00-PLAN.md — `ad_images_service_write` 수정 + 버킷·정책 로컬 기록 + 업로드 파일 2개 점검 (HARD-01)
+  - 수정 전 `--expect=allow` 실측: **anon 업로드 성공** (취약점 실증) → 수정 후 `--expect=deny`: **403 RLS 거부**
+  - positive control 2건(공개 읽기·service_role 업로드) 양쪽 실행 모두 통과 — 어드민 업로드 회귀 없음
+  - `npm run db:push` 정상 경로로 적용(우회 없음), 원장 0/0 유지, `ad-images` `public=true` 불변
+  - 기존 파일 2개 모두 `ad-actions.ts:26` 패턴 부합 — 외부 업로드 흔적 없음
 
 **Wave 1** *(blocked on 38-00)*
 - [ ] 38-01-PLAN.md — `add_hagwon_blog_fields` 복원 + `v2` 리네임 + `db reset` 실측 + 오버로드 DROP + 규약 추가 (HARD-02, HARD-03, HARD-04)
@@ -1488,8 +1492,9 @@ Plans:
 **UI hint**: no
 
 Plans:
-- [ ] 38-00-PLAN.md — 스토리지 업로드 정책 보안 수정
+- [x] 38-00-PLAN.md — 스토리지 업로드 정책 보안 수정 ✅ (2026-07-31, `38-00-SUMMARY.md`)
 - [ ] 38-01-PLAN.md — db reset 복구 + 오버로드 정리 + 규약
+  - ⚠️ Wave 0 시점에 **Docker Desktop 미실행** — HARD-02의 `db reset` 실측은 Wave 1에서 별도 확인 필요
 
 ---
 ## Milestone Summary
