@@ -1459,7 +1459,7 @@ Plans:
 - HARD-04: 신규 RLS 정책에 `TO` 절 명시 규약을 `CLAUDE.md`에 추가 (기존 96개 일괄 수정은 범위 밖)
 
 **Depends on:** Phase 37 (백업 파일 `ledger-backup-13-reverted.sql`이 HARD-02의 DDL 원본)
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 **Wave 0** *(보안 — 단독 선행)* ✅ 완료 (2026-07-31)
 - [x] 38-00-PLAN.md — `ad_images_service_write` 수정 + 버킷·정책 로컬 기록 + 업로드 파일 2개 점검 (HARD-01)
@@ -1469,7 +1469,7 @@ Plans:
   - 기존 파일 2개 모두 `ad-actions.ts:26` 패턴 부합 — 외부 업로드 흔적 없음
 
 **Wave 1** *(blocked on 38-00)*
-- [ ] 38-01-PLAN.md — `add_hagwon_blog_fields` 복원 + `v2` 리네임 + `db reset` 실측 + 오버로드 DROP + 규약 추가 (HARD-02, HARD-03, HARD-04)
+- [x] 38-01-PLAN.md — `add_hagwon_blog_fields` 복원 + `v2` 리네임 + `db reset` 실측 + 오버로드 DROP + 규약 추가 (HARD-02, HARD-03, HARD-04)
 
 **Cross-cutting constraints:**
 - **프로덕션과 로컬을 함께 바꾼다.** Phase 37은 "충실 재현"이라 개선을 금지했지만, 이 Phase는 **의도적으로 프로덕션 동작을 바꾼다** — 따라서 마이그레이션 파일과 프로덕션 적용이 짝을 이뤄야 하고, 적용 후 로컬 파일이 새 프로덕션 상태를 재현해야 한다
