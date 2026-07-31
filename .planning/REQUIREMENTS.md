@@ -161,9 +161,9 @@
 
 - [x] **DRIFT-01**: 로컬 파일이 없는 프로덕션 스키마 5건을 원장(`supabase_migrations.schema_migrations.statements`)에서 추출해 로컬 마이그레이션 파일로 복원. **파일명은 remote 버전을 그대로 사용**해 원장과 매칭시킨다(별도 repair 불필요). 대상: `20260618085750`(`get_complex_review_avg`), `20260618085906`(`regional_income`·`complex_area_types` RLS + `ad_events` 정책 수정), `20260618093403`(SECURITY DEFINER `search_path=''` 4함수), `20260625063824`(`cardnews-payloads` 스토리지 정책 3개), `20260728074553`(`site_admin_roles` 테이블+RLS+`realtrade-story-ad-images` 버킷). ✅ 37-00 완료 — 5/5 원장 md5 바이트 일치
 - [x] **DRIFT-02**: 복원은 **프로덕션을 그대로 재현**한다. `TO` 절 누락·`using (true)` 등 현행 패턴을 "개선"하지 않는다 — 개선하면 로컬 파일이 프로덕션과 불일치해 목적이 무너진다. 발견된 하드닝 후보는 주석과 SUMMARY에 기록만 한다. ✅ 37-00 완료 — 개선 0건, O-2로 이월
-- [ ] **DRIFT-03**: remote 전용 13건을 `migration repair --status reverted`로 원장에서 제거. 12건은 로컬 파일의 중복 기록(로컬이 이미 자기 버전으로 applied), 1건(`20260618075929 phase28_route_rpc`)은 `20260619000003_..._v2.sql`에 덮인 구버전. **DRIFT-01 완료 후에만 실행** — 선행하지 않으면 5건의 유일한 기록이 사라진다.
-- [ ] **DRIFT-04**: 로컬 마이그레이션 타임스탬프 중복 3쌍 리네이밍 (`20260618000001`, `20260618000002`, `20260619000002` 각 2개 파일). **의존 순서를 반드시 보존**할 것 — 예: `20260619000002_recommend_hagwon_candidates_rpc.sql`은 이를 DROP·재생성하는 `20260619000003_..._v2.sql`보다 **앞**이어야 하므로 이 파일은 옮길 수 없고 짝인 `phase28_subject_v2.sql`을 옮겨야 한다. 각 쌍마다 두 파일 내용을 읽어 판단한다. 리네이밍한 새 버전은 `repair --status applied`로 기록.
-- [ ] **DRIFT-05**: 회복 검증 — `npx supabase migration list --linked`에서 local-only·remote-only가 **0건**이고, `npx supabase db push --dry-run`이 에러 없이 "적용할 것 없음"으로 통과. 스키마 무변경 확인(주요 객체 존재 + 행수 불변).
+- [x] **DRIFT-03**: remote 전용 13건을 `migration repair --status reverted`로 원장에서 제거. 12건은 로컬 파일의 중복 기록(로컬이 이미 자기 버전으로 applied), 1건(`20260618075929 phase28_route_rpc`)은 `20260619000003_..._v2.sql`에 덮인 구버전. **DRIFT-01 완료 후에만 실행** — 선행하지 않으면 5건의 유일한 기록이 사라진다.
+- [x] **DRIFT-04**: 로컬 마이그레이션 타임스탬프 중복 3쌍 리네이밍 (`20260618000001`, `20260618000002`, `20260619000002` 각 2개 파일). **의존 순서를 반드시 보존**할 것 — 예: `20260619000002_recommend_hagwon_candidates_rpc.sql`은 이를 DROP·재생성하는 `20260619000003_..._v2.sql`보다 **앞**이어야 하므로 이 파일은 옮길 수 없고 짝인 `phase28_subject_v2.sql`을 옮겨야 한다. 각 쌍마다 두 파일 내용을 읽어 판단한다. 리네이밍한 새 버전은 `repair --status applied`로 기록.
+- [x] **DRIFT-05**: 회복 검증 — `npx supabase migration list --linked`에서 local-only·remote-only가 **0건**이고, `npx supabase db push --dry-run`이 에러 없이 "적용할 것 없음"으로 통과. 스키마 무변경 확인(주요 객체 존재 + 행수 불변).
 
 ---
 
