@@ -81,7 +81,7 @@ AS $$
   WITH sale_stats AS (
     SELECT
       complex_id,
-      PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price) AS median_sale_price,
+      PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price)::numeric AS median_sale_price,
       COUNT(*)::integer AS sale_count
     FROM public.transactions
     WHERE
@@ -96,7 +96,7 @@ AS $$
   jeonse_stats AS (
     SELECT
       complex_id,
-      PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price) AS median_jeonse_price,
+      PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price)::numeric AS median_jeonse_price,
       COUNT(*)::integer AS jeonse_count
     FROM public.transactions
     WHERE
