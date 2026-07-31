@@ -34,7 +34,7 @@ beforeAll(() => {
 function makeMockChain(result: { data: unknown; error: unknown }) {
   const chain: Record<string, unknown> = {}
   const terminal = vi.fn().mockResolvedValue(result)
-  const methods = ['select', 'eq', 'is', 'in', 'not', 'gt', 'gte', 'order', 'limit']
+  const methods = ['select', 'eq', 'is', 'in', 'not', 'gt', 'gte', 'order', 'limit', 'range']
   for (const m of methods) {
     chain[m] = vi.fn().mockReturnValue(chain)
   }
@@ -42,6 +42,9 @@ function makeMockChain(result: { data: unknown; error: unknown }) {
   chain['insert'] = vi.fn().mockReturnValue({ ...chain, select: vi.fn().mockReturnValue({ single: terminal }) })
   chain['update'] = vi.fn().mockReturnValue(chain)
   ;(chain['limit'] as ReturnType<typeof vi.fn>).mockResolvedValue(result)
+  // `.range()`는 페이지네이션 종단이다 — K-apt 대상 선별(daily/route.ts)이 쓴다.
+  // 빈 배열을 돌려줘야 fetchAllPages가 첫 페이지에서 루프를 끝낸다.
+  ;(chain['range'] as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [], error: null })
   chain['single'] = terminal
   return chain
 }

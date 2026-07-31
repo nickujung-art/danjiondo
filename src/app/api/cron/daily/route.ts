@@ -15,6 +15,82 @@ import { getActiveSggCodes, getActiveCityNames } from '@/lib/data/regions'
 
 export const runtime = 'nodejs'
 
+/** K-apt 1회 실행당 처리할 단지 수. 2,922건 ÷ 70 ≈ 42일 순환 (SLA 45일 충족) */
+const KAPT_BATCH_SIZE = 70
+/** K-apt 루프 시간 예산. 초과 시 중단하고 나머지는 다음 실행으로 넘긴다 */
+const KAPT_TIME_BUDGET_MS = 60_000
+/** PostgREST 기본 1,000행 캡을 넘기기 위한 페이지 크기 */
+const PAGE_SIZE = 1000
+/** 페이지네이션 상한 — 소스가 계속 가득 찬 페이지를 돌려줄 때 무한 루프 방지 */
+const MAX_PAGES = 20
+
+type KaptTarget = { id: string; kapt_code: string }
+
+/**
+ * PostgREST의 1,000행 캡을 넘어 전체 행을 가져온다.
+ * (Phase 34에서 같은 캡에 걸린 전례가 있어 페이지네이션을 명시적으로 쓴다)
+ *
+ * `MAX_PAGES`로 상한을 둔다 — 대상 테이블이 수천 행 규모라 20페이지(2만 행)면
+ * 충분하고, 소스가 계속 `PAGE_SIZE`를 돌려주는 이상 상황에서 루프가 멈추지 않는
+ * 것을 막는다.
+ */
+async function fetchAllPages<T>(
+  runPage: (from: number, to: number) => Promise<{ data: T[] | null }>,
+): Promise<T[]> {
+  const all: T[] = []
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const from = page * PAGE_SIZE
+    const { data } = await runPage(from, from + PAGE_SIZE - 1)
+    if (!data || data.length === 0) break
+    all.push(...data)
+    if (data.length < PAGE_SIZE) break
+  }
+  return all
+}
+
+/**
+ * 이번 실행에서 K-apt를 수집할 단지를 고른다.
+ *
+ * 우선순위: **facility_kapt가 없는 단지 → updated_at이 오래된 단지** 순.
+ *
+ * 이전 구현은 정렬·offset 없이 `.limit(50)`만 걸어 매일 같은 50개만 처리했고,
+ * kapt_code 보유 2,922건 중 1,463건(50%)이 한 번도 수집되지 않았다.
+ *
+ * 일자 기반 offset 순환을 쓰지 않는 이유: 시간 예산으로 배치가 조기 종료되면
+ * offset은 그대로 전진해 처리하지 못한 단지가 영구히 건너뛰어진다. 이 방식은
+ * 처리 못 한 단지가 다음 실행에서도 여전히 우선순위 앞쪽에 남아 자기교정된다.
+ */
+async function selectKaptTargets(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  limit: number,
+): Promise<KaptTarget[]> {
+  const eligible = await fetchAllPages<KaptTarget>((from, to) =>
+    supabase
+      .from('complexes')
+      .select('id, kapt_code')
+      .not('kapt_code', 'is', null)
+      .order('id')
+      .range(from, to),
+  )
+
+  const synced = await fetchAllPages<{ complex_id: string; updated_at: string | null }>((from, to) =>
+    supabase
+      .from('facility_kapt')
+      .select('complex_id, updated_at')
+      .order('complex_id')
+      .range(from, to),
+  )
+
+  const syncedAt = new Map(synced.map(row => [row.complex_id, row.updated_at ?? '']))
+
+  // 미수집(=Map에 없음)은 빈 문자열로 취급돼 오름차순 정렬에서 항상 앞에 온다
+  return [...eligible]
+    .filter(c => Boolean(c.kapt_code))
+    .sort((a, b) => (syncedAt.get(a.id) ?? '').localeCompare(syncedAt.get(b.id) ?? ''))
+    .slice(0, limit)
+}
+
 export async function GET(request: Request): Promise<Response> {
   if (!verifyCronSecret(request)) {
     return new Response('Unauthorized', { status: 401 })
@@ -29,46 +105,9 @@ export async function GET(request: Request): Promise<Response> {
   let offiUpserted = 0
   let gapUpdated = 0
 
-  // ── K-apt 부대시설 UPSERT (DATA-01) ──────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createSupabaseAdminClient() as any
   const activeSggCodes = await getActiveSggCodes(supabase)
-  const { data: complexesWithKaptCode } = await supabase
-    .from('complexes')
-    .select('id, kapt_code')
-    .not('kapt_code', 'is', null)
-    .limit(50)
-
-  let kaptUpserted = 0
-  let kaptErrors = 0
-  for (const complex of complexesWithKaptCode ?? []) {
-    if (!complex.kapt_code) continue
-    try {
-      const info = await fetchKaptBasicInfo(complex.kapt_code)
-      if (!info) continue
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const facilityKaptTable = supabase.from('facility_kapt') as any
-      const { error } = await facilityKaptTable.upsert(
-        {
-          complex_id:      complex.id,
-          kapt_code:       info.kaptCode,
-          heat_type:       info.heatType ?? null,
-          management_type: info.managementType ?? null,
-          total_area:      info.totalArea ?? null,
-          data_month:      new Date().toISOString().slice(0, 7) + '-01',
-        },
-        { onConflict: 'complex_id' },
-      ) as { error: { message: string } | null }
-      if (!error) kaptUpserted++
-      else kaptErrors++
-    } catch (err) {
-      errors.push(`kapt=${complex.kapt_code}: ${err instanceof Error ? err.message : String(err)}`)
-      kaptErrors++
-    }
-  }
-  totalUpserted += kaptUpserted
-  await markCronStatus(supabase, 'kapt', kaptErrors === 0 ? 'success' : 'partial')
-    .catch(() => {/* kapt source 미등록이면 무시 */})
 
   // ── MOLIT 분양권전매 UPSERT (DATA-02) ────────────────────────────────
   const dealYmd = currentYearMonth()
@@ -254,8 +293,9 @@ export async function GET(request: Request): Promise<Response> {
   const offiErrMsg = offiErrors > 0
     ? errors.filter(e => e.startsWith('offi')).slice(-3).join('; ')
     : undefined
-  await markCronStatus(supabase, 'molit_offi_trade', offiStatus, offiErrMsg)
-    .catch(() => { /* molit_offi_trade 미등록이면 무시 */ })
+  if (!await markCronStatus(supabase, 'molit_offi_trade', offiStatus, offiErrMsg)) {
+    errors.push('markCronStatus(molit_offi_trade) 갱신 실패 — 로그 확인')
+  }
 
   // ── Phase 11: 평당가·30일 변동률·거래량 배치 집계 (MAP-02, MAP-05) ──────────
   try {
@@ -270,13 +310,60 @@ export async function GET(request: Request): Promise<Response> {
     gapUpdated = gapResult.complexesUpdated
     if (gapResult.errors.length > 0) {
       errors.push(...gapResult.errors)
-      await markCronFailed(supabase, 'gap-stats').catch(() => {/* gap-stats source 미등록이면 무시 */})
-    } else {
-      await markCronSuccess(supabase, 'gap-stats').catch(() => {/* gap-stats source 미등록이면 무시 */})
+      if (!await markCronFailed(supabase, 'gap-stats')) {
+        errors.push('markCronFailed(gap-stats) 갱신 실패 — 로그 확인')
+      }
+    } else if (!await markCronSuccess(supabase, 'gap-stats')) {
+      errors.push('markCronSuccess(gap-stats) 갱신 실패 — 로그 확인')
     }
   } catch (err) {
     errors.push(`computeGapStats: ${err instanceof Error ? err.message : String(err)}`)
-    await markCronFailed(supabase, 'gap-stats').catch(() => {/* gap-stats source 미등록이면 무시 */})
+    if (!await markCronFailed(supabase, 'gap-stats')) {
+      errors.push('markCronFailed(gap-stats) 갱신 실패 — 로그 확인')
+    }
+  }
+
+  // ── K-apt 부대시설 UPSERT (DATA-01) ──────────────────────────────────────
+  // 라우트 **마지막**에 둔다. K-apt는 SLA 45일짜리 시설 데이터로 우선순위가 가장
+  // 낮은데 이전에는 맨 앞에서 돌았다 — 여기서 타임아웃이 나면 실거래·분양·청약·
+  // 오피스텔·갭통계가 전부 실행되지 않았다.
+  const kaptStart = Date.now()
+  let kaptUpserted = 0
+  let kaptErrors = 0
+  let kaptBudgetExceeded = false
+  const kaptTargets = await selectKaptTargets(supabase, KAPT_BATCH_SIZE)
+
+  for (const complex of kaptTargets) {
+    if (Date.now() - kaptStart > KAPT_TIME_BUDGET_MS) {
+      kaptBudgetExceeded = true
+      break
+    }
+    try {
+      const info = await fetchKaptBasicInfo(complex.kapt_code)
+      if (!info) continue
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const facilityKaptTable = supabase.from('facility_kapt') as any
+      const { error } = await facilityKaptTable.upsert(
+        {
+          complex_id:      complex.id,
+          kapt_code:       info.kaptCode,
+          heat_type:       info.heatType ?? null,
+          management_type: info.managementType ?? null,
+          total_area:      info.totalArea ?? null,
+          data_month:      new Date().toISOString().slice(0, 7) + '-01',
+        },
+        { onConflict: 'complex_id' },
+      ) as { error: { message: string } | null }
+      if (!error) kaptUpserted++
+      else kaptErrors++
+    } catch (err) {
+      errors.push(`kapt=${complex.kapt_code}: ${err instanceof Error ? err.message : String(err)}`)
+      kaptErrors++
+    }
+  }
+  totalUpserted += kaptUpserted
+  if (!await markCronStatus(supabase, 'kapt', kaptErrors === 0 ? 'success' : 'partial')) {
+    errors.push('markCronStatus(kapt) 갱신 실패 — 로그 확인')
   }
 
   await markCronStatus(supabase, 'daily-batch', errors.length === 0 ? 'success' : 'partial')
@@ -285,6 +372,8 @@ export async function GET(request: Request): Promise<Response> {
     ok: errors.length === 0,
     totalUpserted,
     kaptUpserted,
+    kaptSelected: kaptTargets.length,
+    kaptBudgetExceeded,
     presaleUpserted,
     cheongyakUpserted,
     remndrUpserted,
