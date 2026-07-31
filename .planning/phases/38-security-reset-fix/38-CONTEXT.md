@@ -87,11 +87,28 @@ create policy "ad_images_service_write"
 > `TO` 절도 함께 명시한다 — 이 Phase는 "개선하는" Phase이므로 Phase 37의 충실 재현 제약이
 > 적용되지 않는다. 다만 **`ad-images` 관련 정책에만** 적용하고 다른 96개는 건드리지 않는다(D-04).
 
+**✅ 업로드 경로 확인 완료 (오케스트레이터, 착수 전 해소)**
+
+`src/lib/auth/ad-actions.ts:12-36` `uploadAdImage()`는 **Server Action**(`'use server'`)이고
+`createSupabaseAdminClient()`(service_role)로 업로드한다. `requireAdmin()` 게이트도 있다.
+**따라서 이 수정은 어드민 업로드 기능을 깨뜨리지 않는다.** 원래 이 Phase의 최대 리스크였고
+해소됐다.
+
+🔑 **그리고 이 사실이 취약점의 성격을 확정한다**: Supabase의 `service_role`은 `BYPASSRLS`라
+**RLS 정책을 아예 우회**한다. 즉 `ad_images_service_write` 정책은 service_role 업로드에
+관여하지 않는다 — **이 정책이 존재해서 생기는 유일한 효과가 "비-service_role(=anon 포함)
+업로드를 허용하는 것"이며, 그게 정확히 취약점이다.**
+
+따라서 수정 방향은 두 가지가 등가다:
+- **(a) `auth.role() = 'service_role'` 조건 추가** ← **채택.** 저장소의
+  `realtor_profiles_service_insert`·`cardnews-payloads service insert` 패턴과 일치하고,
+  "여기는 서버만 쓴다"는 의도가 코드에 남는다
+- (b) 정책을 통째로 DROP — 기능상 동일(service_role은 어차피 우회)하지만 의도가 안 남는다
+
 **착수 시 확인할 것**:
-- `ad-images` 버킷 현재 파일 **2개**의 정상 여부 (정상 광고 이미지인지, 정체불명 업로드인지)
-- 어드민 광고 이미지 업로드 경로가 `service_role`을 쓰는지 (`src/app/api/**` 또는 Server Action).
-  **클라이언트에서 anon 키로 직접 업로드하고 있다면 이 수정이 그 기능을 깨뜨린다** —
-  그 경우 업로드 경로를 서버 경유로 바꾸는 것까지 이 Phase 범위에 포함해야 한다
+- `ad-images` 버킷 현재 파일 **2개**의 정상 여부 — 업로드 경로가
+  `${Date.now()}-${random}.${ext}` 형식이므로(`ad-actions.ts:26`) 파일명이 그 패턴을
+  벗어나면 외부 업로드를 의심할 근거가 된다
 
 ### D-02: HARD-02 — `db reset` 복구
 
@@ -233,7 +250,7 @@ Phase 38 종료 시: `ad_images_service_write`에 `service_role` 조건 추가,
 
 | 위험 | 완화 |
 |------|------|
-| **업로드 정책 수정이 어드민 기능을 깨뜨림** | D-01 착수 시 업로드 경로가 `service_role`을 쓰는지 먼저 확인. 클라이언트 직접 업로드면 보고 후 범위 확대 |
+| ~~업로드 정책 수정이 어드민 기능을 깨뜨림~~ | ✅ **해소됨** — `ad-actions.ts:12-36`이 Server Action + `createSupabaseAdminClient()`(service_role)임을 확인. service_role은 RLS를 우회하므로 정책 변경의 영향을 받지 않는다 |
 | `ad-images`의 기존 파일 2개가 악의적 업로드일 가능성 | D-01에서 파일 목록·업로더·업로드 시각 확인 |
 | `db reset`을 실행 못 해 HARD-02가 또 미검증으로 남음 | Scope Fence 4번 — 미검증을 통과로 쓰지 않는다. Phase 37이 같은 실수로 `gaps_found` |
 | 오버로드 DROP이 실제 사용처를 깨뜨림 | 앱 grep 0건 + `pg_stat_user_functions` 0 확인됨. `IF EXISTS`로 안전하게 |
