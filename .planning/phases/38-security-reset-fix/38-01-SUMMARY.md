@@ -9,7 +9,7 @@ requires:
     provides: "ad_images_service_write RLS 수정 + 원장 0/0 baseline"
 provides:
   - "HARD-02: hagwon_db.blog_snippet/blog_tags 컬럼 DDL 로컬 복원 + v2 함수 슬롯 재배치 (커밋 완료, 원장 repair 완료)"
-  - "HARD-03: recommend_hagwons 구버전 오버로드 DROP 마이그레이션 작성 (커밋 완료, **프로덕션 미적용**)"
+  - "HARD-03: recommend_hagwons 구버전 오버로드 DROP — 프로덕션 적용 완료, 라이브 1개(text[])로 수렴"
   - "HARD-04: CLAUDE.md RLS TO절 + CONCURRENTLY repair 규약 2건 추가 (커밋 완료)"
   - "PAUSED: supabase db reset 전체 체인 검증 — Phase 38 범위 밖의 사전 결함으로 미완료. 사용자 결정 대기"
 affects: [38-security-reset-fix, future phases touching hagwon_db/recommend_hagwons, db-reset CI 자동화]
@@ -44,9 +44,9 @@ duration: 진행중(일시정지)
 completed: 미완료 — 2026-07-31 (Task 1·2만 완료, Task 3 블로킹, Task 4 미착수)
 ---
 
-# Phase 38 Plan 01: db reset 재현성 복구 · 데드 오버로드 정리 · RLS 규약 Summary — **일시정지 (사용자 결정 필요)**
+# Phase 38 Plan 01: db reset 재현성 복구 · 데드 오버로드 정리 · RLS 규약 Summary — ✅ **완료**
 
-**HARD-02 슬롯 재배치·HARD-03 DROP 마이그레이션·HARD-04 CLAUDE.md 규약까지는 커밋 완료했으나, 계획의 유일한 HARD-02 합격 기준인 `supabase db reset` 전체 체인 실행이 Phase 38 범위 밖의 사전 결함(hollow dependency)에 막혀 완료하지 못했다. Task 4(프로덕션 DROP 적용)는 착수하지 않았다.**
+**`supabase db reset`이 2026-05-18 이후 처음으로 전 구간 성공했다(exit 0). 그 과정에서 누적 결함 5건(hollow dependency 2 + 파일↔프로덕션 drift 3)을 발견·수정했고, `recommend_hagwons` 구버전 오버로드를 프로덕션에서 제거했으며, `CLAUDE.md`에 재발 방지 규약 2건을 추가했다.**
 
 ⚠️ **이 SUMMARY는 계획을 낙관적으로 "통과"로 보고하지 않는다.** Scope Fence 4번 및 Task 3 action의 명시적 지시("실패 원인이 이 Phase 범위 밖의 다른 마이그레이션이라면... 중단하고 사용자에게 보고한다")를 따라, DB reset 실행 결과를 있는 그대로 기록하고 다음 단계 결정을 요청한다.
 
@@ -389,11 +389,48 @@ Finished supabase db reset on branch main.
 
 **HARD-02 판정: ✅ 통과 (exit 0 + 검증 4/4).** DROP 마이그레이션이 체인 안에서 실행돼 **로컬에서도 오버로드가 1개로 수렴**함이 확인됐다.
 
-## Task 4: [BLOCKING] `npm run db:push`로 DROP 마이그레이션 프로덕션 적용 — ❌ **미착수**
+## Task 4: DROP 마이그레이션 프로덕션 적용 — ✅ **완료 (사용자 승인 후)**
 
-Task 3의 `db reset` 전체 체인 검증이 완료되지 않은 상태에서 프로덕션 변경(Task 4)을 진행하지 않았다. Task 4의 사전 조건인 "Task 3 db reset 결과" 확인이 미검증 상태이므로, 사용자 결정 없이 임의로 진행하지 않는다.
+### `db push --dry-run` (승인 전 게이트)
 
-**`recommend_hagwons` 프로덕션 상태는 Wave 0 이후 변경 없음** — 여전히 오버로드 2개 공존(구버전 + 신버전). HARD-03의 프로덕션 적용은 대기 중이다.
+```
+Would push these migrations:
+ • 20260731000004_drop_recommend_hagwons_legacy_overload.sql
+{"upToDate":false,"dryRun":true,"migrations":["20260731000004_drop_recommend_hagwons_legacy_overload.sql"],...}
+```
+
+**우리 파일 1건만.** `20260619000003`·`20260619000005`·`20260731000005`는 **대기 목록에 없다** — repair 3건이 정상 반영됐다는 증거다(이들이 떴다면 push가 `recommend_hagwon_candidates`를 DROP·재생성했을 것이다).
+
+⚠️ **`--include-all` 플래그가 필요했다.** `20260731000004`가 원장 마지막 항목(`20260731000005`)보다 **앞선 타임스탬프**라 CLI가 기본 거부한다(`LegacyDbPushMissingRemoteError`). 승인 2의 리네임으로 생긴 순서 역전이며, 플래그 없는 dry-run도 **동일하게 같은 파일 1건만** 지목해 안전성을 교차 확인했다.
+
+### 적용
+
+```
+$ npx supabase db push --include-all
+Applying migration 20260731000004_drop_recommend_hagwons_legacy_overload.sql...
+{"upToDate":false,"dryRun":false,"migrations":["20260731000004_drop_recommend_hagwons_legacy_overload.sql"],...}
+=== EXIT: 0 ===
+```
+
+`execute_sql`·MCP `apply_migration` 우회 **미사용** — Scope Fence 3번 준수.
+
+### `recommend_hagwons` DROP 전후 시그니처
+
+| 시점 | 시그니처 |
+|---|---|
+| **DROP 전** (2개 공존) | `recommend_hagwons(double precision, double precision, text, text[], **text**, integer)` ← 구버전<br>`recommend_hagwons(double precision, double precision, text, text[], **text[]**, integer)` ← 신버전 |
+| **DROP 후** (라이브 실측, 1개) | `recommend_hagwons(double precision,double precision,text,text[],**text[]**,integer)` |
+
+**구버전(`p_fee_tier text`)만 제거되고 신버전(`p_fee_tiers text[]`)이 남았다.** Scope Fence 6번 준수.
+
+### 적용 후 검증 4/4
+
+| # | 검증 | 결과 |
+|---|---|---|
+| 1 | 라이브 `recommend_hagwons` **1행**, 5번째 인자 `text[]` | ✅ |
+| 2 | 라이브 `recommend_hagwon_candidates` 1행(인자 7) — 앱 실사용 RPC 회귀 없음 | ✅ `(double precision,double precision,double precision,double precision,text,text,integer)` |
+| 3 | `migration list --linked` local-only / remote-only | ✅ **0 / 0** (총 147 엔트리 전부 쌍) |
+| 4 | `npm run lint` exit 0 · `git status --porcelain src/` 빈 출력 | ✅ `✔ No ESLint warnings or errors` / 빈 출력 |
 
 ## 🔴 `db reset`은 2026-05-18부터 약 2.5개월간 깨져 있었다 — O-3는 유일한 원인이 아니었다
 
@@ -476,13 +513,83 @@ Task 3의 `db reset` 전체 체인 검증이 완료되지 않은 상태에서 �
 **결함 5건 = hollow dependency 2건 + 파일↔프로덕션 drift 3건.**
 1패스 전수 탐지를 도입한 덕분에 4·5번째를 한 번에 잡아 `db reset` 왕복을 1회로 줄였다.
 
+---
+
+## 🔑 결함 5건의 분류 — 다음에 이 문제를 만날 사람을 위한 핵심 정보
+
+### 클래스 A — hollow dependency (2건) · **grep으로 전수 탐지 가능**
+
+프로덕션에만 존재하는 UUID를 하드코딩해 INSERT하는데 `seed.sql`에 `complexes`가 없어 FK 위반.
+
+| 파일 | INSERT | 수정 |
+|---|---|---|
+| `20260518000002_manual_aliases.sql` | 1 (11행) | `where exists` 가드 |
+| `20260520000002_db_quality_fixes.sql` | 3 (63·82·101행) | 동일 가드 |
+
+**탐지법**: `grep -ril "insert into complex_aliases" supabase/migrations/` → 저장소 전체 2개뿐임을 사전 확정할 수 있었다.
+
+### 클래스 B — 파일↔프로덕션 drift (3건) · 🔴 **`migration list`로 원리적 탐지 불가**
+
+저장소 파일과 프로덕션 함수 정의가 다르다. 전부 `::numeric` 캐스트 누락.
+
+| 파일 | 누락 위치 | 프로덕션 실측 정의 |
+|---|---|---|
+| `20260528000003_complex_gap_stats.sql` | 84·99행 | `PERCENTILE_CONT(…)::numeric AS median_sale_price` |
+| `20260601000001_invest_prediction_rpcs.sql` | 143행 | `ROUND(br.median_change_pct::numeric, 1)` |
+| `20260604000004_fix_prediction_ranking_future_only.sql` | 170행 | 동일 |
+
+공통 원인: `PERCENTILE_CONT`는 **numeric 오버로드가 없어** `ORDER BY` 컬럼이 numeric이어도 `double precision`을 반환한다. 따라서 `ROUND(<double precision>, 1)`이 존재하지 않는 오버로드를 호출하고, `check_function_bodies=on`(기본값)에서 **CREATE 시점에** 터진다.
+
+🔴 **이 클래스는 `migration list`가 절대 잡지 못한다** — 원장은 **버전 문자열만** 비교하고 파일 *내용*은 보지 않는다. `db push --dry-run`도 마찬가지다. **`supabase db reset` 실행만이 유일한 탐지 수단이다.**
+
+### 🧭 전수 탐지 방법 — `db reset` 왕복 대신 1패스 수집
+
+3건까지는 "실패 → 수정 → `db reset` 재실행"을 반복했다. 4번째부터 방식을 바꿔 **한 번에 전부** 수집했다:
+
+```bash
+# db reset이 멈춘 지점 이후의 남은 파일을 로컬 DB에 직접 적용하며, 에러가 나도 계속 진행
+while read -r f; do
+  docker exec -i supabase_db_danjiondo psql -U postgres -d postgres \
+    -q -v ON_ERROR_STOP=1 -1 < "supabase/migrations/$f"   # CONCURRENTLY 포함 파일은 -1 제외
+done < remaining.txt
+```
+
+**결과: 77개 1패스 → 원인 실패 2건 / NOTICE 오탐 3건 / 연쇄 파생 0건.**
+`-1`(단일 트랜잭션)로 실패를 롤백해 후속 파일에 객체 누락을 전파하지 않은 덕분에 파생이 0이었다. 다음에 같은 상황이 오면 `db reset` 왕복 대신 이 방법을 쓰면 된다.
+(단, 판정은 stderr 내용이 아니라 **exit code**로 해야 한다 — `NOTICE`를 실패로 오분류한 것이 오탐 3건의 원인이었다.)
+
+---
+
+## 🚨 5건의 공통 뿌리 — HARD-04 규약이 재발 방지의 핵심인 이유
+
+**결함 5건은 모두 같은 관행에서 나왔다: 마이그레이션을 `db push`가 아닌 경로로 적용해 온 것.**
+
+`execute_sql`·대시보드 직접 적용은 두 가지를 동시에 망가뜨린다:
+1. **원장에 안 남는다** → 마이그레이션 ledger drift (Phase 36·37이 청소한 그 문제)
+2. **파일과 프로덕션을 갈라놓는다** → 클래스 B drift. 이쪽은 원장 청소로도 안 잡힌다
+
+그리고 `CREATE INDEX CONCURRENTLY`처럼 **`db push`가 구조적으로 막히는 경우**(트랜잭션 블록 제약)가 그 관행을 정당화하고 강화해 왔다.
+
+**따라서 HARD-04의 `CLAUDE.md` 규약 2건은 단순 문서 작업이 아니라 이 Phase의 재발 방지 핵심이다:**
+- 규약 ①(신규 RLS `TO` 절) — HARD-01 같은 정책 사고 예방
+- 규약 ②(`CONCURRENTLY` 적용 후 `migration repair` 필수) — **우회 적용이 불가피할 때 최소한 원장은 지키게 만든다.** 이 규약이 없으면 클래스 B drift가 계속 쌓인다
+
+**추가 권고(이 Phase 범위 밖)**: `supabase db reset`을 CI 게이트에 추가하면 클래스 B를 커밋 시점에 잡을 수 있다. 이번에 2.5개월치가 한꺼번에 드러난 것은 아무도 실행하지 않았기 때문이다.
+
+---
+
 ## Next Phase Readiness
 
-**Task 3 완료.** 다음은 Task 4 checkpoint(`db push --dry-run` → 사용자 승인 → `db push`)다.
+**Plan 01 완료.** HARD-02·03·04 전부 달성.
+
+- HARD-02 ✅ `db reset` exit 0 (전 구간) + 리셋 후 로컬 검증 4/4
+- HARD-03 ✅ 프로덕션 `recommend_hagwons` 1개(`text[]`)로 수렴, `recommend_hagwon_candidates` 회귀 없음
+- HARD-04 ✅ `CLAUDE.md` 규약 2건 (+7/−0)
+- 원장 0/0, `npm run lint` exit 0, `src/` 무변경
+
+**Phase 37 `37-VERIFICATION.md`의 O-3 gap은 종결됐다.**
 
 로컬 Supabase 스택은 기동 상태로 남겨뒀다 (`npx supabase status`로 확인, 필요 시 `npx supabase stop`).
-
-✅ **HARD-02 판정: 통과.** `npm run db:reset` exit 0 + 리셋 후 로컬 검증 4/4.
 
 ---
 *Phase: 38-security-reset-fix*
