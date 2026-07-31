@@ -186,6 +186,36 @@ drop function if exists public.recommend_hagwons(
 **결정**: `CLAUDE.md`에 **신규 정책은 `TO` 절 명시** 규약만 추가한다.
 기존 96개 일괄 수정은 저장소 전체 RLS 재작성이고 회귀 위험 대비 이득이 없다.
 
+### D-04b: `CONCURRENTLY` 인덱스 규약도 함께 추가 (2026-07-31 추가)
+
+**계기**: Phase 37이 원장 drift를 청소한 지 몇 시간 만에 **같은 drift가 재발**했다.
+커밋 `fcebcaa`(realtrade-story 랭킹 성능)의 마이그레이션 2건이 프로덕션에는 적용됐는데
+원장에 기록되지 않았다:
+
+| 객체 | 프로덕션 | 원장 (발견 시점) |
+|---|---|---|
+| `transactions_valid_complex_price_idx` | 존재, `indisvalid=true` | ❌ 없음 |
+| `complex_historical_max_before` RPC | 존재 | ❌ 없음 |
+
+→ 오케스트레이터가 `migration repair --status applied 20260731000001 20260731000002`로 해소.
+`db push --dry-run`이 `upToDate:true`로 복귀 확인.
+
+**근본 원인은 개인의 실수가 아니라 구조적 함정이다**:
+`CREATE INDEX CONCURRENTLY`는 **트랜잭션 블록 안에서 실행할 수 없는데**, Supabase CLI는
+마이그레이션 파일을 트랜잭션으로 감싼다. 따라서 대형 테이블(`transactions` 835,129행)에
+락 없이 인덱스를 만들려면 `db push`를 쓸 수 없고, 우회 경로로 적용하게 되고, 원장 기록을
+잊으면 drift가 된다. 이 저장소에는 이미 같은 사례가 있다
+(`20260728120000_transactions_dealtype_date_idx.sql`도 `CONCURRENTLY`).
+
+**결정**: `CLAUDE.md`에 아래 규약도 함께 추가한다.
+
+> `CREATE INDEX CONCURRENTLY`는 `npm run db:push`로 적용할 수 없다(트랜잭션 블록 제약).
+> 별도 경로로 적용한 뒤 **`npx supabase migration repair --status applied <version>`을
+> 반드시 실행**해 원장에 기록한다. 누락하면 마이그레이션 원장 drift가 된다.
+
+⚠️ 이 규약 추가로 HARD-04의 `CLAUDE.md` 변경이 1~2줄이 아니라 **2개 항목**이 된다.
+plan의 `git diff --stat CLAUDE.md` 제한을 그에 맞게 조정할 것.
+
 ### D-05: Claude's Discretion
 
 - 마이그레이션 파일명·타임스탬프 (충돌 없고 D-02 순서 제약 보존)
