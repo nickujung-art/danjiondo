@@ -11,7 +11,9 @@ provides:
   - "HARD-02: hagwon_db.blog_snippet/blog_tags 컬럼 DDL 로컬 복원 + v2 함수 슬롯 재배치 (커밋 완료, 원장 repair 완료)"
   - "HARD-03: recommend_hagwons 구버전 오버로드 DROP — 프로덕션 적용 완료, 라이브 1개(text[])로 수렴"
   - "HARD-04: CLAUDE.md RLS TO절 + CONCURRENTLY repair 규약 2건 추가 (커밋 완료)"
-  - "PAUSED: supabase db reset 전체 체인 검증 — Phase 38 범위 밖의 사전 결함으로 미완료. 사용자 결정 대기"
+  - "HARD-02 합격: supabase db reset 전 구간 성공(exit 0) + 리셋 후 로컬 검증 4/4"
+  - "누적 결함 5건 발견·수정: hollow dependency 2 (grep 탐지 가능) + 파일↔프로덕션 drift 3 (db reset만이 탐지 수단)"
+  - "Phase 37 37-VERIFICATION.md O-3 gap 종결"
 affects: [38-security-reset-fix, future phases touching hagwon_db/recommend_hagwons, db-reset CI 자동화]
 
 tech-stack:
@@ -35,25 +37,30 @@ key-decisions:
   - "Task 3(db reset 실측) 1차 실패는 20260518000002_manual_aliases.sql의 FK 위반 — 임의 수정하지 않고 중단·보고 후 사용자 승인 받아 where exists 가드 추가 (insert 값 불변)"
   - "타임스탬프 충돌(20260731000003 중복) 해소는 상대 파일을 20260731000005로 git mv + repair — 우리 파일은 이미 push돼 원장에 기록됐고, 상대 수정도 이미 프로덕션 적용됨(prosecdef=true)"
   - "Task 3 2차 실패: 20260520000002_db_quality_fixes.sql이 동일 버그 클래스(하드코딩 complex_id → complex_aliases FK 위반). 승인 범위 밖으로 판단해 재차 중단·보고"
-  - "Task 4(프로덕션 db push)는 미착수 — Task 3의 db reset 전체 체인 검증이 완료되지 않은 상태에서 진행하지 않음. 사용자 결정 필요"
+  - "Task 3 3차 실패: 파일↔프로덕션 drift(::numeric 누락) 신규 클래스 — 재차 중단·보고 후 승인받아 수정"
+  - "4·5번째 결함은 db reset 왕복 대신 1패스 전수 탐지(남은 77개 직접 적용, 에러 무시 계속)로 한 번에 수집 — 원인 2 / 오탐 3 / 파생 0"
+  - "파일↔프로덕션 drift 수정은 전부 pg_get_functiondef 프로덕션 실측을 정답으로 삼아 파일을 일치시킴 — 프로덕션 무변경, 로직·값 개선 없음"
+  - "Task 4는 db push --include-all 사용 — 20260731000004가 원장 마지막 항목(20260731000005)보다 앞선 타임스탬프라 CLI가 기본 거부. dry-run이 동일하게 1건만 지목해 안전성 교차 확인"
   - "src/types/database.ts 재생성 안 함 — recommend_hagwons 호출부 0건이라 타입 영향 없음(plan 확정 사항 그대로 적용)"
 
-requirements-completed: []
+requirements-completed: [HARD-02, HARD-03, HARD-04]
 
-duration: 진행중(일시정지)
-completed: 미완료 — 2026-07-31 (Task 1·2만 완료, Task 3 블로킹, Task 4 미착수)
+duration: 완료 (Task 1~4)
+completed: 2026-07-31
 ---
 
 # Phase 38 Plan 01: db reset 재현성 복구 · 데드 오버로드 정리 · RLS 규약 Summary — ✅ **완료**
 
 **`supabase db reset`이 2026-05-18 이후 처음으로 전 구간 성공했다(exit 0). 그 과정에서 누적 결함 5건(hollow dependency 2 + 파일↔프로덕션 drift 3)을 발견·수정했고, `recommend_hagwons` 구버전 오버로드를 프로덕션에서 제거했으며, `CLAUDE.md`에 재발 방지 규약 2건을 추가했다.**
 
-⚠️ **이 SUMMARY는 계획을 낙관적으로 "통과"로 보고하지 않는다.** Scope Fence 4번 및 Task 3 action의 명시적 지시("실패 원인이 이 Phase 범위 밖의 다른 마이그레이션이라면... 중단하고 사용자에게 보고한다")를 따라, DB reset 실행 결과를 있는 그대로 기록하고 다음 단계 결정을 요청한다.
+> 📌 **아래는 시간순 기록이다.** Task 3은 세 번 블로킹된 뒤 성공했으므로 중간 단계의 "미검증" 표기가 그대로 남아 있다. **최종 판정은 각 섹션 말미와 문서 하단을 따른다.**
 
 ## Performance
 
-- **Tasks 완료:** 2/4 (Task 1, Task 2 완료 및 커밋 / Task 3 블로킹 / Task 4 미착수)
-- **커밋 수:** 4건 (Task 1: 2건 — 파일 누락 정정 포함 / Task 2: 1건 / deferred-items: 미커밋, 이 커밋에 포함 예정)
+- **Tasks 완료:** 4/4 (Task 1·2·3·4 전부 완료)
+- **커밋 수:** 12건 (구현 8 + 문서 4)
+- **체크포인트:** 4회 (사전 결함 3회 + Task 4 프로덕션 적용 승인 1회) — 전부 승인 후 진행
+- **발견·수정한 사전 결함:** 5건 (Phase 38 원래 범위 밖, 사용자 승인 후 처리)
 
 ## Task 1: HARD-02 — v2 슬롯 이동 + add_hagwon_blog_fields 복원 + 원장 repair — ✅ 완료
 
@@ -114,7 +121,7 @@ DROP FUNCTION IF EXISTS public.recommend_hagwons(
 |---|---|
 | `dcd5b52` | HARD-03 DROP 마이그레이션 + HARD-04 CLAUDE.md 규약 2건 |
 
-## Task 3: HARD-02 합격 기준 — `supabase db reset` 실제 실행 — ⚠️ **블로킹, 미완료**
+## Task 3: HARD-02 합격 기준 — `supabase db reset` 실제 실행 — ✅ **최종 성공** (아래는 1~3차 시도 기록)
 
 ### Docker/Supabase 스택 기동 — 성공
 
@@ -148,7 +155,7 @@ Try rerunning the command with --debug to troubleshoot the error.
 - `20260518000002_manual_aliases.sql`(2026-05-18 작성, Phase 33 이전)은 프로덕션에만 존재하는 8개 `complex_id` UUID를 하드코딩해 참조한다
 - 완전히 새로운 로컬 리셋에서는 `complexes`가 비어 있어 이 FK가 항상 위반된다 — **HARD-02/03/04의 이번 변경과 무관한 사전 존재 결함**이며, `20260619000003`(add_hagwon_blog_fields)·`20260619000005`(v2)·`20260731000004`(DROP)에 도달하기도 전에 발생했다
 
-**HARD-02 판정: 🔴 미검증.** `supabase db reset`이 전 구간 성공하지 못했다. 실패 지점이 이번 plan의 변경분보다 훨씬 앞선 무관한 마이그레이션이므로, HARD-02 자체(`20260619000003`/`20260619000005` 순서 문제)가 원인인지는 **아직 확인할 수 없었다** — 이 결함을 넘지 못하면 우리 변경분까지 체인이 도달하지 않는다.
+**HARD-02 판정 (1차 시점): 🔴 미검증.** `supabase db reset`이 전 구간 성공하지 못했다. 실패 지점이 이번 plan의 변경분보다 훨씬 앞선 무관한 마이그레이션이므로, HARD-02 자체(`20260619000003`/`20260619000005` 순서 문제)가 원인인지는 **아직 확인할 수 없었다** — 이 결함을 넘지 못하면 우리 변경분까지 체인이 도달하지 않는다.
 
 **Task 3 action의 명시적 지시("실패 원인이 이 Phase 범위 밖의 다른 마이그레이션이라면(예: 다른 hollow dependency), 임의로 고치지 말고 중단하고 사용자에게 보고한다 — 새 gap이며 범위 확대 확인이 필요하다")에 따라 여기서 중단했다.**
 
