@@ -28,9 +28,13 @@ key-files:
   modified:
     - CLAUDE.md
     - supabase/migrations/20260619000003_recommend_hagwon_candidates_v2.sql (git mv → 20260619000005_recommend_hagwon_candidates_v2.sql)
+    - supabase/migrations/20260518000002_manual_aliases.sql (where exists 가드 추가 — 사용자 승인)
+    - supabase/migrations/20260731000003_fix_increment_view_count_security.sql (git mv → 20260731000005_*, 타임스탬프 충돌 해소 — 사용자 승인)
 
 key-decisions:
-  - "Task 3(db reset 실측)이 20260518000002_manual_aliases.sql에서 실패 — Phase 38 범위 밖의 사전 존재 hollow dependency(seed.sql이 complexes를 시딩하지 않는데 manual_aliases가 하드코딩 complex_id 8건을 참조)로 판단, 임의 수정하지 않고 중단·보고"
+  - "Task 3(db reset 실측) 1차 실패는 20260518000002_manual_aliases.sql의 FK 위반 — 임의 수정하지 않고 중단·보고 후 사용자 승인 받아 where exists 가드 추가 (insert 값 불변)"
+  - "타임스탬프 충돌(20260731000003 중복) 해소는 상대 파일을 20260731000005로 git mv + repair — 우리 파일은 이미 push돼 원장에 기록됐고, 상대 수정도 이미 프로덕션 적용됨(prosecdef=true)"
+  - "Task 3 2차 실패: 20260520000002_db_quality_fixes.sql이 동일 버그 클래스(하드코딩 complex_id → complex_aliases FK 위반). 승인 범위 밖으로 판단해 재차 중단·보고"
   - "Task 4(프로덕션 db push)는 미착수 — Task 3의 db reset 전체 체인 검증이 완료되지 않은 상태에서 진행하지 않음. 사용자 결정 필요"
   - "src/types/database.ts 재생성 안 함 — recommend_hagwons 호출부 0건이라 타입 영향 없음(plan 확정 사항 그대로 적용)"
 
@@ -150,17 +154,83 @@ Try rerunning the command with --debug to troubleshoot the error.
 
 로컬 Supabase 스택은 계속 기동 상태로 남겨뒀다(재시작 시간 절약 목적) — `npx supabase status`로 확인 가능, 필요 시 `npx supabase stop`.
 
-### 재실행/해결 경로 (사용자 결정 필요)
+---
 
-1. **(a) 범위 확대** — `supabase/seed.sql`에 `manual_aliases.sql`이 참조하는 최소 8개 `complexes` row를 추가해 로컬 시딩 커버리지를 확보. Phase 38 Scope Fence 밖이므로 사용자 승인 필요
-2. **(b) 별도 phase/이슈로 분리** — 이 결함을 Phase 38에서 다루지 않고 별도 gap으로 기록, HARD-02는 "우리 변경분만 개별 검증"(전체 db reset이 아닌 부분 체인 재현)으로 판정 범위를 좁히는 방안 — plan 재정의 필요
-3. **(c) `manual_aliases.sql` 자체를 방어적으로 수정**(`where exists` 가드 추가) — Phase 37의 "충실 재현" 원칙과 충돌 가능성 검토 필요
+## 사용자 승인 조치 2건 (1차 중단 후) — ✅ 완료
 
-**세부 내용:** `.planning/phases/38-security-reset-fix/deferred-items.md` 항목 1
+### 승인 1 — `manual_aliases.sql`에 `where exists` 가드 추가 (커밋 `9e60462`)
 
-### 부가 발견 — 미상 마이그레이션 파일 (Phase 38과 무관, 조치 없음)
+insert를 `insert ... select ... from (values ...) where exists (select 1 from public.complexes c where c.id = v.complex_id)` 형태로 감쌌다. 대상 단지가 존재할 때만 삽입한다.
 
-`migration list --linked` 재확인 중 `supabase/migrations/20260731000003_fix_increment_view_count_security.sql`이 untracked 상태로 발견됐다. 이 세션에서 생성하지 않았으며 `increment_view_count()` RLS 우회 버그 수정(realtrade-story 언급)으로 Phase 38과 무관하다. 기존 `20260731000003_ad_images_bucket_policies.sql`(Wave 0, 이미 원장 applied)과 **타임스탬프 충돌**이 있다 — 동시 작업 중인 다른 세션/에이전트의 산출물로 추정된다. **건드리지 않았다.** 세부 내용은 `deferred-items.md` 항목 2.
+**🔴 insert 대상·값 불변 확인 (`git show HEAD~:file` 대조):** 11행의 `complex_id` / `source` / `alias_name` / `confidence`가 **전부 동일**. 첫 행에 붙은 `::uuid`·`::text`·`::numeric` 캐스트는 `VALUES` 서브쿼리의 타입 추론에 필요한 것으로 **값 자체는 바뀌지 않았다.**
+
+```
+$ git diff --numstat supabase/migrations/20260518000002_manual_aliases.sql
+14      2       (2줄 삭제는 `values` → `select ... from (values` 구문 변환 + 닫는 괄호 추가분)
+```
+
+프로덕션에는 8개 단지가 모두 존재하므로 **동작 불변**이고, 이 마이그레이션은 이미 적용돼 재실행되지 않으므로 `db push` 대상이 아니며 원장도 건드리지 않는다 — **로컬 `db reset` 재현성에만 영향**을 준다.
+
+### 승인 2 — 타임스탬프 충돌 해소 (커밋 `1bd65dd`)
+
+`20260731000003_fix_increment_view_count_security.sql` → `20260731000005_fix_increment_view_count_security.sql` (`git mv`, **rename 100% / 0 insertions·0 deletions — 내용 무수정**) 후
+`npx supabase migration repair --status applied 20260731000005` 실행:
+
+```
+Repaired migration history: [20260731000005] => applied
+```
+
+**경위:** 다른 세션의 커밋 `df16071`이 `increment_view_count()`의 SECURITY INVOKER→DEFINER 수정을 `20260731000003`으로 추가했는데, Wave 0의 `20260731000003_ad_images_bucket_policies.sql`과 겹쳤다. 우리 파일은 Wave 0에서 이미 push돼 원장에 그 버전으로 기록됐으므로 옮길 수 있는 건 상대 파일이다. `20260731000004`는 이 Phase의 DROP 마이그레이션이 점유하므로 `000005`를 썼다.
+
+**`db push`가 아니라 `repair`가 정확한 이유:** 그 수정은 **이미 프로덕션에 적용돼 있음이 실측 확인**됐다(`increment_view_count` → `prosecdef = true`, `proconfig = search_path=""`). 그대로 뒀다면 CLI가 `000003`을 "이미 적용됨"으로 보아 상대 파일이 **영구히 추적 불가** 상태가 됐을 것이다.
+
+---
+
+## Task 3 재실행 (2차) — ⚠️ **다시 블로킹, 동일 버그 클래스 2번째 파일**
+
+`manual_aliases` 가드 적용 후 `npm run db:reset` 재실행. **`20260518000002`는 통과**했고 체인이 2일치 더 전진했으나, **`20260520000002_db_quality_fixes.sql`에서 동일한 FK 위반**으로 중단:
+
+```
+Applying migration 20260518000002_manual_aliases.sql...      ← ✅ 가드 적용 후 통과
+Applying migration 20260519000001_recent_complex_sales_rpc.sql...
+Applying migration 20260519000002_fix_towol_coordinates.sql...
+Applying migration 20260519000003_get_hagwon_grade_rpc.sql...
+Applying migration 20260519000004_transactions_umd_nm.sql...
+Applying migration 20260519000005_match_complex_by_admin_dong_stage.sql...
+Applying migration 20260519000006_add_rankings_data_source.sql...
+Applying migration 20260520000001_extend_complex_status_enum.sql...
+Applying migration 20260520000002_db_quality_fixes.sql...
+ERROR: insert or update on table "complex_aliases" violates foreign key constraint "complex_aliases_complex_id_fkey" (SQLSTATE 23503)
+Key (complex_id)=(7f5d84d2-365b-42ec-9825-001a4df4b3aa) is not present in table "complexes".
+At statement: 6
+-- 4개 단지 이름 alias → 대표 단지
+INSERT INTO complex_aliases (id, complex_id, source, alias_name, confidence)
+VALUES
+  (gen_random_uuid(), '7f5d84d2-365b-42ec-9825-001a4df4b3aa', 'manual', '토월성원아파트',   1.0),
+  ...
+```
+
+**완전히 동일한 버그 클래스다** — 하드코딩된 `complex_id`로 `complex_aliases`에 INSERT하는데 `seed.sql`이 `complexes`를 시딩하지 않아 FK 위반. 승인 1의 근거("새 환경에 없는 단지의 별칭은 어차피 무의미하다")가 그대로 적용된다.
+
+### 🔎 전수 조사 — 이 버그 클래스의 정확한 범위 (조사만, 수정 없음)
+
+`supabase/migrations/` 전체에서 하드코딩 UUID를 포함한 INSERT를 전수 조사했다:
+
+```
+$ grep -ril "insert into complex_aliases\|insert into public.complex_aliases" supabase/migrations/
+supabase/migrations/20260518000002_manual_aliases.sql      ← ✅ 승인 1로 해소됨
+supabase/migrations/20260520000002_db_quality_fixes.sql    ← 🔴 남은 1건 (INSERT 3개)
+```
+
+하드코딩 UUID INSERT가 있는 파일은 **저장소 전체에서 이 2개뿐**이며, 대상 테이블도 `complex_aliases` 하나뿐이다. 즉 **남은 것은 `20260520000002` 한 파일의 INSERT 3개**(63행·82행·101행)가 전부다.
+
+같은 파일의 `UPDATE`/`DELETE`문(1·2·3·4번 블록)은 `WHERE id IN (...)` / `WHERE complex_id IN (...)` 형태라 **빈 테이블에서 0행 매칭 no-op**으로 안전하게 통과한다 — 가드가 필요한 것은 INSERT 3개뿐이다.
+
+⚠️ **단, 이 조사는 `complex_aliases` FK 클래스만 보장한다.** `20260520000002` 이후 구간(`20260521`~`20260731`, 약 100개 파일)은 아직 실행되지 않았으므로 **다른 종류의 hollow dependency가 더 있을 가능성은 배제하지 못했다.** `db reset`이 끝까지 가봐야 확정된다.
+
+### 재차 중단한 근거
+
+오케스트레이터의 명시적 지시 — **"또 다른 사전 결함에서 막히면 다시 멈추고 보고하라 (임의로 고치지 마라 — 이번처럼)"**. 승인 1과 같은 버그 클래스이고 근거도 그대로 적용되지만, **승인 범위는 `20260518000002` 한 파일이었으므로** 다른 파일로 확장하지 않고 보고한다.
 
 ## Task 4: [BLOCKING] `npm run db:push`로 DROP 마이그레이션 프로덕션 적용 — ❌ **미착수**
 
@@ -168,18 +238,42 @@ Task 3의 `db reset` 전체 체인 검증이 완료되지 않은 상태에서 �
 
 **`recommend_hagwons` 프로덕션 상태는 Wave 0 이후 변경 없음** — 여전히 오버로드 2개 공존(구버전 + 신버전). HARD-03의 프로덕션 적용은 대기 중이다.
 
+## 🔴 `db reset`은 2026-05-18부터 약 2.5개월간 깨져 있었다 — O-3는 유일한 원인이 아니었다
+
+이번 실측으로 드러난 가장 중요한 사실이다.
+
+`20260518000002_manual_aliases.sql`은 **2026-05-18**에 추가됐고, 그 시점부터 `supabase db reset`은 **항상** 이 지점에서 실패해 왔다. 즉 오늘(2026-07-31)까지 **약 2.5개월간 아무도 로컬 리셋을 끝까지 실행하지 못하는 상태**였고, 그 사실이 발견되지 않은 이유는 `migration list`·`db push --dry-run`이 **파일을 실행하지 않기 때문**이다.
+
+### Phase 37 O-3 gap의 종결 여부
+
+`37-VERIFICATION.md`의 O-3(=HARD-02: `blog_*` 컬럼 hollow dependency로 `db reset` 실패)에 대해 이번 Phase가 확정한 것과 못한 것을 구분한다:
+
+| 항목 | 상태 |
+|---|---|
+| O-3가 지목한 결함(`blog_*` 컬럼 미생성 + v2 슬롯 순서)의 **파일 수준 수정** | ✅ 완료 (`20260619000003` 신규 + `000005` 이동 + repair 2건) |
+| O-3가 **`db reset` 실패의 유일한 원인이라는 전제** | ❌ **반증됨.** 더 앞선 `20260518000002`(2일 앞이 아니라 **1개월 앞**)가 먼저 걸린다 |
+| O-3 수정이 실제로 `db reset`을 통과시키는지 **실행 검증** | 🔴 **미검증** — 체인이 아직 `20260619` 구간에 도달하지 못했다 |
+
+**따라서 O-3 gap은 아직 종결되지 않았다.** Phase 37이 "db reset이 blog 컬럼 때문에 실패한다"고 진단한 것은 정적 분석으로는 타당했으나, **실행해 보면 그보다 훨씬 앞에서 다른 이유로 먼저 죽는다.** O-3 수정의 유효성은 `20260520000002`까지 넘긴 뒤에야 실증할 수 있다.
+
+이것이 "실행하지 않는 검증(`migration list` / `--dry-run`)"의 한계를 보여주는 두 번째 사례다 — Phase 37이 `gaps_found`를 받은 바로 그 이유이며, 이번엔 그 gap 자체의 전제가 불완전했음이 드러났다.
+
 ## Files Created/Modified
 
 - `supabase/migrations/20260619000003_add_hagwon_blog_fields.sql` — blog_snippet/blog_tags 컬럼 복원 DDL (신규)
 - `supabase/migrations/20260619000005_recommend_hagwon_candidates_v2.sql` — v2 함수 (git mv, 내용 무변경)
 - `supabase/migrations/20260731000004_drop_recommend_hagwons_legacy_overload.sql` — 구버전 오버로드 DROP (신규, 프로덕션 미적용)
+- `supabase/migrations/20260518000002_manual_aliases.sql` — `where exists` 가드 추가 (사용자 승인, insert 값 불변)
+- `supabase/migrations/20260731000005_fix_increment_view_count_security.sql` — 타임스탬프 충돌 해소 (git mv, 내용 무변경, 사용자 승인)
 - `CLAUDE.md` — RLS TO절 규약 + CONCURRENTLY repair 규약 2건 추가 (7줄 추가, 0줄 삭제)
-- `.planning/phases/38-security-reset-fix/deferred-items.md` — 범위 밖 발견 2건 기록 (신규)
+- `.planning/phases/38-security-reset-fix/deferred-items.md` — 범위 밖 발견 기록 (신규)
 
 ## Decisions Made
 
-- Task 3의 db reset 실패가 이번 plan 변경분(HARD-02/03/04)이 아니라 Phase 33 이전부터 존재하던 `manual_aliases.sql`↔`seed.sql` hollow dependency임을 확인 — 임의 수정하지 않고 사용자 보고로 전환
-- Task 4(프로덕션 push)는 Task 3의 미검증 상태를 이유로 착수하지 않음 — plan의 blocking checkpoint 이전에 이미 상위 태스크가 블로킹됨
+- Task 3의 db reset 실패가 이번 plan 변경분(HARD-02/03/04)이 아니라 2026-05-18부터 존재하던 `manual_aliases.sql`↔`seed.sql` hollow dependency임을 확인 — 임의 수정하지 않고 사용자 보고 → 승인 후 가드 적용
+- 타임스탬프 충돌은 상대 파일 rename + `repair`로 해소 (우리 파일은 이미 원장 기록됨, 상대 수정도 이미 프로덕션 적용됨)
+- 2차 실패(`20260520000002`, 동일 버그 클래스)는 승인 범위 밖이므로 재차 중단·보고 — 전수 조사로 남은 범위가 INSERT 3개뿐임을 확정해 첨부
+- Task 4(프로덕션 push)는 Task 3의 미검증 상태를 이유로 착수하지 않음
 - src/types/database.ts 재생성 없음 — recommend_hagwons 호출부 0건이라 무영향 (plan 확정 사항)
 
 ## Deviations from Plan
@@ -207,16 +301,19 @@ Task 3의 `db reset` 전체 체인 검증이 완료되지 않은 상태에서 �
 
 ## Issues Encountered
 
-`supabase db reset`이 Phase 33 이전부터 존재했을 것으로 추정되는 hollow dependency(`manual_aliases.sql` ↔ 시딩되지 않는 `complexes`)로 처음으로 실측 실행 중 발견됐다. 37-VERIFICATION.md의 missing 3번("db reset을 실측 실행해 전체 체인이 끝까지 성공하는지 확인")이 지적한 그 실측을 이번에 처음 수행했고, 결과적으로 Phase 37·38 어느 쪽 책임도 아닌 더 오래된 gap이 드러났다.
+`supabase db reset`을 **이 저장소에서 처음으로 실제 실행**한 결과, 2026-05-18부터 누적된 hollow dependency 2건(`manual_aliases.sql`·`db_quality_fixes.sql` ↔ 시딩되지 않는 `complexes`)이 드러났다. `37-VERIFICATION.md`의 missing 3번("db reset을 실측 실행해 전체 체인이 끝까지 성공하는지 확인")이 요구한 그 실측이며, 결과적으로 Phase 37·38 어느 쪽 책임도 아닌 **더 오래되고 더 앞선 gap**이 O-3보다 먼저 걸린다는 사실이 확인됐다.
 
 ## Next Phase Readiness
 
-**차단됨.** 다음 중 하나가 결정돼야 재개 가능:
-1. `seed.sql`에 최소 complexes row 추가(범위 확대 승인) → Task 3 재실행 → Task 4 진행
-2. 이 hollow dependency를 별도 gap/phase로 분리하고 HARD-02 판정 범위를 재정의 → plan 수정 후 재개
-3. `manual_aliases.sql` 방어적 수정 승인 → Task 3 재실행 → Task 4 진행
+**차단됨.** 재개 조건:
 
-어느 경로든 **Task 3 재실행 후 통과해야 Task 4(프로덕션 DROP 적용)를 진행할 수 있다.** 로컬 Supabase 스택은 기동 상태로 남겨뒀다 (`npx supabase status`로 확인, 필요 시 `npx supabase stop`).
+1. **`20260520000002_db_quality_fixes.sql`의 INSERT 3개에 동일한 `where exists` 가드 적용 승인** (승인 1과 동일 패턴·동일 근거). 전수 조사 결과 이것이 `complex_aliases` FK 클래스의 **마지막 잔여분**이다
+2. → Task 3 3차 재실행. `20260521`~`20260731` 구간(미실행 ~100개 파일)에서 **다른 종류**의 hollow dependency가 더 나올 가능성은 배제하지 못했다
+3. → 전 구간 성공 시 Task 4 checkpoint(`db push --dry-run` → 승인 → `db push`) 진행
+
+로컬 Supabase 스택은 기동 상태로 남겨뒀다 (`npx supabase status`로 확인, 필요 시 `npx supabase stop`).
+
+⚠️ **현 시점 HARD-02 판정: 미검증.** `db reset`이 전 구간 성공하지 못했으므로 "통과"로 기록하지 않는다.
 
 ---
 *Phase: 38-security-reset-fix*
