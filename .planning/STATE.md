@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
-status: Phase 38 In Progress (1/2 plans — Wave 0 완료)
-last_updated: "2026-07-31T00:00:00.000Z"
+status: Phase 38 Paused (1/2 plans — Wave 0 완료, Wave 1 블로킹 — 사용자 결정 대기)
+last_updated: "2026-07-31T01:43:14.997Z"
 progress:
   total_phases: 34
-  completed_phases: 7
-  total_plans: 52
+  completed_phases: 8
+  total_plans: 50
   completed_plans: 46
-  percent: 21
+  percent: 24
 ---
 
 # Project State — 단지온도
@@ -21,8 +21,10 @@ See: .planning/PROJECT.md (updated 2026-05-06)
 **Core value:** 창원·김해 실수요자가 "이 단지 사도 되는지" 데이터와 이웃 의견으로 30분 안에 결정 짓게 한다.
 **Current focus:** Phase 38 🔄 진행 중 (1/2 plans) — Wave 0 ✅ 완료 (2026-07-31). 🔴 **보안 수정 HARD-01 완료**: `ad_images_service_write` 정책에 역할 검사가 없어 anon 키 보유자가 `ad-images` 버킷(`public=true`)에 임의 파일을 업로드할 수 있던 취약점을 닫았다. 수정 전 `--expect=allow` 실측에서 **anon 업로드 성공**(취약점 실증) → 수정 후 `--expect=deny`에서 **403 RLS 거부**로 뒤집힘 확인. positive control 2건(공개 읽기·service_role 업로드) 양쪽 실행 모두 통과 — 어드민 업로드(`uploadAdImage()`) 회귀 없음. `npm run db:push` 정상 경로 적용(Phase 37 복구 실증 첫 사례), 원장 0/0 유지.
 
-> ⚠️ **Wave 1 남은 작업** — HARD-02(`hagwon_db.blog_*` ADD COLUMN DDL 복원 + `db reset` 실측), HARD-03(`recommend_hagwons` 구버전 오버로드 DROP), HARD-04(`CLAUDE.md`에 신규 RLS `TO` 절 + `CREATE INDEX CONCURRENTLY` repair 규약 추가).
-> 🔴 Wave 0 시점에 **Docker Desktop이 실행 중이 아니었다** — `supabase db reset` 실측은 Wave 1에서 별도 확인이 필요하며, 실행 불가 시 "통과"가 아니라 **미검증으로 명시**해야 한다(Phase 37이 이 실수로 `gaps_found`).
+> ⚠️ **Wave 1 진행 상황 (38-01, 2026-07-31)** — Task 1(HARD-02 슬롯 재배치 + repair)·Task 2(HARD-03 DROP 마이그레이션 작성 + HARD-04 `CLAUDE.md` 규약 2건)는 **완료·커밋됨**.
+> 🔴 **Task 3(`supabase db reset` 실측)이 블로킹 상태로 일시정지됐다.** Docker는 정상 기동했으나, `db reset`이 `20260518000002_manual_aliases.sql`(Phase 33 이전, Phase 38 범위 밖)에서 FK 위반으로 실패 — `supabase/seed.sql`이 `complexes`를 시딩하지 않아 하드코딩된 `complex_id` 8건이 매칭 안 되는 **사전 존재 hollow dependency**. Phase 38의 HARD-02/03/04 변경분(`20260619000003`/`000005`/`20260731000004`)에 도달하기도 전에 발생해, 이번 변경이 원인인지는 아직 확인 불가. Task 4(프로덕션 `db push`)는 착수하지 않음.
+> 상세·해결 후보 3안: `.planning/phases/38-security-reset-fix/deferred-items.md`, `.planning/phases/38-security-reset-fix/38-01-SUMMARY.md`.
+> 부가 발견: `20260731000003_fix_increment_view_count_security.sql`(untracked, Phase 38 무관, 기존 `20260731000003_ad_images_bucket_policies.sql`과 타임스탬프 충돌) — 건드리지 않음, deferred-items.md 항목 2 참고.
 
 ## Current Phase
 
@@ -172,7 +174,7 @@ Waves:
 | 34 | 전국 DB 확장 2단계 — 부산광역시 지역 확장 기반 구축 | 📋 Planned (0/11 plans executed, 계획 완료·검증 통과) |
 | 36 | 창부레터 DB 기반 구축 — 공유 Supabase 콘텐츠 스키마 | ✅ Complete (3/3 plans — CHECK 확장 + 테이블 5개 + RLS 7정책, anon 실측 10항목 PASS) |
 | 37 | 마이그레이션 원장·저장소 정합성 회복 | ✅ Complete (2/2 plans — local-only 0 / remote-only 0, `db push` 정상 복구) |
-| 38 | 스토리지 정책 보안 수정 · db reset 복구 · 데드 오버로드 정리 | 🔄 In Progress (1/2 plans — Wave 0 완료: HARD-01 anon 업로드 차단 실측 대조 5/5 PASS. Wave 1 대기, Docker 미실행으로 `db reset` 미검증) |
+| 38 | 스토리지 정책 보안 수정 · db reset 복구 · 데드 오버로드 정리 | ⏸️ Paused (1/2 plans — Wave 0 완료. Wave 1: Task 1·2 완료·커밋, Task 3(`db reset`) 범위 밖 사전 결함으로 블로킹, Task 4 미착수 — 사용자 결정 대기) |
 
 ---
 
@@ -308,6 +310,7 @@ Key notes: MOLIT_API_KEY (기존 data.go.kr 키) 재사용. B552555 청약홈 �
 | 2026-07-31 | 🔴 **보안**: `ad_images_service_write`에 `auth.role() = 'service_role'` 추가 + `TO authenticated`로 역할 좁힘. 정책 DROP(등가 대안 b)이 아니라 조건 추가(a)를 채택 — `realtor_profiles_service_insert`·`cardnews-payloads service insert` 패턴과 일치하고 "여기는 서버만 쓴다"는 의도가 코드에 남는다. `ad-images` 버킷·정책 2개는 로컬 마이그레이션 기록이 아예 없었으므로 `20260731000003`이 최초 로컬 기록. `public=true`는 유지(공개 읽기는 의도) | 38-00 |
 | 2026-07-31 | 스토리지 RLS도 테이블 RLS와 동일하게 **anon 키 실측만이 증거**라는 원칙 확장 적용 — `scripts/verify-ad-images-rls.ts`(admin/anon 분리 + `--expect=allow\|deny` 전후 대조 + positive control 2건 + `finally` cleanup + `zz-ad-verify-` 접두어). service_role은 `BYPASSRLS`라 그걸로 검증하면 전부 통과로 보인다. 최종 권한 구조: anon은 `TO authenticated` 미매칭으로 거부, 일반 authenticated는 `auth.role()`이 `'authenticated'`라 check 실패로 거부, service_role만 RLS 우회로 업로드 가능 | 38-00 |
 | 2026-07-31 | `npm run db:push` 정상 경로 사용 — Phase 36의 `execute_sql`+`repair` 우회를 쓰지 않은 첫 사례로, Phase 37의 원장 복구가 실제로 유효함을 실증. `--dry-run`에 신규 파일 1건만 떴고 push 후 원장 0/0 유지 | 38-00 |
+| 2026-07-31 | HARD-02 슬롯 재배치(`20260619000003_add_hagwon_blog_fields.sql` 신규 + v2 파일 `git mv` 000003→000005) + 양쪽 `migration repair --status applied` 완료. HARD-03 DROP 마이그레이션(`20260731000004`, 구버전 오버로드만 인자 6개 명시)·HARD-04 `CLAUDE.md` 규약 2건(RLS `TO`절 + `CONCURRENTLY` repair, 7줄 추가/0줄 삭제) 완료·커밋. `supabase db reset` 실측 중 Phase 33 이전부터 존재하던 `manual_aliases.sql`↔미시딩 `complexes` hollow dependency로 중단 — Phase 38 변경분 도달 전 실패라 임의 수정하지 않고 일시정지, 사용자 범위 확대 결정 대기 | 38-01 |
 
 ---
 
