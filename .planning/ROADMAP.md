@@ -1448,6 +1448,49 @@ Plans:
 - **O-2** `TO` 절 누락 정책 다수 하드닝 — 프로덕션·로컬 동시 변경 필요
 - **O-3** (신규) `hagwon_db.blog_tags`·`blog_snippet` `ADD COLUMN` DDL이 로컬에 없어 `db reset` 실패 가능. 원문은 `.planning/phases/37-migration-drift/ledger-backup-13-reverted.sql`의 `20260619043107` 블록에 보존됨 — `20260619000003` 앞 슬롯으로 복원 + `repair --status applied` + `db reset` 실측 검증 필요
 
+### Phase 38: 스토리지 정책 보안 수정 · db reset 복구 · 데드 오버로드 정리
+
+**Goal:** Phase 37 실행·검증 중 발견된 3건을 처리한다 — (1) `ad-images` 스토리지 업로드 정책의 역할 검사 누락(anon 업로드 가능)을 수정하고, (2) `supabase db reset`을 실제로 성공시키고, (3) 사용되지 않는 `recommend_hagwons` 구버전 오버로드를 제거한다. Phase 37과 달리 **스키마를 변경한다**(프로덕션 적용 포함).
+
+**Requirements:**
+- HARD-01: `ad_images_service_write`에 `auth.role() = 'service_role'` 추가 + `ad-images` 버킷·정책 최초 로컬 기록 작성 (보안, 최우선)
+- HARD-02: `add_hagwon_blog_fields` 복원 + `v2` 리네임 + **`supabase db reset` 실측 검증**
+- HARD-03: `recommend_hagwons(…, p_fee_tier text, …)` 구버전 오버로드 DROP
+- HARD-04: 신규 RLS 정책에 `TO` 절 명시 규약을 `CLAUDE.md`에 추가 (기존 96개 일괄 수정은 범위 밖)
+
+**Depends on:** Phase 37 (백업 파일 `ledger-backup-13-reverted.sql`이 HARD-02의 DDL 원본)
+**Plans:** 0/2 plans executed
+
+**Wave 0** *(보안 — 단독 선행)*
+- [ ] 38-00-PLAN.md — `ad_images_service_write` 수정 + 버킷·정책 로컬 기록 + 업로드 파일 2개 점검 (HARD-01)
+
+**Wave 1** *(blocked on 38-00)*
+- [ ] 38-01-PLAN.md — `add_hagwon_blog_fields` 복원 + `v2` 리네임 + `db reset` 실측 + 오버로드 DROP + 규약 추가 (HARD-02, HARD-03, HARD-04)
+
+**Cross-cutting constraints:**
+- **프로덕션과 로컬을 함께 바꾼다.** Phase 37은 "충실 재현"이라 개선을 금지했지만, 이 Phase는 **의도적으로 프로덕션 동작을 바꾼다** — 따라서 마이그레이션 파일과 프로덕션 적용이 짝을 이뤄야 하고, 적용 후 로컬 파일이 새 프로덕션 상태를 재현해야 한다
+- 적용 경로는 Phase 37이 복구한 **`npm run db:push`를 사용**한다. Phase 36의 `execute_sql`+`repair` 우회는 더 이상 필요 없다 — 원장이 정상화됐다(`db push --dry-run`이 `upToDate:true`). 이 Phase가 그 복구를 실증하는 첫 사례가 된다
+- **기존 96개 정책에 `TO` 절을 일괄 추가하지 않는다** (HARD-04 단서). 악용 불가하고 저장소 전체 RLS 재작성 비용이 이득을 초과한다
+- `ad-images` 버킷의 `public=true` 설정은 **바꾸지 않는다** — 광고 이미지는 공개 읽기가 의도다. 문제는 업로드 권한이지 읽기 권한이 아니다
+- HARD-02의 `db reset`은 로컬 Docker 스택이 필요하다. 실행 불가 환경이면 **그 사실을 SUMMARY에 명시하고 미검증으로 남긴다** — 통과했다고 쓰지 않는다
+- 애플리케이션 코드 변경 없음 (`src/types/database.ts` 재생성은 예외)
+
+**Success Criteria:**
+1. `ad_images_service_write`의 `with_check`에 `auth.role() = 'service_role'`이 포함되고, anon 역할로 `ad-images` 업로드가 거부됨을 실측 확인
+2. `ad-images` 버킷 + 정책 2개를 만드는 로컬 마이그레이션이 존재하고, `db reset` 시 재현됨
+3. `hagwon_db.blog_snippet`·`blog_tags`를 만드는 로컬 마이그레이션이 `20260619000003`에 존재
+4. **`supabase db reset`이 전 구간 성공** (또는 실행 불가 시 그 사실이 SUMMARY에 명시)
+5. `recommend_hagwons` 오버로드가 1개(`p_fee_tiers text[]`)만 남음
+6. `CLAUDE.md`에 신규 RLS `TO` 절 명시 규약 추가
+7. `migration list --linked` 0/0 유지, `npm run lint` 통과
+8. 기존 기능 회귀 없음 — `ad-images` 기존 파일 2개 읽기 정상, 어드민 광고 이미지 업로드 경로 정상
+
+**UI hint**: no
+
+Plans:
+- [ ] 38-00-PLAN.md — 스토리지 업로드 정책 보안 수정
+- [ ] 38-01-PLAN.md — db reset 복구 + 오버로드 정리 + 규약
+
 ---
 ## Milestone Summary
 

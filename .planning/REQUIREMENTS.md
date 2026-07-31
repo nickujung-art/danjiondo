@@ -167,6 +167,18 @@
 
 ---
 
+## v11 Requirements (보안 수정 · db reset 복구 · 데드 오버로드 정리)
+
+> 배경: Phase 37 실행·검증 중 발견된 3건. `.planning/phases/37-migration-drift/37-VERIFICATION.md`
+> (O-3는 `gaps_found` 판정의 근거) 및 오케스트레이터 라이브 조사(O-1·O-2 실측).
+
+- [ ] **HARD-01** *(보안, 최우선)*: `storage.objects`의 `ad_images_service_write` 정책이 `with check (bucket_id = 'ad-images')`만 검사하고 **역할 검사가 없다.** `roles={public}`이므로 anon 키 보유자가 `ad-images` 버킷(현재 `public=true`, 파일 2개)에 임의 파일을 업로드할 수 있고 업로드된 파일은 공개 읽기가 된다. 같은 저장소의 `realtor_profiles_service_insert`·`cardnews-payloads service insert`는 `AND auth.role() = 'service_role'`을 갖고 있어 **이것은 관행이 아니라 단독 실수**다. 프로덕션과 로컬을 **함께** 수정한다. ⚠️ `ad-images` 버킷과 두 정책(`ad_images_public_read`·`ad_images_service_write`)은 **로컬 마이그레이션 파일이 아예 없으므로** 수정 마이그레이션이 곧 최초 기록이 된다 — 버킷 생성까지 포함해 작성할 것. 업로드된 파일 2개의 정상 여부도 확인.
+- [ ] **HARD-02** *(Phase 37 goal 미달분)*: `hagwon_db.blog_snippet`·`blog_tags`의 `ADD COLUMN` DDL이 로컬에 없어 `supabase db reset`이 `20260619000003_recommend_hagwon_candidates_v2.sql`(`LANGUAGE sql`, 해당 컬럼 SELECT)에서 실패한다. DDL 원문은 `.planning/phases/37-migration-drift/ledger-backup-13-reverted.sql`의 `20260619043107` 블록에 보존됨. 복원 위치는 `000002`(rpc)보다 뒤, `000003`(v2)보다 앞이어야 하는데 정수 슬롯이 없으므로 **`_recommend_hagwon_candidates_v2.sql`을 `20260619000003` → `20260619000005`로 옮겨 슬롯을 비운 뒤** `20260619000003_add_hagwon_blog_fields.sql`로 복원한다. 양쪽 `repair --status applied`. **마무리로 로컬에서 `supabase db reset`을 실제 실행해 전 구간 성공을 실측 확인**(Phase 37이 놓친 검증).
+- [ ] **HARD-03**: `recommend_hagwons` 오버로드 2개 공존 — `phase28_subject_v2`가 `p_fee_tier text`를 `p_fee_tiers text[]`로 배열화하며 구버전을 `DROP`하지 않았다. 인자 미명시 호출 시 모호성 에러 위험. **앱 코드는 둘 다 호출하지 않음이 확인됨**(`src/lib/data/hagwon-recommend.ts:21`은 `recommend_hagwon_candidates`만 호출, `src/types/database.ts` 언급은 생성 타입). 구버전(`p_fee_tier text`)만 `DROP FUNCTION`하고 배열 버전 유지.
+- [ ] **HARD-04** *(규약)*: 신규 RLS 정책은 **`TO` 절을 명시**한다는 규약을 `CLAUDE.md`에 추가. ⚠️ **기존 96개 정책의 일괄 수정은 범위 밖** — 쓰기 정책 29건을 전수 확인한 결과 HARD-01 하나를 제외하면 전부 `auth.uid()`·`exists(profiles.role…)`·`auth.role()='service_role'` 제한 조건을 갖고 있어 악용 불가하며, 읽기 정책의 `TO public`은 anon 공개 읽기 의도와 일치해 정상이다. 저장소 전체 RLS 재작성은 비용 대비 이득이 없다.
+
+---
+
 ## Out of Scope
 
 - NextAuth.js 전환 — Supabase Auth로 이미 완전 구현됨. 전환 시 이득 없이 재작성 비용만 발생
