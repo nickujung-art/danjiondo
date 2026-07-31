@@ -60,14 +60,18 @@ WHERE id IN (
 );
 
 -- 4개 단지 이름 alias → 대표 단지
+-- [Phase 38 가드 추가] 대상 complexes 행이 존재할 때만 삽입 (INSERT 값 불변, 가드만 추가)
 INSERT INTO complex_aliases (id, complex_id, source, alias_name, confidence)
-VALUES
-  (gen_random_uuid(), '7f5d84d2-365b-42ec-9825-001a4df4b3aa', 'manual', '토월성원아파트',   1.0),
+SELECT v.id, v.complex_id, v.source, v.alias_name, v.confidence
+FROM (VALUES
+  (gen_random_uuid(), '7f5d84d2-365b-42ec-9825-001a4df4b3aa'::uuid, 'manual'::text, '토월성원아파트'::text,   1.0::numeric),
   (gen_random_uuid(), '7f5d84d2-365b-42ec-9825-001a4df4b3aa', 'manual', '성원아파트2단지', 1.0),
   (gen_random_uuid(), '7f5d84d2-365b-42ec-9825-001a4df4b3aa', 'manual', '토월성원2단지',   1.0),
   (gen_random_uuid(), '7f5d84d2-365b-42ec-9825-001a4df4b3aa', 'manual', '성원토월1단지',   1.0),
   (gen_random_uuid(), '7f5d84d2-365b-42ec-9825-001a4df4b3aa', 'manual', '토월성원3단지',   1.0),
   (gen_random_uuid(), '7f5d84d2-365b-42ec-9825-001a4df4b3aa', 'manual', '성원5단지아파트', 1.0)
+) AS v(id, complex_id, source, alias_name, confidence)
+WHERE EXISTS (SELECT 1 FROM complexes c WHERE c.id = v.complex_id)
 ON CONFLICT (complex_id, source, alias_name) DO NOTHING;
 
 -- ══════════════════════════════════════════════
@@ -79,8 +83,13 @@ SET complex_id = '2c97176e-ba03-47cd-9441-d17af491fb6c'
 WHERE raw_complex_name = '마린애시앙부영'
   AND complex_id = '4bbc672a-e82c-4c2c-8c27-79638de38c17';
 
+-- [Phase 38 가드 추가] 대상 complexes 행이 존재할 때만 삽입 (INSERT 값 불변, 가드만 추가)
 INSERT INTO complex_aliases (id, complex_id, source, alias_name, confidence)
-VALUES (gen_random_uuid(), '2c97176e-ba03-47cd-9441-d17af491fb6c', 'manual', '마린애시앙부영', 1.0)
+SELECT v.id, v.complex_id, v.source, v.alias_name, v.confidence
+FROM (VALUES
+  (gen_random_uuid(), '2c97176e-ba03-47cd-9441-d17af491fb6c'::uuid, 'manual'::text, '마린애시앙부영'::text, 1.0::numeric)
+) AS v(id, complex_id, source, alias_name, confidence)
+WHERE EXISTS (SELECT 1 FROM complexes c WHERE c.id = v.complex_id)
 ON CONFLICT (complex_id, source, alias_name) DO NOTHING;
 
 -- ══════════════════════════════════════════════
@@ -98,8 +107,12 @@ WHERE raw_complex_name = '경동메르빌2차'
   AND complex_id IS NULL
   AND raw_region_code = '48125';
 
+-- [Phase 38 가드 추가] 대상 complexes 행이 존재할 때만 삽입 (INSERT 값 불변, 가드만 추가)
 INSERT INTO complex_aliases (id, complex_id, source, alias_name, confidence)
-VALUES
-  (gen_random_uuid(), '77de93f8-ec49-40c4-9faf-f4c5d0b73109', 'manual', '경동메르빌',    1.0),
+SELECT v.id, v.complex_id, v.source, v.alias_name, v.confidence
+FROM (VALUES
+  (gen_random_uuid(), '77de93f8-ec49-40c4-9faf-f4c5d0b73109'::uuid, 'manual'::text, '경동메르빌'::text,    1.0::numeric),
   (gen_random_uuid(), '77de93f8-ec49-40c4-9faf-f4c5d0b73109', 'manual', '월포경동메르빌', 1.0)
+) AS v(id, complex_id, source, alias_name, confidence)
+WHERE EXISTS (SELECT 1 FROM complexes c WHERE c.id = v.complex_id)
 ON CONFLICT (complex_id, source, alias_name) DO NOTHING;
