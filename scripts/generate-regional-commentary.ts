@@ -26,25 +26,46 @@
 import { createClient } from '@supabase/supabase-js'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import Groq from 'groq-sdk'
+import {
+  applySpellFixes,
+  buildCommentaryPrompt,
+  fallbackCommentary,
+  normalizeWhitespace,
+  pickSlots,
+  rotationSeed,
+  validateCommentary,
+  type CommentaryFacts,
+} from '../src/lib/ai/regional-commentary-style'
 
-/** realtrade-story 운영 권역과 동일 — 창원 5구 + 김해 */
-const REGIONS: { sggCode: string; label: string }[] = [
-  { sggCode: '48121', label: '창원시 의창구' },
-  { sggCode: '48123', label: '창원시 성산구' },
-  { sggCode: '48125', label: '창원시 마산합포구' },
-  { sggCode: '48127', label: '창원시 마산회원구' },
-  { sggCode: '48129', label: '창원시 진해구' },
-  { sggCode: '48250', label: '김해시' },
+/**
+ * realtrade-story 운영 권역과 동일 — 창원 5구 + 김해.
+ * `shortLabel` 은 **문장에 들어가는 이름**이다. 1차 dry-run에서 성산구만 "창원시 성산구"로,
+ * 나머지는 "○○구"로 나와 카드끼리 표기가 어긋났다(모델이 라벨을 임의로 줄였다).
+ * 문장용 이름을 코드가 고정해 넘기면 흔들리지 않는다.
+ */
+const REGIONS: { sggCode: string; label: string; shortLabel: string }[] = [
+  { sggCode: '48121', label: '창원시 의창구', shortLabel: '의창구' },
+  { sggCode: '48123', label: '창원시 성산구', shortLabel: '성산구' },
+  { sggCode: '48125', label: '창원시 마산합포구', shortLabel: '마산합포구' },
+  { sggCode: '48127', label: '창원시 마산회원구', shortLabel: '마산회원구' },
+  { sggCode: '48129', label: '창원시 진해구', shortLabel: '진해구' },
+  { sggCode: '48250', label: '김해시', shortLabel: '김해시' },
 ]
 
 const GROQ_MODEL = 'llama-3.1-8b-instant'
 const GEMINI_MODEL = 'gemini-2.5-flash'
 /** 이 건수 미만이면 코멘트를 만들지 않는다 — 2~3건으로 "시장 동향"을 서술하면 과잉 해석이 된다 */
 const MIN_TX_FOR_COMMENTARY = 5
+/**
+ * 검증 실패 시 재시도 횟수. 재시도마다 슬롯 조합과 온도를 바꿔 다시 굴린다.
+ * 3회로 잡은 건 지역 6개 × 최대 3회 = 18콜이라 무료 티어 rate limit 안에 들어오기 때문이다.
+ */
+const MAX_ATTEMPTS = 3
 
 interface WeeklyStats {
   sggCode: string
   label: string
+  shortLabel: string
   periodStart: string
   periodEnd: string
   txCount: number
@@ -67,71 +88,37 @@ function pricePerPyeong(price: number, areaM2: number): number {
   return Math.round(price / (areaM2 / 3.3058))
 }
 
-function formatEok(price: number): string {
-  const uk = Math.floor(price / 10000)
-  const man = price % 10000
-  if (uk > 0 && man > 0) return `${uk}억 ${man.toLocaleString('ko-KR')}만원`
-  if (uk > 0) return `${uk}억원`
-  return `${price.toLocaleString('ko-KR')}만원`
-}
-
 /**
- * 프롬프트에 넣을 데이터 블록.
- * 값이 없으면 그 줄을 아예 빼서 모델이 null 을 지어내지 않게 한다.
+ * 조회 결과(WeeklyStats) → 문장 생성용 사실(CommentaryFacts).
+ *
+ * 증감은 **여기서 계산한다**. 모델에게 뺄셈을 시키면 안 된다 — 2026-07-31 dry-run에서
+ * llama-3.1-8b가 28건 vs 27건(=1건 증가)을 "1건 줄었어요"로 뒤집어 서술했다(같은 데이터로
+ * 두 번 돌렸을 때 방향이 서로 반대로 나옴). 실거래 사이트에서 수치 방향이 뒤집히는 건
+ * 치명적이라, 산술은 전부 코드가 하고 모델은 문장만 만든다.
  */
-function buildPrompt(s: WeeklyStats): string {
-  // 증감은 **여기서 계산해 문장 형태로 준다**. 모델에게 뺄셈을 시키면 안 된다 —
-  // 2026-07-31 dry-run에서 llama-3.1-8b가 28건 vs 27건(=1건 증가)을 "1건 줄었어요"로
-  // 뒤집어 서술했다(같은 데이터로 두 번 돌렸을 때 방향이 서로 반대로 나옴). 실거래 데이터
-  // 사이트에서 수치 방향이 뒤집히는 건 치명적이라, 산술은 전부 코드가 하고 모델은 문장만 만든다.
-  const diff = s.txCount - s.prevTxCount
-  const diffPhrase =
-    diff === 0 ? '직전 주와 같음' : diff > 0 ? `직전 주보다 ${diff}건 증가` : `직전 주보다 ${Math.abs(diff)}건 감소`
-
-  const lines: string[] = [
-    `## ${s.label} (지난주)`,
-    `- 매매 거래: ${s.txCount}건 (${diffPhrase})`,
-  ]
-  if (s.avgPricePerPyeong != null) {
-    // 주간 평균 평당가의 **전주 대비 변화율은 일부러 넣지 않는다**(2026-07-31 dry-run에서 결정).
-    // 주간 표본이 10~90건이라 어떤 평형·단지가 거래됐는지에 따라 평균이 크게 흔들린다 —
-    // 실제로 마산합포구가 28건 기준 "27.1% 상승"으로 나왔는데 이건 시장 변동이 아니라
-    // 거래 구성 차이다. 모델에 주면 그대로 단정적으로 서술해 오해를 만든다(ADR-005 기조).
-    // 수준(level)만 주고, 방향성은 아래 상승/하락 단지수(30일 기준)가 담당한다.
-    lines.push(`- 평균 평당가: ${s.avgPricePerPyeong.toLocaleString('ko-KR')}만원`)
+function toFacts(s: WeeklyStats): CommentaryFacts {
+  return {
+    shortLabel: s.shortLabel,
+    txCount: s.txCount,
+    txDiff: s.txCount - s.prevTxCount,
+    // avgPricePerPyeong 은 일부러 넘기지 않는다 — input_snapshot 에는 추적용으로 남기되
+    // 문장 생성에는 쓰지 않는다(이유는 buildCommentaryPrompt 주석 참고).
+    topDeal: s.topDeal
+      ? {
+          complexName: s.topDeal.complexName,
+          price: s.topDeal.price,
+          pyeong: Math.round(s.topDeal.areaM2 / 3.3058),
+          floor: s.topDeal.floor,
+        }
+      : null,
+    upComplexes: s.upComplexes,
+    downComplexes: s.downComplexes,
   }
-  if (s.topDeal) {
-    const py = Math.round(s.topDeal.areaM2 / 3.3058)
-    lines.push(
-      `- 최고가 거래: ${s.topDeal.complexName} ${py}평${s.topDeal.floor != null ? ` ${s.topDeal.floor}층` : ''} ${formatEok(s.topDeal.price)}`,
-    )
-  }
-  lines.push(`- 최근 30일 기준 상승 단지 ${s.upComplexes}곳 / 하락 단지 ${s.downComplexes}곳`)
-
-  // 지침을 "하지 마세요"보다 "이렇게 쓰세요"로 주고 예시를 넣는다 — 1차 dry-run에서 모델이
-  // 매번 "정리해 보겠습니다" 같은 도입부로 한 문장을 낭비하고 해요체 지시를 무시했다.
-  return `아래는 ${s.label}의 한 주간 아파트 실거래 데이터예요. 이걸 2~3문장으로 요약해주세요.
-
-${lines.join('\n')}
-
-작성 규칙:
-1. 첫 문장부터 바로 사실을 쓰세요. "정리해 보겠습니다", "동향입니다", "알려드릴게요" 같은 도입부는 절대 쓰지 마세요.
-2. 모든 문장을 해요체로 끝내세요("~했어요", "~예요"). "~습니다"체는 쓰지 마세요.
-3. 데이터에 있는 수치만 쓰세요. 없는 사실을 추측하거나 덧붙이지 마세요.
-4. 거래량 변화와 최고가 거래를 중심으로 쓰세요.
-5. 상승/하락 단지 수를 언급할 땐 "최근 30일 변동률 기준"이라고 밝히세요.
-6. 투자 권유·전망·조언 표현 절대 금지("사기 좋은", "지금이 기회", "오를 것으로 보인다", "주목할 만한" 등). 이미 일어난 일만 서술하세요.
-7. 줄바꿈 없이 한 문단으로 쓰세요. 최대 3문장.
-8. 데이터에 이미 적힌 증감(증가/감소/같음)을 그대로 쓰세요. 직접 계산하거나 방향을 바꾸지 마세요.
-9. 날짜 범위(2026-07-20 같은 형식)를 문장에 넣지 마세요. "지난주"로만 쓰세요.
-
-좋은 예시:
-지난주 ○○구에서는 아파트 42건이 거래돼 직전 주보다 5건 늘었어요. 가장 비싼 거래는 △△아파트 34평 12층으로 9억 2,000만원이었어요. 최근 30일 변동률 기준으로는 상승 단지 18곳, 하락 단지 12곳이에요.`
 }
 
 async function fetchWeeklyStats(
   supabase: ReturnType<typeof createClient>,
-  region: { sggCode: string; label: string },
+  region: { sggCode: string; label: string; shortLabel: string },
   periodStart: string,
   periodEnd: string,
 ): Promise<WeeklyStats> {
@@ -188,6 +175,7 @@ async function fetchWeeklyStats(
   return {
     sggCode: region.sggCode,
     label: region.label,
+    shortLabel: region.shortLabel,
     periodStart,
     periodEnd,
     txCount: rows.length,
@@ -200,35 +188,69 @@ async function fetchWeeklyStats(
   }
 }
 
+/**
+ * 온도를 0.4 → 0.8로 올렸다(2026-07-31).
+ * 낮은 온도가 "안전"해 보이지만, 8B 모델에서는 오히려 자기 최빈 패턴으로 수렴해
+ * 지역 6개가 똑같은 문장 틀로 나오는 원인이었다. 대신 수치 정확성은 온도가 아니라
+ * 아래 검증 게이트(validateCommentary)가 보장한다 — 틀린 숫자는 재시도로 걸러진다.
+ */
+const TEMPERATURE = 0.8
+/**
+ * 400 → 220. 여유를 주면 모델이 시키지도 않은 항목을 줄바꿈으로 덧붙여 4~5문장이 됐다
+ * (1차 검증에서 가장 흔한 반려 사유). 2~3문장이면 220토큰으로 충분하다.
+ */
+const MAX_TOKENS = 220
+/** 제목·머리말·"물론이죠" 같은 래퍼를 붙이지 않게 하는 최소 지시 */
+const SYSTEM_PROMPT =
+  '당신은 아파트 실거래 데이터를 요약하는 한국어 편집자예요. 요청받은 요약문만 출력하고 제목·머리말·설명·목록은 절대 붙이지 마세요.'
+
+/**
+ * **Gemini 우선, Groq 폴백**(2026-07-31 순서 뒤집음).
+ *
+ * 원래는 다른 배치들을 따라 Groq(llama-3.1-8b) 우선이었다. 단지 코멘트는 수천 건이라
+ * 속도·비용이 중요했지만 지역 코멘트는 **주 6건**이라 그 이유가 성립하지 않는다.
+ * 3차 dry-run에서 8B 출력이 검증은 통과하면서도 문장이 어색했다
+ * ("39평을 가진 신리마을중앙하이츠8단지아파트 6층이", "거래되며, 가장 비싼 거래였어요").
+ * 문장 품질이 이 배치의 존재 이유라, 더 나은 모델을 기본으로 둔다.
+ */
 async function callModel(prompt: string): Promise<{ text: string; model: string } | null> {
-  const groqKey = process.env.GROQ_API_KEY
   const geminiKey = process.env.GEMINI_API_KEY
+  const groqKey = process.env.GROQ_API_KEY
+
+  if (geminiKey) {
+    try {
+      const genAI = new GoogleGenerativeAI(geminiKey)
+      const model = genAI.getGenerativeModel({
+        model: GEMINI_MODEL,
+        systemInstruction: SYSTEM_PROMPT,
+        generationConfig: { temperature: TEMPERATURE, maxOutputTokens: MAX_TOKENS },
+      })
+      const result = await model.generateContent(prompt)
+      const text = result.response.text().trim()
+      if (text) return { text, model: GEMINI_MODEL }
+    } catch (err) {
+      // 스택 전체는 찍지 않는다 — 지역 6곳 × 재시도라 CI 로그가 스택으로 뒤덮인다.
+      // (2026-07-31 현재 이 키는 월 지출 한도 초과로 429가 계속 난다 — AI Studio 에서 한도 조정 필요)
+      console.error(`[regional-commentary] Gemini 실패, Groq로 폴백: ${(err as Error).message?.slice(0, 160)}`)
+    }
+  }
 
   if (groqKey) {
     try {
       const groq = new Groq({ apiKey: groqKey })
       const res = await groq.chat.completions.create({
         model: GROQ_MODEL,
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.4,
-        max_tokens: 400,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: prompt },
+        ],
+        temperature: TEMPERATURE,
+        max_tokens: MAX_TOKENS,
       })
       const text = res.choices[0]?.message?.content?.trim()
       if (text) return { text, model: GROQ_MODEL }
     } catch (err) {
-      console.error('[regional-commentary] Groq 실패, Gemini로 폴백:', err)
-    }
-  }
-
-  if (geminiKey) {
-    try {
-      const genAI = new GoogleGenerativeAI(geminiKey)
-      const model = genAI.getGenerativeModel({ model: GEMINI_MODEL })
-      const result = await model.generateContent(prompt)
-      const text = result.response.text().trim()
-      if (text) return { text, model: GEMINI_MODEL }
-    } catch (err) {
-      console.error('[regional-commentary] Gemini 호출 실패:', err)
+      console.error('[regional-commentary] Groq 호출 실패:', err)
     }
   }
 
@@ -266,8 +288,14 @@ async function main() {
   let ok = 0
   let skipped = 0
   let failed = 0
+  let fellBack = 0
+  /**
+   * 이번 실행에서 이미 쓴 개시부. 홈 피드는 6개 지역 카드를 세로로 쌓으므로,
+   * 문장 하나하나가 멀쩡해도 개시부가 겹치면 "폼 채우기"로 읽힌다(탐지기 S1).
+   */
+  const seenOpenings = new Set<string>()
 
-  for (const region of REGIONS) {
+  for (const [regionIndex, region] of REGIONS.entries()) {
     const stats = await fetchWeeklyStats(supabase, region, periodStart, periodEnd)
 
     if (stats.txCount < MIN_TX_FOR_COMMENTARY) {
@@ -276,22 +304,52 @@ async function main() {
       continue
     }
 
-    const result = await callModel(buildPrompt(stats))
-    if (!result) {
-      console.error(`  ✗ ${region.label}: 모델 호출 실패`)
-      failed++
-      continue
+    const facts = toFacts(stats)
+    const seed = rotationSeed(periodStart, regionIndex)
+
+    // 모델 출력이 규칙(숫자 일치·해요체·금지 표현·개시부 중복)을 어기면 슬롯을 바꿔 다시 굴린다.
+    // 사후 윤문(LLM 재호출로 다듬기)이 불가능한 크론 환경이라, 판정은 전부 결정론적이어야 한다.
+    let accepted: { text: string; model: string; signature: string } | null = null
+    let lastViolations: string[] = []
+
+    for (let attempt = 0; attempt < MAX_ATTEMPTS && !accepted; attempt++) {
+      const slots = pickSlots(facts, seed, attempt)
+      const result = await callModel(buildCommentaryPrompt(facts, slots))
+      if (!result) break
+
+      const text = applySpellFixes(normalizeWhitespace(result.text))
+      const check = validateCommentary(text, facts, seenOpenings)
+      if (check.ok) {
+        accepted = { text, model: result.model, signature: check.openingSignature }
+      } else {
+        lastViolations = check.violations
+        console.log(`    · ${region.label} 시도 ${attempt + 1} 반려: ${check.violations.join(' / ')}`)
+        // dry-run 은 프롬프트를 고치려고 돌리는 거라, 왜 반려됐는지 원문을 봐야 한다
+        if (dryRun) console.log(`      ↳ ${text}`)
+      }
     }
+
+    // 최후 방어선 — 숫자를 전부 코드가 박는 사람 작성 템플릿. 카드를 비우지 않는다.
+    if (!accepted) {
+      const slots = pickSlots(facts, seed)
+      const text = fallbackCommentary(facts, slots)
+      const check = validateCommentary(text, facts, seenOpenings)
+      accepted = { text, model: 'fallback-template', signature: check.openingSignature }
+      fellBack++
+      console.warn(`  ! ${region.label}: ${MAX_ATTEMPTS}회 모두 반려(${lastViolations.join(' / ')}) — 템플릿으로 대체`)
+    }
+
+    seenOpenings.add(accepted.signature)
 
     if (dryRun) {
       // dry-run 의 목적은 문장 품질 판단이므로 전문을 그대로 보여준다(잘라내면 톤·군더더기를 못 본다)
-      console.log(`\n  ✓ ${region.label} [${result.model}]`)
-      console.log(`  ${result.text.replace(/\n+/g, '\n  ')}\n`)
+      console.log(`\n  ✓ ${region.label} [${accepted.model}]`)
+      console.log(`  ${accepted.text}\n`)
       ok++
       continue
     }
 
-    console.log(`  ✓ ${region.label} [${result.model}] ${result.text.slice(0, 60)}…`)
+    console.log(`  ✓ ${region.label} [${accepted.model}] ${accepted.text.slice(0, 60)}…`)
 
     const { error } = await supabase.from('regional_commentary').upsert(
       {
@@ -301,8 +359,8 @@ async function main() {
         period_start: stats.periodStart,
         period_end: stats.periodEnd,
         headline: null,
-        body: result.text,
-        model_name: result.model,
+        body: accepted.text,
+        model_name: accepted.model,
         input_snapshot: stats,
         generated_at: new Date().toISOString(),
       },
@@ -319,7 +377,9 @@ async function main() {
     await new Promise((r) => setTimeout(r, 400))
   }
 
-  console.log(`[regional-commentary] 완료 — 성공 ${ok} / 건너뜀 ${skipped} / 실패 ${failed}`)
+  console.log(
+    `[regional-commentary] 완료 — 성공 ${ok}(템플릿 대체 ${fellBack}) / 건너뜀 ${skipped} / 실패 ${failed}`,
+  )
   if (failed > 0) process.exit(1)
 }
 
