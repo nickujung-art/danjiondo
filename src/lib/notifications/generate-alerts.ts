@@ -127,13 +127,34 @@ interface ScopedTransaction {
   name:      string
 }
 
-// 최근 7일 내 최저가 거래 1건 (area_type_id 설정 시 해당 평형만)
+/** 최근 적재 판정 창 — 이 기간 안에 **DB로 들어온** 거래만 알림 후보로 본다 */
+const INGEST_WINDOW_DAYS = 7
+/**
+ * 계약일 하한. 적재 기준으로 창을 잡으면 backfill-*.ts 가 과거 이력을 대량 적재할 때
+ * 전부 "방금 들어온 거래"로 보여 알림이 터진다. 신고 지연 p90 이 13일이라 90일이면
+ * 정상 지연은 전부 통과하면서 이력 백필만 걸러낸다.
+ */
+const MAX_DEAL_AGE_DAYS = 90
+
+/**
+ * 최근 **적재된** 거래 중 최저가 1건 (area_type_id 설정 시 해당 평형만).
+ *
+ * 창을 `deal_date`(계약일)가 아니라 `created_at`(적재 시각)으로 잡는다.
+ * MOLIT 은 계약일로부터 최대 30일 뒤까지 신고할 수 있어서, 계약일 기준 7일 창을 쓰면
+ * 신고가 7일 넘게 밀린 거래는 **DB에 들어온 순간 이미 창 밖**이라 영원히 발화하지 못했다.
+ * 라이브 실측(2026-07-31, 최근 60일 운영권역 3,024건): 지연 중앙값 2일, p90 13일,
+ * 7일 이내 도착 80.3% — 5건 중 1건이 구조적으로 알림 불가였다.
+ *
+ * 적재 기준으로 바꾸면 새로 들어온 거래는 지연과 무관하게 정확히 한 번 평가된다
+ * (중복 발송은 dedupe_key(`deal_date:area_type`)가 막는다).
+ */
 async function getScopedRecentLow(
   supabase: SupabaseClient<Database>,
   complexId: string,
   areaTypeId: string | null,
 ): Promise<ScopedTransaction | null> {
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+  const ingestedSince = new Date(Date.now() - INGEST_WINDOW_DAYS * 86_400_000).toISOString()
+  const dealDateFloor = new Date(Date.now() - MAX_DEAL_AGE_DAYS * 86_400_000)
     .toISOString()
     .split('T')[0]!
 
@@ -144,7 +165,8 @@ async function getScopedRecentLow(
     .is('cancel_date', null)
     .is('superseded_by', null)
     .eq('deal_type', 'sale')
-    .gte('deal_date', sevenDaysAgo)
+    .gte('created_at', ingestedSince)
+    .gte('deal_date', dealDateFloor)
     .order('price', { ascending: true })
     .limit(1)
 
