@@ -230,7 +230,85 @@ supabase/migrations/20260520000002_db_quality_fixes.sql    ← 🔴 남은 1건 
 
 ### 재차 중단한 근거
 
-오케스트레이터의 명시적 지시 — **"또 다른 사전 결함에서 막히면 다시 멈추고 보고하라 (임의로 고치지 마라 — 이번처럼)"**. 승인 1과 같은 버그 클래스이고 근거도 그대로 적용되지만, **승인 범위는 `20260518000002` 한 파일이었으므로** 다른 파일로 확장하지 않고 보고한다.
+오케스트레이터의 명시적 지시 — **"또 다른 사전 결함에서 막히면 다시 멈추고 보고하라 (임의로 고치지 마라 — 이번처럼)"**. 승인 1과 같은 버그 클래스이고 근거도 그대로 적용되지만, **승인 범위는 `20260518000002` 한 파일이었으므로** 다른 파일로 확장하지 않고 보고했다. → **승인받아 아래에서 처리.**
+
+---
+
+## 승인 3 — `db_quality_fixes.sql` INSERT 3개 가드 (커밋 `848b1e4`) — ✅ 완료
+
+승인 1과 **동일한 `where exists` 패턴**을 63·82·101행 INSERT 3개에 적용했다.
+
+**🔴 INSERT 값 불변 확인 (`git show HEAD:file` 대조):** 9행 전부 `complex_id`/`source`/`alias_name`/`confidence`가 **바이트 단위로 동일**. 각 `VALUES` 블록 첫 행의 `::uuid`·`::text`·`::numeric`은 서브쿼리 타입 추론용이며 값은 불변.
+
+```
+=== HEAD ===                                    === WORKING ===
+gen_random_uuid(), '7f5d84d2-…', 'manual', '토월성원아파트', 1.0     (9행 전부 일치)
+…
+gen_random_uuid(), '77de93f8-…', 'manual', '월포경동메르빌', 1.0
+```
+
+**`UPDATE`/`DELETE` 무접촉 확인:**
+```
+$ git diff <file> | grep -E "^[-+]" | grep -viE "^[-+]{3}" | grep -iE "update|delete"
+NO UPDATE/DELETE LINES CHANGED
+```
+
+---
+
+## Task 3 재실행 (3차) — ⚠️ **또 블로킹. 이번엔 완전히 다른 버그 클래스**
+
+`complex_aliases` FK 클래스는 **전부 해소됐다.** 체인이 `20260520000002`를 통과해 **약 2개월치(17개 파일) 더 전진**했으나, `20260528000003_complex_gap_stats.sql`에서 **새로운 종류의 오류**로 중단:
+
+```
+Applying migration 20260520000002_db_quality_fixes.sql...   ← ✅ 가드 적용 후 통과
+Applying migration 20260520000003 ~ 20260528000002 ...      ← 17개 파일 통과
+Applying migration 20260528000003_complex_gap_stats.sql...
+ERROR: function round(double precision, integer) does not exist (SQLSTATE 42883)
+At statement: 7
+  CREATE OR REPLACE FUNCTION public.compute_gap_stats(...)
+  LANGUAGE sql STABLE AS $$ ... $$
+```
+
+### 🔎 근본 원인 — 파일↔프로덕션 **drift**다 (hollow dependency 아님)
+
+로컬 파일 84·99행:
+```sql
+PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price) AS median_sale_price,
+PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price) AS median_jeonse_price,
+```
+
+**프로덕션 실제 함수 정의** (`pg_get_functiondef` 조회):
+```sql
+PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price)::numeric AS median_sale_price
+PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price)::numeric AS median_jeonse_price
+```
+
+**프로덕션에는 `::numeric` 캐스트가 있고 저장소 파일에는 없다.**
+
+`transactions.price`가 `bigint`(프로덕션 실측)이므로 `PERCENTILE_CONT`는 `double precision`을 반환한다. 캐스트가 없으면 116·117행의
+`ROUND((1.0 - j.median_jeonse_price / s.median_sale_price) * 100, 1)`이
+`round(double precision, integer)`를 호출하는데 **이 오버로드는 Postgres에 존재하지 않는다** — 프로덕션에도 없음을 확인했다:
+
+```
+$ (프로덕션) select oid::regprocedure from pg_proc where proname='round'
+round(double precision)      ← 1인자만
+round(numeric)
+round(numeric,integer)       ← 2인자는 numeric만
+```
+
+즉 **저장소 파일은 애초에 실행 불가능한 버전이고, 프로덕션에는 `::numeric`이 붙은 수정본이 들어가 있다.** `check_function_bodies=on`(기본값)에서 `LANGUAGE sql` 본문이 CREATE 시점에 검증되므로 로컬에서만 터진다.
+
+**추가 확인:**
+- 프로덕션 `compute_gap_stats`는 **정확히 1개** (오버로드 없음)
+- `compute_gap_stats`를 정의하는 다른 마이그레이션 없음 (`20260728120000`은 주석에서 언급만 함) → 후속 파일이 덮어쓰는 구조가 아니다
+
+**성격**: 이것은 Phase 36 시절 `execute_sql` 우회 적용으로 생긴 **파일↔프로덕션 drift**의 잔재로 보인다. Phase 37이 원장(ledger) 정합성은 복구했지만, **파일 내용이 프로덕션 객체와 다른 종류의 drift는 원장 조회로 잡히지 않는다** — `migration list`는 버전 문자열만 비교하기 때문이다.
+
+**해결 방향(미적용, 승인 대기)**: 로컬 파일 84·99행에 `::numeric`을 추가해 **프로덕션 정의와 일치**시킨다. Phase 37의 "프로덕션 충실 재현" 원칙과 정확히 부합하며, 프로덕션은 이미 그 상태이므로 재적용되지 않는다(`db push` 대상 아님).
+
+### 3차 중단 근거
+
+오케스트레이터 지시 — **"또 막히면 다시 멈추고 보고하라... 그때도 임의로 고치지 말고 보고해라."** 승인 범위는 `complex_aliases` FK 클래스였고, 이건 **다른 클래스(파일↔프로덕션 drift)** 이므로 확장하지 않고 보고한다.
 
 ## Task 4: [BLOCKING] `npm run db:push`로 DROP 마이그레이션 프로덕션 적용 — ❌ **미착수**
 
@@ -303,12 +381,22 @@ Task 3의 `db reset` 전체 체인 검증이 완료되지 않은 상태에서 �
 
 `supabase db reset`을 **이 저장소에서 처음으로 실제 실행**한 결과, 2026-05-18부터 누적된 hollow dependency 2건(`manual_aliases.sql`·`db_quality_fixes.sql` ↔ 시딩되지 않는 `complexes`)이 드러났다. `37-VERIFICATION.md`의 missing 3번("db reset을 실측 실행해 전체 체인이 끝까지 성공하는지 확인")이 요구한 그 실측이며, 결과적으로 Phase 37·38 어느 쪽 책임도 아닌 **더 오래되고 더 앞선 gap**이 O-3보다 먼저 걸린다는 사실이 확인됐다.
 
+## `db reset` 진행 경과 — 3회 실행으로 3개 결함 발견
+
+| 회차 | 도달 지점 | 실패 파일 | 원인 클래스 | 조치 |
+|---|---|---|---|---|
+| 1차 | `20260518000001` | `20260518000002_manual_aliases.sql` | hollow dependency (FK) | ✅ 승인 1 — `where exists` 가드 |
+| 2차 | `20260520000001` | `20260520000002_db_quality_fixes.sql` | hollow dependency (FK), 동일 클래스 | ✅ 승인 3 — 동일 가드 |
+| 3차 | `20260528000002` | `20260528000003_complex_gap_stats.sql` | **파일↔프로덕션 drift** (신규 클래스) | 🔴 승인 대기 |
+
+체인은 2026-05-18 → 2026-05-28까지 **약 열흘치 전진**했고, 남은 구간은 `20260528000003`~`20260731000005`(약 80개 파일)다.
+
 ## Next Phase Readiness
 
 **차단됨.** 재개 조건:
 
-1. **`20260520000002_db_quality_fixes.sql`의 INSERT 3개에 동일한 `where exists` 가드 적용 승인** (승인 1과 동일 패턴·동일 근거). 전수 조사 결과 이것이 `complex_aliases` FK 클래스의 **마지막 잔여분**이다
-2. → Task 3 3차 재실행. `20260521`~`20260731` 구간(미실행 ~100개 파일)에서 **다른 종류**의 hollow dependency가 더 나올 가능성은 배제하지 못했다
+1. **`20260528000003_complex_gap_stats.sql` 84·99행에 `::numeric` 추가 승인** — 프로덕션 실제 정의와 일치시키는 것이며(Phase 37 "충실 재현" 원칙 부합), 프로덕션은 이미 그 상태라 재적용되지 않는다
+2. → Task 3 4차 재실행. 남은 ~80개 파일에서 **같은 종류의 파일↔프로덕션 drift가 더 있을 가능성이 높다** — 이 클래스는 원장 조회(`migration list`)로 사전 탐지가 불가능하고 실행해야만 드러나기 때문이다
 3. → 전 구간 성공 시 Task 4 checkpoint(`db push --dry-run` → 승인 → `db push`) 진행
 
 로컬 Supabase 스택은 기동 상태로 남겨뒀다 (`npx supabase status`로 확인, 필요 시 `npx supabase stop`).

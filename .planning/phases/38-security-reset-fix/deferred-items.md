@@ -14,7 +14,9 @@
 | 파일 | INSERT 수 | 상태 |
 |---|---|---|
 | `20260518000002_manual_aliases.sql` | 1 (11행) | ✅ **해소됨** — 사용자 승인 후 `where exists` 가드 적용 (커밋 `9e60462`) |
-| `20260520000002_db_quality_fixes.sql` | 3 (63·82·101행) | 🔴 **미해소** — 승인 대기 |
+| `20260520000002_db_quality_fixes.sql` | 3 (63·82·101행) | ✅ **해소됨** — 동일 가드 적용 (커밋 `848b1e4`) |
+
+✅ **이 버그 클래스는 전부 해소됐다.** 3차 `db reset`에서 두 파일 모두 통과 확인.
 
 `20260520000002`의 `UPDATE`/`DELETE`문은 `WHERE ... IN (...)` 형태라 빈 테이블에서
 0행 매칭 no-op으로 안전하다 — 가드가 필요한 것은 INSERT 3개뿐이다.
@@ -42,6 +44,41 @@ on conflict (complex_id, source, alias_name) do nothing;
 **⚠️ 파급**: 이 결함으로 `supabase db reset`은 **2026-05-18부터 약 2.5개월간 항상 실패**해 왔다.
 `migration list`·`db push --dry-run`은 파일을 실행하지 않으므로 이 상태를 감지하지 못한다.
 장기적으로는 `db reset`을 CI 게이트에 넣는 것이 재발 방지책이다 (별도 phase 후보).
+
+---
+
+## 1b. 🔴 **신규 클래스** — 파일↔프로덕션 drift (`20260528000003_complex_gap_stats.sql`)
+
+**발견 시점:** 38-01 Task 3 **3차** 실행
+
+`complex_aliases` FK 클래스를 전부 해소한 뒤 체인이 `20260528000003`까지 전진했고,
+거기서 **완전히 다른 종류**의 오류로 중단됐다:
+
+```
+ERROR: function round(double precision, integer) does not exist (SQLSTATE 42883)
+```
+
+**원인**: 저장소 파일과 프로덕션 함수 정의가 다르다.
+
+| | `PERCENTILE_CONT` 표현식 (84·99행) |
+|---|---|
+| 저장소 파일 | `PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price) AS median_sale_price` |
+| **프로덕션 실제** | `PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price)::numeric AS median_sale_price` |
+
+`transactions.price`가 `bigint`라 `PERCENTILE_CONT`는 `double precision`을 반환하고,
+캐스트 없이는 116·117행의 `ROUND(<double precision>, 1)`이 존재하지 않는 오버로드를 호출한다.
+프로덕션에도 `round(double precision, integer)`는 없다(확인함) — 즉 **저장소 파일은 애초에
+실행 불가능한 버전**이고 프로덕션에는 수정본이 적용돼 있다.
+
+**성격**: Phase 36 시절 `execute_sql` 우회 적용으로 생긴 drift의 잔재로 추정된다.
+⚠️ **이 클래스는 `migration list`로 탐지 불가능하다** — 원장은 버전 문자열만 비교하므로
+파일 *내용*이 프로덕션 객체와 다른 drift는 걸러내지 못한다. **`db reset` 실행만이 유일한 탐지 수단**이다.
+
+**해결 방향(미적용, 승인 대기)**: 84·99행에 `::numeric` 추가 → 프로덕션 정의와 일치.
+Phase 37의 "프로덕션 충실 재현" 원칙에 부합하며, 프로덕션은 이미 그 상태라 재적용되지 않는다.
+
+**⚠️ 잔여 리스크**: 남은 ~80개 파일(`20260528000003`~`20260731000005`)에 **같은 종류의
+drift가 더 있을 가능성이 높다.** 실행해야만 드러나므로 사전 전수 조사가 불가능하다.
 
 ---
 
