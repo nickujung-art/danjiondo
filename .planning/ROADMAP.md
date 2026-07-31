@@ -1572,6 +1572,59 @@ Plans:
 
 **UI hint**: no
 
+### Phase 40: 창부레터 선행 조건 0-4·0-5 (+0-6)
+
+**Goal:** 다른 저장소(`changbuletter`)를 언블록한다. 카드뉴스 **슬라이드 텍스트를 자료구조로 추출해 `contents`에 적재**하고(0-4), **`rank_type='price_change'` 등락률 배치**를 신설한다(0-5). 창부레터는 문서 20개뿐이고 코드가 없다 — 이 둘이 끝나야 홈 히어로와 카드뉴스 뷰어에 붙일 데이터가 생긴다. 설계는 ADR-004·ADR-005가 LOCK했다.
+
+**Requirements:**
+- CBL-0-4a: `buildSlides(data)` 추출 — 🔴 **기존 PNG/HTML 출력 무변경 실증이 게이트**
+- CBL-0-4b: `contents` 적재 (`onConflict: 'slug'`, 멱등) + Phase 39 게이트를 `card-news/scripts`까지 확장
+- CBL-0-4c: 소급 3회차 + 주간 자동화 `--persist` 배선
+- CBL-0-5: `complex_rankings.rank_type`에 `price_change` 추가 + `aggregatePriceChange` + `hotArea` 근사 metadata
+- CBL-0-6: 카드 템플릿 리브랜딩(창원부동산랩 → 창부레터) + `card-templates.ts` 비율 1080→1350 (**드롭 가능**)
+
+**Depends on:** Phase 36 (0-1·0-2·0-3 완료 — `contents` 외 4테이블 + RLS), Phase 39 (onConflict 게이트)
+
+**Plans:** 5 plans (4 waves)
+
+| Wave | Plans | 내용 |
+|---|---|---|
+| 1 | 40-01 ‖ 40-02 | 0-4 슬라이드 추출(무변경 게이트) ‖ 0-5 등락률 배치 — **완전 독립, 병렬 가능** |
+| 2 | 40-03 | 0-4 적재 + 게이트 확장 |
+| 3 | 40-04 | 0-4 소급 + 워크플로 + 체크포인트 |
+| 4 | 40-05 | 0-6 리브랜딩·비율 (드롭 가능) |
+
+Plans:
+- [ ] 40-01-PLAN.md — `buildSlides()` 추출 + 골든 회귀 하네스 + 전 18시리즈 HTML 무변경 실증 (마이그레이션 0건)
+- [ ] 40-02-PLAN.md — `price_change` CHECK 확장 + `aggregatePriceChange` + 크론 소요시간 실측 (**이 Phase 유일의 마이그레이션**)
+- [ ] 40-03-PLAN.md — onConflict 게이트를 `card-news/scripts`·`.js/.mjs`까지 확장 + `persist-contents.js` + EXPLAIN 사전 검증
+- [ ] 40-04-PLAN.md — 소급 3회차 + 원본 값 대조 보고 + `weekly-generate.yml --persist` + **0-4 종결 체크포인트**
+- [ ] 40-05-PLAN.md — 리브랜딩 8곳 + 비율 6줄 + 어드민 빌더 5종 육안 확인 체크포인트 (드롭 가능)
+
+**Success Criteria:**
+1. `buildSlides(data)` 존재, 템플릿과 DB 적재가 같은 원천을 쓴다
+2. 🔴 리팩터 전후 HTML이 **전 18시리즈에서 바이트 동일** (동결 스냅샷 기준 `diff -r`)
+3. `contents`에 `type='card_news'`·`site_id='changbuletter'` 행 + `body.slides[*]`가 `kicker`·`big`·`label`·`sub` 4필드
+4. 같은 회차 2회 적재해도 중복 없음 (멱등)
+5. 소급 3회차 반영 또는 **미반영 사유가 값 대조 근거와 함께 기록**
+6. `rank_type='price_change'` 행 존재 (배치 1회 실행 후)
+7. 등락률이 `cancel_date IS NULL AND superseded_by IS NULL` 적용 (코드+테스트)
+8. `price_change` 1위 행 `metadata`에 지역명 (`hotArea` 근사)
+9. `rankings` 크론 소요시간 증가분 실측 기록
+10. (0-6 수행 시) `card-templates.ts` 1350 + 두 파일 `창원부동산랩` 잔존 0건
+11. `npm run lint` exit 0 / 테스트 **실패 이름 집합** 불변 / `migration list --linked` 0/0
+
+**Notes:**
+- 🔴 **40-CONTEXT D-01의 사실 오류 정정**: `card-news/output/`의 아카이브 HTML 16개는 **회귀 기준으로 쓸 수 없다.** 플래너 실측 결과 완전 정적 함수 `renderClosing`조차 4/4 불일치 — 2026-06-24·06-29 이후 디자인이 의도적으로 바뀌었다. 40-01이 **새 골든을 커밋**해 대체한다
+- 🔴 **D-01의 "템플릿이 slides를 렌더"는 4필드 계약 하에서 구현 불가능**(`renderRanking`은 10행). 단일 원천을 `slides[]`가 아닌 `data`로 잡고, 문구 갈라짐은 **containment 테스트**로 강제한다 (40-01)
+- ✅ **0-4와 0-5는 완전 독립이고 마이그레이션 충돌이 없다** — 0-4는 `card-news/` 전용이며 마이그레이션 0건이다. 마이그레이션을 만드는 plan은 40-02 하나뿐
+- 🔴 **Phase 39 게이트의 사각지대**: `collectUpsertSites`가 `.ts/.tsx`만 스캔하고 루트가 `src/`뿐이라 `card-news/scripts/*.js`의 새 upsert를 **못 본다.** 40-03이 먼저 넓힌 뒤 `contents` upsert를 쓴다
+- 📌 **아카이브는 3건에서 시작한다** (`2026-05`·`2026-W24`·`2026-W25`). 더 오래된 회차는 `output/`·Supabase 버킷 어디에도 없다. 늘리는 방법은 소급이 아니라 발행 빈도
+- `hotArea`는 **MVP 근사**(등락률 1위 단지의 지역명) — ADR-005 §2의 "미결"을 40-CONTEXT D-05가 확정
+- `git push` 하지 않는다 — 배포는 별도 사용자 결정. 배포 의존 항목은 "미확인"으로 표기
+
+**UI hint**: no (0-6 수행 시 어드민 카드뉴스 빌더 비율만 1:1 → 4:5)
+
 ---
 ## Milestone Summary
 
