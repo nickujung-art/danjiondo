@@ -2,6 +2,7 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 import { getActiveSggCodes } from './regions'
+import { SITE_ID } from '@/lib/data/site'
 
 const WINDOW_DAYS = 30
 
@@ -184,6 +185,7 @@ async function aggregateInterest(supabase: SupabaseClient<Database>, activeSggCo
       complex_id,
       complexes!inner (sgg_code)
     `)
+    .eq('site_id', SITE_ID)
     .in('complexes.sgg_code', activeSggCodes)
     .limit(5000)
 

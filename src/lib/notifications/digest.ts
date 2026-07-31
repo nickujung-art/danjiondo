@@ -1,6 +1,7 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
+import { SITE_ID } from '@/lib/data/site'
 
 const BATCH_SIZE = 50 // deliver.ts와 동일한 배치 크기
 
@@ -22,6 +23,7 @@ export async function buildWeeklyDigest(
   const { data: favorites } = await supabase
     .from('favorites')
     .select('user_id, complex_id')
+    .eq('site_id', SITE_ID)
     .limit(10000)
 
   if (!favorites?.length) return { inserted: 0 }

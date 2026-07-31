@@ -1,6 +1,7 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
+import { SITE_ID } from '@/lib/data/site'
 
 export interface FavoriteItem {
   id: string
@@ -28,6 +29,7 @@ export async function getFavorites(
        complexes!inner (id, canonical_name, si, gu, dong)`,
     )
     .eq('user_id', userId)
+    .eq('site_id', SITE_ID)
     .order('created_at', { ascending: false })
 
   if (error) throw new Error(`getFavorites failed: ${error.message}`)
@@ -63,6 +65,7 @@ export async function isFavorited(
     .select('id')
     .eq('user_id', userId)
     .eq('complex_id', complexId)
+    .eq('site_id', SITE_ID)
     .maybeSingle()
 
   return data !== null

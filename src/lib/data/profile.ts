@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
+import { SITE_ID } from '@/lib/data/site'
 
 export async function hasPushSubscription(
   userId: string,
@@ -21,6 +22,7 @@ export async function getFavoritesCount(
     .from('favorites')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', userId)
+    .eq('site_id', SITE_ID)
   return count ?? 0
 }
 
