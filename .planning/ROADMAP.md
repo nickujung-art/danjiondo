@@ -1413,13 +1413,13 @@ Plans:
 - DRIFT-05: `migration list` local-only·remote-only 0건 + `db push --dry-run` 통과 + 스키마 무변경 확인
 
 **Depends on:** Phase 36 (그 실행 중 drift가 발견됐고 `36-00-SUMMARY.md`에 진단이 기록됨)
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans executed ✅ Complete (2026-07-30)
 
 **Wave 0** *(복원 — 이게 선행되어야 DRIFT-03이 안전해짐)* ✅ Complete (2026-07-30)
 - [x] 37-00-PLAN.md — 프로덕션 전용 5건 로컬 파일 복원 + 라이브 대조 (DRIFT-01, DRIFT-02) — 5/5 원장 md5 일치, baseline 11항목 무변경, remote-only 18→13. 커밋 `4e70a7e`
 
-**Wave 1** *(blocked on 37-00 — 이제 unblocked)*
-- [ ] 37-01-PLAN.md — 원장 13건 reverted + 타임스탬프 중복 3쌍 리네이밍 + 회복 검증 (DRIFT-03, DRIFT-04, DRIFT-05)
+**Wave 1** *(blocked on 37-00)* ✅ Complete (2026-07-30)
+- [x] 37-01-PLAN.md — 원장 13건 reverted + 타임스탬프 중복 3쌍 리네이밍 + 회복 검증 (DRIFT-03, DRIFT-04, DRIFT-05) — `migration list` 0/0, `db push --dry-run` upToDate, 타임스탬프 중복 0건, baseline 11/11 무변경. 커밋 `4821f52`(원장 백업)·`dac50c4`(리네이밍+원장 정리)
 
 **Cross-cutting constraints:**
 - **스키마를 변경하지 않는다.** 이 Phase의 모든 작업은 (a) 파일 생성/리네이밍 (b) 원장 조작뿐이다. `execute_sql`로 DDL을 실행하는 일이 없어야 한다. 검증 목적의 읽기 조회만 허용
@@ -1440,8 +1440,13 @@ Plans:
 **UI hint**: no (마이그레이션 파일·원장 전용)
 
 Plans:
-- [ ] 37-00-PLAN.md — 프로덕션 전용 5건 복원
-- [ ] 37-01-PLAN.md — 원장 정리 + 리네이밍 + 회복 검증
+- [x] 37-00-PLAN.md — 프로덕션 전용 5건 복원
+- [x] 37-01-PLAN.md — 원장 정리 + 리네이밍 + 회복 검증
+
+**이월 (별도 Phase):**
+- **O-1** `recommend_hagwons` 오버로드 2개 공존 (`p_fee_tier text` / `p_fee_tiers text[]`) — `src/lib/**/hagwon*` 호출 시그니처 확인 선행 필요
+- **O-2** `TO` 절 누락 정책 다수 하드닝 — 프로덕션·로컬 동시 변경 필요
+- **O-3** (신규) `hagwon_db.blog_tags`·`blog_snippet` `ADD COLUMN` DDL이 로컬에 없어 `db reset` 실패 가능. 원문은 `.planning/phases/37-migration-drift/ledger-backup-13-reverted.sql`의 `20260619043107` 블록에 보존됨 — `20260619000003` 앞 슬롯으로 복원 + `repair --status applied` + `db reset` 실측 검증 필요
 
 ---
 ## Milestone Summary

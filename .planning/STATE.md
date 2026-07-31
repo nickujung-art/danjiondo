@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
-status: Phase 37 In Progress (1/2 plans)
-last_updated: "2026-07-30T09:20:00.000Z"
+status: Phase 37 Complete (2/2 plans)
+last_updated: "2026-07-30T10:05:00.000Z"
 progress:
   total_phases: 34
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 50
-  completed_plans: 44
-  percent: 18
+  completed_plans: 45
+  percent: 21
 ---
 
 # Project State — 단지온도
@@ -19,7 +19,9 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-06)
 
 **Core value:** 창원·김해 실수요자가 "이 단지 사도 되는지" 데이터와 이웃 의견으로 30분 안에 결정 짓게 한다.
-**Current focus:** Phase 37 🔄 진행 중 (1/2 plans — Wave 0 완료: 프로덕션 전용 마이그레이션 5건 로컬 복원, remote-only 18→13). Wave 1(37-01: reverted 13건 + 타임스탬프 중복 3쌍 리네이밍) 대기
+**Current focus:** Phase 37 ✅ 완료 (2/2 plans, 2026-07-30) — 마이그레이션 원장·저장소 정합성 회복. `migration list --linked` local-only 0 / remote-only 0, `db push --dry-run` upToDate, 타임스탬프 중복 0건, baseline 11/11 무변경(스키마 변경 0). `npm run db:push` 정상 작동 상태 복구.
+
+> ⚠️ **후속 필수(별도 Phase)** — O-3: `hagwon_db.blog_tags`·`blog_snippet` `ADD COLUMN` DDL이 로컬 마이그레이션에 없어 `supabase db reset`이 `20260619000003`에서 실패할 가능성이 높다(프로덕션은 정상). 원문은 `.planning/phases/37-migration-drift/ledger-backup-13-reverted.sql`의 `20260619043107` 블록에 보존. 그 외 O-1(`recommend_hagwons` 오버로드 2개), O-2(`TO` 절 누락 정책 하드닝)도 이월.
 
 ## Current Phase
 
