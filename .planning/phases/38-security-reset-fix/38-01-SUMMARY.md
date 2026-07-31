@@ -308,7 +308,86 @@ round(numeric,integer)       ← 2인자는 numeric만
 
 ### 3차 중단 근거
 
-오케스트레이터 지시 — **"또 막히면 다시 멈추고 보고하라... 그때도 임의로 고치지 말고 보고해라."** 승인 범위는 `complex_aliases` FK 클래스였고, 이건 **다른 클래스(파일↔프로덕션 drift)** 이므로 확장하지 않고 보고한다.
+오케스트레이터 지시 — **"또 막히면 다시 멈추고 보고하라... 그때도 임의로 고치지 말고 보고해라."** 승인 범위는 `complex_aliases` FK 클래스였고, 이건 **다른 클래스(파일↔프로덕션 drift)** 이므로 확장하지 않고 보고했다. → **승인 + 전수 탐지 방식 지시받아 아래에서 처리.**
+
+---
+
+## 승인 4 — `::numeric` 캐스트 + **1패스 전수 탐지** — ✅ 완료
+
+### (1) `20260528000003` 수정 (커밋 `afbc605`)
+
+프로덕션 실측 정의(`pg_get_functiondef`)에 맞춰 84·99행에 `::numeric` 추가:
+```sql
+PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price)::numeric AS median_sale_price
+```
+
+### (2) 전수 탐지 — `db reset` 왕복 대신 1패스 수집
+
+`db reset`을 반복하지 않고, 실패 지점 이후의 **남은 마이그레이션 77개를 로컬 DB에 하나씩 직접 적용**하며 **에러가 나도 멈추지 않고 전부 수집**했다.
+
+```bash
+# 로컬 DB 상태: 20260530000002까지 적용됨 (db reset이 20260601000001에서 중단)
+docker exec -i supabase_db_danjiondo psql -U postgres -d postgres -v ON_ERROR_STOP=1 -1 < <file>
+# CONCURRENTLY 포함 파일은 -1(단일 트랜잭션) 제외
+```
+
+**수집 결과: 77개 중 5개 이상 신호 → 실제 원인 실패 2건**
+
+| 파일 | 신호 | 판정 |
+|---|---|---|
+| `20260601000001_invest_prediction_rpcs.sql` | `ERROR: function round(double precision, integer) does not exist` | 🔴 **원인 실패** — 파일↔프로덕션 drift |
+| `20260604000004_fix_prediction_ranking_future_only.sql` | 동일 에러 | 🔴 **원인 실패** — 동일 drift (같은 함수 재정의본) |
+| `20260608000002_school_advancement_breakdown.sql` | `NOTICE: column … already exists, skipping` | ⚪ **오탐** — NOTICE일 뿐 에러 아님 |
+| `20260624000002_area_type_trigger.sql` | (stderr 잡음) | ⚪ **오탐** |
+| `20260731000003_ad_images_bucket_policies.sql` | (stderr 잡음) | ⚪ **오탐** |
+
+> 탐지 스크립트가 stderr 내용 유무로 판정해 `NOTICE`를 실패로 오분류했다(exit code가 정확한 신호였다). 3건은 재실행으로 오탐임을 확인했고, **최종 확정은 아래 클린 `db reset` 전 구간 성공으로 이뤄졌다.**
+>
+> **연쇄 파생 없음**: 두 원인 실패는 `-1`(단일 트랜잭션)로 롤백돼 후속 파일에 객체 누락을 전파하지 않았고, 이후 73개 파일이 전부 정상 적용됐다.
+
+### (3) 원인 실패 2건 수정 (커밋 `6a832fc`)
+
+**프로덕션 실측을 정답으로 삼아 파일을 일치**시켰다. 원인은 `20260528000003`과 미묘하게 달랐다 — 캐스트 위치가 `PERCENTILE_CONT`가 아니라 **`ROUND`의 인자**였다:
+
+| | `median_change_pct` 처리 |
+|---|---|
+| 저장소 파일 | `ROUND(br.median_change_pct, 1) AS median_change_pct` |
+| **프로덕션 실측** | `ROUND(br.median_change_pct::numeric, 1) AS median_change_pct` |
+
+`PERCENTILE_CONT`는 **numeric 오버로드가 없어** `ORDER BY` 컬럼이 numeric이어도 `double precision`을 반환한다. 따라서 `ROUND(<double precision>, 1)`이 존재하지 않는 오버로드를 호출한다.
+
+같은 함수의 다른 `ROUND` 호출(단일 인자 `ROUND(ap.avg_near_price)`, `ROUND((…)::numeric, 1)`)은 프로덕션과 이미 일치해 **손대지 않았다**. 로직·값 변경 없음.
+
+---
+
+## 🎉 Task 3 최종 — `npm run db:reset` **전 구간 성공 (exit 0)**
+
+```
+Applying migration 20260619000003_add_hagwon_blog_fields.sql...
+Applying migration 20260619000004_phase28_subject_v2.sql...
+Applying migration 20260619000005_recommend_hagwon_candidates_v2.sql...
+…
+Applying migration 20260731000003_ad_images_bucket_policies.sql...
+Applying migration 20260731000004_drop_recommend_hagwons_legacy_overload.sql...
+Applying migration 20260731000005_fix_increment_view_count_security.sql...
+Seeding data from supabase/seed.sql...
+Restarting containers...
+Finished supabase db reset on branch main.
+=== EXIT: 0 ===
+```
+
+**`20260619000003` → `000004` → `000005` 순서가 로그에 그대로 찍혔고 오류 없이 통과했다.** 이것이 HARD-02의 합격 증거다.
+
+### 리셋 후 로컬 상태 검증 — 4/4 통과
+
+| # | 검증 | 결과 |
+|---|---|---|
+| 1 | `hagwon_db.blog_snippet`·`blog_tags` 존재 | ✅ `blog_snippet\|text`, `blog_tags\|ARRAY` |
+| 2 | `recommend_hagwons` **정확히 1건**, 5번째 인자 `text[]` | ✅ `recommend_hagwons(double precision,double precision,text,text[],text[],integer)` |
+| 3 | `recommend_hagwon_candidates` 1건(인자 7개) — 회귀 없음 | ✅ `(double precision,double precision,double precision,double precision,text,text,integer)` |
+| 4 | `storage.buckets`의 `ad-images` + `ad_images_service_write` | ✅ `ad-images\|t` / `{authenticated}` / `with_check`에 `auth.role() = 'service_role'` 포함 |
+
+**HARD-02 판정: ✅ 통과 (exit 0 + 검증 4/4).** DROP 마이그레이션이 체인 안에서 실행돼 **로컬에서도 오버로드가 1개로 수렴**함이 확인됐다.
 
 ## Task 4: [BLOCKING] `npm run db:push`로 DROP 마이그레이션 프로덕션 적용 — ❌ **미착수**
 
@@ -322,19 +401,21 @@ Task 3의 `db reset` 전체 체인 검증이 완료되지 않은 상태에서 �
 
 `20260518000002_manual_aliases.sql`은 **2026-05-18**에 추가됐고, 그 시점부터 `supabase db reset`은 **항상** 이 지점에서 실패해 왔다. 즉 오늘(2026-07-31)까지 **약 2.5개월간 아무도 로컬 리셋을 끝까지 실행하지 못하는 상태**였고, 그 사실이 발견되지 않은 이유는 `migration list`·`db push --dry-run`이 **파일을 실행하지 않기 때문**이다.
 
-### Phase 37 O-3 gap의 종결 여부
+### Phase 37 O-3 gap의 종결 여부 — ✅ **종결됨 (단, 전제는 반증됨)**
 
-`37-VERIFICATION.md`의 O-3(=HARD-02: `blog_*` 컬럼 hollow dependency로 `db reset` 실패)에 대해 이번 Phase가 확정한 것과 못한 것을 구분한다:
+`37-VERIFICATION.md`의 O-3(=HARD-02: `blog_*` 컬럼 hollow dependency로 `db reset` 실패)에 대한 최종 판정:
 
 | 항목 | 상태 |
 |---|---|
-| O-3가 지목한 결함(`blog_*` 컬럼 미생성 + v2 슬롯 순서)의 **파일 수준 수정** | ✅ 완료 (`20260619000003` 신규 + `000005` 이동 + repair 2건) |
-| O-3가 **`db reset` 실패의 유일한 원인이라는 전제** | ❌ **반증됨.** 더 앞선 `20260518000002`(2일 앞이 아니라 **1개월 앞**)가 먼저 걸린다 |
-| O-3 수정이 실제로 `db reset`을 통과시키는지 **실행 검증** | 🔴 **미검증** — 체인이 아직 `20260619` 구간에 도달하지 못했다 |
+| O-3가 지목한 결함의 **파일 수준 수정** | ✅ 완료 (`20260619000003` 신규 + `000005` 이동 + repair 2건) |
+| O-3 수정이 실제로 `db reset`을 통과시키는지 **실행 검증** | ✅ **검증됨** — 최종 리셋 로그에 `000003 → 000004 → 000005` 순서로 통과 확인 |
+| O-3가 **`db reset` 실패의 유일한 원인이라는 전제** | ❌ **반증됨** — 앞서 **4건**의 다른 결함이 먼저 걸렸다 |
 
-**따라서 O-3 gap은 아직 종결되지 않았다.** Phase 37이 "db reset이 blog 컬럼 때문에 실패한다"고 진단한 것은 정적 분석으로는 타당했으나, **실행해 보면 그보다 훨씬 앞에서 다른 이유로 먼저 죽는다.** O-3 수정의 유효성은 `20260520000002`까지 넘긴 뒤에야 실증할 수 있다.
+**O-3 gap은 종결됐다.** 다만 Phase 37의 진단은 **불완전**했다: "db reset이 `blog_*` 컬럼 때문에 실패한다"는 정적 분석은 타당했으나, 실제로는 그보다 **1개월 앞선 `20260518000002`를 시작으로 4건이 먼저** 체인을 끊고 있었다. O-3만 고쳤다면 `db reset`은 여전히 실패했을 것이다.
 
-이것이 "실행하지 않는 검증(`migration list` / `--dry-run`)"의 한계를 보여주는 두 번째 사례다 — Phase 37이 `gaps_found`를 받은 바로 그 이유이며, 이번엔 그 gap 자체의 전제가 불완전했음이 드러났다.
+이것이 "실행하지 않는 검증(`migration list` / `db push --dry-run`)"의 한계를 보여주는 결정적 사례다 — Phase 37이 `gaps_found`를 받은 바로 그 이유이며, 이번엔 **그 gap 자체의 전제도 불완전했음**이 드러났다.
+
+**특히 파일↔프로덕션 drift 클래스(3건)는 `migration list`로 원리적으로 탐지 불가능하다** — 원장은 버전 문자열만 비교하고 파일 *내용*은 보지 않기 때문이다. `db reset` 실행만이 유일한 탐지 수단이다.
 
 ## Files Created/Modified
 
@@ -381,27 +462,27 @@ Task 3의 `db reset` 전체 체인 검증이 완료되지 않은 상태에서 �
 
 `supabase db reset`을 **이 저장소에서 처음으로 실제 실행**한 결과, 2026-05-18부터 누적된 hollow dependency 2건(`manual_aliases.sql`·`db_quality_fixes.sql` ↔ 시딩되지 않는 `complexes`)이 드러났다. `37-VERIFICATION.md`의 missing 3번("db reset을 실측 실행해 전체 체인이 끝까지 성공하는지 확인")이 요구한 그 실측이며, 결과적으로 Phase 37·38 어느 쪽 책임도 아닌 **더 오래되고 더 앞선 gap**이 O-3보다 먼저 걸린다는 사실이 확인됐다.
 
-## `db reset` 진행 경과 — 3회 실행으로 3개 결함 발견
+## `db reset` 전체 경과 — 결함 5건 발견·수정 후 전 구간 성공
 
 | 회차 | 도달 지점 | 실패 파일 | 원인 클래스 | 조치 |
 |---|---|---|---|---|
-| 1차 | `20260518000001` | `20260518000002_manual_aliases.sql` | hollow dependency (FK) | ✅ 승인 1 — `where exists` 가드 |
-| 2차 | `20260520000001` | `20260520000002_db_quality_fixes.sql` | hollow dependency (FK), 동일 클래스 | ✅ 승인 3 — 동일 가드 |
-| 3차 | `20260528000002` | `20260528000003_complex_gap_stats.sql` | **파일↔프로덕션 drift** (신규 클래스) | 🔴 승인 대기 |
+| 1차 | `20260518000001` | `20260518000002_manual_aliases.sql` | hollow dependency (FK) | ✅ 승인 1 — `where exists` 가드 (`9e60462`) |
+| 2차 | `20260520000001` | `20260520000002_db_quality_fixes.sql` | hollow dependency (FK), 동일 클래스 | ✅ 승인 3 — 동일 가드 (`848b1e4`) |
+| 3차 | `20260528000002` | `20260528000003_complex_gap_stats.sql` | 파일↔프로덕션 drift (신규 클래스) | ✅ 승인 4 — `::numeric` (`afbc605`) |
+| 4차 | `20260530000002` | `20260601000001_invest_prediction_rpcs.sql` | 파일↔프로덕션 drift | ✅ 1패스 전수 탐지로 수집 → `::numeric` (`6a832fc`) |
+| ↑ 동일 패스 | — | `20260604000004_fix_prediction_ranking_future_only.sql` | 파일↔프로덕션 drift | ✅ 동시 수정 (`6a832fc`) |
+| **최종** | **전 구간** | — | — | ✅ **exit 0** |
 
-체인은 2026-05-18 → 2026-05-28까지 **약 열흘치 전진**했고, 남은 구간은 `20260528000003`~`20260731000005`(약 80개 파일)다.
+**결함 5건 = hollow dependency 2건 + 파일↔프로덕션 drift 3건.**
+1패스 전수 탐지를 도입한 덕분에 4·5번째를 한 번에 잡아 `db reset` 왕복을 1회로 줄였다.
 
 ## Next Phase Readiness
 
-**차단됨.** 재개 조건:
-
-1. **`20260528000003_complex_gap_stats.sql` 84·99행에 `::numeric` 추가 승인** — 프로덕션 실제 정의와 일치시키는 것이며(Phase 37 "충실 재현" 원칙 부합), 프로덕션은 이미 그 상태라 재적용되지 않는다
-2. → Task 3 4차 재실행. 남은 ~80개 파일에서 **같은 종류의 파일↔프로덕션 drift가 더 있을 가능성이 높다** — 이 클래스는 원장 조회(`migration list`)로 사전 탐지가 불가능하고 실행해야만 드러나기 때문이다
-3. → 전 구간 성공 시 Task 4 checkpoint(`db push --dry-run` → 승인 → `db push`) 진행
+**Task 3 완료.** 다음은 Task 4 checkpoint(`db push --dry-run` → 사용자 승인 → `db push`)다.
 
 로컬 Supabase 스택은 기동 상태로 남겨뒀다 (`npx supabase status`로 확인, 필요 시 `npx supabase stop`).
 
-⚠️ **현 시점 HARD-02 판정: 미검증.** `db reset`이 전 구간 성공하지 못했으므로 "통과"로 기록하지 않는다.
+✅ **HARD-02 판정: 통과.** `npm run db:reset` exit 0 + 리셋 후 로컬 검증 4/4.
 
 ---
 *Phase: 38-security-reset-fix*
