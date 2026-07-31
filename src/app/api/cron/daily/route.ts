@@ -11,6 +11,7 @@ import {
 import { fetchCheongyakList, fetchRemndrList, fetchCompetitionRate } from '@/services/cheongyak/client'
 import { normalizeCheongyakItem, normalizeRemndrItem } from '@/services/cheongyak/normalize'
 import { ingestOffiMonth } from '@/lib/data/realprice-officetel'
+import { upsertMolitListing } from '@/lib/data/new-listings-molit'
 import { getActiveSggCodes, getActiveCityNames } from '@/lib/data/regions'
 
 export const runtime = 'nodejs'
@@ -117,23 +118,23 @@ export async function GET(request: Request): Promise<Response> {
     try {
       const trades = await fetchPresaleTrades(lawdCd, dealYmd)
       for (const trade of trades) {
-        const { data: listing } = await supabase
-          .from('new_listings')
-          .upsert(
-            {
-              name: trade.aptNm,
-              region: trade.umdNm,
-              price_min: parseAmount(trade.dealAmount),
-              price_max: parseAmount(trade.dealAmount),
-              fetched_at: new Date().toISOString(),
-            },
-            { onConflict: 'name,region' },
-          )
-          .select('id')
-          .single()
+        // upsert를 쓰지 않는 이유·에러 확인의 필요성은 upsertMolitListing 주석 참조.
+        // 요약: MOLIT 유일성 제약이 부분 인덱스(WHERE pblanc_no IS NULL)라 ON CONFLICT
+        // 추론이 원리적으로 불가능했고, 예전 코드는 error를 확인조차 하지 않아 16일간 묻혔다.
+        const { id: listingId, error: listingError } = await upsertMolitListing(supabase, {
+          name:      trade.aptNm,
+          region:    trade.umdNm,
+          price:     parseAmount(trade.dealAmount),
+          fetchedAt: new Date().toISOString(),
+        })
 
-        if (!listing) continue
-        const listingId = (listing as { id: string }).id
+        if (listingError) {
+          errors.push(
+            `new_listings molit name=${trade.aptNm} region=${trade.umdNm}: ${listingError}`,
+          )
+          continue
+        }
+        if (!listingId) continue
         const dealDate = `${trade.dealYear}-${trade.dealMonth.padStart(2, '0')}-${trade.dealDay.padStart(2, '0')}`
 
         const { error } = await supabase
