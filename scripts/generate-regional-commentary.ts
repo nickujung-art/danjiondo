@@ -213,11 +213,23 @@ const SYSTEM_PROMPT =
  * ("39평을 가진 신리마을중앙하이츠8단지아파트 6층이", "거래되며, 가장 비싼 거래였어요").
  * 문장 품질이 이 배치의 존재 이유라, 더 나은 모델을 기본으로 둔다.
  */
+/**
+ * 이번 실행에서 Gemini 를 포기했는지.
+ *
+ * 2026-07-31 현재 Gemini 키가 월 지출 한도 초과라 모든 호출이 429다(무료 운영 방침상
+ * 당분간 이 상태를 유지한다 — MVP 오픈 후 재검토). Gemini 를 1순위로 두는 설계는 유지하되,
+ * 한 번 실패하면 이번 실행 동안은 더 시도하지 않는다. 안 그러면 지역 6곳 × 재시도 3회 =
+ * 최대 18번을 헛되이 왕복하고 CI 로그도 429로 뒤덮인다.
+ *
+ * 실행이 끝나면 초기화되므로, 나중에 한도를 풀면 다음 크론부터 자동으로 Gemini 를 다시 쓴다.
+ */
+let geminiDisabledForRun = false
+
 async function callModel(prompt: string): Promise<{ text: string; model: string } | null> {
   const geminiKey = process.env.GEMINI_API_KEY
   const groqKey = process.env.GROQ_API_KEY
 
-  if (geminiKey) {
+  if (geminiKey && !geminiDisabledForRun) {
     try {
       const genAI = new GoogleGenerativeAI(geminiKey)
       const model = genAI.getGenerativeModel({
@@ -229,9 +241,11 @@ async function callModel(prompt: string): Promise<{ text: string; model: string 
       const text = result.response.text().trim()
       if (text) return { text, model: GEMINI_MODEL }
     } catch (err) {
-      // 스택 전체는 찍지 않는다 — 지역 6곳 × 재시도라 CI 로그가 스택으로 뒤덮인다.
-      // (2026-07-31 현재 이 키는 월 지출 한도 초과로 429가 계속 난다 — AI Studio 에서 한도 조정 필요)
-      console.error(`[regional-commentary] Gemini 실패, Groq로 폴백: ${(err as Error).message?.slice(0, 160)}`)
+      // 스택 전체는 찍지 않는다 — 지역 6곳 × 재시도라 CI 로그가 스택으로 뒤덮인다
+      geminiDisabledForRun = true
+      console.error(
+        `[regional-commentary] Gemini 실패 — 이번 실행은 Groq만 씁니다: ${(err as Error).message?.slice(0, 160)}`,
+      )
     }
   }
 
