@@ -80,17 +80,25 @@ function formatEok(price: number): string {
  * 값이 없으면 그 줄을 아예 빼서 모델이 null 을 지어내지 않게 한다.
  */
 function buildPrompt(s: WeeklyStats): string {
+  // 증감은 **여기서 계산해 문장 형태로 준다**. 모델에게 뺄셈을 시키면 안 된다 —
+  // 2026-07-31 dry-run에서 llama-3.1-8b가 28건 vs 27건(=1건 증가)을 "1건 줄었어요"로
+  // 뒤집어 서술했다(같은 데이터로 두 번 돌렸을 때 방향이 서로 반대로 나옴). 실거래 데이터
+  // 사이트에서 수치 방향이 뒤집히는 건 치명적이라, 산술은 전부 코드가 하고 모델은 문장만 만든다.
+  const diff = s.txCount - s.prevTxCount
+  const diffPhrase =
+    diff === 0 ? '직전 주와 같음' : diff > 0 ? `직전 주보다 ${diff}건 증가` : `직전 주보다 ${Math.abs(diff)}건 감소`
+
   const lines: string[] = [
-    `## ${s.label} (${s.periodStart} ~ ${s.periodEnd})`,
-    `- 매매 거래: ${s.txCount}건 (직전 주 ${s.prevTxCount}건)`,
+    `## ${s.label} (지난주)`,
+    `- 매매 거래: ${s.txCount}건 (${diffPhrase})`,
   ]
   if (s.avgPricePerPyeong != null) {
-    const prev = s.prevAvgPricePerPyeong
-    const delta =
-      prev != null && prev > 0
-        ? ` (직전 주 ${prev.toLocaleString('ko-KR')}만원, ${(((s.avgPricePerPyeong - prev) / prev) * 100).toFixed(1)}%)`
-        : ''
-    lines.push(`- 평균 평당가: ${s.avgPricePerPyeong.toLocaleString('ko-KR')}만원${delta}`)
+    // 주간 평균 평당가의 **전주 대비 변화율은 일부러 넣지 않는다**(2026-07-31 dry-run에서 결정).
+    // 주간 표본이 10~90건이라 어떤 평형·단지가 거래됐는지에 따라 평균이 크게 흔들린다 —
+    // 실제로 마산합포구가 28건 기준 "27.1% 상승"으로 나왔는데 이건 시장 변동이 아니라
+    // 거래 구성 차이다. 모델에 주면 그대로 단정적으로 서술해 오해를 만든다(ADR-005 기조).
+    // 수준(level)만 주고, 방향성은 아래 상승/하락 단지수(30일 기준)가 담당한다.
+    lines.push(`- 평균 평당가: ${s.avgPricePerPyeong.toLocaleString('ko-KR')}만원`)
   }
   if (s.topDeal) {
     const py = Math.round(s.topDeal.areaM2 / 3.3058)
@@ -100,16 +108,25 @@ function buildPrompt(s: WeeklyStats): string {
   }
   lines.push(`- 최근 30일 기준 상승 단지 ${s.upComplexes}곳 / 하락 단지 ${s.downComplexes}곳`)
 
-  return `당신은 지역 부동산 실거래 데이터를 정리하는 기자입니다. 아래 데이터로 ${s.label}의 이번 주 실거래 동향을 2~3문장으로 정리해주세요.
+  // 지침을 "하지 마세요"보다 "이렇게 쓰세요"로 주고 예시를 넣는다 — 1차 dry-run에서 모델이
+  // 매번 "정리해 보겠습니다" 같은 도입부로 한 문장을 낭비하고 해요체 지시를 무시했다.
+  return `아래는 ${s.label}의 한 주간 아파트 실거래 데이터예요. 이걸 2~3문장으로 요약해주세요.
 
 ${lines.join('\n')}
 
-작성 지침:
-- 데이터에 있는 수치만 사용하세요. 데이터에 없는 사실을 추측하거나 덧붙이지 마세요.
-- 거래량 변화와 최고가 거래를 중심으로 사실을 전달하세요.
-- 투자 권유·전망·조언 표현 절대 금지("사기 좋은", "지금이 기회", "오를 것으로 보인다" 등). 일어난 일만 서술하세요.
-- 상승/하락 단지 수는 "최근 30일 변동률 기준"임을 밝히세요.
-- 2~3문장, 한국어, 해요체.`
+작성 규칙:
+1. 첫 문장부터 바로 사실을 쓰세요. "정리해 보겠습니다", "동향입니다", "알려드릴게요" 같은 도입부는 절대 쓰지 마세요.
+2. 모든 문장을 해요체로 끝내세요("~했어요", "~예요"). "~습니다"체는 쓰지 마세요.
+3. 데이터에 있는 수치만 쓰세요. 없는 사실을 추측하거나 덧붙이지 마세요.
+4. 거래량 변화와 최고가 거래를 중심으로 쓰세요.
+5. 상승/하락 단지 수를 언급할 땐 "최근 30일 변동률 기준"이라고 밝히세요.
+6. 투자 권유·전망·조언 표현 절대 금지("사기 좋은", "지금이 기회", "오를 것으로 보인다", "주목할 만한" 등). 이미 일어난 일만 서술하세요.
+7. 줄바꿈 없이 한 문단으로 쓰세요. 최대 3문장.
+8. 데이터에 이미 적힌 증감(증가/감소/같음)을 그대로 쓰세요. 직접 계산하거나 방향을 바꾸지 마세요.
+9. 날짜 범위(2026-07-20 같은 형식)를 문장에 넣지 마세요. "지난주"로만 쓰세요.
+
+좋은 예시:
+지난주 ○○구에서는 아파트 42건이 거래돼 직전 주보다 5건 늘었어요. 가장 비싼 거래는 △△아파트 34평 12층으로 9억 2,000만원이었어요. 최근 30일 변동률 기준으로는 상승 단지 18곳, 하락 단지 12곳이에요.`
 }
 
 async function fetchWeeklyStats(
@@ -266,12 +283,15 @@ async function main() {
       continue
     }
 
-    console.log(`  ✓ ${region.label} [${result.model}] ${result.text.slice(0, 60)}…`)
-
     if (dryRun) {
+      // dry-run 의 목적은 문장 품질 판단이므로 전문을 그대로 보여준다(잘라내면 톤·군더더기를 못 본다)
+      console.log(`\n  ✓ ${region.label} [${result.model}]`)
+      console.log(`  ${result.text.replace(/\n+/g, '\n  ')}\n`)
       ok++
       continue
     }
+
+    console.log(`  ✓ ${region.label} [${result.model}] ${result.text.slice(0, 60)}…`)
 
     const { error } = await supabase.from('regional_commentary').upsert(
       {
