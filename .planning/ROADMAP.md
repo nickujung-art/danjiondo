@@ -1497,6 +1497,46 @@ Plans:
   - ⚠️ Wave 0 시점에 **Docker Desktop 미실행** — HARD-02의 `db reset` 실측은 Wave 1에서 별도 확인 필요
 
 ---
+
+### Phase 39: ON CONFLICT 제약 불일치 전수 수정
+
+**Goal:** 프로덕션 로그에서 발견된 `there is no unique or exclusion constraint matching the ON CONFLICT specification` 에러 50건을 단서로 저장소의 모든 `onConflict` 인자를 실제 UNIQUE 제약과 대조해 확정한 **고장 4건**을 수정하고, **재발 방지 게이트**를 세운다. 네 건 모두 "마이그레이션이 제약을 바꿨는데 앱 코드는 그대로"라는 동일한 원인이므로, 게이트가 없으면 반드시 재발한다.
+
+**Requirements:**
+- F-01: `facility_kapt` — `onConflict: 'complex_id'` → `'complex_id,data_month'` (일배치 K-apt 100% 실패 해소, 앱 1줄)
+- F-02: `favorites` — 부분 인덱스 2개를 `UNIQUE ... NULLS NOT DISTINCT` 단일 제약으로 통합 (🔴 즐겨찾기 추가 불가, 2026-07-15부터 회귀) + `removeFavorite`·`toggleFavoriteAlert`의 `site_id` 필터 누락 수정
+- F-03: `new_listings` — MOLIT 경로를 명시적 조회 후 insert/update로 전환 + **error 확인 추가** (부분 인덱스 유지)
+- F-04: `redevelopment_projects` — `UNIQUE (complex_id)` 신설 (코드 의도대로 스키마를 맞춤)
+- F-05: 🔑 **onConflict↔제약 일치 자동 검증 테스트** — 부분 인덱스를 일치로 오판하지 않을 것
+
+**Depends on:** 없음 (Phase 38의 `db push` 정상 경로를 그대로 사용)
+**Plans:** 4 plans (wave 0 → 3, `db push`가 겹치지 않도록 순차)
+
+Plans:
+- [ ] 39-00-PLAN.md — F-01 `facility_kapt` onConflict 1줄 + F-03 `new_listings` MOLIT 경로 재작성·에러 확인 (앱 전용, 마이그레이션 0건)
+- [ ] 39-01-PLAN.md — F-02 `favorites` 통합 UNIQUE(NULLS NOT DISTINCT) 생성 → 앱 수정 (F-02b `site_id` 필터 포함), 구 인덱스는 보존
+- [ ] 39-02-PLAN.md — 구 부분 인덱스 2개 DROP + F-04 `redevelopment_projects` UNIQUE + F-05용 카탈로그 RPC (마이그레이션 3개, 1회 push)
+- [ ] 39-03-PLAN.md — F-05 재발 방지 게이트 (정적 수집 + 부분 인덱스 오판 방지 음성 대조 3종) + CLAUDE.md 규약
+
+**Success Criteria:**
+1. 4건 모두 프로덕션에서 `EXPLAIN INSERT ... ON CONFLICT` 통과
+2. `addFavorite()` 실동작 — 추가/중복추가/사이트 분리/평형 알림 공존 확인
+3. `favorites` 구 부분 인덱스 2개 제거, 통합 제약 1개만 잔존
+4. `removeFavorite`·`toggleFavoriteAlert`에 `site_id` 필터 존재
+5. 일배치 후 `data_sources.kapt.last_status='success'` + `facility_kapt` 당월 행 증가
+6. `new_listings` MOLIT 경로가 error를 `errors[]`에 반영
+7. F-05 게이트 통과 (부분 인덱스 오판 방지 케이스 포함)
+8. `npm run lint` 통과 / 테스트 회귀 0건 (`git stash` 베이스라인 실측 대비, 기준 35 failed / 497 passed)
+9. `migration list --linked` 0/0 유지
+
+**Notes:**
+- 판정 수단은 `EXPLAIN INSERT ... ON CONFLICT` — 추론 실패가 플래닝 단계 에러라 **데이터 변경 없이** 확정 판정이 된다
+- 정상 확인된 13개 upsert 지점은 무접촉 (`39-CONTEXT.md` baseline 표 참조)
+- **gap-stats 성능은 범위 밖** — "6,191ms 회귀" 보고는 `EXPLAIN ANALYZE` 타이밍 오버헤드 오측이었고 실측 wall-clock은 185ms
+
+**UI hint**: no
+
+---
 ## Milestone Summary
 
 | Milestone | Phases | Gate |
