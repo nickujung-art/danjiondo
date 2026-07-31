@@ -352,7 +352,12 @@ export async function GET(request: Request): Promise<Response> {
           total_area:      info.totalArea ?? null,
           data_month:      new Date().toISOString().slice(0, 7) + '-01',
         },
-        { onConflict: 'complex_id' },
+        // 제약은 UNIQUE (complex_id, data_month) 다 — 월별 스냅샷 이력을 남기려는 의도된 설계.
+        // 'complex_id' 만 주면 매칭되는 유니크 제약이 없어 upsert 가 **100% 실패**한다
+        // (2026-07-30 프로덕션 로그: "there is no unique or exclusion constraint matching the
+        //  ON CONFLICT specification" 50건 = 그날 .limit(50) 대상 수와 정확히 일치).
+        // 실패가 조용해서 오래 묻혔다 — facility_kapt 최종 적재가 2026-07-06 에 멈춰 있었다.
+        { onConflict: 'complex_id,data_month' },
       ) as { error: { message: string } | null }
       if (!error) kaptUpserted++
       else kaptErrors++
