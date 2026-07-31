@@ -15,11 +15,21 @@ $$;
 
 -- 수동 매핑 삽입 (국토부 표기명 → DB 정규 단지)
 -- source: 'manual_match', confidence: 0.95
+--
+-- [Phase 38 가드 추가] 대상 complexes 행이 존재할 때만 삽입한다.
+-- 이 파일은 원래 values 리스트를 그대로 insert했는데, supabase/seed.sql이 complexes를
+-- 시딩하지 않아 새 로컬 환경(`supabase db reset`)에서는 complexes가 비어 있고
+-- complex_aliases_complex_id_fkey FK 위반으로 리셋 전체가 중단됐다.
+-- 새 환경에 없는 단지의 별칭은 어차피 무의미하므로 `where exists` 가드가 의미적으로 옳다.
+-- 프로덕션에는 8개 단지가 모두 존재하므로 동작은 불변이며, 이 마이그레이션은 이미
+-- 적용돼 재실행되지 않는다 — 이 수정은 로컬 `db reset` 재현성에만 영향을 준다.
+-- ⚠️ insert 대상·값은 한 건도 바꾸지 않았다. 가드만 추가했다.
 insert into public.complex_aliases (complex_id, source, alias_name, confidence)
-values
+select v.complex_id, v.source, v.alias_name, v.confidence
+from (values
   -- ── 마산합포구 (48125) ─────────────────────────────────────
   -- 마린애시앙부영 → 마산가포 사랑으로 부영아파트
-  ('4bbc672a-e82c-4c2c-8c27-79638de38c17', 'manual_match', '마린애시앙부영',         0.95),
+  ('4bbc672a-e82c-4c2c-8c27-79638de38c17'::uuid, 'manual_match'::text, '마린애시앙부영'::text,         0.95::numeric),
   -- 마산가포부영아파트 → 마산가포 사랑으로 부영아파트
   ('4bbc672a-e82c-4c2c-8c27-79638de38c17', 'manual_match', '마산가포부영아파트',      0.95),
 
@@ -44,6 +54,8 @@ values
   ('19de9065-7084-40bd-904a-89145fbad1ee', 'manual_match', '화정마을부영2차',          0.95),
   -- 화정마을부영3차 → 화정마을3단지북부부영3차
   ('f08e541f-b11a-4cf5-85b1-6afcffec1fc8', 'manual_match', '화정마을부영3차',          0.95)
+) as v(complex_id, source, alias_name, confidence)
+where exists (select 1 from public.complexes c where c.id = v.complex_id)
 on conflict (complex_id, source, alias_name) do nothing;
 
 -- 자은프라林 → name_normalized 수정 (林 한자 → 림 한글)
