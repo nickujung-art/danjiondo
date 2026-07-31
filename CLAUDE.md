@@ -127,6 +127,13 @@ Next.js 15 App Router · TypeScript strict · Tailwind 3.4 · Supabase (Postgres
 - **CRITICAL** 외부 API (국토부·카카오·학교알리미·K-apt) → `src/services/` 어댑터 전용. 컴포넌트·라우트 직접 호출 금지
 - **CRITICAL** Supabase 쿼리 → 서버 컴포넌트·API Route 전용. `src/lib/supabase/client.ts`는 실시간 구독 전용
 - **CRITICAL** 사용자 데이터 테이블은 RLS 정책 필수. `supabase/migrations/`에 포함
+- **CRITICAL** 신규 RLS 정책은 `TO` 절을 명시한다 (`TO anon, authenticated` · `TO authenticated` 등)
+  - 생략 시 `TO public`이 되어 anon까지 포함된다
+  - 쓰기 정책(INSERT/UPDATE/DELETE)은 `auth.role() = 'service_role'` · `auth.uid()` · `profiles.role` 검사 중 하나를 반드시 갖는다
+  - 단서: 기존 정책의 일괄 수정은 범위 밖 (Phase 38 D-04 — 읽기 정책의 `TO public`은 공개 읽기 의도와 일치, 쓰기 정책은 전수 확인 결과 제한 조건 보유)
+- **CRITICAL** `CREATE INDEX CONCURRENTLY`는 `npm run db:push`로 적용 불가하다 (`CONCURRENTLY`는 트랜잭션 블록에서 실행 불가한데 Supabase CLI가 마이그레이션을 트랜잭션으로 감싼다)
+  - 별도 경로로 적용한 뒤 `npx supabase migration repair --status applied <version>`을 반드시 실행해 원장에 기록한다
+  - 누락하면 마이그레이션 원장 drift가 된다 (선례: `20260728120000`·`20260731000001`)
 - **CRITICAL** `complexes`가 Golden Record. 단지명 단독 매칭 금지 — 항상 좌표+이름 복합 매칭. 별칭은 `complex_aliases`에 누적
 - **CRITICAL** 광고 쿼리: `now() BETWEEN starts_at AND ends_at AND status='approved'` 필수
 - 거래 조회: `WHERE cancel_date IS NULL AND superseded_by IS NULL` 필수 (취소·정정 제외)
