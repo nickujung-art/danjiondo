@@ -140,7 +140,7 @@ AS $$
   SELECT
     br.sgg_code,
     br.complex_count,
-    ROUND(br.median_change_pct, 1) AS median_change_pct,
+    ROUND(br.median_change_pct::numeric, 1) AS median_change_pct,
     ROUND(ap.avg_near_price) AS avg_near_price,
     ROUND(ap.avg_far_price)  AS avg_far_price
   FROM by_region br
