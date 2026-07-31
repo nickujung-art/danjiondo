@@ -67,8 +67,18 @@ data ──> buildSlides(data) ──> slides[]  ──┬──> templates.js �
 
 🔴 **최대 리스크 = 기존 PNG 출력이 바뀌는 것.** 템플릿을 건드리므로 회귀 가능성이 있다.
    **반드시 리팩터 전/후의 HTML 산출물을 대조**해 무변경을 실증할 것.
-   `card-news/output/`에 기존 HTML 16개가 남아 있어 기준으로 쓸 수 있다
-   (`--dry-run`이 HTML만 쓴다 — `generate.js:103`).
+   (`--dry-run`이 HTML만 쓴다 — `generate.js:103`.)
+
+   > 🔴 **정정 (2026-07-31, 플래닝 중 실측)** — 초안은 *"`card-news/output/`의 기존 HTML 16개를
+   > 기준으로 쓸 수 있다"* 고 썼으나 **틀렸다.** 데이터 비의존 정적 함수 `renderClosing` 조차
+   > 아카이브 4/4와 불일치한다(`padding:80px→100px`, `.h2 76px→88px` 등). 아카이브는
+   > 2026-06-24·06-29 산출물이고 그 뒤 디자인이 **의도적으로** 바뀌었다.
+   > 문자 그대로 따르면 첫 대조에서 **오경보로 중단**된다.
+   >
+   > **대체**: 리팩터 **직전** HEAD의 출력을 골든으로 새로 만들어 커밋하고, 그것과 대조한다.
+   > 아카이브 16개는 참고 자료로만 두고 판정에 쓰지 않는다(삭제·수정도 하지 않는다).
+   > 데이터 드리프트와 코드 회귀를 가르기 위해 `--dump-data` 스냅샷 1개로 양쪽을 렌더한다.
+
    차이가 나면 그 자체가 중단 사유다.
 
 ### D-02: 0-4 — 소급 적재는 **재생성 방식**, 3회차뿐임을 명시
@@ -91,6 +101,14 @@ data ──> buildSlides(data) ──> slides[]  ──┬──> templates.js �
 📌 **아카이브는 어차피 3건에서 시작한다.** 론칭 연기는 피했지만 "아카이브가 얇다"는
 사실은 그대로다. 이건 0-4를 미룰수록 나빠지므로 지금 하는 게 맞다.
 
+🔴 **소급 재실행에는 반드시 `--series` 를 준다 (2026-07-31 추가).**
+`generate.js main()`은 `--series` 가 없으면 18시리즈 전부를 돈다. 그런데 회차별 실제 발행
+시리즈 수는 **1 / 18 / 1 (합계 20)** 이다. `--series` 없이 3회 돌리면 54행이
+`status='published'` 로 적재되고 **34행이 발행된 적 없는 허위 아카이브**가 된다.
+`ls -1 card-news/output/<period>/` 로 목록을 도출하고, 적재 후
+**회차별 행 수 ≤ 디렉터리 수**를 단언할 것. `total === distinct_slug` 나 "기간 그룹 3개"로는
+**잡히지 않는다.**
+
 ### D-03: 0-4 — `contents` 적재 규칙
 
 - `site_id='changbuletter'`, `type='card_news'`, `status='published'`
@@ -98,7 +116,11 @@ data ──> buildSlides(data) ──> slides[]  ──┬──> templates.js �
   **재실행 시 중복 적재가 나면 안 된다** — `contents`의 유일성 제약을 확인하고
   멱등하게 만들 것. 🔴 **Phase 39의 교훈**: `onConflict`를 쓸 거면 **비부분 UNIQUE 인덱스가
   실제로 있는지 먼저 확인**하라. 부분 인덱스면 추론이 원리적으로 불가능하다.
-  검증은 `EXPLAIN INSERT ... ON CONFLICT` 실행으로 한다
+  ✅ **실측 완료**: `contents_slug_key {slug}` 는 **비부분**이다 → `onConflict:'slug'` 추론 가능.
+  그래도 검증 2층을 돌린다 — ① `npx supabase db query --linked "explain insert … on conflict (slug) do nothing"`
+  ② `npx tsx --env-file=.env.local scripts/verify-onconflict-probe.ts --only=contents`
+  (`contents` 는 FK가 없으므로 프로브 payload에서 `title`(NOT NULL, default 없음)을 빼
+  23502로 막는다 — 행이 남지 않는다)
 - 쓰기 주체는 **service_role**(스탠드얼론 스크립트). `contents`의 RLS 쓰기 정책은
   `service_role` / `cbl_editor`만 허용한다 (Phase 36, ADR-003)
 - `published_at`은 해당 회차 발행 시점을 쓴다 (재실행 시각이 아니다)
@@ -106,15 +128,28 @@ data ──> buildSlides(data) ──> slides[]  ──┬──> templates.js �
 ### D-04: 0-5 — `price_change`는 **기존 랭킹 크론**에 추가한다
 
 ADR-005는 *"bds `molit-daily`가 타임아웃 이력이 있으니 같은 배치에 얹지 말고 별도 스텝으로
-분리하라"* 고 경고했다. **이미 분리돼 있다** (실측):
+분리하라"* 고 경고했다. **이미 분리돼 있다.**
 
-| 크론 | 스케줄(UTC) | 내용 |
-|---|---|---|
-| `/api/cron/daily` | `0 19 * * *` | 실거래·분양·청약·갭통계·K-apt |
-| `/api/cron/rankings` | `30 19 * * *` | `computeRankings()` |
+> 🔴 **정정 (2026-07-31, 플래닝 중 재실측)** — 아래 표는 **초안이 틀렸던 것을 고친 것**이다.
+> 초안은 `/api/cron/rankings` 가 `vercel.json` 에서 `30 19 * * *` 로 돈다고 썼으나 **사실이 아니다.**
 
-→ **`computeRankings`에 aggregator 하나를 추가하면 ADR-005의 요구가 자동 충족된다.**
+| 크론 | 정의 위치 | 스케줄(UTC) | 내용 |
+|---|---|---|---|
+| `/api/cron/daily` | `vercel.json` | `0 19 * * *` (1일 1회) | 실거래·분양·청약·갭통계·K-apt |
+| `/api/cron/cafe-articles` | `vercel.json` | `30 19 * * *` | 카페 글 수집 ← **초안이 rankings로 오인한 항목** |
+| `/api/cron/rankings` | 🔴 `.github/workflows/rankings-cron.yml` | **`0 * * * *` — 매시 정각, 하루 24회** | `computeRankings()` |
+
+`rankings-cron.yml` 세부: `timeout-minutes: 3`, `curl -sSf`(비200이면 job 실패).
+`src/app/api/cron/rankings/route.ts` 는 `runtime='nodejs'` 이고 **`maxDuration` 선언이 없다**.
+
+→ **`computeRankings`에 aggregator 하나를 추가하면 ADR-005의 요구가 자동 충족된다** (결론 유지).
 `daily`에 얹지 말 것.
+
+🔴 **다만 비용 분석이 달라진다**: 새 aggregator는 **하루 1회가 아니라 24회** 돈다.
+SC9의 판정 기준은 "야간 배치 창"이 아니라 **① Vercel 함수 타임아웃 ② GH Actions `timeout-minutes: 3`** 이다.
+⛔ **"04:30 KST 배치" 류 표현을 쓰지 말 것 — `rankings`에 그런 배치는 없다.**
+`ingest_runs`(`source_id='rankings'`)에 **현재 4종 기준 프로덕션 소요시간이 이미 기록돼 있다** —
+그것이 SC9의 진짜 BEFORE다.
 
 구현 지점 (`src/lib/data/rankings.ts`):
 - `aggregators` 배열(`:220-226`)에 `{ type: 'price_change', fn: aggregatePriceChange }` 추가
@@ -152,10 +187,17 @@ ADR-005 §2가 *"어느 쪽으로 갈지는 부트스트랩 시점에 확정 (�
 
 ADR-004 §3·§4:
 - `src/lib/cardnews/card-templates.ts`: **1080 → 1350** (`html,body` + 각 `.card`, **총 6곳**)
-- 리브랜딩: 확인된 잔존 `card-templates.ts:47`, `:359` (창원부동산랩)
-- 🔴 **착수 전 두 파일(`card-templates.ts`·`templates.js`)을 다시 전수 grep할 것** —
-  ADR이 "잔존 위치가 더 있을 수 있다"고 명시했고, 1차 감사가 실제로 두 번째 코드베이스를
-  통째로 놓쳤다
+- 리브랜딩: ADR-004가 안 것은 `card-templates.ts:47`·`:359` **2곳**이지만
+  🔴 **플래너 전수 grep 실측은 8곳**이다:
+  `card-templates.ts` 47·359 / `templates.js` 90·98·396·613 /
+  `generate.js:141`(로그) / `card-news/package.json:4`(description).
+  (`.next/` 빌드 산출물 2건은 재빌드로 갱신 — 손대지 않는다.)
+- 🔴 **착수 전 다시 전수 grep할 것** — ADR이 "잔존 위치가 더 있을 수 있다"고 명시했고,
+  1차 감사가 실제로 두 번째 코드베이스를 통째로 놓쳤다. 위 8곳도 착수 시점에 재확인한다
+- 🔴 `card-templates.ts` 의 `1080` 은 **줄마다 2회**(width·height) 나온다. **height만** 1350으로
+  바꾼다. `sed 's/1080/1350/g'` 를 쓰면 카드가 1350×1350 정사각형이 된다 — 금지
+- 🔴 리브랜딩은 골든 HTML을 **의도적으로 깬다**. 골든을 지우거나 skip하지 말고
+  **재생성한 뒤 `diff -r … | grep '^[<>]' | grep -v '창원부동산랩|창부레터'` 가 비는지** 확인한다
 - 9:16 템플릿은 **만들지 않는다**
 
 개발 블로킹이 아니므로 0-4·0-5가 위태로우면 **잘라내고 별도 Phase로 미뤄도 된다.**
@@ -178,19 +220,35 @@ ADR-004 §3·§4:
 | `contents` 행 수 | **0** |
 | `complex_rankings` rank_type | `high_price` 198 / `volume` 291 / `price_per_pyeong` 201 / `interest` 1 |
 | `complex_rankings_rank_type_check` | 4종만 허용 — `price_change` **없음** |
-| `card-news/output/` | 3기간 (`2026-05`·`2026-W24`·`2026-W25`), PNG 82 + HTML 16 |
+| `card-news/output/` | 3기간, PNG 82 + HTML 16 — 🔴 **회차별 발행 시리즈 수가 다르다**: `2026-05`=**1**(`city-overall`) / `2026-W24`=**18** / `2026-W25`=**1**(`city-overall`). **합계 20** |
 | `cardnews-payloads` 버킷 | **0개** |
 | `card-news` 버킷 | 8개 (2026-06-29) |
 | `from('contents')` 사용처 | `scripts/verify-cbl-rls.ts` **뿐** (Phase 36 검증용) |
-| 크론 분리 | `daily` 19:00 UTC / `rankings` 19:30 UTC — **이미 분리됨** |
+| 크론 분리 | ✅ 분리됨. 🔴 **단 `rankings`는 `vercel.json`이 아니라 `.github/workflows/rankings-cron.yml`의 `0 * * * *`(매시)** — D-04의 정정 표 참조 |
+| `contents` UNIQUE | `contents_slug_key {slug}` **비부분** (RPC 실측) → `onConflict:'slug'` 추론 가능 |
 | `WINDOW_DAYS` | 30 (`rankings.ts:7`) |
+| `superseded_by` in `rankings.ts` | **3회** (`aggregateInterest`는 `favorites` 조회라 없음) |
+| `MIN_SITES` (onconflict 게이트) | **16** (`onconflict-audit.test.ts:266`). 단위 테스트 **20건** |
+| onconflict 스캐너 범위 | 🔴 `.ts`/`.tsx` **만**, 루트 `src/` **만** → `card-news/scripts/*.js` **미포함** |
+| `card-news/output/` 아카이브 HTML | 🔴 **디자인 드리프트됨** — `renderClosing`(정적 함수)조차 4/4 불일치. **회귀 기준으로 쓸 수 없다** |
 | 테스트 베이스라인 | **17 failed / 657 passed / 2 skipped (677)** — 사전 실패 6파일(로컬 DB 의존) |
 | `npm run lint` | exit 0 |
 | `migration list --linked` | 0/0 |
 
 > 🔴 **회귀 판정은 총계 비교로 하지 마라.** 사전 실패가 17건 있고 그중 일부는 flaky다
-> (17↔18 왕복 관측됨). `git stash push -u`로 베이스라인을 실측하고 **실패 테스트 이름
-> 집합**을 비교할 것 (`.planning/fix-loop/error-notes.md` #001).
+> (17↔18 왕복 관측됨). 베이스라인을 실측하고 **실패 테스트 이름 집합**을 비교할 것
+> (`.planning/fix-loop/error-notes.md` #001).
+>
+> 🔴🔴 **단 `git stash`는 이 Phase에서 쓸 수 없다.** #001의 기법은 변경이 **미커밋**일 때만
+> 유효하다. 이 Phase는 태스크마다 커밋하므로 `git stash push -u` 가
+> *"No local changes to save"* 를 내고 **아무것도 되돌리지 않는다** → BEFORE가 AFTER 코드로
+> 실행되고, `git status --porcelain` 이 비는 것을 *성공 신호*로 읽으면 **무변경·무회귀가
+> 거짓으로 통과**한다. 조용히 통과하는 유일한 실패 모드다.
+>
+> **대체 절차**: 태스크마다 커밋 SHA를 기록하고
+> `git checkout <SHA> -- <paths>` 로 되돌린다. 성공 신호는 `git status` 공백이 아니라
+> **`git diff --stat <SHA> -- <paths>` 공백 + 신규 심볼 `grep -c` == 0** 두 양성 신호다.
+> 신규 파일은 checkout이 지우지 않으므로 필요하면 `mv` 로 격리한다.
 
 </baseline>
 
@@ -207,8 +265,13 @@ ADR-004 §3·§4:
    소유 배치가 다르다)
 7. 마이그레이션은 `supabase/migrations/` + `npm run db:push`. `execute_sql`·MCP
    `apply_migration`·대시보드 **금지** (Phase 37이 청소한 drift의 원인)
-8. **`onConflict`를 새로 쓰면 비부분 UNIQUE 존재를 `EXPLAIN INSERT`로 먼저 검증하라** —
-   Phase 39의 고장 4건이 전부 이 누락이었다. `src/lib/db/onconflict-audit.ts` 게이트가 있다
+8. **`onConflict`를 새로 쓰면 비부분 UNIQUE 존재를 먼저 검증하라** — Phase 39의 고장 4건이
+   전부 이 누락이었다. 검증 2층: ① `npx supabase db query --linked "explain insert … on conflict … do nothing"`
+   ② `npx tsx --env-file=.env.local scripts/verify-onconflict-probe.ts --only=<table>` (PostgREST 경로,
+   raw EXPLAIN보다 강한 증거 — Phase 39 산출물).
+   ⛔ `supabase-js` 로는 raw SQL을 실행할 수 없고, `npx tsx -e "require(...)"` 는 ESM이라 동작하지 않는다.
+   🔴 `src/lib/db/onconflict-audit.ts` 게이트는 **`.ts`/`.tsx` 만, 루트 `src/` 만** 스캔한다 —
+   `card-news/scripts/*.js` 에 새 upsert를 쓰면 **게이트가 공허하게 통과**한다. 먼저 확장할 것
 9. **창부레터 저장소에 쓰지 마라** — 이 Phase는 bds 작업이다
 10. 정상 동작 중인 4개 aggregator를 건드리지 마라
 

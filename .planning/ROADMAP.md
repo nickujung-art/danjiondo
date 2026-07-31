@@ -1615,6 +1615,9 @@ Plans:
 11. `npm run lint` exit 0 / 테스트 **실패 이름 집합** 불변 / `migration list --linked` 0/0
 
 **Notes:**
+- 🔴 **크론 스케줄 정정**: `/api/cron/rankings` 는 `vercel.json` 에 **없다**. `.github/workflows/rankings-cron.yml` 의 `cron: '0 * * * *'` — **매시 정각, 하루 24회** (`30 19 * * *` 은 `cafe-articles` 다). 40-CONTEXT D-04 표를 정정했다. 결론(= `daily` 와 분리돼 있으니 `rankings` 에 얹는다)은 유지되나 **비용·타임아웃 분석이 24배** 달라진다
+- 🔴 **소급 적재는 `--series` 필수**: 회차별 실제 발행 시리즈는 **1 / 18 / 1 (합계 20)** 이다. `--series` 없이 돌리면 54행이 적재돼 **34행이 발행된 적 없는 허위 아카이브**가 된다. `total === distinct_slug` 로는 잡히지 않는다
+- 🔴 **`git stash` 베이스라인 금지**: 태스크마다 커밋하므로 stash가 no-op다 — BEFORE가 AFTER 코드로 실행돼 무변경·무회귀가 **조용히 거짓 통과**한다. `git checkout <SHA> -- <paths>` + `git diff --stat` 공백을 양성 신호로 쓴다
 - 🔴 **40-CONTEXT D-01의 사실 오류 정정**: `card-news/output/`의 아카이브 HTML 16개는 **회귀 기준으로 쓸 수 없다.** 플래너 실측 결과 완전 정적 함수 `renderClosing`조차 4/4 불일치 — 2026-06-24·06-29 이후 디자인이 의도적으로 바뀌었다. 40-01이 **새 골든을 커밋**해 대체한다
 - 🔴 **D-01의 "템플릿이 slides를 렌더"는 4필드 계약 하에서 구현 불가능**(`renderRanking`은 10행). 단일 원천을 `slides[]`가 아닌 `data`로 잡고, 문구 갈라짐은 **containment 테스트**로 강제한다 (40-01)
 - ✅ **0-4와 0-5는 완전 독립이고 마이그레이션 충돌이 없다** — 0-4는 `card-news/` 전용이며 마이그레이션 0건이다. 마이그레이션을 만드는 plan은 40-02 하나뿐
