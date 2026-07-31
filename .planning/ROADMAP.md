@@ -1510,7 +1510,43 @@ Plans:
 - F-05: 🔑 **onConflict↔제약 일치 자동 검증 테스트** — 부분 인덱스를 일치로 오판하지 않을 것
 
 **Depends on:** 없음 (Phase 38의 `db push` 정상 경로를 그대로 사용)
-**Plans:** 4 plans (wave 0 → 3, `db push`가 겹치지 않도록 순차)
+**Plans:** ✅ **완료 (2026-07-31)** — F-01~F-05 전부 달성, 배포 완료 (`fb6bd8b`)
+
+**실행 결과 — 계획과 달라진 점 2가지 (중요)**
+
+이 Phase는 **다른 세션이 같은 체크아웃에서 동시에 작업하는 상태**로 실행됐다. 그 결과:
+
+1. **F-02가 계획과 다른 방법으로 해결됐다.** 계획은 `NULLS NOT DISTINCT` 통합 인덱스였으나
+   실제 수정은 **upsert를 제거하고 조회→insert로 전환**했다(`72f9564`). 부분 인덱스 2개는 유지된다.
+   → **39-01·39-02 계획의 favorites 부분은 폐기됐다.** 결과가 옳으므로 되돌리지 않았다.
+   ⚠️ `favorite-actions.ts` 주석의 *"하나로 합치면 그 조합이 다시 막힌다"* 는 **사실이 아니다** —
+   공존 쌍이 실재하는 상태에서 통합 인덱스를 라이브 생성해 충돌 0건을 확인했다. 해법은 맞고 근거만 틀렸다.
+2. **인접 결함이 추가로 발견·수정됐다** (`abfd34c`) — `favorites` **읽기** 경로에도 `site_id`
+   필터가 없었다(`getFavorites`·`isFavorited`·`getFavoritesCount`·`aggregateInterest`·`buildWeeklyDigest`).
+   당시 `favorites` 4행이 **전부 realtrade-story 것**이어서 danjiondo 화면과 주간 다이제스트가
+   타 서비스 사용자 데이터를 그대로 노출하고 있었다.
+
+**최종 검증 (프로덕션 실행 기준)**
+
+| 항목 | 결과 |
+|---|---|
+| F-01 `facility_kapt (complex_id,data_month)` | ✅ EXPLAIN OK |
+| F-02 `favorites` | ✅ upsert 제거 + 3함수 `site_id` 필터 |
+| F-03 `new_listings` | ✅ 헬퍼 분리 + 에러 확인 |
+| F-04 `redevelopment_projects (complex_id)` | ✅ EXPLAIN OK, UNIQUE 적용 |
+| F-05 게이트 | ✅ 단위 20건(DB 불필요) + 라이브 대조 16/16 `ok` |
+| 프로브 잔여행 | 0 (검증이 데이터를 쓰지 않음) |
+| `npm run lint` | exit 0 |
+| 테스트 회귀 | 0 — 실패 파일 집합 불변(사전 실패 6파일 17건) |
+| `migration list --linked` | 0/0 |
+
+**남은 한계 (정직하게 기록)**
+- 🔴 **라이브 게이트는 CI에서 영구 skip된다.** `ci.yml`의 `unit-test` 잡에 `env:` 블록이 없어
+  `TEST_SUPABASE_SKEY`가 주입되지 않는다. CI 편입 전까지 재발 방지는
+  **`CLAUDE.md` 규약 + 항상 실행되는 단위 테스트 20건 + 수동 실행**에 의존한다
+- **SC5(`data_sources.kapt.last_status='success'`)는 미확인** — 익일 04:00 KST 배치 후 확인.
+  배포는 완료됐으므로 다음 배치는 새 코드로 돌아간다
+- 로컬 Supabase 스택이 미마이그레이션 상태라 사전 실패 17건과 게이트 로컬 skip의 원인이다
 
 Plans:
 - [ ] 39-00-PLAN.md — F-01 `facility_kapt` onConflict 1줄 + F-03 `new_listings` MOLIT 경로 재작성·에러 확인 (앱 전용, 마이그레이션 0건)
