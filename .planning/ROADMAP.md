@@ -1514,9 +1514,9 @@ Plans:
 
 Plans:
 - [ ] 39-00-PLAN.md — F-01 `facility_kapt` onConflict 1줄 + F-03 `new_listings` MOLIT 경로 재작성·에러 확인 (앱 전용, 마이그레이션 0건)
-- [ ] 39-01-PLAN.md — F-02 `favorites` 통합 UNIQUE(NULLS NOT DISTINCT) 생성 → 앱 수정 (F-02b `site_id` 필터 포함), 구 인덱스는 보존
+- [ ] 39-01-PLAN.md — F-02 `favorites` 통합 UNIQUE(NULLS NOT DISTINCT) 생성 → 앱 수정 (F-02b `site_id` 필터 포함) → **배포 승인 체크포인트**, 구 인덱스는 보존
 - [ ] 39-02-PLAN.md — 구 부분 인덱스 2개 DROP + F-04 `redevelopment_projects` UNIQUE + F-05용 카탈로그 RPC (마이그레이션 3개, 1회 push)
-- [ ] 39-03-PLAN.md — F-05 재발 방지 게이트 (정적 수집 + 부분 인덱스 오판 방지 음성 대조 3종) + CLAUDE.md 규약
+- [ ] 39-03-PLAN.md — F-05 재발 방지 게이트 (정적 수집 + 음성 대조 3종 + 스캐너 건전성은 CI에서도 도는 DB 불필요 테스트) + CLAUDE.md 규약
 
 **Success Criteria:**
 1. 4건 모두 프로덕션에서 `EXPLAIN INSERT ... ON CONFLICT` 통과
