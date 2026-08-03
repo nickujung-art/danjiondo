@@ -5,8 +5,11 @@
  * 옵션: --series=84-seongsan,city-overall  (특정 시리즈만)
  *       --dry-run                           (HTML만 생성, PNG 캡처 안 함)
  *       --week-offset=-1                   (n주 전 데이터, 기본 -1 = 지난주)
+ *       --out=<dir>                        (출력 디렉터리 대체. 기본 ../output)
+ *       --dump-data=<file>                 (시리즈별 data 객체를 JSON 한 파일로 덤프, 렌더 생략)
+ *       --data=<file>                      (덤프한 JSON으로 렌더. Supabase 조회 0회)
  */
-import { mkdirSync, writeFileSync } from 'fs'
+import { mkdirSync, writeFileSync, readFileSync } from 'fs'
 import { join, resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import 'dotenv/config'
@@ -83,9 +86,9 @@ function pad10(ranking) {
   return Array.from({ length: 10 }, (_, i) => ranking[i] ?? { rank: i + 1, name: null, price: null, subtitle: null })
 }
 
-async function generateCardSet(seriesId, data, dryRun) {
+async function generateCardSet(seriesId, data, dryRun, outputDir = OUTPUT_DIR) {
   const { weekCode, region, area } = data
-  const dir = join(OUTPUT_DIR, weekCode, seriesId)
+  const dir = join(outputDir, weekCode, seriesId)
   mkdirSync(dir, { recursive: true })
 
   const cards = [
@@ -119,6 +122,16 @@ async function main() {
   const fromArg = args.find((a) => a.startsWith('--from='))?.split('=')[1]
   const toArg   = args.find((a) => a.startsWith('--to='))?.split('=')[1]
   const monthArg = args.find((a) => a.startsWith('--month='))?.split('=')[1] // e.g. 2026-05
+  const outArg = args.find((a) => a.startsWith('--out='))?.split('=')[1]
+  const dumpDataArg = args.find((a) => a.startsWith('--dump-data='))?.split('=')[1]
+  const dataArg = args.find((a) => a.startsWith('--data='))?.split('=')[1]
+
+  // --out 미지정 시 현행 동작(../output) 그대로.
+  const outputDir = outArg ? resolve(process.cwd(), outArg) : OUTPUT_DIR
+  // --data 지정 시 Supabase 조회를 전혀 하지 않고 동결 스냅샷으로 렌더한다.
+  const loadedData = dataArg ? JSON.parse(readFileSync(resolve(process.cwd(), dataArg), 'utf-8')) : null
+  // --dump-data 지정 시 시리즈 정의 순서대로 data 를 모으고 렌더는 건너뛴다.
+  const dumpBucket = dumpDataArg ? {} : null
 
   let from, to
   if (monthArg) {
@@ -151,16 +164,23 @@ async function main() {
     if (filter && !filter.includes(s.id)) continue
     console.log(`[${s.id}] ${s.region} ${s.area}`)
     try {
-      const ranking = await fetchAreaRanking({ sggCode: s.sggCode, areaMin: s.areaMin, areaMax: s.areaMax, ...dateRange })
-      const data = {
-        ...baseWeekData,
-        region: s.region,
-        area: s.area,
-        seriesType: 'area',
-        subCaption: AREA_CAPTION[s.area],
-        ranking: pad10(ranking),
+      let data
+      if (loadedData) {
+        if (!(s.id in loadedData)) { console.log(`  [skip] ${s.id}: 스냅샷에 없음`); continue }
+        data = loadedData[s.id]
+      } else {
+        const ranking = await fetchAreaRanking({ sggCode: s.sggCode, areaMin: s.areaMin, areaMax: s.areaMax, ...dateRange })
+        data = {
+          ...baseWeekData,
+          region: s.region,
+          area: s.area,
+          seriesType: 'area',
+          subCaption: AREA_CAPTION[s.area],
+          ranking: pad10(ranking),
+        }
       }
-      await generateCardSet(s.id, data, dryRun)
+      if (dumpBucket) { dumpBucket[s.id] = data; continue }
+      await generateCardSet(s.id, data, dryRun, outputDir)
     } catch (err) {
       console.error(`  [ERROR] ${s.id}: ${err.message}`)
     }
@@ -171,25 +191,32 @@ async function main() {
     if (filter && !filter.includes(s.id)) continue
     console.log(`[${s.id}] ${s.region}`)
     try {
-      let ranking = []
-      if (s.type === 'city') {
-        ranking = await fetchCityRanking({ sggCodes: ALL_SGG, ...dateRange })
-      } else if (s.type === 'volume') {
-        ranking = await fetchVolumeRanking({ sggCodes: ALL_SGG, ...dateRange })
-      } else if (s.type === 'value') {
-        ranking = await fetchValueRanking({ sggCodes: ALL_SGG, ...dateRange })
+      let data
+      if (loadedData) {
+        if (!(s.id in loadedData)) { console.log(`  [skip] ${s.id}: 스냅샷에 없음`); continue }
+        data = loadedData[s.id]
+      } else {
+        let ranking = []
+        if (s.type === 'city') {
+          ranking = await fetchCityRanking({ sggCodes: ALL_SGG, ...dateRange })
+        } else if (s.type === 'volume') {
+          ranking = await fetchVolumeRanking({ sggCodes: ALL_SGG, ...dateRange })
+        } else if (s.type === 'value') {
+          ranking = await fetchValueRanking({ sggCodes: ALL_SGG, ...dateRange })
+        }
+
+        data = {
+          ...baseWeekData,
+          region: s.region,
+          area: s.area,
+          seriesType: s.type,
+          subCaption: s.caption,
+          ranking: pad10(ranking),
+        }
       }
 
-      const data = {
-        ...baseWeekData,
-        region: s.region,
-        area: s.area,
-        seriesType: s.type,
-        subCaption: s.caption,
-        ranking: pad10(ranking),
-      }
-
-      await generateCardSet(s.id, data, dryRun)
+      if (dumpBucket) { dumpBucket[s.id] = data; continue }
+      await generateCardSet(s.id, data, dryRun, outputDir)
     } catch (err) {
       console.error(`  [ERROR] ${s.id}: ${err.message}`)
     }
@@ -199,30 +226,52 @@ async function main() {
   if (!filter || filter.includes('district-champions')) {
     console.log(`[district-champions] 구별 대장단지`)
     try {
-      const champions = await fetchDistrictChampions({ sggMap: SGG_MAP })
-      const dir = join(OUTPUT_DIR, weekCode, 'district-champions')
-      mkdirSync(dir, { recursive: true })
-
-      const data = { ...baseWeekData, champions }
-      const cards = [
-        { name: '01-grid',    html: renderDistrictChampionsCard(data) },
-        { name: '02-closing', html: renderClosing(data) },
-      ]
-
-      for (const card of cards) {
-        const pngPath = join(dir, `${card.name}.png`)
-        const htmlPath = join(dir, `${card.name}.html`)
-        if (dryRun) {
-          writeFileSync(htmlPath, card.html, 'utf-8')
-          console.log(`  [dry] wrote ${card.name}.html`)
+      let data
+      if (loadedData) {
+        if (!('district-champions' in loadedData)) {
+          console.log(`  [skip] district-champions: 스냅샷에 없음`)
+          data = null
         } else {
-          await captureCard(card.html, pngPath)
-          console.log(`  ✓ ${card.name}.png`)
+          data = loadedData['district-champions']
+        }
+      } else {
+        const champions = await fetchDistrictChampions({ sggMap: SGG_MAP, ...dateRange })
+        data = { ...baseWeekData, champions }
+      }
+
+      if (data && dumpBucket) {
+        dumpBucket['district-champions'] = data
+      } else if (data) {
+        const dir = join(outputDir, data.weekCode, 'district-champions')
+        mkdirSync(dir, { recursive: true })
+
+        const cards = [
+          { name: '01-grid',    html: renderDistrictChampionsCard(data) },
+          { name: '02-closing', html: renderClosing(data) },
+        ]
+
+        for (const card of cards) {
+          const pngPath = join(dir, `${card.name}.png`)
+          const htmlPath = join(dir, `${card.name}.html`)
+          if (dryRun) {
+            writeFileSync(htmlPath, card.html, 'utf-8')
+            console.log(`  [dry] wrote ${card.name}.html`)
+          } else {
+            await captureCard(card.html, pngPath)
+            console.log(`  ✓ ${card.name}.png`)
+          }
         }
       }
     } catch (err) {
       console.error(`  [ERROR] district-champions: ${err.message}`)
     }
+  }
+
+  if (dumpBucket) {
+    const dumpPath = resolve(process.cwd(), dumpDataArg)
+    mkdirSync(dirname(dumpPath), { recursive: true })
+    writeFileSync(dumpPath, JSON.stringify(dumpBucket, null, 2), 'utf-8')
+    console.log(`\n덤프 완료 → ${dumpPath} (시리즈 ${Object.keys(dumpBucket).length}개)`)
   }
 
   await closeBrowser()

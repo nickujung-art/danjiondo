@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  @font-face { font-family: 'Pretendard'; font-weight: 900; src: url('file:///C:/Users/jung/coding/bds/card-news/fonts/Pretendard-Black.woff2') format('woff2'); font-display: block; }
+  @font-face { font-family: 'Pretendard'; font-weight: 800; src: url('file:///C:/Users/jung/coding/bds/card-news/fonts/Pretendard-ExtraBold.woff2') format('woff2'); font-display: block; }
+  @font-face { font-family: 'Pretendard'; font-weight: 700; src: url('file:///C:/Users/jung/coding/bds/card-news/fonts/Pretendard-Bold.woff2') format('woff2'); font-display: block; }
+  @font-face { font-family: 'Pretendard'; font-weight: 600; src: url('file:///C:/Users/jung/coding/bds/card-news/fonts/Pretendard-SemiBold.woff2') format('woff2'); font-display: block; }
+  @font-face { font-family: 'Pretendard'; font-weight: 500; src: url('file:///C:/Users/jung/coding/bds/card-news/fonts/Pretendard-Medium.woff2') format('woff2'); font-display: block; }
+
+  :root {
+    --brand: #0066FF;
+    --brand-tint: #EAF2FE;
+    --ink: #152038;
+    --ink-2: #5B6677;
+    --ink-3: #8A93A3;
+    --gold: #FFC93C;
+    --gold-2: #FFAB00;
+    --surface: #FFFFFF;
+    --surface-2: #F7F8FA;
+    --line: rgba(112,115,124,0.18);
+    --placeholder: #C4CAD3;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1350px; overflow: hidden; }
+  body { font-family: 'Pretendard', -apple-system, 'Apple SD Gothic Neo', sans-serif; -webkit-font-smoothing: antialiased; }
+
+    .card { width:1080px; height:1350px; background:#fff; position:relative; overflow:hidden; }
+    .top-bar { width:100%; height:14px; background:var(--brand); }
+    .brand { position:absolute; top:40px; left:80px; }
+    .eyebrow { position:absolute; top:124px; left:80px; font:700 28px/1 'Pretendard'; color:var(--brand); letter-spacing:0.5px; }
+    .title { position:absolute; top:200px; left:80px; z-index:1; }
+    .title-line { font:900 110px/1.08 'Pretendard'; color:var(--ink); letter-spacing:-3.5px; display:block; }
+    .title-blue { color:var(--brand); }
+    .ghost { position:absolute; bottom:-140px; right:-30px; font:900 700px/1 'Pretendard'; color:var(--brand-tint); z-index:0; user-select:none; white-space:nowrap; }
+    .caption { position:absolute; bottom:172px; left:80px; z-index:1; font:500 30px/1.6 'Pretendard'; color:var(--ink-2); white-space:pre-line; }
+    .location { position:absolute; bottom:96px; left:80px; z-index:1; display:flex; align-items:center; gap:8px; font:500 23px/1 'Pretendard'; color:var(--ink-3); }
+    .pin { color:var(--brand); font-size:20px; }
+  </style>
+</head>
+<body><div class="card">
+    <div class="top-bar"></div>
+    <div class="brand"><div style="display:flex;align-items:center;gap:12px;">
+    <img src="file:///C:/Users/jung/coding/bds/card-news/assets/logo.png" style="width:46px;height:46px;border-radius:10px;object-fit:cover;" onerror="this.style.display='none'">
+    <span style="font:700 30px/1 'Pretendard';color:var(--ink);">창원부동산랩</span>
+  </div></div>
+    <div class="eyebrow">WEEKLY REPORT · 2026년 6월 2주차</div>
+    <div class="title">
+      <span class="title-line">창원+김해</span>
+      <span class="title-line">전체 실거래가</span>
+      <span class="title-line">랭킹 TOP 10</span>
+    </div>
+    <div class="ghost">10</div>
+    <div class="caption">이번 주 거래가 가장
+활발한 단지는 어디일까요?</div>
+    <div class="location">
+      <span class="pin">📍</span>
+      <span>창원+김해</span>
+    </div>
+  </div></body>
+</html>

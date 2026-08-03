@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  @font-face { font-family: 'Pretendard'; font-weight: 900; src: url('file:///C:/Users/jung/coding/bds/card-news/fonts/Pretendard-Black.woff2') format('woff2'); font-display: block; }
+  @font-face { font-family: 'Pretendard'; font-weight: 800; src: url('file:///C:/Users/jung/coding/bds/card-news/fonts/Pretendard-ExtraBold.woff2') format('woff2'); font-display: block; }
+  @font-face { font-family: 'Pretendard'; font-weight: 700; src: url('file:///C:/Users/jung/coding/bds/card-news/fonts/Pretendard-Bold.woff2') format('woff2'); font-display: block; }
+  @font-face { font-family: 'Pretendard'; font-weight: 600; src: url('file:///C:/Users/jung/coding/bds/card-news/fonts/Pretendard-SemiBold.woff2') format('woff2'); font-display: block; }
+  @font-face { font-family: 'Pretendard'; font-weight: 500; src: url('file:///C:/Users/jung/coding/bds/card-news/fonts/Pretendard-Medium.woff2') format('woff2'); font-display: block; }
+
+  :root {
+    --brand: #0066FF;
+    --brand-tint: #EAF2FE;
+    --ink: #152038;
+    --ink-2: #5B6677;
+    --ink-3: #8A93A3;
+    --gold: #FFC93C;
+    --gold-2: #FFAB00;
+    --surface: #FFFFFF;
+    --surface-2: #F7F8FA;
+    --line: rgba(112,115,124,0.18);
+    --placeholder: #C4CAD3;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1350px; overflow: hidden; }
+  body { font-family: 'Pretendard', -apple-system, 'Apple SD Gothic Neo', sans-serif; -webkit-font-smoothing: antialiased; }
+
+    .card { width:1080px; height:1350px; background:var(--ink); position:relative; display:flex; flex-direction:column; padding:100px; }
+    .brand-white { margin-bottom:auto; }
+    .h2 { font:900 88px/1.15 'Pretendard'; color:#fff; letter-spacing:-2.5px; margin-bottom:32px; }
+    .gold-text { color:var(--gold); }
+    .desc { font:500 32px/1.7 'Pretendard'; color:rgba(255,255,255,0.7); margin-bottom:56px; }
+    .cta-row { display:flex; gap:20px; margin-bottom:auto; }
+    .btn { padding:20px 44px; border-radius:100px; font:700 28px/1 'Pretendard'; cursor:pointer; border:none; }
+    .btn-primary { background:var(--brand); color:#fff; }
+    .btn-outline { background:transparent; color:#fff; border:2px solid rgba(255,255,255,0.5); }
+    .disclaimer { font:500 21px/1.6 'Pretendard'; color:rgba(255,255,255,0.3); border-top:1px solid rgba(255,255,255,0.1); padding-top:24px; }
+  </style>
+</head>
+<body><div class="card">
+    <div class="brand-white" style="padding-bottom:80px;"><div style="display:flex;align-items:center;gap:12px;">
+    <img src="file:///C:/Users/jung/coding/bds/card-news/assets/logo.png" style="width:56px;height:56px;border-radius:10px;object-fit:cover;" onerror="this.style.display='none'">
+    <span style="font:700 34px/1 'Pretendard';color:#fff;">창원부동산랩</span>
+  </div></div>
+    <div class="h2">매주 업데이트되는<br>창원 <span class="gold-text">실거래가 리포트</span></div>
+    <div class="desc">우리 동네 아파트 시세가 궁금하다면<br>창원부동산랩을 팔로우하세요.</div>
+    <div class="cta-row">
+      <button class="btn btn-primary">팔로우 +</button>
+      <button class="btn btn-outline">저장하기</button>
+    </div>
+    <div class="disclaimer">
+      출처: 국토교통부 실거래가 공개시스템<br>
+      본 데이터는 신고 기준이며 실제 거래와 차이가 있을 수 있습니다
+    </div>
+  </div></body>
+</html>

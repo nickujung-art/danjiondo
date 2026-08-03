@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  @font-face { font-family: 'Pretendard'; font-weight: 900; src: url('file:///C:/Users/jung/coding/bds/card-news/fonts/Pretendard-Black.woff2') format('woff2'); font-display: block; }
+  @font-face { font-family: 'Pretendard'; font-weight: 800; src: url('file:///C:/Users/jung/coding/bds/card-news/fonts/Pretendard-ExtraBold.woff2') format('woff2'); font-display: block; }
+  @font-face { font-family: 'Pretendard'; font-weight: 700; src: url('file:///C:/Users/jung/coding/bds/card-news/fonts/Pretendard-Bold.woff2') format('woff2'); font-display: block; }
+  @font-face { font-family: 'Pretendard'; font-weight: 600; src: url('file:///C:/Users/jung/coding/bds/card-news/fonts/Pretendard-SemiBold.woff2') format('woff2'); font-display: block; }
+  @font-face { font-family: 'Pretendard'; font-weight: 500; src: url('file:///C:/Users/jung/coding/bds/card-news/fonts/Pretendard-Medium.woff2') format('woff2'); font-display: block; }
+
+  :root {
+    --brand: #0066FF;
+    --brand-tint: #EAF2FE;
+    --ink: #152038;
+    --ink-2: #5B6677;
+    --ink-3: #8A93A3;
+    --gold: #FFC93C;
+    --gold-2: #FFAB00;
+    --surface: #FFFFFF;
+    --surface-2: #F7F8FA;
+    --line: rgba(112,115,124,0.18);
+    --placeholder: #C4CAD3;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1350px; overflow: hidden; }
+  body { font-family: 'Pretendard', -apple-system, 'Apple SD Gothic Neo', sans-serif; -webkit-font-smoothing: antialiased; }
+
+    .card { width:1080px; height:1350px; background:#fff; position:relative; display:flex; flex-direction:column; padding:0 72px; }
+    .top-bar { position:absolute; top:0; left:0; width:100%; height:14px; background:var(--brand); }
+    .header { padding-top:48px; margin-bottom:20px; }
+    .eyebrow-sm { font:700 22px/1 'Pretendard'; color:var(--brand); letter-spacing:0.5px; margin-bottom:8px; }
+    .h2 { font:900 52px/1.1 'Pretendard'; color:var(--ink); letter-spacing:-2px; }
+
+    .row { display:flex; align-items:center; padding:18px 0; border-bottom:1px solid var(--line); gap:16px; flex:1; }
+    .row-rank { font:900 40px/1 'Pretendard'; width:56px; flex-shrink:0; text-align:center; }
+    .rank-gold { color:var(--gold-2); }
+    .rank-gray { color:#9AA4B2; }
+    .row-name { flex:1; min-width:0; }
+    .row-complex { font:700 32px/1.2 'Pretendard'; color:var(--ink); letter-spacing:-0.8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .row-sub { font:500 20px/1 'Pretendard'; color:var(--ink-3); margin-top:5px; }
+    .placeholder-text { color:var(--placeholder); }
+    .row-price { font:900 34px/1 'Pretendard'; color:var(--ink); letter-spacing:-1px; text-align:right; flex-shrink:0; }
+    .row-price-placeholder { color:var(--placeholder); }
+
+    .rows-wrap { flex:1; display:flex; flex-direction:column; }
+    .footer { padding:16px 0 48px; font:500 21px/1 'Pretendard'; color:var(--ink-3); flex-shrink:0; }
+  </style>
+</head>
+<body><div class="card">
+    <div class="top-bar"></div>
+    <div class="header">
+      <div class="eyebrow-sm">FULL RANKING</div>
+      <div class="h2">실거래가 순위 1~10위</div>
+    </div>
+    <div class="rows-wrap">
+      <div class="row">
+      <div class="row-rank rank-gold">1</div>
+      <div class="row-name">
+        <div class="row-complex ">용지아이파크</div>
+        
+      </div>
+      <div class="row-price ">10억 4,000</div>
+    </div><div class="row">
+      <div class="row-rank rank-gray">2</div>
+      <div class="row-name">
+        <div class="row-complex ">창원 센텀 푸르지오</div>
+        
+      </div>
+      <div class="row-price ">8억 4,000</div>
+    </div><div class="row">
+      <div class="row-rank rank-gray">3</div>
+      <div class="row-name">
+        <div class="row-complex ">트리비앙아파트</div>
+        
+      </div>
+      <div class="row-price ">7억 1,400</div>
+    </div><div class="row">
+      <div class="row-rank rank-gray">4</div>
+      <div class="row-name">
+        <div class="row-complex ">노블파크</div>
+        
+      </div>
+      <div class="row-price ">6억 8,800</div>
+    </div><div class="row">
+      <div class="row-rank rank-gray">5</div>
+      <div class="row-name">
+        <div class="row-complex ">포레나대원아파트</div>
+        
+      </div>
+      <div class="row-price ">6억 8,500</div>
+    </div><div class="row">
+      <div class="row-rank rank-gray">6</div>
+      <div class="row-name">
+        <div class="row-complex ">가음정한림풀에버</div>
+        
+      </div>
+      <div class="row-price ">6억 3,000</div>
+    </div><div class="row">
+      <div class="row-rank rank-gray">7</div>
+      <div class="row-name">
+        <div class="row-complex ">현대1차아파트</div>
+        
+      </div>
+      <div class="row-price ">5억 500</div>
+    </div><div class="row">
+      <div class="row-rank rank-gray">8</div>
+      <div class="row-name">
+        <div class="row-complex ">프리빌리지아파트</div>
+        
+      </div>
+      <div class="row-price ">4억 4,500</div>
+    </div><div class="row">
+      <div class="row-rank rank-gray">9</div>
+      <div class="row-name">
+        <div class="row-complex ">토월대동아파트</div>
+        
+      </div>
+      <div class="row-price ">4억 2,000</div>
+    </div><div class="row">
+      <div class="row-rank rank-gray">10</div>
+      <div class="row-name">
+        <div class="row-complex ">우성아파트</div>
+        
+      </div>
+      <div class="row-price ">4억 500</div>
+    </div>
+    </div>
+    <div class="footer">단위: 만원 &nbsp;·&nbsp; 출처: 국토교통부 실거래가 공개시스템 &nbsp;·&nbsp; 06.14 ~ 06.20 신고 건</div>
+  </div></body>
+</html>

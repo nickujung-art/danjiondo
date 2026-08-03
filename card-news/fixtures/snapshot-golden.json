@@ -1,0 +1,272 @@
+{
+  "84-seongsan": {
+    "week": "2026년 6월 2주차",
+    "weekCode": "2026-W24",
+    "period": "06.14 ~ 06.20 신고 건",
+    "source": "국토교통부 실거래가 공개시스템",
+    "region": "창원 성산구",
+    "area": "84㎡",
+    "seriesType": "area",
+    "subCaption": "이번 주 가장 비싸게 거래된\n국민평형 아파트는 어디일까요?",
+    "ranking": [
+      {
+        "rank": 1,
+        "name": "용지아이파크",
+        "price": "10억 4,000"
+      },
+      {
+        "rank": 2,
+        "name": "창원 센텀 푸르지오",
+        "price": "8억 4,000"
+      },
+      {
+        "rank": 3,
+        "name": "트리비앙아파트",
+        "price": "7억 1,400"
+      },
+      {
+        "rank": 4,
+        "name": "노블파크",
+        "price": "6억 8,800"
+      },
+      {
+        "rank": 5,
+        "name": "포레나대원아파트",
+        "price": "6억 8,500"
+      },
+      {
+        "rank": 6,
+        "name": "가음정한림풀에버",
+        "price": "6억 3,000"
+      },
+      {
+        "rank": 7,
+        "name": "현대1차아파트",
+        "price": "5억 500"
+      },
+      {
+        "rank": 8,
+        "name": "프리빌리지아파트",
+        "price": "4억 4,500"
+      },
+      {
+        "rank": 9,
+        "name": "토월대동아파트",
+        "price": "4억 2,000"
+      },
+      {
+        "rank": 10,
+        "name": "우성아파트",
+        "price": "4억 500"
+      }
+    ]
+  },
+  "city-volume": {
+    "week": "2026년 6월 2주차",
+    "weekCode": "2026-W24",
+    "period": "06.14 ~ 06.20 신고 건",
+    "source": "국토교통부 실거래가 공개시스템",
+    "region": "창원+김해",
+    "area": null,
+    "seriesType": "volume",
+    "subCaption": "이번 주 거래가 가장\n활발한 단지는 어디일까요?",
+    "ranking": [
+      {
+        "rank": 1,
+        "name": "노블파크",
+        "subtitle": "성산구",
+        "price": "7건",
+        "priceUnit": ""
+      },
+      {
+        "rank": 2,
+        "name": "감계아내에코프리미엄2차",
+        "subtitle": "의창구",
+        "price": "6건",
+        "priceUnit": ""
+      },
+      {
+        "rank": 3,
+        "name": "트리비앙아파트",
+        "subtitle": "성산구",
+        "price": "6건",
+        "priceUnit": ""
+      },
+      {
+        "rank": 4,
+        "name": "토월대동아파트",
+        "subtitle": "성산구",
+        "price": "5건",
+        "priceUnit": ""
+      },
+      {
+        "rank": 5,
+        "name": "은아아파트",
+        "subtitle": "성산구",
+        "price": "5건",
+        "priceUnit": ""
+      },
+      {
+        "rank": 6,
+        "name": "창원 센텀 푸르지오",
+        "subtitle": "성산구",
+        "price": "4건",
+        "priceUnit": ""
+      },
+      {
+        "rank": 7,
+        "name": "성원아파트",
+        "subtitle": "성산구",
+        "price": "4건",
+        "priceUnit": ""
+      },
+      {
+        "rank": 8,
+        "name": "유니온빌리지아파트",
+        "subtitle": "성산구",
+        "price": "4건",
+        "priceUnit": ""
+      },
+      {
+        "rank": 9,
+        "name": "창원롯데캐슬센텀골드",
+        "subtitle": "마산회원구",
+        "price": "4건",
+        "priceUnit": ""
+      },
+      {
+        "rank": 10,
+        "name": "메트로시티석전",
+        "subtitle": "마산회원구",
+        "price": "4건",
+        "priceUnit": ""
+      }
+    ]
+  },
+  "city-value-84": {
+    "week": "2026년 6월 2주차",
+    "weekCode": "2026-W24",
+    "period": "06.14 ~ 06.20 신고 건",
+    "source": "국토교통부 실거래가 공개시스템",
+    "region": "창원+김해",
+    "area": "84㎡",
+    "seriesType": "value",
+    "subCaption": "이번 주 84㎡ 기준\n가장 저렴한 평당가 단지는?",
+    "ranking": [
+      {
+        "rank": 1,
+        "name": "정일맨션",
+        "subtitle": "마산회원구",
+        "price": "292만/평",
+        "priceUnit": ""
+      },
+      {
+        "rank": 2,
+        "name": "성진까치빌라트2",
+        "subtitle": null,
+        "price": "366만/평",
+        "priceUnit": ""
+      },
+      {
+        "rank": 3,
+        "name": "대암그린비치아파트",
+        "subtitle": "진해구",
+        "price": "370만/평",
+        "priceUnit": ""
+      },
+      {
+        "rank": 4,
+        "name": "어방화인",
+        "subtitle": "김해시",
+        "price": "390만/평",
+        "priceUnit": ""
+      },
+      {
+        "rank": 5,
+        "name": "덕산세흥파크",
+        "subtitle": "의창구",
+        "price": "468만/평",
+        "priceUnit": ""
+      },
+      {
+        "rank": 6,
+        "name": "화인",
+        "subtitle": "마산합포구",
+        "price": "472만/평",
+        "priceUnit": ""
+      },
+      {
+        "rank": 7,
+        "name": "월산마을8단지부영아파트",
+        "subtitle": "김해시",
+        "price": "490만/평",
+        "priceUnit": ""
+      },
+      {
+        "rank": 8,
+        "name": "일동한신",
+        "subtitle": "김해시",
+        "price": "514만/평",
+        "priceUnit": ""
+      },
+      {
+        "rank": 9,
+        "name": "풍호우성아파트",
+        "subtitle": "진해구",
+        "price": "523만/평",
+        "priceUnit": ""
+      },
+      {
+        "rank": 10,
+        "name": "해창아트빌",
+        "subtitle": "마산합포구",
+        "price": "531만/평",
+        "priceUnit": ""
+      }
+    ]
+  },
+  "district-champions": {
+    "week": "2026년 6월 2주차",
+    "weekCode": "2026-W24",
+    "period": "06.14 ~ 06.20 신고 건",
+    "source": "국토교통부 실거래가 공개시스템",
+    "champions": [
+      {
+        "district": "의창구",
+        "name": "창원 중동 유니시티 2단지",
+        "pricePerPyeong": 3833,
+        "change": 1.3
+      },
+      {
+        "district": "성산구",
+        "name": "용지아이파크",
+        "pricePerPyeong": 4058,
+        "change": -8.2
+      },
+      {
+        "district": "마산합포구",
+        "name": "롯데캐슬프리미어아파트",
+        "pricePerPyeong": 1810,
+        "change": -5.1
+      },
+      {
+        "district": "마산회원구",
+        "name": "창원롯데캐슬센텀골드",
+        "pricePerPyeong": 2392,
+        "change": -0.5
+      },
+      {
+        "district": "진해구",
+        "name": "창원마린푸르지오1단지",
+        "pricePerPyeong": 1634,
+        "change": -1.1
+      },
+      {
+        "district": "김해시",
+        "name": "연지공원푸르지오아파트",
+        "pricePerPyeong": 2259,
+        "change": -7.7
+      }
+    ]
+  }
+}

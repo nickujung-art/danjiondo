@@ -574,8 +574,9 @@ export async function fetchPriceChangeRanking({ sggCodes, areaMin, areaMax, from
 /**
  * 구별 대장단지 — 각 구 최고 평당가 단지 1개씩 + 전주 대비 변동률
  */
-export async function fetchDistrictChampions({ sggMap, dealType = 'sale' }) {
-  const { from, to } = getLastWeekRange()
+export async function fetchDistrictChampions({ sggMap, dealType = 'sale', from: fromArg, to: toArg }) {
+  // 다른 fetch* 와 동일한 관용구. 인자 미지정 시 폴백이 현행 동작과 같다.
+  const { from, to } = fromArg ? { from: fromArg, to: toArg } : getLastWeekRange()
   const allCodes = Object.keys(sggMap)
 
   const fmt = (d) => d.toISOString().split('T')[0]
