@@ -1585,7 +1585,7 @@ Plans:
 
 **Depends on:** Phase 36 (0-1·0-2·0-3 완료 — `contents` 외 4테이블 + RLS), Phase 39 (onConflict 게이트)
 
-**Plans:** 5 plans (4 waves)
+**Plans:** 1/5 plans executed
 
 | Wave | Plans | 내용 |
 |---|---|---|
@@ -1595,7 +1595,7 @@ Plans:
 | 4 | 40-05 | 0-6 리브랜딩·비율 (드롭 가능) |
 
 Plans:
-- [ ] 40-01-PLAN.md — `buildSlides()` 추출 + 골든 회귀 하네스 + 전 18시리즈 HTML 무변경 실증 (마이그레이션 0건)
+- [x] 40-01-PLAN.md — `buildSlides()` 추출 + 골든 회귀 하네스 + 전 18시리즈 HTML 무변경 실증 (마이그레이션 0건)
 - [ ] 40-02-PLAN.md — `price_change` CHECK 확장 + `aggregatePriceChange` + 크론 소요시간 실측 (**이 Phase 유일의 마이그레이션**)
 - [ ] 40-03-PLAN.md — onConflict 게이트를 `card-news/scripts`·`.js/.mjs`까지 확장 + `persist-contents.js` + EXPLAIN 사전 검증
 - [ ] 40-04-PLAN.md — 소급 3회차 + 원본 값 대조 보고 + `weekly-generate.yml --persist` + **0-4 종결 체크포인트**

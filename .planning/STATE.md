@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
-status: Phase 38 Complete (2/2 plans — HARD-01~04 전부 달성)
-last_updated: "2026-07-31T01:43:14.997Z"
+status: Phase 40 In Progress (1/5 plans — 40-01 완료)
+last_updated: "2026-08-03T04:00:00.000Z"
 progress:
-  total_phases: 34
+  total_phases: 36
   completed_phases: 8
-  total_plans: 50
-  completed_plans: 46
-  percent: 24
+  total_plans: 59
+  completed_plans: 50
+  percent: 22
 ---
 
 # Project State — 단지온도
@@ -33,6 +33,21 @@ See: .planning/PROJECT.md (updated 2026-05-06)
 > 상세: `.planning/phases/38-security-reset-fix/38-01-SUMMARY.md`, `deferred-items.md`.
 
 ## Current Phase
+
+**Phase 40: 창부레터 선행 조건 0-4·0-5 (+0-6)** 🔄 In Progress — **1/5 plans**
+
+- [x] **40-01** (2026-08-03) — 카드뉴스 슬라이드를 `{kicker,big,label,sub}` 4필드 순수 자료구조로 추출.
+  🔴 **전 18시리즈 렌더 HTML 무변경을 바이트 단위로 실증**했다 (동결 스냅샷 1개로 before/after 렌더 → `diff -r` 빈 출력, 양쪽 70개).
+  BEFORE 는 `git stash`(커밋 뒤라 no-op) 대신 **SHA 기반 되돌리기**로 만들었다.
+  신규: `build-slides.js`(import 0건 순수 모듈) + 커밋된 골든 회귀 하네스(`fixtures/`, DB 불필요) +
+  containment 단언 4건(슬라이드 문구 ↔ 렌더 HTML — D-01 의 구조적 보장을 대체).
+  마이그레이션 0건 / 신규 의존성 0건 / `src/`·`supabase/`·`scripts/` 무접촉.
+  🔴 `TASK1_SHA=57e1b593b512c48cd32a82747f0d4d042fb39020`,
+  `PHASE_BASE_SHA=0ec69aafc046780ad8281e3bf34775cf7b8acf84` (40-03·40-04 가 참조).
+  상세: `.planning/phases/40-changbuletter-prereq/40-01-SUMMARY.md`
+- [ ] 40-02 / 40-03 / 40-04 / 40-05
+
+---
 
 **Phase 33: 전국 DB 확장 1단계 — 경남 전체 지역 확장 기반 구축** 🔄 In Progress
 
