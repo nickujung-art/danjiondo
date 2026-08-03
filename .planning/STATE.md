@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
-status: Phase 40 In Progress (3/5 plans — 40-01·40-02·40-03 완료)
-last_updated: "2026-08-03T05:05:00.000Z"
+status: Phase 40 In Progress (4/5 plans — 40-01·40-02·40-03·40-04 완료. 0-4 종결, 배포는 사용자 push 대기)
+last_updated: "2026-08-03T06:20:00.000Z"
 progress:
   total_phases: 36
   completed_phases: 8
   total_plans: 59
-  completed_plans: 51
+  completed_plans: 52
   percent: 22
 ---
 
@@ -34,7 +34,12 @@ See: .planning/PROJECT.md (updated 2026-05-06)
 
 ## Current Phase
 
-**Phase 40: 창부레터 선행 조건 0-4·0-5 (+0-6)** 🔄 In Progress — **3/5 plans**
+**Phase 40: 창부레터 선행 조건 0-4·0-5 (+0-6)** 🔄 In Progress — **4/5 plans**
+
+> ⛔ **미배포 (미푸시 17건).** `git push` 는 사용자가 직접 한다. push 전까지:
+> 주간 자동화(`weekly-generate.yml`)는 여전히 `--persist` 없이 돌아 **새 회차가 `contents` 에 적재되지 않고**,
+> 40-02 의 `price_change` 크론도 적용되지 않는다.
+> 미푸시 커밋 중 `45dd73e fix(molit)` 는 Phase 40 산출물이 아닌 별건 사용자 커밋이다 (push 시 함께 올라감).
 
 - [x] **40-01** (2026-08-03) — 카드뉴스 슬라이드를 `{kicker,big,label,sub}` 4필드 순수 자료구조로 추출.
   🔴 **전 18시리즈 렌더 HTML 무변경을 바이트 단위로 실증**했다 (동결 스냅샷 1개로 before/after 렌더 → `diff -r` 빈 출력, 양쪽 70개).
@@ -61,7 +66,25 @@ See: .planning/PROJECT.md (updated 2026-05-06)
   마이그레이션 0건 / 신규 의존성 0건 / `card-news/output/` 무변경.
   상세: `.planning/phases/40-changbuletter-prereq/40-03-SUMMARY.md`
 
-- [ ] 40-04 / 40-05
+- [x] **40-04** (2026-08-03) — 소급 3회차 적재로 **`contents` 1행 → 20행** (`2026-05` 1 / `2026-w24` 18 / `2026-w25` 1).
+  🔴 **회차별 행 수 ≤ `ls -1 output/<period>/` 개수**(1/18/1)를 단언해 허위 발행물 0건을 증명했다 —
+  `total === distinct_slug`(20/20)나 "기간 그룹 3개"는 `--series` 누락(54행)을 **잡지 못한다**.
+  🔴 **값 대조 4시리즈 × TOP5**: 비교 16행 중 완전일치 **5**(31.3%), 가격만 2, 둘 다 9.
+  차이의 원인을 나열이 아니라 `created_at` 으로 **귀속**했다 → **지연 신고 100%**, 취소·정정 기여 **0**
+  (비교 16행 전부 지금도 `cancel_date`/`superseded_by` null, 두 기간 `superseded_by` 0건).
+  코드 드리프트도 배제(`cc5d741` 대비 쓰이는 5개 쿼리 함수는 `from`/`to` 배선만 변경, `filterOutliers` 미사용).
+  → **사용자 결정 B-1 유지** — 재생성 값은 오류 정정이 아니라 **더 완전한 스냅숏**. `2026-05` 는 HTML 0개라 **대조 불가**로 남음.
+  🔴 **B-4 (실행 중 발견 → 승인 후 반영)**: `--persist` 만 배선하면 크론이 `--series` 없이 돌아 **매주 18행**을 발행물로 적재한다.
+  `--persist-series` 를 신설해 **생성 범위와 적재 범위를 분리**(PNG 18개 유지 / 적재 `city-overall` 1개).
+  실측 검증: `--series` 없이 실행 → 18시리즈 생성 / 적재 1건 / `contents` 20행 불변 (미적용 시 37행).
+  오늘이 월요일(크론 `10 15 * * 0`)이라 **배포 전 반영이 필수**였다.
+  🔴 **B-5**: `price_change` 22행 중 부산 **12**행·TOP3 전부 부산 → 배치는 전국 유지(실거래이야기 재사용),
+  **창부레터가 읽을 때 `si` 필터**. ROADMAP 에 인계 6건 기록.
+  📌 `card-news/output/` 은 gitignore 라 `git status` 무접촉 검사가 **공허** — mtime·파일 수로 대체 증명.
+  테스트 실패 이름 집합 불변(17/681/2), lint exit 0, 마이그레이션 0건.
+  상세: `.planning/phases/40-changbuletter-prereq/40-04-SUMMARY.md`
+
+- [ ] 40-05 (0-6 리브랜딩 — 드롭 가능)
 
 ---
 
@@ -355,6 +378,10 @@ Key notes: MOLIT_API_KEY (기존 data.go.kr 키) 재사용. B552555 청약홈 �
 | 2026-08-03 | `scripts/verify-onconflict-probe.ts` 를 `SKIP_FILES` 로 감사 제외 — 감사 도구 자신이라 (a) 일부러 깨진 값(42P10 기대)을 데이터로 들고 있고 (b) `.from(<변수>)` 라 테이블 귀속이 불가해 `table_unknown` **영구 오탐**이 된다. 오탐 하나면 게이트 전체가 무시되므로(Phase 39 stripComments 와 같은 이유) 제외가 맞다. ⛔ 이 목록이 커지면 T-39-03-02 재현 — 1건 유지가 리뷰 기준 | 40-03 |
 | 2026-08-03 | `card-news` 는 `--persist` **opt-in** — 기본값이 on 이면 `--dry-run` 실험 수십 회가 전부 프로덕션 `contents` 에 `published` 로 쓰인다. 그리고 `--persist` 에는 **`--series` 를 반드시 동반**한다: `main()` 은 18시리즈를 도는데 실제 발행 시리즈는 `ls -1 output/<weekCode>/` 뿐이라, 생략 시 발행된 적 없는 카드뉴스가 아카이브에 발행물로 올라간다. `total === distinct_slug` 검사로는 **잡히지 않는다** | 40-03 |
 | 2026-08-03 | `contents.region_tags` 는 `[]` 로 비워두고 이월 — 시리즈의 `region`('창원 성산구')과 ADR-002 태그 단위('의창구')가 다르고 SPEC-002 C절 초기 태그 목록이 미결. 잘못된 태그는 창부레터 지역 추천(`&&` 교집합)을 오작동시킨다 | 40-03 |
+| 2026-08-03 | 🔴 **생성 범위(`--series`)와 적재 범위(`--persist-series`)를 분리** — 주간 크론은 인자 없이 돌아 PNG 를 18시리즈 전부 만드는데, 실측 발행 시리즈 수는 회차마다 **1/18/1** 로 불균일하다. `--persist` 만 배선하면 매주 18행이 `published` 로 적재돼 **발행된 적 없는 카드뉴스가 아카이브에 올라간다**. 판정은 `shouldPersistSeries()` 순수 함수 한 곳. 크론은 `city-overall` 만, 수동 실행에서 `series` 지정 시엔 그것이 발행 의도이므로 적재도 따라간다. ⛔ 범위를 넓히면 `total === distinct_slug` 로 **잡히지 않고** `회차별 행 수 ≤ ls -1 output/<period>/ 개수` 만이 탐지법 | 40-04 |
+| 2026-08-03 | 소급 재생성 값이 원본 발행분과 다른 이유를 **`created_at` 으로 귀속** — 후보 3개(취소/정정/지연신고)를 나열만 하지 않고 측정했다. 결과: **지연 신고 100%**, 취소·정정 기여 **0**(비교 16행 전부 지금도 살아 있고 두 기간 `superseded_by` 0건). 코드 드리프트 가능성도 `git diff` 로 배제(쓰이는 5개 쿼리 함수는 `from`/`to` 배선만 변경, `filterOutliers` 미사용). 결론: 재생성 값은 **오류 정정이 아니라 더 완전한 스냅숏** → 소급 유지 | 40-04 |
+| 2026-08-03 | 🔴 `price_change` 는 **전국 유지**, 창부레터가 **읽을 때 `si in ('창원시','김해시')` 필터** — `실거래이야기` 재사용(ADR-005 의도) 때문. 실측 22행 중 부산 **12**행이고 **TOP3 전부 부산**이라, 필터 없이 쓰면 `hotArea` 가 `동래구` 가 된다(필터 후 정답은 `성산구`). 부수 발견 2건: `getRankingsByType` 이 `metadata.region` 미노출(`area_m2` 만 꺼냄), `complex_rankings` 에 prune 이 없고 `computed_at` 필터도 없어 stale 행이 섞일 수 있다(현재 0건) | 40-04 |
+| 2026-08-03 | ⛔ **gitignore 된 경로에 `git status --porcelain` 무접촉 검사를 쓰지 않는다** — `card-news/output/` 은 `.gitignore` 대상이고 추적 파일 0개라 무엇을 덮어써도 항상 빈 출력이다(공허한 통과). mtime·파일 수로 대체해야 한다. 부수 사실: 그 디렉터리가 **발행 기록의 유일본**이다(Actions artifact 는 retention 30일로 만료) | 40-04 |
 | 2026-07-31 | 🧭 전수 탐지 패턴 확립: `db reset` 실패→수정→재실행 왕복 대신 **1패스 수집**(실패 지점 이후 남은 파일을 로컬 DB에 `psql -1`로 직접 적용하며 에러 무시하고 계속) — 77개 1패스로 원인 실패 2건을 한 번에 확보, `-1` 롤백 덕에 연쇄 파생 0건. 판정은 stderr 내용이 아니라 **exit code**로 해야 함(NOTICE를 실패로 오분류한 오탐 3건 발생) | 38-01 |
 
 ---

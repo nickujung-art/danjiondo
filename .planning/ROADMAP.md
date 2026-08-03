@@ -1585,7 +1585,7 @@ Plans:
 
 **Depends on:** Phase 36 (0-1·0-2·0-3 완료 — `contents` 외 4테이블 + RLS), Phase 39 (onConflict 게이트)
 
-**Plans:** 3/5 plans executed
+**Plans:** 4/5 plans executed
 
 | Wave | Plans | 내용 |
 |---|---|---|
@@ -1598,7 +1598,7 @@ Plans:
 - [x] 40-01-PLAN.md — `buildSlides()` 추출 + 골든 회귀 하네스 + 전 18시리즈 HTML 무변경 실증 (마이그레이션 0건)
 - [x] 40-02-PLAN.md — `price_change` CHECK 확장 + `aggregatePriceChange` + 크론 소요시간 실측 (**이 Phase 유일의 마이그레이션**)
 - [x] 40-03-PLAN.md — onConflict 게이트를 `card-news/scripts`·`.js/.mjs`까지 확장 + `persist-contents.js` + EXPLAIN 사전 검증
-- [ ] 40-04-PLAN.md — 소급 3회차 + 원본 값 대조 보고 + `weekly-generate.yml --persist` + **0-4 종결 체크포인트**
+- [x] 40-04-PLAN.md — 소급 3회차(20행) + 원본 값 대조 보고 + `weekly-generate.yml --persist` + **0-4 종결 체크포인트**
 - [ ] 40-05-PLAN.md — 리브랜딩 8곳 + 비율 6줄 + 어드민 빌더 5종 육안 확인 체크포인트 (드롭 가능)
 
 **Success Criteria:**
@@ -1625,6 +1625,49 @@ Plans:
 - 📌 **아카이브는 3건에서 시작한다** (`2026-05`·`2026-W24`·`2026-W25`). 더 오래된 회차는 `output/`·Supabase 버킷 어디에도 없다. 늘리는 방법은 소급이 아니라 발행 빈도
 - `hotArea`는 **MVP 근사**(등락률 1위 단지의 지역명) — ADR-005 §2의 "미결"을 40-CONTEXT D-05가 확정
 - `git push` 하지 않는다 — 배포는 별도 사용자 결정. 배포 의존 항목은 "미확인"으로 표기
+
+---
+
+#### 🔴 창부레터 인계 사항 (40-04 확정 — 부트스트랩 시 반드시 읽을 것)
+
+**① `price_change` 는 전국 데이터다. 창부레터는 읽을 때 반드시 필터한다.**
+
+> `complex_rankings` 에서 `rank_type='price_change'` 를 쓸 때는
+> **`si in ('창원시','김해시')` 로 필터한 뒤 사용한다.**
+> `hotArea` 는 **전역 1위 행이 아니라, 필터 후 최상위 행의 `metadata.region`** 이다.
+
+배치를 창원·김해로 좁히지 **않는다** — `실거래이야기`가 같은 배치를 재사용해야 하고,
+그것이 ADR-005의 의도다 (40-04 B-5 사용자 결정, bds 코드 변경 0건).
+
+실측(2026-08-03): 전체 **22행** = 부산광역시 **12** / 창원시 6 / 김해시 2 / 양산시 2.
+**TOP3가 전부 부산이다.** rank 1 = `동래래미안아이파크아파트`(`metadata.region` = `동래구`).
+필터하지 않으면 창부레터 홈 히어로의 `hotArea` 가 **"동래구"** 로 나간다.
+필터 후 최상위는 rank 4 `남양성원1차아파트` → `hotArea` = **`성산구`**.
+원인은 `getActiveSggCodes` 가 활성 38개 지역(부산 16개 포함)을 전부 돌려주기 때문이다.
+
+**② `getRankingsByType()` 은 `metadata.region` 을 노출하지 않는다.**
+`src/lib/data/rankings.ts:27-63` — `metadata` 를 select 하지만 `RankingRow` 로 꺼내는 것은
+`area_m2` 뿐이다. `si`/`gu` 필터도 하지 않는다.
+→ 창부레터는 `complex_rankings.metadata` 를 **직접 읽거나** 이 함수를 확장해야 한다.
+
+**③ `complex_rankings` 는 stale 행을 정리하지 않는다.**
+집계 경로는 `upsert` 뿐이고 prune/delete 가 없다(`rankings.ts:416-417`). top-N 에서 빠진
+단지의 행이 옛 `rank`·`computed_at` 그대로 남는데 `getRankingsByType` 에는
+**`computed_at` 필터가 없다** → 오래된 행이 섞일 수 있다.
+현재 22행은 전부 `computed_at = 2026-08-03` 이라 실제 stale 행은 0건이지만 구조적 위험이다.
+
+**④ 아카이브는 20건(3회차)에서 시작한다.** `2026-05`(1) · `2026-W24`(18) · `2026-W25`(1).
+소급으로 늘릴 수 없다 — 더 오래된 회차는 `output/`·`cardnews-payloads` 버킷(0개)·
+Actions artifact(retention 30일, 만료) 어디에도 없다. **늘리는 방법은 발행 빈도뿐이다.**
+
+**⑤ 소급분의 값은 원래 발행분과 다르다(유지 결정됨).** 비교 16행 중 완전일치 5건.
+차이는 **100% 지연 신고**로 귀속됐다(취소·정정 기여 0). 오류 정정이 아니라 **더 완전한
+스냅숏**이다. `2026-05` 1건은 HTML 이 없어 **끝내 대조 불가**로 남았다.
+
+**⑥ 주간 크론은 `city-overall` 만 적재한다.** PNG 는 18시리즈 전부 생성하되 아카이브에
+올리는 것은 1개다 (`--persist-series`, 40-04 B-4). ⛔ 이 범위를 넓히면 발행된 적 없는
+카드뉴스가 `published` 로 아카이브에 올라간다 — `total === distinct_slug` 로는 **잡히지 않고**,
+유일한 탐지법은 `회차별 행 수 ≤ ls -1 output/<period>/ 개수` 단언이다.
 
 **UI hint**: no (0-6 수행 시 어드민 카드뉴스 빌더 비율만 1:1 → 4:5)
 
