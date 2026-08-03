@@ -18,6 +18,8 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
 const DETAIL_WORKERS  = 6
 const PAGE_TIMEOUT_MS = 12_000
 const API_WAIT_MS     = 3_000
+/** 이 개수 이상 돌았는데 수집이 0건이면 고장으로 본다(--limit 로 몇 개만 돌릴 때 오탐 방지) */
+const MIN_PROCESSED_FOR_HEALTH_CHECK = 10
 
 const isDryRun   = process.argv.includes('--dry-run')
 const skipAssign = process.argv.includes('--skip-assign')
@@ -183,6 +185,18 @@ async function main() {
 
   console.log('\n=== 1단계 결과 ===')
   console.log(`upserted: ${stats.upserted} / skip: ${stats.skip} / error: ${stats.error}`)
+
+  // 한 건도 못 건졌으면 **실패로 종료**한다 — crawl-naver-listings.ts 와 같은 이유다.
+  // 이 배치도 2026-06-19 이후 두 달간 0건만 내면서 매 실행 success 로 끝났고, 원인은
+  // 네이버의 GitHub Actions IP 차단이다(같은 코드가 국내 IP 에서는 정상 동작한다).
+  // 차단 복구는 보류하되, 멈춘 것을 모르는 상태는 없앤다.
+  const processed = stats.upserted + stats.skip + stats.error
+  if (processed >= MIN_PROCESSED_FOR_HEALTH_CHECK && stats.upserted === 0) {
+    console.error(
+      `\n${processed}개 단지를 돌았는데 수집 0건입니다 — 차단 또는 응답 형식 변경으로 보고 실패 처리합니다.`,
+    )
+    process.exit(1)
+  }
 
   // ── 2단계: transactions.area_type_id 일괄 매핑 ────────────────────────────
   if (isDryRun || skipAssign) {

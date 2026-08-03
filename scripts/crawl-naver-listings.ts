@@ -27,6 +27,8 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
 // ─── 설정 (anti_bot_scraper 원본 기준값) ──────────────────────────────────────
 const DETAIL_WORKERS  = 6       // 동시 탭 수 (원본: 12, 보수적으로 6 적용)
 const MIN_ITEMS       = 3       // 유효 매물 최소 수 (이 미만 → skip)
+/** 이 개수 이상 돌았는데 수집이 0건이면 고장으로 본다(--limit 로 몇 개만 돌릴 때 오탐 방지) */
+const MIN_PROCESSED_FOR_HEALTH_CHECK = 10
 const PAGE_TIMEOUT_MS = 15_000  // 페이지 로드 타임아웃
 const API_WAIT_MS     = 3_000   // API 응답 대기 최대 시간 (ms)
 
@@ -304,8 +306,29 @@ async function main() {
 
   await browser.close()
 
+  const processed = stats.upserted + stats.skip + stats.error
+
   console.log('\n=== 결과 ===')
   console.log(`upserted: ${stats.upserted} / skip: ${stats.skip} / error: ${stats.error}`)
+
+  // 한 건도 못 건졌으면 **실패로 종료**한다.
+  //
+  // 2026-06-18 이후 이 배치는 두 달 가까이 0건만 내면서도 매 실행 success 로 끝났다.
+  // 예외도 HTTP 오류도 없이 200개 단지가 전부 "매물 0건"으로 돌아왔기 때문이다(error: 0).
+  // 원인은 네이버의 GitHub Actions IP 차단으로 확인됐다 — 같은 코드를 국내 IP에서 돌리면
+  // 정상 수집된다(2026-08-03 로컬 검증: AK휴웰아파트 10건, 885만원/평).
+  //
+  // 차단 자체는 코드로 못 고치므로 복구는 보류하되(자체 호스팅 러너·프록시가 필요),
+  // **멈춘 것을 모르는 상태**만은 없앤다. 나중에 차단이 풀리면 이 신호로 바로 알 수 있다.
+  //
+  // "0건"만 실패로 본다 — 단지별 skip 은 MIN_ITEMS(3건) 필터 때문에 정상적으로도 흔하다.
+  // 전체가 0인 것만이 명백한 고장이다.
+  if (processed >= MIN_PROCESSED_FOR_HEALTH_CHECK && stats.upserted === 0) {
+    console.error(
+      `\n${processed}개 단지를 돌았는데 수집 0건입니다 — 차단 또는 응답 형식 변경으로 보고 실패 처리합니다.`,
+    )
+    process.exit(1)
+  }
 }
 
 main().catch(e => { console.error(e); process.exit(1) })
