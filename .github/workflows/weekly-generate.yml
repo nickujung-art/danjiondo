@@ -62,7 +62,9 @@ jobs:
           ARGS=""
           if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
           if [ -n "${{ inputs.series }}" ]; then ARGS="$ARGS --series=${{ inputs.series }}"; fi
-          node scripts/generate.js $ARGS
+          # --persist: 슬라이드 데이터를 contents 에 적재한다 (창부레터 0-4 / ADR-004 §2).
+          #            없으면 웹 뷰어와 아카이브가 빈 화면이 된다.
+          node scripts/generate.js --persist $ARGS
 
       - name: Upload PNG artifacts
         uses: actions/upload-artifact@v4

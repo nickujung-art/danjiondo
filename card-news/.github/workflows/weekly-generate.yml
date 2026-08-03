@@ -1,3 +1,6 @@
+# ⚠️ 이 파일은 실행되지 않습니다.
+#    GitHub Actions 는 저장소 루트 .github/workflows/ 만 읽습니다.
+#    실제로 도는 것은 <repo>/.github/workflows/weekly-generate.yml 입니다 (그쪽만 수정하세요).
 name: Weekly Card News Generation
 
 on:
