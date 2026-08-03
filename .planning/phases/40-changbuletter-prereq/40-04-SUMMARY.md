@@ -10,7 +10,7 @@ requires:
   - "Phase 36 — public.contents 스키마 + RLS (이 plan 은 마이그레이션 0건)"
 provides:
   - "contents 20행 — 2026-05(1) / 2026-W24(18) / 2026-W25(1)"
-  - ".github/workflows/weekly-generate.yml 에 --persist 배선 (커밋됨, 미배포)"
+  - ".github/workflows/weekly-generate.yml 에 --persist + --persist-series=city-overall 배선 (배포됨)"
   - "shouldPersistSeries() — 생성 범위(--series)와 적재 범위(--persist-series) 분리"
   - "card-news/.github/workflows/weekly-generate.yml 에 '실행되지 않음' 경고"
   - "재생성 값 ↔ 원본 발행분 차이의 정량 측정 + 원인 규명(지연 신고 100%)"
@@ -68,7 +68,9 @@ metrics:
 | `PRE_40_03_SHA` | `c3b72f6` |
 | **Task 2 커밋** | **`59af356`** |
 
-⛔ `git push` 미실행. 미푸시 커밋 **16건**.
+⛔ **실행자는 `git push` 를 하지 않았다.** 작업 중 **사용자가 직접 push** 했고 `origin/main` 은
+`34b13ac` 로 이동했다 — 위 코드 커밋 2건(`59af356`·`3bbabb9`)은 **둘 다 배포된 상태**다 (B-3 참조).
+`.planning/` 문서 커밋만 미푸시로 남는다.
 
 🔴 **이 plan 이 만들지 않은 커밋이 실행 중에 1건 들어왔다.**
 `45dd73e fix(molit): 실패율이 임계를 넘으면 exit 1 — 전부 실패해도 초록불이던 문제`
@@ -641,9 +643,29 @@ DELETE 는 **실행하지 않았다.** `contents` 20행이 그대로 아카이�
 Supabase `cardnews-payloads` 버킷 **0개**, GitHub Actions artifact 는 **retention 30일**로
 6월분이 이미 만료됐다.
 
-### B-3. 배포 → **사용자가 직접 `git push`**
+### B-3. 배포 → **사용자가 직접 `git push` 함 (완료)**
 
-실행자는 push 하지 않았다. B-4 코드 변경이 **push 전에** 반영됐다(아래).
+🔴 **실행자는 `git push` 를 실행하지 않았다.** 작업 중 사용자가 직접 push 했고, 그 사실은
+`git reflog show origin/main` 의 `update by push` 로 확인된다. `origin/main` = `34b13ac`.
+
+**B-4 수정이 포함된 상태로 배포됐다** — 확인 방법과 결과:
+```
+git merge-base --is-ancestor 59af356 origin/main   → ON ORIGIN   (--persist)
+git merge-base --is-ancestor 3bbabb9 origin/main   → ON ORIGIN   (--persist-series)
+
+git show origin/main:.github/workflows/weekly-generate.yml
+→ PERSIST_SERIES="${{ inputs.series }}"
+  if [ -z "$PERSIST_SERIES" ]; then PERSIST_SERIES="city-overall"; fi
+  node scripts/generate.js --persist --persist-series="$PERSIST_SERIES" $ARGS
+```
+
+🔴 **타이밍 — 18행 사고는 발생하지 않았고 대기 중인 것도 없다.**
+크론은 `10 15 * * 0`(월 00:10 KST)이다. 이번 주 실행은 **오늘 00:10 KST 에 이미 끝났고**
+그 시점 워크플로에는 `--persist` 자체가 없었으므로 크론이 적재한 행은 **0건**이다
+(`contents` 20행은 전부 40-04 소급분과 일치한다). **다음 실행은 2026-08-10(월) 00:10 KST**이며
+그때는 `city-overall` 1건만 적재된다.
+
+📌 `.planning/` 문서 커밋 `8802d34` 는 **미푸시**로 남아 있다 (실행자는 push 하지 않는다).
 
 ### B-4. 주간 크론 적재 범위 → **`city-overall` 만** (코드 변경 — 배포 전 반영 완료)
 
@@ -798,8 +820,9 @@ cron 은 `--series` 없이 돌아 매주 18행을 적재하게 된다. 플랜 �
 
 ## 이월 항목 (7건)
 
-1. **배포 미실행** — `git push` 안 함(미푸시 16건, `45dd73e` 사용자 커밋 1건 포함).
-   주간 자동 적재는 **시작되지 않았다.**
+1. **배포 완료** (이월 해소) — 사용자가 직접 push. `origin/main` = `34b13ac`, B-4 수정 포함.
+   주간 자동 적재는 **2026-08-10(월) 00:10 KST 부터** `city-overall` 1건으로 시작된다.
+   `.planning/` 문서 커밋 `8802d34` 만 미푸시.
    다음 월요일 00:10 KST 실행분은 `contents` 에 적재되지 않는다. 40-02 의 `price_change`
    크론도 동일. → B-3.
 2. **`region_tags` 미입력** — 20행 전부 `[]`. SPEC-002 C절 초기 태그 목록 미결(40-03 이월).
@@ -844,4 +867,5 @@ B-5 실측. 창부레터가 `metadata` 를 직접 읽거나 함수 확장이 필
 - `git status --porcelain` → ` M supabase/.temp/cli-latest` (plan 시작 전부터 존재)
 - `git status --porcelain supabase/migrations/` → 빈 출력 (마이그레이션 0건)
 - `card-news/output/` mtime·파일 수 무변경 (gitignore 라 git status 로는 확인 불가)
-- `git push` 미실행 — 미푸시 16건 (`45dd73e` 는 이 plan 외부 커밋)
+- `git push` **실행자 미실행** — 사용자가 직접 push (`origin/main` = `34b13ac`, 코드 커밋 2건 포함).
+  `.planning/` 문서 커밋만 미푸시

@@ -36,10 +36,12 @@ See: .planning/PROJECT.md (updated 2026-05-06)
 
 **Phase 40: 창부레터 선행 조건 0-4·0-5 (+0-6)** 🔄 In Progress — **4/5 plans**
 
-> ⛔ **미배포 (미푸시 17건).** `git push` 는 사용자가 직접 한다. push 전까지:
-> 주간 자동화(`weekly-generate.yml`)는 여전히 `--persist` 없이 돌아 **새 회차가 `contents` 에 적재되지 않고**,
-> 40-02 의 `price_change` 크론도 적용되지 않는다.
-> 미푸시 커밋 중 `45dd73e fix(molit)` 는 Phase 40 산출물이 아닌 별건 사용자 커밋이다 (push 시 함께 올라감).
+> ✅ **배포됨** — 사용자가 직접 `git push` 했다(실행자 미실행). `origin/main` = `34b13ac`.
+> 코드 커밋 `59af356`(`--persist`)·`3bbabb9`(`--persist-series=city-overall`) **둘 다 origin/main 에 있다** —
+> 즉 **B-4 수정이 포함된 상태로 배포됐다**(`git merge-base --is-ancestor` 확인, 원격 파일 내용 대조 완료).
+> 🔴 **다음 주간 실행은 2026-08-10(월) 00:10 KST.** 이번 주 실행분은 오늘 00:10 KST 에 이미
+> 끝났고 그때는 `--persist` 가 없었으므로 크론이 적재한 행은 0건이다 — `contents` 20행은 전부 40-04 소급분이다.
+> 📌 `.planning/` 문서 커밋 `8802d34` 는 **미푸시**로 남아 있다.
 
 - [x] **40-01** (2026-08-03) — 카드뉴스 슬라이드를 `{kicker,big,label,sub}` 4필드 순수 자료구조로 추출.
   🔴 **전 18시리즈 렌더 HTML 무변경을 바이트 단위로 실증**했다 (동결 스냅샷 1개로 before/after 렌더 → `diff -r` 빈 출력, 양쪽 70개).
