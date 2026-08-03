@@ -18,6 +18,15 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
 
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '../src/types/database'
+
+/**
+ * 이 비율 이상 실패하면 배치를 **실패로 간주**하고 exit 1 한다.
+ *
+ * 30%로 잡은 근거: 정상 실행에서는 실패가 0건이다(2026-07-29~08-01 나흘 연속 76/76 성공).
+ * 지역 한두 곳이 일시적으로 실패하는 건 partial 로 넘기되, 3분의 1이 무너지면 개별 지역
+ * 문제가 아니라 API·네트워크·키 같은 공통 원인이므로 사람이 봐야 한다.
+ */
+const FAILURE_ABORT_RATE = 0.3
 import { ingestMonth, ingestMonthVilla } from '../src/lib/data/realprice'
 
 const supabase = createClient<Database>(
@@ -194,11 +203,21 @@ async function main() {
     }
   }
 
-  console.log(`\n\n✅ 완료: ${done}건 처리 (${skipped}건 skip), ${totalUpserted}건 upsert`)
+  const failureRate = done > 0 ? failures / done : 0
+  const aborted = failureRate >= FAILURE_ABORT_RATE
+
+  console.log(
+    `\n\n${aborted ? '❌' : '✅'} 완료: ${done}건 처리 (${skipped}건 skip), ` +
+      `${totalUpserted}건 upsert, ${failures}건 실패(${(failureRate * 100).toFixed(1)}%)`,
+  )
 
   const syncedAt = new Date().toISOString()
-  const finalStatus = failures === 0 ? 'success' : 'partial'
-  const baseUpdate = { last_synced_at: syncedAt, last_status: finalStatus }
+  const finalStatus = failures === 0 ? 'success' : aborted ? 'failed' : 'partial'
+  const errorMessage = aborted
+    ? `실패율 ${(failureRate * 100).toFixed(1)}% (${failures}/${done}) — 임계 ${FAILURE_ABORT_RATE * 100}% 초과`
+    : null
+
+  const baseUpdate = { last_synced_at: syncedAt, last_status: finalStatus, error_message: errorMessage }
   const successUpdate = { ...baseUpdate, consecutive_failures: 0 }
   if (useApt) {
     await supabase.from('data_sources')
@@ -209,6 +228,17 @@ async function main() {
     await supabase.from('data_sources')
       .update(failures === 0 ? successUpdate : baseUpdate)
       .eq('id', 'molit_villa_trade')
+  }
+
+  // 실패율이 임계를 넘으면 **0이 아닌 코드로 종료**해 GitHub Actions를 빨간불로 만든다.
+  //
+  // 2026-08-02 이 스크립트는 152건을 **전부** 실패하고 0건 적재했는데도 `✅ 완료`를 찍고
+  // exit 0으로 끝났다(MOLIT API가 `TypeError: fetch failed`로 응답 불능). 워크플로는 success,
+  // data_sources 는 'partial' — 어디를 봐도 정상처럼 보였고 DB를 직접 뒤져서야 발견했다.
+  // finalStatus 가 'success'|'partial' 두 값뿐이라 'failed'가 될 수 없었던 것이 근본 원인이다.
+  if (aborted) {
+    console.error(`\n실패율이 임계(${FAILURE_ABORT_RATE * 100}%)를 넘어 실패로 종료합니다.`)
+    process.exit(1)
   }
 }
 
