@@ -66,6 +66,26 @@ const PROBE_TARGETS: readonly ProbeTarget[] = [
     expect: 'BROKEN',
     note: '구값 (대조용) — 매칭되는 유니크 제약이 없어 42P10이 나와야 정상',
   },
+  {
+    // [40-03] 창부레터 선행조건 0-4 — card-news/scripts/persist-contents.js 가 쓰는 값
+    no: 3,
+    table: 'contents',
+    onConflict: 'slug',
+    // 🔴 `contents` 에는 FK 컬럼이 **없다** → 랜덤 UUID FK(23503) 안전장치를 쓸 수 없다.
+    //    대신 `title`(NOT NULL, default 없음)을 **일부러 빼서** 23502 로 막는다.
+    //    ON CONFLICT 추론은 **플래닝** 단계라 실행 단계의 23502 보다 먼저 판정된다 —
+    //    즉 42P10 이면 BROKEN, 23502 면 추론에 성공했다는 뜻이다. 두 경우 모두 문장
+    //    전체가 롤백되므로 행이 남지 않는다.
+    payload: () => ({
+      site_id: 'changbuletter',
+      slug: `zz-p40-probe-${randomUUID()}`,
+      type: 'card_news',
+      category: '주간실거래가',
+      status: 'draft',
+    }),
+    expect: 'OK',
+    note: '창부레터 0-4 — contents_slug_key(비부분 UNIQUE) 추론 확인',
+  },
 ]
 
 const onlyArg = process.argv.find((a) => a.startsWith('--only='))

@@ -8,6 +8,13 @@
  *       --out=<dir>                        (출력 디렉터리 대체. 기본 ../output)
  *       --dump-data=<file>                 (시리즈별 data 객체를 JSON 한 파일로 덤프, 렌더 생략)
  *       --data=<file>                      (덤프한 JSON으로 렌더. Supabase 조회 0회)
+ *       --persist                          (슬라이드를 public.contents 에 적재. 🔴 opt-in)
+ *
+ * 🔴 `--persist` 가 opt-in 인 이유: `--dry-run` 은 실험용으로 수십 번 돈다. 적재가 기본값이면
+ *    그 실험이 전부 프로덕션 `contents` 에 **발행 상태(published)** 로 쓰인다.
+ * 🔴 `--persist` 를 쓸 때는 `--series` 를 **반드시** 함께 준다. 없으면 18개 시리즈 전부를
+ *    도는데, 실제로 발행된 시리즈는 그중 일부뿐이라 **발행된 적 없는 카드뉴스가 창부레터
+ *    아카이브에 발행물로 올라간다**. 발행 시리즈 목록은 `ls -1 output/<weekCode>/` 다.
  */
 import { mkdirSync, writeFileSync, readFileSync } from 'fs'
 import { join, resolve, dirname } from 'path'
@@ -27,6 +34,7 @@ import {
 } from './fetch-data.js'
 import { renderCover, renderHighlight, renderRanking, renderClosing, renderDistrictChampionsCard } from './templates.js'
 import { captureCard, closeBrowser } from './capture.js'
+import { buildContentRow, persistContents, getClient } from './persist-contents.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const OUTPUT_DIR = resolve(__dirname, '../output')
@@ -125,6 +133,7 @@ async function main() {
   const outArg = args.find((a) => a.startsWith('--out='))?.split('=')[1]
   const dumpDataArg = args.find((a) => a.startsWith('--dump-data='))?.split('=')[1]
   const dataArg = args.find((a) => a.startsWith('--data='))?.split('=')[1]
+  const persist = args.includes('--persist')
 
   // --out 미지정 시 현행 동작(../output) 그대로.
   const outputDir = outArg ? resolve(process.cwd(), outArg) : OUTPUT_DIR
@@ -159,6 +168,17 @@ async function main() {
   const dateRange = { from, to }
   const baseWeekData = { week: weekLabel, weekCode, period, source: SOURCE }
 
+  // 🔴 `--persist` 없이는 이 배열이 채워지지 않고 DB 접속도 일어나지 않는다.
+  //    `--dump-data` 모드는 렌더조차 하지 않으므로 적재 대상이 아니다.
+  const persistRows = persist && !dumpBucket ? [] : null
+  if (persist && !filter) {
+    console.warn(
+      '\n⚠️  --persist 를 --series 없이 실행했다. 시리즈 정의 전체(18개)가 적재 대상이 된다.\n' +
+      '   발행된 적 없는 회차가 아카이브에 발행물로 올라갈 수 있다.\n' +
+      `   발행 시리즈 목록: ls -1 output/${weekCode}/\n`,
+    )
+  }
+
   // ── 구별 평형 시리즈 ──────────────────────────────────
   for (const s of AREA_GU_SERIES) {
     if (filter && !filter.includes(s.id)) continue
@@ -181,6 +201,7 @@ async function main() {
       }
       if (dumpBucket) { dumpBucket[s.id] = data; continue }
       await generateCardSet(s.id, data, dryRun, outputDir)
+      if (persistRows) persistRows.push(buildContentRow(s.id, data, to))
     } catch (err) {
       console.error(`  [ERROR] ${s.id}: ${err.message}`)
     }
@@ -217,6 +238,7 @@ async function main() {
 
       if (dumpBucket) { dumpBucket[s.id] = data; continue }
       await generateCardSet(s.id, data, dryRun, outputDir)
+      if (persistRows) persistRows.push(buildContentRow(s.id, data, to))
     } catch (err) {
       console.error(`  [ERROR] ${s.id}: ${err.message}`)
     }
@@ -261,6 +283,8 @@ async function main() {
             console.log(`  ✓ ${card.name}.png`)
           }
         }
+
+        if (persistRows) persistRows.push(buildContentRow('district-champions', data, to))
       }
     } catch (err) {
       console.error(`  [ERROR] district-champions: ${err.message}`)
@@ -272,6 +296,12 @@ async function main() {
     mkdirSync(dirname(dumpPath), { recursive: true })
     writeFileSync(dumpPath, JSON.stringify(dumpBucket, null, 2), 'utf-8')
     console.log(`\n덤프 완료 → ${dumpPath} (시리즈 ${Object.keys(dumpBucket).length}개)`)
+  }
+
+  if (persistRows) {
+    const client = await getClient()
+    const { upserted, skipped } = await persistContents(client, persistRows)
+    console.log(`\n적재 ${upserted}건 / 건너뜀 ${skipped}건 (슬라이드 0장)`)
   }
 
   await closeBrowser()

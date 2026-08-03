@@ -433,6 +433,21 @@ describe('collectAllUpsertSites — 저장소 전 루트 스캔 (40-03)', () => 
     ).toBe(0)
   })
 
+  it('🔴 26. collectAllUpsertSites 가 card-news/scripts/persist-contents.js 의 contents upsert 를 수집한다', () => {
+    // 🔴 이 케이스가 "card-news/scripts 의 upsert 지점도 감사 범위에 들어온다" 의
+    //    **구속력 있는 증거**다. DB 가 필요 없으므로 라이브 게이트가 skip 되는 CI 에서도
+    //    이 사실은 유지된다. 실물 파일을 지목하므로 `.js` 가 스킵되면 반드시 실패한다 —
+    //    "0건" 류의 공허한 단언(T-40-03-12)으로는 대체할 수 없다.
+    const sites = collectAllUpsertSites(REPO_ROOT)
+    const hit = sites.find((s) => s.file.endsWith('card-news/scripts/persist-contents.js'))
+    expect(
+      hit,
+      `수집 목록:\n${sites.map((s) => `  ${s.file}:${s.line} ${s.table}`).join('\n')}`,
+    ).toBeDefined()
+    expect(hit?.table).toBe('contents')
+    expect(hit?.columns).toEqual(['slug'])
+  })
+
   it('🔴 25. AUDIT_ROOTS 가 src·card-news/scripts·scripts 를 전부 포함한다 (루트 누락 회귀 방지)', () => {
     // 🔴 루트 목록을 세 파일에 흩어놓지 않는다는 규약을 이 단언이 못 박는다.
     expect(AUDIT_ROOTS).toContain('src')
