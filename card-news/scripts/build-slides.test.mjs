@@ -11,6 +11,9 @@
  * (단, 케이스 18~21 containment 는 커밋된 골든 실물을 읽는 것이 목적이므로 예외다.)
  */
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { resolve, dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import { subLine, buildSlides, buildChampionSlides, buildContentMeta } from './build-slides.js'
 
@@ -209,6 +212,86 @@ test('17. 순수성 — 같은 입력 2회 호출 결과가 동일', () => {
     buildContentMeta('84-seongsan', AREA_DATA, '2026-06-20'),
   )
 })
+
+// ── 18~21. containment — 슬라이드 문구 ↔ 렌더 HTML ────────
+//
+// 🔴 이 4건이 *"인스타에 나간 문구와 웹 뷰어 문구가 갈라지지 않는다"* 를 강제하는
+//    **유일한 기계적 장치**다. D-01 의 "템플릿이 slides 를 렌더" 는 4필드 계약 하에서
+//    구현 불가능하므로(build-slides.js 상단 주석 참조), 그 구조적 보장을 이 테스트가 대체한다.
+//    따라서 **이 테스트의 커버리지가 곧 보장 범위다** — 골든 4시리즈 전부 × 전 슬라이드 × 4필드 전부.
+//
+// 대조 대상 `H` = 그 시리즈의 렌더된 카드 **전부를 이어붙인 문자열**.
+// ⛔ `02-highlight` 단독으로 대조하지 않는다. 이유 3가지 — 전부 구조적이다:
+//   1. 슬라이드 4·5(랭킹 4~5위)는 renderHighlight(TOP3)에 없고 03-ranking 에만 있다
+//   2. KICKER.volume('거래량')·KICKER.value('평당가')는 renderRanking 의 headerLabel 에만 있다
+//      (renderHighlight 의 h2 는 시리즈 종류와 무관하게 '최고가 거래 TOP 3' 로 하드코딩)
+//   3. city-* 시리즈의 item.subtitle(=gu)은 renderRanking 의 row-sub 에만 렌더된다.
+//      rankCard 는 subtitle 을 아예 읽지 않는다 → 02-highlight 단독은 city 에서 구조적으로 실패한다
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const FIXTURES = resolve(__dirname, '../fixtures')
+const snapshot = JSON.parse(readFileSync(join(FIXTURES, 'snapshot-golden.json'), 'utf-8'))
+
+/** 그 시리즈의 골든 카드 전부를 이어붙인다 */
+function goldenConcat(seriesId, cardNames) {
+  const dir = join(FIXTURES, 'golden', snapshot[seriesId].weekCode, seriesId)
+  return {
+    H: cardNames.map((n) => readFileSync(join(dir, `${n}.html`), 'utf-8')).join('\n'),
+    files: cardNames.map((n) => `${seriesId}/${n}.html`),
+  }
+}
+
+/**
+ * 슬라이드 4필드가 렌더 HTML 안에 실재하는지 단언한다.
+ *
+ * 🔴 예외는 **두 군데뿐**이고 둘 다 이유가 여기 적혀 있다:
+ *   1. `label === ''` (volume·value) — price 문자열에 이미 단위가 박혀 있어("7건", "292만/평")
+ *      LABEL 을 비웠다. 빈 문자열은 대조 대상이 아니다. 대신 `big` 통짜 대조가 단위를 함께 덮는다.
+ *   2. `N위` 토큰 — row-rank·badge-num 은 **숫자만** 렌더한다('위' 가 없다).
+ *      통짜 대조가 원리적으로 불가능하므로 숫자 부분만 대조한다.
+ * ⛔ 그 외의 필드를 "대조 불가"로 조용히 빼지 않는다.
+ */
+function assertContained(H, slide, seriesId, idx, files) {
+  const fail = (field, value) =>
+    `${seriesId} slide[${idx}].${field}: "${value}" 가 렌더 HTML에 없다\n    대조 파일: ${files.join(', ')}`
+
+  // big — 통짜. item.price 원문을 그대로 쓰므로 price-num/row-price 에 그대로 있다.
+  assert.ok(H.includes(slide.big), fail('big', slide.big))
+
+  // label — 빈 문자열이 아니면 통짜.
+  if (slide.label !== '') {
+    assert.ok(H.includes(slide.label), fail('label', slide.label))
+  }
+
+  // kicker — 공백 토큰별. `N위` 토큰만 숫자로 치환해 대조.
+  for (const tok of slide.kicker.split(/\s+/).filter(Boolean)) {
+    const m = /^(\d+)위$/.exec(tok)
+    const needle = m ? m[1] : tok
+    assert.ok(H.includes(needle), fail('kicker', `${tok}${m ? ` (숫자 "${needle}")` : ''}`))
+  }
+
+  // sub — 이름·지역·면적이 서로 다른 DOM 노드라 통짜 문자열이 HTML 에 없다. 토큰별로 본다.
+  for (const tok of slide.sub.split(/[ ·]+/).filter(Boolean)) {
+    assert.ok(H.includes(tok), fail('sub', tok))
+  }
+}
+
+const CONTAINMENT_CASES = [
+  ['18', '84-seongsan', ['01-cover', '02-highlight', '03-ranking', '04-closing'], buildSlides],
+  ['19', 'city-volume', ['01-cover', '02-highlight', '03-ranking', '04-closing'], buildSlides],
+  ['20', 'city-value-84', ['01-cover', '02-highlight', '03-ranking', '04-closing'], buildSlides],
+  ['21', 'district-champions', ['01-grid', '02-closing'], buildChampionSlides],
+]
+
+for (const [num, seriesId, cardNames, build] of CONTAINMENT_CASES) {
+  test(`${num}. containment ${seriesId} — 전 슬라이드 × 4필드가 렌더 HTML에 실재`, () => {
+    const { H, files } = goldenConcat(seriesId, cardNames)
+    const slides = build(snapshot[seriesId])
+    assert.ok(slides.length > 0, `${seriesId}: 슬라이드가 0장이면 단언이 공허하게 통과한다`)
+    slides.forEach((s, i) => assertContained(H, s, seriesId, i, files))
+    console.log(`     (${seriesId}: 슬라이드 ${slides.length}장 × 4필드 대조)`)
+  })
+}
 
 console.log(`\n${passed} passed / ${failed} failed`)
 process.exit(failed > 0 ? 1 : 0)
