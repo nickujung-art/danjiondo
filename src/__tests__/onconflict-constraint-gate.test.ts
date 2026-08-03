@@ -1,9 +1,13 @@
 /**
  * onConflict ↔ 실제 UNIQUE 제약 대조 게이트 — 라이브 DB 필요. (Phase 39 F-05)
  *
- * `src/` 의 모든 `.upsert(…, { onConflict: '…' })` 지점을 정적 수집해, 그 컬럼 목록이 실제
- * 카탈로그의 **추론 가능한**(비부분·비표현식·valid) UNIQUE 인덱스와 일치하는지 대조한다.
+ * `AUDIT_ROOTS`(= `src` · `card-news/scripts` · `scripts`) 아래의 모든
+ * `.upsert(…, { onConflict: '…' })` 지점을 정적 수집해, 그 컬럼 목록이 실제 카탈로그의
+ * **추론 가능한**(비부분·비표현식·valid) UNIQUE 인덱스와 일치하는지 대조한다.
  * Phase 39 의 고장 4 건은 전부 "마이그레이션이 제약을 바꿨는데 코드는 그대로" 였다.
+ *
+ * 🔴 40-03: 범위가 `src/` → **저장소 전체**로 넓어졌다. `card-news/scripts/*.js` 의 upsert 가
+ *    감사 밖에 있으면 새 `onConflict` 가 게이트를 **공허하게 통과**한다 (T-40-03-02).
  *
  * ⚠️ **이 파일은 CI 에서 영구히 skip 된다.** `.github/workflows/ci.yml` 의 unit-test 잡은
  *    `npm run test` 를 `env:` 블록 없이 실행하므로 `TEST_SUPABASE_SKEY` 가 없다.
@@ -19,8 +23,9 @@
 import path from 'path'
 import { describe, expect, it } from 'vitest'
 import {
+  AUDIT_ROOTS,
   auditSites,
-  collectUpsertSites,
+  collectAllUpsertSites,
   formatAuditTable,
   toInferrable,
   type RawUniqueIndex,
@@ -87,35 +92,50 @@ async function uniqueIndexesFor(table: string): Promise<RawUniqueIndex[]> {
   return (data ?? []) as RawUniqueIndex[]
 }
 
-// 이 파일은 src/__tests__/ 에 있다 → .. = <repo>/src. CWD 의존을 피한다.
-const SRC_DIR = path.resolve(__dirname, '..')
+// 이 파일은 src/__tests__/ 에 있다 → ../.. = <repo>. CWD 의존을 피한다.
+// 🔴 40-03: `src/` 가 아니라 **저장소 루트**다. 스캔 루트 목록은 `AUDIT_ROOTS` 한 곳에만 있고
+//    (`@/lib/db/onconflict-audit`), 그 내용은 `onconflict-audit.test.ts` 케이스 25 가 못 박는다.
+const REPO_ROOT = path.resolve(__dirname, '../..')
 
 describe.skipIf(!SKEY)('onConflict ↔ UNIQUE 제약 대조 게이트 (라이브 DB)', () => {
-  // distinct 테이블 수(2026-07-31 실측 15개)만큼 RPC 왕복이 필요하다. 병렬로 보내도
+  // distinct 테이블 수(40-03 확장 후 실측 27개)만큼 RPC 왕복이 필요하다. 병렬로 보내도
   // 기본 5초 타임아웃은 원격 프로덕션 기준으로 빠듯해서 명시적으로 늘린다.
-  it('src/ 의 모든 upsert 지점이 추론 가능한 UNIQUE 인덱스와 일치한다', { timeout: 60_000 }, async (ctx) => {
-    const notReady = await gateNotReadyReason()
-    if (notReady) {
-      console.warn(skipNote(notReady))
-      return ctx.skip()
-    }
-    const sites = collectUpsertSites(SRC_DIR)
-    const tables = [...new Set(sites.map((s) => s.table))]
+  it(
+    `저장소 전체(${AUDIT_ROOTS.join(' · ')})의 모든 upsert 지점이 추론 가능한 UNIQUE 인덱스와 일치한다`,
+    { timeout: 120_000 },
+    async (ctx) => {
+      const notReady = await gateNotReadyReason()
+      if (notReady) {
+        console.warn(skipNote(notReady))
+        return ctx.skip()
+      }
+      const sites = collectAllUpsertSites(REPO_ROOT)
+      const tables = [...new Set(sites.map((s) => s.table))]
 
-    const fetched = await Promise.all(
-      tables.map(async (table) => [table, toInferrable(await uniqueIndexesFor(table))] as const),
-    )
-    const indexesByTable: Record<string, InferrableIndex[]> = Object.fromEntries(fetched)
+      const fetched = await Promise.all(
+        tables.map(async (table) => [table, toInferrable(await uniqueIndexesFor(table))] as const),
+      )
+      const indexesByTable: Record<string, InferrableIndex[]> = Object.fromEntries(fetched)
 
-    const results = auditSites(sites, indexesByTable)
-    const failures = results.filter((r) => r.verdict !== 'ok')
+      const results = auditSites(sites, indexesByTable)
+      const failures = results.filter((r) => r.verdict !== 'ok')
 
-    // 실패 시 어느 파일:행의 어떤 컬럼 목록이 어떤 인덱스와 안 맞는지 바로 보이게 한다.
-    expect(
-      failures.map((f) => `${f.site.file}:${f.site.line}`),
-      `\n${formatAuditTable(results)}\n`,
-    ).toEqual([])
-  })
+      // 🔴 이 게이트는 **수동 실행 전용**이다(CI 에 자격증명이 없다). 통과했을 때도 감사 표를
+      //    찍어야 "무엇이 대조됐는지" 를 기록으로 남길 수 있다 — 초록불만으로는
+      //    스캐너가 0 건을 수집한 공허한 통과와 구분되지 않는다.
+      // eslint-disable-next-line no-console -- 수동 게이트의 산출 증거. 표 자체가 결과물이다.
+      console.log(
+        `\n[onconflict-gate] 감사 대상 ${results.length}건 / 테이블 ${tables.length}종\n` +
+          formatAuditTable(results),
+      )
+
+      // 실패 시 어느 파일:행의 어떤 컬럼 목록이 어떤 인덱스와 안 맞는지 바로 보이게 한다.
+      expect(
+        failures.map((f) => `${f.site.file}:${f.site.line}`),
+        `\n${formatAuditTable(results)}\n`,
+      ).toEqual([])
+    },
+  )
 
   it('🔴 라이브 음성 대조 — new_listings 의 부분 인덱스는 추론 대상에서 제외된다', async (ctx) => {
     const notReady = await gateNotReadyReason()

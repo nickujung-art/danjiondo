@@ -219,7 +219,31 @@ function skipRegexLiteral(src: string, openIndex: number): number {
 const ON_CONFLICT_RE = /onConflict\s*:\s*['"]([^'"]+)['"]/g
 const FROM_RE = /\.from\(\s*['"]([A-Za-z0-9_]+)['"]\s*\)/g
 
-const SKIP_DIRS = new Set(['node_modules', '.next', '__tests__', '.git', 'coverage'])
+const SKIP_DIRS = new Set([
+  'node_modules',
+  '.next',
+  '__tests__',
+  '.git',
+  'coverage',
+  // 40-03: card-news/output(발행 산출물 HTML/PNG)·card-news/fixtures(골든 HTML) 은
+  // 소스가 아니다. 스캔 낭비이자, 골든 HTML 이 우연히 `onConflict` 문자열을 담으면 오탐이다.
+  'output',
+  'fixtures',
+])
+
+/**
+ * 🔴 수집에서 제외하는 개별 파일 (repo 상대경로, posix).
+ *
+ * `scripts/verify-onconflict-probe.ts` 는 **감사 도구 자신**이다. `PROBE_TARGETS` 배열에
+ *   ① 일부러 깨진 값(`facility_kapt` / `complex_id` — 42P10 이 나와야 정상)
+ *   ② `.from(<변수>)` 형태(문자열 리터럴이 아니라 테이블 귀속 불가)
+ * 을 데이터로 들고 있다. 수집하면 라이브 게이트가 **영구 오탐**한다 —
+ * 오탐 하나면 게이트 전체가 무시된다(Phase 39 stripComments 와 같은 이유).
+ *
+ * ⛔ 이 목록을 "게이트가 시끄러워서" 늘리지 말 것. 늘리는 순간 T-39-03-02
+ *    (스캐너가 조용히 지점을 놓침)가 그대로 재현된다.
+ */
+const SKIP_FILES = new Set(['scripts/verify-onconflict-probe.ts'])
 
 function walk(dir: string, acc: string[]): void {
   let entries: fs.Dirent[]
@@ -236,9 +260,15 @@ function walk(dir: string, acc: string[]): void {
       continue
     }
     if (!entry.isFile()) continue
-    if (!/\.tsx?$/.test(entry.name)) continue
+    // 40-03: `.js`/`.mjs`/`.cjs` 추가. card-news/scripts 가 ESM `.js` 스탠드얼론이라
+    // 이 확장자를 빼면 그쪽 upsert 가 통째로 감사 밖으로 빠진다 (T-40-03-02).
+    if (!/\.(tsx?|mjs|cjs|js)$/.test(entry.name)) continue
     if (/\.d\.ts$/.test(entry.name)) continue
-    if (/\.(test|spec)\.tsx?$/.test(entry.name)) continue
+    if (/\.(test|spec)\.(tsx?|mjs|cjs|js)$/.test(entry.name)) continue
+    // 🔴 `process.cwd()` 에 의존하지 않도록 경로 **접미사**로 판정한다 — CWD 가 저장소
+    //    루트가 아니면 상대경로 비교가 조용히 빗나가고 제외가 무력화된다.
+    const posix = full.split(path.sep).join('/')
+    if ([...SKIP_FILES].some((s) => posix === s || posix.endsWith(`/${s}`))) continue
     acc.push(full)
   }
 }
@@ -296,6 +326,31 @@ export function collectUpsertSites(rootDir: string): UpsertSite[] {
   }
 
   return sites
+}
+
+/**
+ * 🔴 감사 스캔 루트 — **단일 진실 원천**. (Phase 40-03)
+ *
+ * Phase 39 게이트는 `src/` 만 봤다. 그래서 `card-news/scripts/*.js` 에 새 upsert 를 쓰면
+ * 게이트가 **공허하게 통과**한다 — 침묵이 주 실패 모드다 (T-39-03-02 / T-40-03-02).
+ *
+ * ⛔ 이 목록을 호출부(`onconflict-constraint-gate.test.ts` 등)에 흩어놓지 말 것.
+ *    Phase 39 가 지목한 실패 모드가 정확히 "한 군데만 고치고 다른 데는 안 고침" 이다.
+ *    `onconflict-audit.test.ts` 의 케이스 25 가 이 상수의 내용을 DB 없이 못 박는다.
+ *
+ * 각 루트의 근거:
+ *   - `src`               — 애플리케이션 코드 (Phase 39 원본 범위)
+ *   - `card-news/scripts` — 서비스롤 스탠드얼론. `contents` 적재가 여기서 일어난다 (40-03)
+ *   - `scripts`           — 일회성 백필·크롤러. 프로덕션 테이블에 직접 upsert 한다
+ */
+export const AUDIT_ROOTS = ['src', 'card-news/scripts', 'scripts'] as const
+
+/**
+ * `AUDIT_ROOTS` 전부를 스캔해 upsert 지점을 합친다.
+ * @param repoRoot 저장소 루트 절대경로
+ */
+export function collectAllUpsertSites(repoRoot: string): UpsertSite[] {
+  return AUDIT_ROOTS.flatMap((root) => collectUpsertSites(path.join(repoRoot, root)))
 }
 
 /** 실패 메시지용 markdown 표. 어느 파일:행의 어떤 컬럼이 안 맞는지 바로 보이게 한다. */

@@ -13,7 +13,9 @@ import os from 'os'
 import path from 'path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
+  AUDIT_ROOTS,
   auditSites,
+  collectAllUpsertSites,
   collectUpsertSites,
   formatAuditTable,
   toInferrable,
@@ -323,5 +325,118 @@ describe('실물 src/ 스캐너 건전성 (DB 불필요 — CI 에서도 항상 
     const sql = fs.readFileSync(path.join(migrations, found[0]!), 'utf8')
     expect(sql).toContain('indpred') //  is_partial 의 근거
     expect(sql).toContain('grant  execute on function public.unique_indexes_for_table(text) to service_role')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🔴 Phase 40-03 — 감사 범위 확장 (.js/.mjs/.cjs + card-news/scripts·scripts 루트)
+//
+// 왜: Phase 39 게이트는 `src/` 의 `.ts`/`.tsx` 만 봤다. `card-news/scripts/*.js` 에
+// upsert 를 새로 쓰면 게이트가 **조용히** 통과한다 (위협등록부 T-39-03-02 = T-40-03-02).
+//
+// 🔴 아래 케이스 21·22 는 **양성 단언**이다 — "정확히 1건 + 테이블·컬럼 일치".
+//    "0건" 단언으로 대체하면 `.js` 가 통째로 스킵돼도 통과해버려서(T-40-03-12)
+//    이 확장이 고치려는 바로 그 버그를 인증하게 된다.
+// ─────────────────────────────────────────────────────────────────────────────
+describe('collectUpsertSites — .js/.mjs 확장 (40-03)', () => {
+  let tmp: string
+
+  beforeAll(() => {
+    tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'onconflict-audit-js-'))
+
+    // ① ESM 모듈 — card-news/scripts 가 쓰는 형태 그대로
+    fs.writeFileSync(
+      path.join(tmp, 'esm-site.mjs'),
+      [
+        'export async function m(client) {',
+        "  return client.from('t').upsert({}, { onConflict: 'a,b' })",
+        '}',
+      ].join('\n'),
+    )
+
+    // ② 평범한 .js — 실제 파일 확장자(persist-contents.js)와 동일.
+    //    🔴 같은 파일 안에 주석 형태의 onConflict 를 같이 둔다 (케이스 23 이 이걸 본다).
+    fs.writeFileSync(
+      path.join(tmp, 'cjs-style.js'),
+      [
+        '// onConflict — (x, y) 로 쓰면 안 되는 이유를 설명하는 주석이다.',
+        "// 옛 값 onConflict: 'x,y' 는 42P10 으로 실패했다.",
+        'export async function j(client) {',
+        "  return client.from('u').upsert({}, { onConflict: 'c' })",
+        '}',
+      ].join('\n'),
+    )
+
+    // ③ 제외 대상 — *.test.mjs / *.spec.js 는 수집하지 않는다
+    fs.writeFileSync(
+      path.join(tmp, 'ignored.test.mjs'),
+      "export const x = () => c.from('should_not_appear_mjs').upsert({}, { onConflict: 'a' })\n",
+    )
+    fs.writeFileSync(
+      path.join(tmp, 'ignored.spec.js'),
+      "export const y = () => c.from('should_not_appear_js').upsert({}, { onConflict: 'a' })\n",
+    )
+  })
+
+  afterAll(() => {
+    fs.rmSync(tmp, { recursive: true, force: true })
+  })
+
+  it('🔴 21. 양성 — .mjs 파일의 upsert 를 정확히 1건 수집하고 테이블·컬럼이 일치한다', () => {
+    const sites = collectUpsertSites(tmp).filter((s) => s.file.endsWith('esm-site.mjs'))
+    expect(sites, '.mjs 가 스캔 대상에 들어오지 않았다').toHaveLength(1)
+    expect(sites[0]!.table).toBe('t')
+    expect(sites[0]!.columns).toEqual(['a', 'b'])
+  })
+
+  it('🔴 22. 양성 — .js 파일의 upsert 를 정확히 1건 수집하고 테이블·컬럼이 일치한다', () => {
+    const sites = collectUpsertSites(tmp).filter((s) => s.file.endsWith('cjs-style.js'))
+    expect(sites, '.js 가 스캔 대상에 들어오지 않았다').toHaveLength(1)
+    expect(sites[0]!.table).toBe('u')
+    expect(sites[0]!.columns).toEqual(['c'])
+  })
+
+  it('🔴 23. 음성 — .js 안의 주석 onConflict 와 *.test.mjs/*.spec.js 는 수집되지 않는다', () => {
+    const all = collectUpsertSites(tmp)
+
+    // ① 케이스 22 의 실제 호출 1건만 남아야 한다 — 주석의 'x,y' 가 섞이면 2건이 된다.
+    const inJs = all.filter((s) => s.file.endsWith('cjs-style.js'))
+    expect(inJs.map((s) => s.columns.join(','))).toEqual(['c'])
+
+    // ② 테스트 파일 제외가 새 확장자에도 적용된다 — 빠지면 build-slides.test.mjs 같은
+    //    실물 테스트 픽스처가 감사 대상으로 딸려 들어와 라이브 게이트가 오탐한다.
+    const tables = all.map((s) => s.table)
+    expect(tables).not.toContain('should_not_appear_mjs')
+    expect(tables).not.toContain('should_not_appear_js')
+  })
+})
+
+describe('collectAllUpsertSites — 저장소 전 루트 스캔 (40-03)', () => {
+  // 이 파일은 src/lib/db/ 에 있다 → ../../.. = <repo>. CWD 의존을 피한다.
+  const REPO_ROOT = path.resolve(__dirname, '../../..')
+
+  // Phase 39 가 확정한 src/ 하한. 루트가 늘었으므로 전체 수집은 이보다 작을 수 없다.
+  const MIN_SITES = 16
+
+  it(`🔴 24. collectAllUpsertSites 가 ${MIN_SITES}건 이상을 수집하고 table === "" 이 0건이다`, () => {
+    const sites = collectAllUpsertSites(REPO_ROOT)
+    const listing = sites.map((s) => `  ${s.file}:${s.line}  ${s.table} (${s.columns.join(',')})`).join('\n')
+    expect(sites.length, `수집 건수 ${sites.length} < ${MIN_SITES}.\n수집 목록:\n${listing}`).toBeGreaterThanOrEqual(
+      MIN_SITES,
+    )
+
+    const orphans = sites.filter((s) => !s.table)
+    expect(
+      orphans.length,
+      `테이블 귀속 실패:\n${orphans.map((s) => `  ${s.file}:${s.line} (${s.columns.join(',')})`).join('\n')}` +
+        `\n\n전체 수집 목록:\n${listing}`,
+    ).toBe(0)
+  })
+
+  it('🔴 25. AUDIT_ROOTS 가 src·card-news/scripts·scripts 를 전부 포함한다 (루트 누락 회귀 방지)', () => {
+    // 🔴 루트 목록을 세 파일에 흩어놓지 않는다는 규약을 이 단언이 못 박는다.
+    expect(AUDIT_ROOTS).toContain('src')
+    expect(AUDIT_ROOTS).toContain('card-news/scripts')
+    expect(AUDIT_ROOTS).toContain('scripts')
   })
 })
