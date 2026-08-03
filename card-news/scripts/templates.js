@@ -4,6 +4,7 @@
  */
 import { resolve, dirname } from 'path'
 import { fileURLToPath, pathToFileURL } from 'url'
+import { subLine } from './build-slides.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT_URL = pathToFileURL(resolve(__dirname, '..')).href
@@ -199,7 +200,7 @@ export function renderHighlight(data) {
     const isPlaceholder = !item.name
     const nameText = isPlaceholder ? '단지명 입력' : item.name
     const priceText = isPlaceholder ? '0억 0,000' : item.price
-    const subText = area ? `${region} · 전용 ${area}` : region
+    const subText = subLine(region, area)
 
     return `<div class="rank-card rank-card-${cls}">
       <div class="badge badge-${cls}"><span class="badge-num">${item.rank}</span></div>
