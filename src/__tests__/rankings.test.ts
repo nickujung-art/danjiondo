@@ -32,7 +32,8 @@ beforeAll(() => {
 function makeMockChain(result: { data: unknown; error: unknown }) {
   const chain: Record<string, unknown> = {}
   const terminal = vi.fn().mockResolvedValue(result)
-  const methods = ['select', 'eq', 'is', 'in', 'not', 'gt', 'gte', 'order', 'limit']
+  // lt/lte: aggregatePriceChange 의 직전 창 필터용 (error-notes #001 재발 방지)
+  const methods = ['select', 'eq', 'is', 'in', 'not', 'gt', 'gte', 'lt', 'lte', 'order', 'limit']
   for (const m of methods) {
     chain[m] = vi.fn().mockReturnValue(chain)
   }
@@ -118,12 +119,13 @@ describe('getRankingsByType', () => {
 // ── computeRankings ────────────────────────────────────────────────────────
 
 describe('computeRankings', () => {
-  it('실행 후 결과는 4종 타입 배열을 반환한다', async () => {
+  // 40-02: price_change 추가로 4종 → 5종. 상세 단언은 rankings-price-change.test.ts
+  it('실행 후 결과는 5종 타입 배열을 반환한다', async () => {
     const { computeRankings } = await import('@/lib/data/rankings')
     const mockSupabase = makeMockSupabase()
     const results = await computeRankings(mockSupabase)
     expect(Array.isArray(results)).toBe(true)
-    expect(results).toHaveLength(4)
+    expect(results).toHaveLength(5)
     for (const r of results) {
       expect(r).toHaveProperty('type')
       expect(r).toHaveProperty('upserted')

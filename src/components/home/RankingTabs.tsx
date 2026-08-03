@@ -6,11 +6,19 @@ import Link from 'next/link'
 import type { RankType, RankingRow } from '@/lib/data/rankings'
 import { formatPrice } from '@/lib/format'
 
+/**
+ * 홈 랭킹 탭이 노출하는 종류.
+ * 40-02 에서 RankType 에 'price_change' 가 추가됐지만 그건 창부레터 홈 히어로 전용
+ * 배치 산출물이라 bds 홈 탭에는 노출하지 않는다. Exclude 로 좁혀 두면 나중에 노출
+ * 여부를 바꿀 때 여기 한 줄만 보면 된다.
+ */
+type HomeRankType = Exclude<RankType, 'price_change'>
+
 interface Props {
-  initialData: Record<RankType, RankingRow[]>
+  initialData: Record<HomeRankType, RankingRow[]>
 }
 
-const TAB_LABELS: Record<RankType, string> = {
+const TAB_LABELS: Record<HomeRankType, string> = {
   high_price: '신고가 TOP',
   volume: '거래량',
   price_per_pyeong: '평당가',
@@ -25,7 +33,7 @@ function ArrUpIcon() {
   )
 }
 
-function formatScore(rankType: RankType, score: number): string {
+function formatScore(rankType: HomeRankType, score: number): string {
   if (rankType === 'high_price') return formatPrice(score)
   if (rankType === 'price_per_pyeong') return `${Math.round(score).toLocaleString()}만/평`
   if (rankType === 'volume') return `${score}건`
@@ -41,7 +49,7 @@ function formatPyeong(m2: number): string {
 }
 
 export function RankingTabs({ initialData }: Props) {
-  const [activeTab, setActiveTab] = useState<RankType>('high_price')
+  const [activeTab, setActiveTab] = useState<HomeRankType>('high_price')
   const rows = initialData[activeTab] ?? []
 
   return (
@@ -49,7 +57,7 @@ export function RankingTabs({ initialData }: Props) {
       {/* 탭 헤더 */}
       <div className="flex flex-col gap-1 mb-3">
         <div className="tabs" style={{ border: 'none' }}>
-          {(Object.keys(TAB_LABELS) as RankType[]).map((tab) => (
+          {(Object.keys(TAB_LABELS) as HomeRankType[]).map((tab) => (
             <button
               key={tab}
               className="tab"
