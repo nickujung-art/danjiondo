@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
-status: Phase 40 In Progress (1/5 plans — 40-01 완료)
-last_updated: "2026-08-03T04:00:00.000Z"
+status: Phase 40 In Progress (3/5 plans — 40-01·40-02·40-03 완료)
+last_updated: "2026-08-03T05:05:00.000Z"
 progress:
   total_phases: 36
   completed_phases: 8
   total_plans: 59
-  completed_plans: 50
+  completed_plans: 51
   percent: 22
 ---
 
@@ -34,7 +34,7 @@ See: .planning/PROJECT.md (updated 2026-05-06)
 
 ## Current Phase
 
-**Phase 40: 창부레터 선행 조건 0-4·0-5 (+0-6)** 🔄 In Progress — **1/5 plans**
+**Phase 40: 창부레터 선행 조건 0-4·0-5 (+0-6)** 🔄 In Progress — **3/5 plans**
 
 - [x] **40-01** (2026-08-03) — 카드뉴스 슬라이드를 `{kicker,big,label,sub}` 4필드 순수 자료구조로 추출.
   🔴 **전 18시리즈 렌더 HTML 무변경을 바이트 단위로 실증**했다 (동결 스냅샷 1개로 before/after 렌더 → `diff -r` 빈 출력, 양쪽 70개).
@@ -45,7 +45,23 @@ See: .planning/PROJECT.md (updated 2026-05-06)
   🔴 `TASK1_SHA=57e1b593b512c48cd32a82747f0d4d042fb39020`,
   `PHASE_BASE_SHA=0ec69aafc046780ad8281e3bf34775cf7b8acf84` (40-03·40-04 가 참조).
   상세: `.planning/phases/40-changbuletter-prereq/40-01-SUMMARY.md`
-- [ ] 40-02 / 40-03 / 40-04 / 40-05
+
+- [x] **40-02** (2026-08-03) — `complex_rankings.rank_type` 에 `price_change` 추가 + `aggregatePriceChange` 등락률 배치.
+  상세: `.planning/phases/40-changbuletter-prereq/40-02-SUMMARY.md`
+
+- [x] **40-03** (2026-08-03) — Phase 39 onConflict 게이트를 `.js`/`.mjs` + `card-news/scripts`·`scripts` 루트까지 확장한 뒤,
+  그 게이트의 감사를 받는 첫 사이트로 `persist-contents.js` 를 추가해 **`contents` 0행 → 1행** (`2026-w25-city-overall`).
+  🔴 새 `onConflict: 'slug'` 를 **2층 사전 검증**: `EXPLAIN INSERT` → `Conflict Arbiter Indexes: contents_slug_key` /
+  `verify-onconflict-probe.ts --only=contents` → OK(23502), 프로브 잔여행 0건.
+  라이브 게이트 **34건 / 28테이블 전부 `ok`** — 새로 편입한 `scripts/` 17건에 숨은 Phase 39형 결함 **0건**이었다.
+  🔴 게이트 확장의 증거는 **케이스 26**(실물 `persist-contents.js` 의 `contents`/`['slug']` 수집 단언)이며 DB 불필요라
+  CI 영구 skip 환경에서도 유지된다. 멱등 실증(2회 적재 후 `total==distinct_slug==1`), `--persist` 없으면 DB 쓰기 0건.
+  🔴 `--series` 를 `ls -1 output/2026-W25/` 에서 도출(1개) — 생략했다면 **허위 발행물 17건**이 생겼을 자리다.
+  회귀: `PRE_40_03_SHA=c3b72f6` 되돌리기로 측정, 실패 이름 집합 `FAILSET_UNCHANGED` (17 불변, passed +6 = 신규 6케이스).
+  마이그레이션 0건 / 신규 의존성 0건 / `card-news/output/` 무변경.
+  상세: `.planning/phases/40-changbuletter-prereq/40-03-SUMMARY.md`
+
+- [ ] 40-04 / 40-05
 
 ---
 
@@ -335,6 +351,10 @@ Key notes: MOLIT_API_KEY (기존 data.go.kr 키) 재사용. B552555 청약홈 �
 | 2026-07-31 | 🎉 **`supabase db reset` 전 구간 성공(exit 0)** — 2026-05-18 이후 처음. 그동안 아무도 실행한 적이 없어 2.5개월치 결함이 누적돼 있었고 Phase 38이 처음 돌려서 드러났다. 사전 결함 5건 발견·수정(전부 사용자 승인 후): 클래스 A hollow dependency 2건(`manual_aliases`·`db_quality_fixes` — 하드코딩 UUID + `seed.sql`에 `complexes` 없음, `where exists` 가드, **grep 전수 탐지 가능**) / 클래스 B 파일↔프로덕션 drift 3건(`complex_gap_stats`·`20260601000001`·`20260604000004` — `::numeric` 누락, `pg_get_functiondef` 실측 기준으로 파일 일치, 🔴 **`migration list`로 원리적 탐지 불가 — `db reset`만이 수단**) | 38-01 |
 | 2026-07-31 | 🔑 결함 5건의 공통 뿌리는 **마이그레이션을 `db push`가 아닌 경로로 적용해 온 관행** — `execute_sql`·대시보드 적용은 (a) 원장에 안 남고 (b) 파일과 프로덕션을 갈라놓는다. `CREATE INDEX CONCURRENTLY`처럼 `db push`가 구조적으로 막히는 경우가 그 관행을 강화했다. **HARD-04 규약 2건이 단순 문서 작업이 아니라 재발 방지의 핵심**. 후속 권고: `db reset`을 CI 게이트에 추가 | 38-01 |
 | 2026-07-31 | Phase 37 `37-VERIFICATION.md` **O-3 gap 종결**. 단 "O-3가 `db reset` 실패의 유일한 원인"이라는 전제는 **반증됨** — O-3(`20260619`)보다 1개월 앞선 `20260518000002`부터 4건이 먼저 체인을 끊고 있었다. 정적 분석(`migration list`·`--dry-run`)만으로는 진단이 불완전해질 수 있다는 결정적 사례 | 38-01 |
+| 2026-08-03 | onConflict 감사 스캔 루트를 **`AUDIT_ROOTS` 상수 1개**(`src`·`card-news/scripts`·`scripts`)로 모으고 `collectAllUpsertSites()` 를 도입 — Phase 39 가 지목한 실패 모드가 "한 군데만 고치고 다른 데는 안 고침" 이라, 루트 목록을 세 파일에 흩어놓지 않는다. 케이스 25가 상수의 내용을, 케이스 26이 실물 `persist-contents.js` 수집을 **DB 없이** 단언한다. 게이트 확장은 반드시 **양성 단언**으로 검증한다 — "`.js` 픽스처 0건" 류는 확장자가 통째로 스킵돼도 통과해 고치려는 버그를 인증한다 | 40-03 |
+| 2026-08-03 | `scripts/verify-onconflict-probe.ts` 를 `SKIP_FILES` 로 감사 제외 — 감사 도구 자신이라 (a) 일부러 깨진 값(42P10 기대)을 데이터로 들고 있고 (b) `.from(<변수>)` 라 테이블 귀속이 불가해 `table_unknown` **영구 오탐**이 된다. 오탐 하나면 게이트 전체가 무시되므로(Phase 39 stripComments 와 같은 이유) 제외가 맞다. ⛔ 이 목록이 커지면 T-39-03-02 재현 — 1건 유지가 리뷰 기준 | 40-03 |
+| 2026-08-03 | `card-news` 는 `--persist` **opt-in** — 기본값이 on 이면 `--dry-run` 실험 수십 회가 전부 프로덕션 `contents` 에 `published` 로 쓰인다. 그리고 `--persist` 에는 **`--series` 를 반드시 동반**한다: `main()` 은 18시리즈를 도는데 실제 발행 시리즈는 `ls -1 output/<weekCode>/` 뿐이라, 생략 시 발행된 적 없는 카드뉴스가 아카이브에 발행물로 올라간다. `total === distinct_slug` 검사로는 **잡히지 않는다** | 40-03 |
+| 2026-08-03 | `contents.region_tags` 는 `[]` 로 비워두고 이월 — 시리즈의 `region`('창원 성산구')과 ADR-002 태그 단위('의창구')가 다르고 SPEC-002 C절 초기 태그 목록이 미결. 잘못된 태그는 창부레터 지역 추천(`&&` 교집합)을 오작동시킨다 | 40-03 |
 | 2026-07-31 | 🧭 전수 탐지 패턴 확립: `db reset` 실패→수정→재실행 왕복 대신 **1패스 수집**(실패 지점 이후 남은 파일을 로컬 DB에 `psql -1`로 직접 적용하며 에러 무시하고 계속) — 77개 1패스로 원인 실패 2건을 한 번에 확보, `-1` 롤백 덕에 연쇄 파생 0건. 판정은 stderr 내용이 아니라 **exit code**로 해야 함(NOTICE를 실패로 오분류한 오탐 3건 발생) | 38-01 |
 
 ---
