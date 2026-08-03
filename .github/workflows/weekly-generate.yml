@@ -64,7 +64,16 @@ jobs:
           if [ -n "${{ inputs.series }}" ]; then ARGS="$ARGS --series=${{ inputs.series }}"; fi
           # --persist: 슬라이드 데이터를 contents 에 적재한다 (창부레터 0-4 / ADR-004 §2).
           #            없으면 웹 뷰어와 아카이브가 빈 화면이 된다.
-          node scripts/generate.js --persist $ARGS
+          #
+          # 🔴 --persist-series 를 넓히지 말 것 (Phase 40-04 B-4 사용자 결정).
+          #    PNG 는 18시리즈 전부 만들지만 아카이브에 발행물로 올리는 것은 city-overall 뿐이다.
+          #    실측상 실제 발행 시리즈 수는 회차마다 1/18/1 로 불균일했다 — 생성됐다는 이유로
+          #    전부 적재하면 발행된 적 없는 카드뉴스가 아카이브에 published 로 올라간다.
+          #    수동 실행에서 series 를 지정하면 그것이 곧 발행 의도이므로 적재 범위도 따라간다.
+          PERSIST_SERIES="${{ inputs.series }}"
+          if [ -z "$PERSIST_SERIES" ]; then PERSIST_SERIES="city-overall"; fi
+          echo "적재 범위: $PERSIST_SERIES"
+          node scripts/generate.js --persist --persist-series="$PERSIST_SERIES" $ARGS
 
       - name: Upload PNG artifacts
         uses: actions/upload-artifact@v4

@@ -72,6 +72,33 @@ export function buildContentRow(seriesId, data, to) {
 }
 
 /**
+ * 이 시리즈를 `contents` 에 적재할지 판정한다. **순수 함수.**
+ *
+ * ## 🔴 생성 범위(`--series`)와 적재 범위(`--persist-series`)는 다르다
+ *
+ * 주간 크론은 인자 없이 돌아 **18시리즈 전부의 PNG 를 만든다.** 그런데 실제로 인스타·카페에
+ * 발행되는 것은 `city-overall` 1개뿐인 주가 있다 (Phase 40-04 실측: 회차별 발행 시리즈 수가
+ * **1 / 18 / 1** 로 불균일했다). 생성됐다는 이유만으로 전부 `status='published'` 로 적재하면
+ * **발행된 적 없는 카드뉴스가 창부레터 아카이브에 발행물로 올라간다.**
+ *
+ * → 그래서 "무엇을 만드는가"와 "무엇을 아카이브에 올리는가"를 **별도 인자로 분리**했다.
+ *   PNG 생성 범위는 그대로 두고 적재 범위만 좁힌다 (40-04 B-4 사용자 결정).
+ *
+ * ⛔ 이 판정을 우회하거나 `--persist-series` 를 워크플로에서 제거하지 말 것.
+ *   제거하면 주간 크론이 매주 18행을 발행물로 적재하며, 그 사실은
+ *   `total === distinct_slug` 검사로도 "기간 그룹 수" 검사로도 **잡히지 않는다.**
+ *   유일한 탐지법은 `회차별 행 수 ≤ ls -1 output/<period>/ 개수` 단언이다.
+ *
+ * @param {string} seriesId
+ * @param {string[]|null|undefined} persistSeries  null/undefined 면 제한 없음(생성된 전부 적재)
+ * @returns {boolean}
+ */
+export function shouldPersistSeries(seriesId, persistSeries) {
+  if (!persistSeries) return true
+  return persistSeries.includes(seriesId)
+}
+
+/**
  * `contents` 에 upsert 한다. `null` 행은 건너뛴다.
  *
  * @param {{from: (t: string) => {upsert: Function}}} client  Supabase 클라이언트(주입)

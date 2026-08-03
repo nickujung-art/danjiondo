@@ -9,12 +9,20 @@
  *       --dump-data=<file>                 (시리즈별 data 객체를 JSON 한 파일로 덤프, 렌더 생략)
  *       --data=<file>                      (덤프한 JSON으로 렌더. Supabase 조회 0회)
  *       --persist                          (슬라이드를 public.contents 에 적재. 🔴 opt-in)
+ *       --persist-series=city-overall      (🔴 적재 범위만 좁힌다. 생성 범위는 --series 그대로)
  *
  * 🔴 `--persist` 가 opt-in 인 이유: `--dry-run` 은 실험용으로 수십 번 돈다. 적재가 기본값이면
  *    그 실험이 전부 프로덕션 `contents` 에 **발행 상태(published)** 로 쓰인다.
- * 🔴 `--persist` 를 쓸 때는 `--series` 를 **반드시** 함께 준다. 없으면 18개 시리즈 전부를
- *    도는데, 실제로 발행된 시리즈는 그중 일부뿐이라 **발행된 적 없는 카드뉴스가 창부레터
- *    아카이브에 발행물로 올라간다**. 발행 시리즈 목록은 `ls -1 output/<weekCode>/` 다.
+ * 🔴 `--persist` 를 쓸 때는 `--series` 나 `--persist-series` 로 **범위를 반드시 좁힌다.**
+ *    없으면 18개 시리즈 전부를 도는데, 실제로 발행된 시리즈는 그중 일부뿐이라
+ *    **발행된 적 없는 카드뉴스가 창부레터 아카이브에 발행물로 올라간다**.
+ *    발행 시리즈 목록은 `ls -1 output/<weekCode>/` 다.
+ *
+ * ## `--series` vs `--persist-series` (40-04 B-4)
+ * `--series` 는 **무엇을 만드는가**(PNG/HTML), `--persist-series` 는 **무엇을 아카이브에
+ * 올리는가**를 정한다. 주간 크론은 PNG 를 18시리즈 전부 만들되 적재는 `city-overall` 만 한다 —
+ * 실측상 발행 시리즈 수가 회차마다 1/18/1 로 불균일했기 때문이다.
+ * 판정은 `persist-contents.js` 의 `shouldPersistSeries()` 한 곳에 있다.
  */
 import { mkdirSync, writeFileSync, readFileSync } from 'fs'
 import { join, resolve, dirname } from 'path'
@@ -34,7 +42,7 @@ import {
 } from './fetch-data.js'
 import { renderCover, renderHighlight, renderRanking, renderClosing, renderDistrictChampionsCard } from './templates.js'
 import { captureCard, closeBrowser } from './capture.js'
-import { buildContentRow, persistContents, getClient } from './persist-contents.js'
+import { buildContentRow, persistContents, getClient, shouldPersistSeries } from './persist-contents.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const OUTPUT_DIR = resolve(__dirname, '../output')
@@ -134,6 +142,10 @@ async function main() {
   const dumpDataArg = args.find((a) => a.startsWith('--dump-data='))?.split('=')[1]
   const dataArg = args.find((a) => a.startsWith('--data='))?.split('=')[1]
   const persist = args.includes('--persist')
+  // 🔴 적재 범위는 생성 범위(`--series`)와 별개다. 주간 크론은 18시리즈를 만들지만
+  //    아카이브에는 실제 발행분만 올린다 (40-04 B-4). 미지정 시 생성분 전부가 대상이다.
+  const persistSeriesArg = args.find((a) => a.startsWith('--persist-series='))
+  const persistSeries = persistSeriesArg ? persistSeriesArg.split('=')[1].split(',') : null
 
   // --out 미지정 시 현행 동작(../output) 그대로.
   const outputDir = outArg ? resolve(process.cwd(), outArg) : OUTPUT_DIR
@@ -171,12 +183,17 @@ async function main() {
   // 🔴 `--persist` 없이는 이 배열이 채워지지 않고 DB 접속도 일어나지 않는다.
   //    `--dump-data` 모드는 렌더조차 하지 않으므로 적재 대상이 아니다.
   const persistRows = persist && !dumpBucket ? [] : null
-  if (persist && !filter) {
+  // 🔴 적재 범위가 어디에서도 좁혀지지 않은 경우에만 경고한다.
+  //    `--persist-series` 로 좁혔다면 그 값을 로그에 남겨 "무엇이 발행물이 됐는지"를 증거로 만든다.
+  if (persist && !filter && !persistSeries) {
     console.warn(
-      '\n⚠️  --persist 를 --series 없이 실행했다. 시리즈 정의 전체(18개)가 적재 대상이 된다.\n' +
+      '\n⚠️  --persist 를 --series·--persist-series 없이 실행했다. 시리즈 정의 전체(18개)가 적재 대상이 된다.\n' +
       '   발행된 적 없는 회차가 아카이브에 발행물로 올라갈 수 있다.\n' +
+      '   적재 범위만 좁히려면(생성은 전부 유지) --persist-series=city-overall 처럼 준다.\n' +
       `   발행 시리즈 목록: ls -1 output/${weekCode}/\n`,
     )
+  } else if (persist && persistSeries) {
+    console.log(`적재 범위: --persist-series=${persistSeries.join(',')} (생성 범위와 별개)`)
   }
 
   // ── 구별 평형 시리즈 ──────────────────────────────────
@@ -201,7 +218,7 @@ async function main() {
       }
       if (dumpBucket) { dumpBucket[s.id] = data; continue }
       await generateCardSet(s.id, data, dryRun, outputDir)
-      if (persistRows) persistRows.push(buildContentRow(s.id, data, to))
+      if (persistRows && shouldPersistSeries(s.id, persistSeries)) persistRows.push(buildContentRow(s.id, data, to))
     } catch (err) {
       console.error(`  [ERROR] ${s.id}: ${err.message}`)
     }
@@ -238,7 +255,7 @@ async function main() {
 
       if (dumpBucket) { dumpBucket[s.id] = data; continue }
       await generateCardSet(s.id, data, dryRun, outputDir)
-      if (persistRows) persistRows.push(buildContentRow(s.id, data, to))
+      if (persistRows && shouldPersistSeries(s.id, persistSeries)) persistRows.push(buildContentRow(s.id, data, to))
     } catch (err) {
       console.error(`  [ERROR] ${s.id}: ${err.message}`)
     }
@@ -284,7 +301,7 @@ async function main() {
           }
         }
 
-        if (persistRows) persistRows.push(buildContentRow('district-champions', data, to))
+        if (persistRows && shouldPersistSeries('district-champions', persistSeries)) persistRows.push(buildContentRow('district-champions', data, to))
       }
     } catch (err) {
       console.error(`  [ERROR] district-champions: ${err.message}`)

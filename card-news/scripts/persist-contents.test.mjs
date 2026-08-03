@@ -11,7 +11,7 @@
  */
 import assert from 'node:assert/strict'
 
-import { buildContentRow, persistContents } from './persist-contents.js'
+import { buildContentRow, persistContents, shouldPersistSeries } from './persist-contents.js'
 
 let passed = 0
 let failed = 0
@@ -177,6 +177,46 @@ test('12. 🔴 같은 입력 2회 → 두 행의 모든 필드가 동일하다 (
   const a = buildContentRow('84-seongsan', AREA_DATA, TO)
   const b = buildContentRow('84-seongsan', AREA_DATA, TO)
   assert.deepStrictEqual(a, b)
+})
+
+// ── shouldPersistSeries — 적재 범위 (40-04 B-4) ───────────
+
+test('13. persistSeries 가 null 이면 모든 시리즈가 적재 대상이다 (하위 호환)', () => {
+  assert.equal(shouldPersistSeries('84-seongsan', null), true)
+  assert.equal(shouldPersistSeries('city-overall', null), true)
+  assert.equal(shouldPersistSeries('district-champions', undefined), true)
+})
+
+test('14. 🔴 persistSeries=[city-overall] 이면 city-overall 만 적재 대상이다', () => {
+  assert.equal(shouldPersistSeries('city-overall', ['city-overall']), true)
+  assert.equal(shouldPersistSeries('84-seongsan', ['city-overall']), false)
+  assert.equal(shouldPersistSeries('district-champions', ['city-overall']), false)
+})
+
+test('15. 🔴 주간 크론 시나리오 — 18시리즈 생성 / 적재 대상은 1개뿐', () => {
+  // generate.js 의 시리즈 id 전체 (AREA_GU_SERIES 14 + CITY_SERIES 3 + district-champions)
+  const ALL_18 = [
+    '84-seongsan', '84-uichang', '84-masanhappo', '84-masanhoewon', '84-jinhae', '84-gimhae',
+    '59-seongsan', '59-uichang', '59-masanhappo', '59-masanhoewon', '59-jinhae', '59-gimhae',
+    '102-seongsan', '102-uichang',
+    'city-overall', 'city-volume', 'city-value-84',
+    'district-champions',
+  ]
+  assert.equal(ALL_18.length, 18, '시리즈 정의가 18개라는 전제')
+
+  const persisted = ALL_18.filter((id) => shouldPersistSeries(id, ['city-overall']))
+  assert.deepStrictEqual(persisted, ['city-overall'])
+
+  // 🔴 범위를 안 주면 18개 전부가 발행물이 된다 — 이 테스트가 그 차이를 고정한다.
+  const unscoped = ALL_18.filter((id) => shouldPersistSeries(id, null))
+  assert.equal(unscoped.length, 18)
+})
+
+test('16. persistSeries 가 여러 개면 그 목록만 적재 대상이다', () => {
+  const scope = ['city-overall', 'district-champions']
+  assert.equal(shouldPersistSeries('city-overall', scope), true)
+  assert.equal(shouldPersistSeries('district-champions', scope), true)
+  assert.equal(shouldPersistSeries('city-volume', scope), false)
 })
 
 // ── 러너 ──────────────────────────────────────────────────
