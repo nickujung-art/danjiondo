@@ -4,6 +4,7 @@
  * 인증키: MOLIT_API_KEY (data.go.kr 공용)
  */
 import { z } from 'zod/v4'
+import { withRetry } from '@/lib/api/retry'
 
 const BASE = 'https://apis.data.go.kr/6480000/gyeongnamunsold/gyeongnamunsoldlist'
 
@@ -54,17 +55,25 @@ export async function fetchGyeongnamUnsold(pageNo = 1, numOfRows = 1000): Promis
   url.searchParams.set('numOfRows', String(numOfRows))
   url.searchParams.set('resultType', 'json')
 
-  const res = await fetch(url.toString(), { signal: AbortSignal.timeout(15_000) })
-  if (!res.ok) throw new Error(`gyeongnamunsold HTTP ${res.status}`)
+  // 재시도를 붙인 이유: 이 배치는 **월 1회(매월 1일)** 크론이라 한 번 실패하면 다음 기회가
+  // 한 달 뒤다. 2026-08-01 실행이 일시적인 HTTP 502 하나로 통째로 날아갔고, 그 시점에는
+  // 재시도가 없어 그대로 끝났다(2026-08-04 전수조사에서 발견).
+  // 5xx 는 상대 서버가 잠깐 흔들린 것이라 재시도가 실효가 있다.
+  return withRetry(async () => {
+    const res = await fetch(url.toString(), { signal: AbortSignal.timeout(15_000) })
+    if (!res.ok) {
+      throw Object.assign(new Error(`gyeongnamunsold HTTP ${res.status}`), { status: res.status })
+    }
 
-  const json = ResponseSchema.parse(await res.json())
-  const body = json.gyeongnamunsoldlist.body
+    const json = ResponseSchema.parse(await res.json())
+    const body = json.gyeongnamunsoldlist.body
 
-  if (json.gyeongnamunsoldlist.header.resultCode !== '00') {
-    throw new Error(`API error: ${json.gyeongnamunsoldlist.header.resultMsg}`)
-  }
+    if (json.gyeongnamunsoldlist.header.resultCode !== '00') {
+      throw new Error(`API error: ${json.gyeongnamunsoldlist.header.resultMsg}`)
+    }
 
-  return { items: body.items.item, totalCount: body.totalCount }
+    return { items: body.items.item, totalCount: body.totalCount }
+  })
 }
 
 // ── 시군구명 → sgg_code 매핑 (regions 테이블 기반 동적 역매칭) ──────

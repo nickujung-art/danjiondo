@@ -2,6 +2,7 @@ import { verifyCronSecret } from '@/lib/cron-auth'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { searchCafeArticles } from '@/services/naver-cafe'
 import { ingestCafeArticles } from '@/lib/data/cafe-articles'
+import { describeError } from '@/lib/api/describe-error'
 
 export const runtime = 'nodejs'
 
@@ -42,7 +43,7 @@ export async function GET(request: Request): Promise<Response> {
         totalIngested += ingested
       }
     } catch (err) {
-      errors.push(`complex=${c.id}: ${err instanceof Error ? err.message : String(err)}`)
+      errors.push(`complex=${c.id}: ${describeError(err)}`)
     }
   }
 

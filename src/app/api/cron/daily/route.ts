@@ -13,6 +13,7 @@ import { normalizeCheongyakItem, normalizeRemndrItem } from '@/services/cheongya
 import { ingestOffiMonth } from '@/lib/data/realprice-officetel'
 import { upsertMolitListing } from '@/lib/data/new-listings-molit'
 import { getActiveSggCodes, getActiveCityNames } from '@/lib/data/regions'
+import { describeError } from '@/lib/api/describe-error'
 
 export const runtime = 'nodejs'
 
@@ -153,7 +154,7 @@ export async function GET(request: Request): Promise<Response> {
         if (!error) presaleUpserted++
       }
     } catch (err) {
-      errors.push(`presale lawdCd=${lawdCd}: ${err instanceof Error ? err.message : String(err)}`)
+      errors.push(`presale lawdCd=${lawdCd}: ${describeError(err)}`)
     }
   }
   totalUpserted += presaleUpserted
@@ -196,7 +197,7 @@ export async function GET(request: Request): Promise<Response> {
       }
     }
   } catch (err) {
-    errors.push(`cheongyak: ${err instanceof Error ? err.message : String(err)}`)
+    errors.push(`cheongyak: ${describeError(err)}`)
   }
   totalUpserted += cheongyakUpserted
 
@@ -235,7 +236,7 @@ export async function GET(request: Request): Promise<Response> {
       }
     }
   } catch (err) {
-    errors.push(`remndr: ${err instanceof Error ? err.message : String(err)}`)
+    errors.push(`remndr: ${describeError(err)}`)
   }
   totalUpserted += remndrUpserted
 
@@ -252,7 +253,7 @@ export async function GET(request: Request): Promise<Response> {
       if (!error) competitionUpdated++
       else errors.push(`competition update pblanc_no=${pblancNo}: ${error.message}`)
     } catch (err) {
-      errors.push(`competition pblanc_no=${pblancNo}: ${err instanceof Error ? err.message : String(err)}`)
+      errors.push(`competition pblanc_no=${pblancNo}: ${describeError(err)}`)
     }
   }
 
@@ -270,7 +271,7 @@ export async function GET(request: Request): Promise<Response> {
     if (!error) expiredDeactivated = (expired as { id: string }[] | null)?.length ?? 0
     else errors.push(`expired deactivation: ${error.message}`)
   } catch (err) {
-    errors.push(`expired deactivation: ${err instanceof Error ? err.message : String(err)}`)
+    errors.push(`expired deactivation: ${describeError(err)}`)
   }
 
   // ── 오피스텔 실거래 당월 수집 (OFFI-01) ──────────────────────────────────
@@ -285,7 +286,7 @@ export async function GET(request: Request): Promise<Response> {
         offiErrors++
       }
     } catch (err) {
-      errors.push(`offi ${sggCode}: ${err instanceof Error ? err.message : String(err)}`)
+      errors.push(`offi ${sggCode}: ${describeError(err)}`)
       offiErrors++
     }
   }
@@ -302,7 +303,7 @@ export async function GET(request: Request): Promise<Response> {
   try {
     await supabase.rpc('refresh_complex_price_stats')
   } catch (err) {
-    errors.push(`refresh_complex_price_stats: ${err instanceof Error ? err.message : String(err)}`)
+    errors.push(`refresh_complex_price_stats: ${describeError(err)}`)
   }
 
   // ── 갭투자 통계 재계산 (GAP-D05) ──────────────────────────────────────────
@@ -318,7 +319,7 @@ export async function GET(request: Request): Promise<Response> {
       errors.push('markCronSuccess(gap-stats) 갱신 실패 — 로그 확인')
     }
   } catch (err) {
-    errors.push(`computeGapStats: ${err instanceof Error ? err.message : String(err)}`)
+    errors.push(`computeGapStats: ${describeError(err)}`)
     if (!await markCronFailed(supabase, 'gap-stats')) {
       errors.push('markCronFailed(gap-stats) 갱신 실패 — 로그 확인')
     }
@@ -331,6 +332,9 @@ export async function GET(request: Request): Promise<Response> {
   const kaptStart = Date.now()
   let kaptUpserted = 0
   let kaptErrors = 0
+  // API 가 단지를 못 찾아 null 을 준 경우 — 실패가 아니라 정상 스킵이지만, 전부 null 이면
+  // 그건 API 장애다. 구분해서 세지 않으면 "0건 적재"의 원인이 실패인지 스킵인지 알 수 없다.
+  let kaptNotFound = 0
   let kaptBudgetExceeded = false
   const kaptTargets = await selectKaptTargets(supabase, KAPT_BATCH_SIZE)
 
@@ -341,7 +345,10 @@ export async function GET(request: Request): Promise<Response> {
     }
     try {
       const info = await fetchKaptBasicInfo(complex.kapt_code)
-      if (!info) continue
+      if (!info) {
+        kaptNotFound++
+        continue
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const facilityKaptTable = supabase.from('facility_kapt') as any
       const { error } = await facilityKaptTable.upsert(
@@ -360,15 +367,35 @@ export async function GET(request: Request): Promise<Response> {
         // 실패가 조용해서 오래 묻혔다 — facility_kapt 최종 적재가 2026-07-06 에 멈춰 있었다.
         { onConflict: 'complex_id,data_month' },
       ) as { error: { message: string } | null }
-      if (!error) kaptUpserted++
-      else kaptErrors++
+      if (!error) {
+        kaptUpserted++
+      } else {
+        // 사유를 반드시 남긴다. 예전에는 `else kaptErrors++` 로 카운터만 올리고 error.message 를
+        // 통째로 버렸다 — 그래서 2026-07-06 이후 한 달 내내 0건 적재였는데도 "partial" 이라는
+        // 사실만 남고 왜인지는 끝까지 알 수 없었다(2026-08-04 전수조사에서 발견).
+        // 응답이 길어지지 않도록 앞쪽 몇 건만 남긴다 — 원인 파악에는 표본이면 충분하다.
+        kaptErrors++
+        if (kaptErrors <= 3) errors.push(`kapt upsert ${complex.kapt_code}: ${error.message}`)
+      }
     } catch (err) {
-      errors.push(`kapt=${complex.kapt_code}: ${err instanceof Error ? err.message : String(err)}`)
       kaptErrors++
+      if (kaptErrors <= 3) errors.push(`kapt=${complex.kapt_code}: ${describeError(err)}`)
     }
   }
   totalUpserted += kaptUpserted
-  if (!await markCronStatus(supabase, 'kapt', kaptErrors === 0 ? 'success' : 'partial')) {
+  // 대상이 있었는데 한 건도 못 넣었으면 **실패**다. 예전에는 상태가 'success'|'partial' 뿐이라
+  // 전량 스킵(API 가 전부 null)도 'success' 로 보고됐다 — MOLIT 배치가 152/152 실패에도
+  // ✅ 를 찍던 것과 같은 구조의 구멍이다(ADR-056).
+  const kaptStatus =
+    kaptTargets.length > 0 && kaptUpserted === 0 ? 'failed'
+    : kaptErrors === 0 ? 'success'
+    : 'partial'
+  if (kaptStatus === 'failed') {
+    errors.push(
+      `kapt: 대상 ${kaptTargets.length}건 중 0건 적재 (실패 ${kaptErrors}, 미조회 ${kaptNotFound})`,
+    )
+  }
+  if (!await markCronStatus(supabase, 'kapt', kaptStatus)) {
     errors.push('markCronStatus(kapt) 갱신 실패 — 로그 확인')
   }
 
@@ -379,6 +406,8 @@ export async function GET(request: Request): Promise<Response> {
     totalUpserted,
     kaptUpserted,
     kaptSelected: kaptTargets.length,
+    kaptErrors,
+    kaptNotFound,
     kaptBudgetExceeded,
     presaleUpserted,
     cheongyakUpserted,

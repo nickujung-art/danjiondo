@@ -51,14 +51,44 @@ interface Check {
    * 신고 지연 p90 이 13일이라 90일 창이면 최근 적재분은 사실상 전부 들어온다.
    */
   scopeFilter?: { column: string; withinDays: number }
+  /**
+   * 여러 배치가 같은 테이블에 쓸 때, **어느 배치가 넣은 행인지**로 대상을 좁히는 조인 필터.
+   *
+   * [왜 필요한가 — 2026-08-04 발견]
+   * 08-02·08-03 이틀 다 아파트 실거래 배치가 152/152 실패해 0건이었는데, 이 점검은
+   * "0.2일 신선"으로 **초록**이었다. transactions 에는 오피스텔 배치(Vercel cron/daily)도
+   * 쓰기 때문이다 — 그날 들어온 33행 중 29행이 오피스텔이었다.
+   *
+   * [왜 building_type 이 아니라 source_run_id 인가]
+   * 처음엔 `complexes.building_type <> 'officetel'` 로 거르려 했는데 **그것도 못 잡는다**.
+   * 오피스텔 배치가 넣은 08-03 자 33행 중 4행이 building_type='apt' 인 단지에 붙어 있었다
+   * (오피스텔 건물이 complexes 에 apt 로 등록돼 있는 경우가 있다). 건물 유형은 "누가 넣었나"의
+   * 근사치일 뿐이라 감시 기준으로 쓸 수 없다.
+   *
+   * `source_run_id → ingest_runs.source_id` 가 유일하게 정확한 출처다. 실제로 이 기준으로 보면
+   * molit_trade 의 최종 적재는 08-01 에 멈춰 있었다.
+   */
+  embeddedFilter?: { relation: string; column: string; in: readonly string[] }
 }
+
+/**
+ * 잡 단위 상태 점검 — 데이터 단위 점검과 **겹치는 게 아니라 서로를 메운다**.
+ *
+ * 데이터 점검은 "테이블이 신선한가"를 보므로, 같은 테이블에 다른 배치가 쓰면 가려진다.
+ * 반대로 잡 점검은 "배치가 실패를 보고했나"를 보므로, 실패를 보고조차 안 하는 침묵 실패를
+ * 놓친다. 둘 다 있어야 08-02 같은 사고가 어느 쪽에든 걸린다.
+ */
+const FAILED_STATUSES = new Set(['failed'])
 
 /**
  * SLA 는 **주기의 약 1.5배**로 잡는다. 하루짜리 배치가 한 번 걸러도 바로 빨간불이 되면
  * 경고가 상시로 켜지고, 그러면 아무도 안 보게 된다(school_alimi 가 그 상태였다).
  */
 const CHECKS: Check[] = [
-  { label: '실거래 (아파트·연립)', table: 'transactions',             column: 'created_at',   maxAgeDays: 4,   job: 'molit-daily.yml', scopeFilter: { column: 'deal_date', withinDays: 90 } },
+  // transactions 는 세 배치가 공유한다 — 출처(source_run_id)로 나누지 않으면 하나가 전멸해도
+  // 다른 하나의 유입 때문에 초록불이 된다(2026-08-04 실제로 그랬다).
+  { label: '실거래 (아파트·연립)', table: 'transactions',             column: 'created_at',   maxAgeDays: 4,   job: 'molit-daily.yml',     scopeFilter: { column: 'deal_date', withinDays: 90 }, embeddedFilter: { relation: 'ingest_runs', column: 'source_id', in: ['molit_trade', 'molit_villa_trade'] } },
+  { label: '실거래 (오피스텔)',    table: 'transactions',             column: 'created_at',   maxAgeDays: 4,   job: 'cron/daily (Vercel)', scopeFilter: { column: 'deal_date', withinDays: 90 }, embeddedFilter: { relation: 'ingest_runs', column: 'source_id', in: ['molit_offi_trade'] } },
   { label: '단지 랭킹',            table: 'complex_rankings',         column: 'computed_at',  maxAgeDays: 1,   job: 'rankings-cron.yml' },
   { label: 'AI 가격예측',          table: 'complex_price_predictions', column: 'computed_at',  maxAgeDays: 3,   job: 'compute-predictions.yml' },
   { label: '카페 아티클',          table: 'cafe_articles',            column: 'fetched_at',   maxAgeDays: 3,   job: 'cafe-ingest.yml' },
@@ -71,6 +101,51 @@ const CHECKS: Check[] = [
   { label: 'SGIS 통계',            table: 'district_stats',           column: 'fetched_at',   maxAgeDays: 120, job: 'sgis-stats.yml' },
   { label: '지역 소득',            table: 'regional_income',          column: 'created_at',   maxAgeDays: 400, job: 'update-regional-income.yml' },
 ]
+
+/**
+ * `data_sources.last_status` 가 실패로 남아 있는 배치를 위반으로 올린다.
+ *
+ * 데이터 점검이 못 보는 구멍을 메운다: 여러 배치가 한 테이블을 공유하면 테이블은 신선한데
+ * 내 배치는 죽어 있을 수 있다. 반대로 이 점검만으로도 부족하다 — 실패를 보고조차 안 하는
+ * 배치는 여기에 안 잡힌다. 두 층을 같이 둔다.
+ */
+async function checkFailedJobs(
+  supabase: ReturnType<typeof createClient>,
+  violations: string[],
+): Promise<void> {
+  const { data, error } = await supabase
+    .from('data_sources')
+    .select('id, last_status, last_synced_at, error_message')
+
+  if (error) {
+    violations.push(`배치 상태 조회 실패 — ${error.message}`)
+    console.log(`\n ??   data_sources 조회 실패: ${error.message}`)
+    return
+  }
+
+  const rows = (data ?? []) as {
+    id: string
+    last_status: string | null
+    last_synced_at: string | null
+    error_message: string | null
+  }[]
+  const failed = rows.filter(r => r.last_status && FAILED_STATUSES.has(r.last_status))
+
+  console.log('\n배치 상태 (data_sources)')
+  console.log('─'.repeat(96))
+  for (const r of rows) {
+    const bad = Boolean(r.last_status && FAILED_STATUSES.has(r.last_status))
+    console.log(
+      `${bad ? '🔴' : '  '}    ${r.id.padEnd(22)} ${(r.last_status ?? '(미보고)').padEnd(10)} ` +
+        `${(r.last_synced_at ?? '-').slice(0, 10)}   ${r.error_message ?? ''}`,
+    )
+  }
+  console.log('─'.repeat(96))
+
+  for (const r of failed) {
+    violations.push(`배치 실패 상태: ${r.id} — ${r.error_message ?? '사유 미기록'}`)
+  }
+}
 
 async function main(): Promise<void> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -87,10 +162,19 @@ async function main(): Promise<void> {
   console.log('─'.repeat(96))
 
   for (const check of CHECKS) {
+    // 조인 필터가 있으면 !inner 로 붙여 대상 행 자체를 좁힌다(left join 이면 제외가 안 된다)
+    const selectExpr = check.embeddedFilter
+      ? `${check.column}, ${check.embeddedFilter.relation}!inner(${check.embeddedFilter.column})`
+      : check.column
+
     let query = supabase
       .from(check.table)
-      .select(check.column)
+      .select(selectExpr)
       .not(check.column, 'is', null)
+    if (check.embeddedFilter) {
+      const { relation, column, in: allowed } = check.embeddedFilter
+      query = query.in(`${relation}.${column}`, [...allowed])
+    }
     if (check.scopeFilter) {
       const since = new Date(Date.now() - check.scopeFilter.withinDays * 86_400_000)
         .toISOString()
@@ -128,6 +212,8 @@ async function main(): Promise<void> {
   }
 
   console.log('─'.repeat(96))
+
+  await checkFailedJobs(supabase, violations)
 
   if (violations.length === 0) {
     console.log('\n✅ 전부 정상')

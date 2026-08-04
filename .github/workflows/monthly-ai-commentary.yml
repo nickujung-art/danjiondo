@@ -40,6 +40,11 @@ jobs:
           --limit=${{ github.event.inputs.limit || '0' }}
           2>&1 | tee commentary-run.log
         env:
+          # 스크립트는 Groq(무료) 우선, Gemini fallback 이다. 그런데 여기서 GROQ_API_KEY 를
+          # 안 넘겨서 **무료 경로를 두고 유료 경로로 갔고**, Gemini 월 지출 한도 초과(429)로
+          # 2026-08-01 실행이 1,342건 전량 실패했다. ai_cached_at 이 06-11 에 멈춘 원인이다
+          # (2026-08-04 전수조사에서 발견).
+          GROQ_API_KEY:                ${{ secrets.GROQ_API_KEY }}
           GEMINI_API_KEY:              ${{ secrets.GEMINI_API_KEY }}
           NEXT_PUBLIC_SUPABASE_URL:    ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY:   ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
