@@ -51,7 +51,8 @@ jobs:
         shell: bash
         # 실패를 사후에 IP 에 귀속시키려면 반드시 남아 있어야 한다 — 08-02·08-03 장애 때
         # 이 한 줄이 없어서 "차단인지 아닌지"를 이틀 동안 판정하지 못했다.
-        run: echo "러너 IP: $(curl -s -m 10 https://api.ipify.org || echo unknown)"
+        run: |
+          echo "러너 IP: $(curl -s -m 10 https://api.ipify.org || echo unknown)"
 
       - name: MOLIT 실거래가 수집
         id: run
