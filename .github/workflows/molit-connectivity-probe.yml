@@ -11,11 +11,28 @@ jobs:
         env:
           MOLIT_API_KEY: ${{ secrets.MOLIT_API_KEY }}
         run: |
-          echo "── 러너 IP ──"; curl -s -m 10 https://api.ipify.org; echo
-          echo "── 키 존재 ──"; if [ -n "$MOLIT_API_KEY" ]; then echo "있음(${#MOLIT_API_KEY}자)"; else echo "🔴 없음"; fi
-          echo "── 진짜 키 호출 ──"
-          ENC=$(node -e "console.log(encodeURIComponent(process.env.MOLIT_API_KEY))")
-          curl -s -m 30 -o /tmp/r.json -w "HTTP %{http_code} · total %{time_total}s\n" \
-            "https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev?ServiceKey=$ENC&LAWD_CD=48121&DEAL_YMD=202607&numOfRows=3&pageNo=1&_type=json"
-          echo "── 응답 전문 ──"; cat /tmp/r.json | tr -d "
-" | head -c 700; echo
+          echo "── 러너 IP ──"
+          curl -s -m 10 https://api.ipify.org; echo
+          echo "── 키 지문(값은 노출하지 않는다) ──"
+          node -e '
+            const k = process.env.MOLIT_API_KEY || "";
+            const h = require("crypto").createHash("sha256").update(k).digest("hex").slice(0, 12);
+            console.log("길이:", k.length, "| sha256앞12:", h);
+            console.log("이미 %XX 인코딩된 형태?:", /%[0-9A-Fa-f]{2}/.test(k) ? "예" : "아니오");
+          '
+          echo "── (A) encodeURIComponent 적용 호출 ──"
+          node -e '
+            const k = encodeURIComponent(process.env.MOLIT_API_KEY);
+            const u = "https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev?ServiceKey=" + k + "&LAWD_CD=48121&DEAL_YMD=202607&numOfRows=3&pageNo=1&_type=json";
+            fetch(u, { headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" } })
+              .then(async r => console.log("HTTP", r.status, "|", (await r.text()).replace(/\s+/g, " ").slice(0, 300)))
+              .catch(e => console.log("THROW:", e.name, e.message, e.cause && e.cause.code));
+          '
+          echo "── (B) 원문 그대로 호출 ──"
+          node -e '
+            const k = process.env.MOLIT_API_KEY;
+            const u = "https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev?ServiceKey=" + k + "&LAWD_CD=48121&DEAL_YMD=202607&numOfRows=3&pageNo=1&_type=json";
+            fetch(u, { headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" } })
+              .then(async r => console.log("HTTP", r.status, "|", (await r.text()).replace(/\s+/g, " ").slice(0, 300)))
+              .catch(e => console.log("THROW:", e.name, e.message, e.cause && e.cause.code));
+          '
