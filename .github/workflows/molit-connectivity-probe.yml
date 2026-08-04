@@ -6,12 +6,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: DNS + TCP + HTTP 확인
+      - name: 진짜 키로 MOLIT 호출
         shell: bash
+        env:
+          MOLIT_API_KEY: ${{ secrets.MOLIT_API_KEY }}
         run: |
-          echo "── 러너 공인 IP ──"; curl -s -m 10 https://api.ipify.org || echo "(실패)"; echo
-          echo "── DNS ──"; getent hosts apis.data.go.kr || echo "(DNS 실패)"
-          echo "── HTTPS 헤더 ──"
-          curl -s -m 20 -o /dev/null -w "HTTP %{http_code} · connect %{time_connect}s · total %{time_total}s\n" \
-            "https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev?ServiceKey=dummy&LAWD_CD=48121&DEAL_YMD=202607&_type=json" \
-            || echo "curl 실패 (exit $?)"
+          echo "── 러너 IP ──"; curl -s -m 10 https://api.ipify.org; echo
+          echo "── 키 존재 ──"; if [ -n "$MOLIT_API_KEY" ]; then echo "있음(${#MOLIT_API_KEY}자)"; else echo "🔴 없음"; fi
+          echo "── 진짜 키 호출 ──"
+          ENC=$(node -e "console.log(encodeURIComponent(process.env.MOLIT_API_KEY))")
+          curl -s -m 30 -o /tmp/r.json -w "HTTP %{http_code} · total %{time_total}s\n" \
+            "https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev?ServiceKey=$ENC&LAWD_CD=48121&DEAL_YMD=202607&numOfRows=3&pageNo=1&_type=json"
+          echo "── 응답 앞부분 ──"; head -c 200 /tmp/r.json; echo
