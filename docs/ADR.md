@@ -334,3 +334,13 @@ MVP 속도 최우선. 무료 티어로 가능한 한 늘림. 외부 의존성 �
 **롤백**: `molit-daily.yml` 을 단일 job 으로 되돌린다. preflight 와 describeError 는 남겨둔다 — 진단 가치가 재시도와 독립적이다
 
 > **부수 교훈**: undici(Node fetch)는 실제 원인을 전부 `err.cause` 에 넣고 겉면은 항상 `TypeError: fetch failed` 로 통일한다. `String(err)` 로 로그를 찍으면 DNS·커넥트 타임아웃·TLS·소켓 끊김이 **전부 같은 글자로 보인다**. 이 한 줄 때문에 이틀짜리 전면 장애를 "원인 불명"으로 방치했다. 네트워크 에러 로깅은 반드시 `describeError` 를 쓴다.
+
+### ADR-057 — 배치 감시 = 데이터 신선도 + 잡 상태 2층, 출처는 `source_run_id`로 판별
+**결정**: `check-data-freshness.ts`가 (1) 테이블별 최신 타임스탬프와 (2) `data_sources.last_status='failed'` 두 층을 함께 본다. 한 테이블을 여러 배치가 공유하면 `source_run_id → ingest_runs.source_id`로 **출처를 갈라** 배치별로 따로 잰다  
+**이유**: 한 층만으로는 각각 구멍이 있다. 데이터 층은 테이블 공유에 가려진다 — 08-02·08-03 아파트 실거래가 152/152 실패로 0건이었는데 오피스텔 배치가 같은 `transactions`에 29행을 넣어 "0.2일 신선" 초록이 나왔다. 반대로 잡 층은 실패를 보고조차 안 하는 침묵 실패를 놓친다(네이버 크롤러가 두 달째 그 상태). 두 층이 서로의 사각지대를 덮는다  
+**왜 `building_type`이 아니라 `source_run_id`인가**: 처음엔 `complexes.building_type <> 'officetel'`로 거르려 했는데 **그것도 못 잡는다**. 오피스텔 배치가 넣은 08-03자 33행 중 4행이 `building_type='apt'` 단지에 붙어 있었다(오피스텔 건물이 `complexes`에 apt로 등록된 경우가 있다). 건물 유형은 출처의 근사치일 뿐이라 감시 기준이 될 수 없다. `source_run_id`가 유일하게 정확하다 — 이 기준으로는 `molit_trade` 최종 적재가 08-01에 멈춰 있던 게 즉시 드러난다  
+**트레이드오프**: 조인 때문에 실거래 점검이 3.4→4.6초로 느려진다. 일 1회 감시라 무의미한 비용이다. `ingest_runs`에 출처를 안 남기는 배치는 이 방식으로 감시할 수 없다 — 새 배치는 `source_run_id`를 반드시 채워야 한다  
+**구현**: `Check.embeddedFilter`(PostgREST `!inner` 임베딩) + `checkFailedJobs()`. 위반 시 exit 1, `--warn-only`로 보고만 가능  
+**롤백**: `embeddedFilter`를 빼면 기존 테이블 단위 점검으로 되돌아간다. 다만 그 순간 실거래 감시가 다시 무력해진다
+
+> **상태 어휘 규칙**: 배치 상태에 `failed`가 **반드시** 있어야 한다. `success|partial` 두 값뿐이면 전량 실패가 구조적으로 표현 불가능해져 초록불로 묻힌다 — MOLIT(ADR-056)와 K-apt가 같은 이유로 각각 이틀·한 달을 묻혔다. "대상이 있었는데 0건 적재"는 언제나 `failed`다.
