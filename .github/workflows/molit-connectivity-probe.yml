@@ -17,4 +17,5 @@ jobs:
           ENC=$(node -e "console.log(encodeURIComponent(process.env.MOLIT_API_KEY))")
           curl -s -m 30 -o /tmp/r.json -w "HTTP %{http_code} · total %{time_total}s\n" \
             "https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev?ServiceKey=$ENC&LAWD_CD=48121&DEAL_YMD=202607&numOfRows=3&pageNo=1&_type=json"
-          echo "── 응답 앞부분 ──"; head -c 200 /tmp/r.json; echo
+          echo "── 응답 전문 ──"; cat /tmp/r.json | tr -d "
+" | head -c 700; echo
