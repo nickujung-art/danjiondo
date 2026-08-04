@@ -325,3 +325,12 @@ MVP 속도 최우선. 무료 티어로 가능한 한 늘림. 외부 의존성 �
 **트레이드오프**: 링크 만료 시 재발급 UX 마찰  
 **구현**: NextAuth EmailProvider의 `generateVerificationToken`에 rate limit 래퍼. `magic_link_requests` 테이블 또는 Redis 슬라이딩 윈도우  
 **롤백**: Supabase Auth OTP로 전환 (NextAuth EmailProvider 대체)
+
+### ADR-056 — data.go.kr 러너 IP 차단 대응 = 새 job 으로 재시도 (프록시·self-hosted 아님)
+**결정**: MOLIT 수집을 재사용 워크플로(`molit-ingest-attempt.yml`)로 분리하고, 차단 러너를 뽑으면 즉시 exit 75 후 **새 job**에서 최대 3회까지 재시도한다  
+**이유**: data.go.kr 은 GitHub Actions(Azure) IP 중 **일부를 TCP 레벨에서 차단**한다. 러너 6대를 동시에 띄워 같은 키·같은 요청·같은 DNS(27.101.236.63)로 확인한 결과 2대는 `UND_ERR_CONNECT_TIMEOUT`(10.5초), 4대는 HTTP 200 이었다(2026-08-04). 같은 /16 안에서도 갈리므로 대역 차단이 아니라 개별 IP 차단이고, 러너 IP 는 전 세계가 공유하니 **우리 트래픽과 무관하게** 이미 막힌 IP 를 배정받는다. 한 job 은 수명 내내 IP 하나를 유지하므로 결과가 0 아니면 100 이 된다 — 08-02·08-03 이틀 다 152/152 실패, 0건 적재였다. 반면 같은 밤 20:02 에 돈 오피스텔 배치는 **동일 호스트에 성공**했다(다른 job = 다른 IP). IP 를 바꾸는 유일한 방법이 새 job 이라, 재시도 단위를 요청이 아니라 job 으로 올렸다  
+**트레이드오프**: 워크플로 파일이 2개로 늘고 재시도 시 러너 시간이 최대 3배. 대신 프록시(Vercel)·self-hosted 러너 같은 신규 인프라가 필요 없고, 프록시 IP 역시 차단될 수 있다는 위험을 지지 않는다. 회당 차단 확률 1/3 기준 3회면 전부 실패할 확률 약 4%  
+**구현**: `describeError`/`isConnectivityError`(`src/lib/api/describe-error.ts`) + `backfill-realprice.ts` preflight 1회 및 연속 3회 연결 불가 시 중단 + `molit-daily.yml` 의 attempt1→2→3 체인. 3회 모두 차단이면 워크플로를 실패(빨간불)로 남긴다  
+**롤백**: `molit-daily.yml` 을 단일 job 으로 되돌린다. preflight 와 describeError 는 남겨둔다 — 진단 가치가 재시도와 독립적이다
+
+> **부수 교훈**: undici(Node fetch)는 실제 원인을 전부 `err.cause` 에 넣고 겉면은 항상 `TypeError: fetch failed` 로 통일한다. `String(err)` 로 로그를 찍으면 DNS·커넥트 타임아웃·TLS·소켓 끊김이 **전부 같은 글자로 보인다**. 이 한 줄 때문에 이틀짜리 전면 장애를 "원인 불명"으로 방치했다. 네트워크 에러 로깅은 반드시 `describeError` 를 쓴다.
