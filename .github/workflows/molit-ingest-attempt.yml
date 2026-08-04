@@ -1,0 +1,77 @@
+name: MOLIT 수집 1회 시도 (재사용)
+
+# 수집 본체 — molit-daily.yml 이 러너를 바꿔가며 여러 번 호출한다.
+#
+# [왜 재사용 워크플로로 쪼갰나 — 2026-08-04]
+# data.go.kr 은 GitHub Actions(Azure) IP 중 일부를 TCP 레벨에서 차단한다. 러너 6대 동시 측정
+# 결과 2대가 UND_ERR_CONNECT_TIMEOUT, 4대가 HTTP 200 이었다. **한 job 은 수명 내내 IP 하나를
+# 유지**하므로 "같은 job 안에서 재시도"는 아무 의미가 없다 — 몇 번을 돌려도 같은 막힌 IP 다.
+# IP 를 바꾸는 유일한 방법이 새 job 이라서, 호출 단위를 job 으로 만들었다.
+#
+# 차단 러너를 뽑았을 때는 job 을 **실패시키지 않고** blocked=true 만 올린다. 그래야 호출부가
+# "차단이라 다시"와 "진짜 실패라 사람이 봐야 함"을 구분할 수 있다.
+
+on:
+  workflow_call:
+    inputs:
+      from_ym:
+        required: true
+        type: string
+      to_ym:
+        required: true
+        type: string
+      attempt:
+        required: true
+        type: string
+    outputs:
+      blocked:
+        description: '이 러너 IP 가 data.go.kr 에 차단돼 수집을 못 했으면 true'
+        value: ${{ jobs.ingest.outputs.blocked }}
+
+jobs:
+  ingest:
+    name: 수집 시도 ${{ inputs.attempt }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    outputs:
+      blocked: ${{ steps.run.outputs.blocked }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: 러너 IP 기록
+        shell: bash
+        # 실패를 사후에 IP 에 귀속시키려면 반드시 남아 있어야 한다 — 08-02·08-03 장애 때
+        # 이 한 줄이 없어서 "차단인지 아닌지"를 이틀 동안 판정하지 못했다.
+        run: echo "러너 IP: $(curl -s -m 10 https://api.ipify.org || echo unknown)"
+
+      - name: MOLIT 실거래가 수집
+        id: run
+        shell: bash
+        env:
+          MOLIT_API_KEY:              ${{ secrets.MOLIT_API_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL:   ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY:  ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set +e
+          npx tsx scripts/backfill-realprice.ts \
+            --from=${{ inputs.from_ym }} \
+            --to=${{ inputs.to_ym }}
+          CODE=$?
+          set -e
+          # 75 = EX_TEMPFAIL, 스크립트가 "이 러너 IP 가 차단됐다"고 판정한 경우
+          if [ "$CODE" -eq 75 ]; then
+            echo "blocked=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::시도 ${{ inputs.attempt }} — 러너 IP 차단으로 수집 불가. 새 러너에서 재시도합니다."
+            exit 0
+          fi
+          echo "blocked=false" >> "$GITHUB_OUTPUT"
+          exit $CODE

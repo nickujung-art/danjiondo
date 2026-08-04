@@ -28,6 +28,58 @@ import type { Database } from '../src/types/database'
  */
 const FAILURE_ABORT_RATE = 0.3
 import { ingestMonth, ingestMonthVilla } from '../src/lib/data/realprice'
+import { describeError, isConnectivityError } from '../src/lib/api/describe-error'
+
+/**
+ * 이 머신에서 MOLIT 에 **연결이 되긴 하는지** 한 번만 확인한다.
+ *
+ * [왜 있는가 — 2026-08-02~03 장애]
+ * data.go.kr 은 GitHub Actions(Azure) IP 중 **일부**를 TCP 레벨에서 막는다. 러너 6대를 동시에
+ * 띄워 확인했더니 2대는 `UND_ERR_CONNECT_TIMEOUT`, 4대는 HTTP 200 이었다(2026-08-04).
+ * 같은 /16 안에서도 갈리므로 대역 차단이 아니라 개별 IP 차단이고, GitHub 러너 IP 는 전 세계가
+ * 공유하니 **우리 트래픽과 무관하게** 이미 막힌 IP 를 배정받을 수 있다.
+ *
+ * 한 job 은 수명 내내 IP 하나를 유지한다 → 막힌 IP 를 뽑으면 152건이 전부 실패한다(0 아니면 100).
+ * 실제로 08-02·08-03 이틀 다 152/152 실패였고, 각 건이 5회 재시도 × 10.5초 커넥트 타임아웃으로
+ * 60초씩 걸려 **2시간 34분을 태우고** 0건을 적재했다.
+ *
+ * 그래서 시작하자마자 한 번 찔러보고, 연결 자체가 안 되면 즉시 exit 75 로 끝낸다.
+ * 워크플로가 이 코드를 보고 **새 러너(=새 IP)로 다시 시도**한다 — 성공 확률이 회당 약 2/3라
+ * 3회면 사실상 붙는다. 프록시나 self-hosted 러너 같은 새 인프라가 필요 없다.
+ */
+const EXIT_BLOCKED_RUNNER = 75
+
+async function preflight(): Promise<void> {
+  const url = new URL(
+    'https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev',
+  )
+  url.searchParams.set('ServiceKey', process.env.MOLIT_API_KEY!)
+  url.searchParams.set('LAWD_CD', '48121')
+  url.searchParams.set('DEAL_YMD', '202601')
+  url.searchParams.set('pageNo', '1')
+  url.searchParams.set('numOfRows', '1')
+  url.searchParams.set('_type', 'json')
+
+  try {
+    const res = await fetch(url.toString(), {
+      headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0' },
+      signal: AbortSignal.timeout(20_000),
+    })
+    console.log(`🔌 MOLIT 연결 확인: HTTP ${res.status}`)
+  } catch (err) {
+    if (isConnectivityError(err)) {
+      console.error(
+        `\n🚫 이 러너에서 MOLIT 에 연결할 수 없습니다 — ${describeError(err)}\n` +
+          `   data.go.kr 이 이 러너 IP 를 차단한 것으로 보입니다.\n` +
+          `   152건을 전부 실패시키는 대신 즉시 종료합니다(exit ${EXIT_BLOCKED_RUNNER}).\n` +
+          `   워크플로가 새 러너에서 재시도합니다.`,
+      )
+      process.exit(EXIT_BLOCKED_RUNNER)
+    }
+    // 연결은 되는데 다른 이유로 실패한 경우는 배치를 그대로 진행시킨다 — 일시적일 수 있다
+    console.warn(`⚠️  연결 확인 중 예외(계속 진행): ${describeError(err)}`)
+  }
+}
 
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -110,6 +162,9 @@ async function main() {
     process.exit(1)
   }
 
+  // 러너가 차단된 IP 를 배정받았는지 먼저 확인 — 여기서 걸러야 2시간 반을 안 태운다
+  await preflight()
+
   // 이전 실행에서 timeout된 stuck 레코드 정리 (30분 초과)
   const cleaned = await cleanupStuckRuns()
   if (cleaned > 0) console.log(`🧹 stuck ingest_runs ${cleaned}건 정리`)
@@ -141,6 +196,26 @@ async function main() {
   let totalUpserted = 0
   let failures = 0
 
+  /**
+   * 프리플라이트를 통과한 뒤 도중에 IP 가 막히는 경우도 있다(장시간 배치 중 자동 차단).
+   * 연결 불가 에러가 연속으로 이 횟수만큼 나면 남은 작업을 포기하고 exit 75 한다 —
+   * 어차피 같은 IP 라 끝까지 다 실패할 것이고, 계속 두드리는 게 차단을 더 굳힐 수도 있다.
+   */
+  const CONNECT_FAIL_STREAK_LIMIT = 3
+  let connectFailStreak = 0
+
+  function noteFailure(err: unknown): void {
+    failures++
+    connectFailStreak = isConnectivityError(err) ? connectFailStreak + 1 : 0
+    if (connectFailStreak >= CONNECT_FAIL_STREAK_LIMIT) {
+      console.error(
+        `\n🚫 연결 불가가 연속 ${connectFailStreak}회 — 이 러너 IP 가 차단된 것으로 보고 중단합니다.\n` +
+          `   ${done + 1}/${total} 지점에서 포기, 새 러너에서 재시도합니다(exit ${EXIT_BLOCKED_RUNNER}).`,
+      )
+      process.exit(EXIT_BLOCKED_RUNNER)
+    }
+  }
+
   for (const sggCode of sggCodes) {
     if (useApt) {
       const completed = useResume ? await getCompletedRuns(sggCode) : new Set<string>()
@@ -161,8 +236,8 @@ async function main() {
             console.warn(`\n  ⚠️  apt ${sggCode} ${ym}: ${result.status} (${result.rowsFailed}건 실패)`)
           }
         } catch (err) {
-          console.error(`\n  ❌ apt ${sggCode} ${ym}: ${String(err)}`)
-          failures++
+          console.error(`\n  ❌ apt ${sggCode} ${ym}: ${describeError(err)}`)
+          noteFailure(err)
         }
 
         done++
@@ -191,8 +266,8 @@ async function main() {
             console.warn(`\n  ⚠️  villa ${sggCode} ${ym}: ${result.status} (${result.rowsFailed}건 실패)`)
           }
         } catch (err) {
-          console.error(`\n  ❌ villa ${sggCode} ${ym}: ${String(err)}`)
-          failures++
+          console.error(`\n  ❌ villa ${sggCode} ${ym}: ${describeError(err)}`)
+          noteFailure(err)
         }
 
         done++
