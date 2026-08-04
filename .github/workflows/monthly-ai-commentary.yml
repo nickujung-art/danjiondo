@@ -16,7 +16,10 @@ jobs:
   generate-commentary:
     name: 단지별 AI 코멘트 생성
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Groq 무료 티어(30 RPM)에 맞춰 스크립트가 429 백오프로 자체 조절하므로, 1,300건 규모는
+    # 30분 안에 못 끝난다. 예전엔 Gemini(유료)로 빠르게 돌아 30분이면 됐지만 한도 초과로
+    # 전량 실패했다(2026-08-04). 무료 경로를 쓰기로 한 이상 시간을 늘리는 게 맞다.
+    timeout-minutes: 120
 
     steps:
       - uses: actions/checkout@v4
