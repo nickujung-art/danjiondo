@@ -80,6 +80,16 @@ export const kaptBasicInfoSchema = z.object({
   doroJuso:       z.string().optional(),          // 도로명주소
   codeHeatNm:     z.string().optional(),          // 난방방식 명칭 (heatType 폴백용)
   kaptAddr:       z.string().optional(),          // 법정동주소
+  // ── 관리비 평형별 배분용(2026-08-05) ───────────────────────────────────
+  // 공동주택 관리비는 법령상 **관리비부과면적 비례**로 부과된다. kaptMarea 가 있어야
+  // 단지 총액(management_cost_monthly)을 평형별 금액으로 쪼갤 수 있다. 없으면 세대당
+  // 균등 배분밖에 못 해서 59㎡와 114㎡가 같은 금액으로 나온다.
+  // V1 폴백 응답에는 없을 수 있어 전부 optional 이다.
+  kaptMarea:      z.coerce.number().optional(),   // 관리비부과면적(㎡)
+  kaptMparea60:   z.coerce.number().optional(),   // 전용 60㎡ 이하 세대수
+  kaptMparea85:   z.coerce.number().optional(),   // 60~85㎡
+  kaptMparea135:  z.coerce.number().optional(),   // 85~135㎡
+  kaptMparea136:  z.coerce.number().optional(),   // 135㎡ 초과
 })
 
 /** @deprecated KaptBasicInfoSchema → kaptBasicInfoSchema 로 변경됨. 내부용으로 유지. */
