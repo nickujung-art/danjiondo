@@ -103,17 +103,40 @@ interface CliArgs {
   limit:      number
   dryRun:     boolean
   verbose:    boolean
+  /** 최근 30일 거래가 없는 단지도 포함할지. 기본은 제외(--include-quiet 로 해제) */
+  includeQuiet: boolean
 }
 
 function parseArgs(argv: string[]): CliArgs {
-  const args: CliArgs = { areaBucket: '84', limit: 200, dryRun: false, verbose: false }
+  const args: CliArgs = { areaBucket: '84', limit: 200, dryRun: false, verbose: false, includeQuiet: false }
   for (const arg of argv.slice(2)) {
     if (arg.startsWith('--area-bucket=')) args.areaBucket = arg.split('=')[1] ?? '84'
     else if (arg.startsWith('--limit='))    args.limit      = parseInt(arg.split('=')[1] ?? '200', 10)
     else if (arg === '--dry-run')           args.dryRun     = true
     else if (arg === '--verbose')           args.verbose    = true
+    else if (arg === '--include-quiet')     args.includeQuiet = true
   }
   return args
+}
+
+/**
+ * 최근 30일 거래가 없는 단지를 제외한다 — Groq 무료 티어 토큰을 아끼기 위한 것(2026-08-05).
+ *
+ * [왜 필요한가]
+ * Groq 무료 티어는 **일 50만 토큰**인데, 버킷 84 전량 재생성(1,342건)이 단지당 약 370토큰으로
+ * 499,625 토큰을 써서 한도를 거의 정확히 소진했다(2026-08-04 실측). 같은 날 다른 Groq 작업
+ * (분양 크롤러)이 전부 막혔다.
+ *
+ * [왜 거래 유무가 기준인가]
+ * 코멘트 내용이 가격 예측과 최근 시세 흐름이라, **거래가 없었으면 다시 쓸 내용도 없다**.
+ * 매달 전량 재생성은 안 바뀔 문장을 새로 쓰는 데 토큰을 쓰는 셈이었다.
+ * 실측: 버킷 84 대상 1,342건 중 최근 30일 거래가 있는 단지는 273건(20%)뿐이다.
+ *
+ * 제외된 단지는 **기존 코멘트를 그대로 유지**한다(지우지 않는다) — 화면에서 사라지지 않는다.
+ * 전량 재생성이 필요하면 `--include-quiet` 로 해제할 수 있다.
+ */
+function hasRecentTrades(row: ComplexCommentaryInput): boolean {
+  return (row.tx_count_30d ?? 0) > 0
 }
 
 // ─── Retry Helper ────────────────────────────────────────────────────────────
@@ -253,6 +276,20 @@ async function main(): Promise<void> {
   }
 
   console.log(`[FETCH] ${allRows.length}건 조회 완료`)
+
+  // 조회 뒤 걸러내는 이유: RPC 가 이미 tx_count_30d 를 돌려주므로 마이그레이션 없이 처리된다.
+  // 조회 자체는 싸고, 아끼려는 건 LLM 호출이다.
+  if (!args.includeQuiet) {
+    const before = allRows.length
+    allRows = allRows.filter(hasRecentTrades)
+    const skipped = before - allRows.length
+    if (skipped > 0) {
+      console.log(
+        `[SKIP] 최근 30일 거래 없는 단지 ${skipped}건 제외 → ${allRows.length}건 생성 대상 ` +
+          `(기존 코멘트는 그대로 유지됩니다. 전량 재생성은 --include-quiet)`,
+      )
+    }
+  }
 
   if (args.dryRun) {
     for (const row of allRows) {
