@@ -197,7 +197,7 @@ async function main(): Promise<void> {
         management_type: parsed.codeMgr ?? null,
         building_count: basicParsed?.kaptDongCnt ?? null, // UX-03: 동수
         heat_type: basicParsed?.codeHeatNm ?? basicParsed?.heatType ?? null,
-        total_area: basicParsed?.totalArea ?? null,
+        total_area: basicParsed?.kaptTarea ?? basicParsed?.totalArea ?? null,
         management_cost_m2: null, // 월별 총액은 management_cost_monthly 가 별도로 들고 있다
         // 관리비 평형별 배분용 — kaptMarea 가 분모, 면적구간별 세대수가 가중치가 된다
         mgmt_area: basicParsed?.kaptMarea ?? null,

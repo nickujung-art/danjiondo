@@ -75,7 +75,10 @@ export const kaptBasicInfoSchema = z.object({
   kaptDongCnt:    z.coerce.number().optional(),   // 동수
   heatType:       z.string().optional(),          // 난방방식 (V1 필드명)
   managementType: z.string().optional(),          // 관리방식
-  totalArea:      z.coerce.number().optional(),   // 연면적
+  totalArea:      z.coerce.number().optional(),   // 연면적 (V1 필드명)
+  // V4 는 같은 값을 kaptTarea 로 준다. totalArea 만 읽고 있어서 facility_kapt.total_area 가
+  // 한 번도 채워진 적이 없었다(전 행 NULL, 2026-08-05 확인).
+  kaptTarea:      z.coerce.number().optional(),   // 연면적 (V4 필드명)
   kaptUsedate:    z.string().optional(),          // 사용승인일 YYYYMMDD (준공연도 원천)
   doroJuso:       z.string().optional(),          // 도로명주소
   codeHeatNm:     z.string().optional(),          // 난방방식 명칭 (heatType 폴백용)
