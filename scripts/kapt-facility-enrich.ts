@@ -201,6 +201,7 @@ async function main(): Promise<void> {
         management_cost_m2: null, // 월별 총액은 management_cost_monthly 가 별도로 들고 있다
         // 관리비 평형별 배분용 — kaptMarea 가 분모, 면적구간별 세대수가 가중치가 된다
         mgmt_area: basicParsed?.kaptMarea ?? null,
+        priv_area: basicParsed?.privArea ?? null,
         households_60: basicParsed?.kaptMparea60 ?? null,
         households_85: basicParsed?.kaptMparea85 ?? null,
         households_135: basicParsed?.kaptMparea135 ?? null,

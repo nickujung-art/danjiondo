@@ -85,7 +85,11 @@ export const kaptBasicInfoSchema = z.object({
   // 단지 총액(management_cost_monthly)을 평형별 금액으로 쪼갤 수 있다. 없으면 세대당
   // 균등 배분밖에 못 해서 59㎡와 114㎡가 같은 금액으로 나온다.
   // V1 폴백 응답에는 없을 수 있어 전부 optional 이다.
-  kaptMarea:      z.coerce.number().optional(),   // 관리비부과면적(㎡)
+  kaptMarea:      z.coerce.number().optional(),   // 관리비부과면적(㎡, 공급면적 합계)
+  // privArea / kaptMarea = 전용률. 이게 있어야 **거래 데이터의 전용면적**을 공급면적으로
+  // 환산할 수 있다. complex_area_types(공급면적 보유)는 관리비 있는 단지의 32%뿐이라
+  // 그것만으로는 대부분의 단지에서 평형별 관리비를 못 낸다.
+  privArea:       z.coerce.number().optional(),   // 전용면적 합계(㎡)
   kaptMparea60:   z.coerce.number().optional(),   // 전용 60㎡ 이하 세대수
   kaptMparea85:   z.coerce.number().optional(),   // 60~85㎡
   kaptMparea135:  z.coerce.number().optional(),   // 85~135㎡
