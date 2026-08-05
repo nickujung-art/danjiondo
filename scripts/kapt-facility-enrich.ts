@@ -130,9 +130,13 @@ async function main(): Promise<void> {
       }
       if (!page || page.length === 0) break
       for (const row of page as FacilityProbeRow[]) {
-        const hasAny = row.parking_count != null || row.elevator_count != null
-          || row.building_count != null || row.mgmt_area != null
-        if (hasAny) doneIds.add(row.complex_id)
+        // mgmt_area 하나만 본다. 이 스크립트가 채우는 필드 중 **가장 나중에 추가된 것**이라,
+        // 이게 있으면 최신 코드로 한 번은 돌았다는 뜻이다. "아무 필드나 있으면 완료"로 보면
+        // 옛 코드가 채운 주차·승강기만 있는 행이 완료로 세어져 새 필드가 영원히 안 채워진다
+        // (실제로 그런 행이 221개 남았다, 2026-08-05).
+        // K-apt 가 mgmt_area 를 안 주는 단지는 매번 재시도되지만 2,922곳 중 17곳뿐이라
+        // 비용이 무시할 만하고, 스크립트는 멱등이다.
+        if (row.mgmt_area != null) doneIds.add(row.complex_id)
       }
       if (page.length < PAGE) break
     }
