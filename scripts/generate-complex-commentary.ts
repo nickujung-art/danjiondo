@@ -237,7 +237,6 @@ async function main(): Promise<void> {
   const STALE_DAYS = 35
 
   let offset      = 0
-  let processed   = 0
   let success     = 0
   let failed      = 0
   let skipped     = 0
@@ -310,7 +309,6 @@ async function main(): Promise<void> {
     concurrency,
     delayMs,
     async (row) => {
-      processed++
       const prompt = buildComplexPrompt(row)
 
       let commentary: string
