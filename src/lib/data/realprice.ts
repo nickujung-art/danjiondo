@@ -14,6 +14,10 @@ import {
   type MolitVillaRentItem,
 } from '@/services/molit'
 import { nameNormalize } from './name-normalize'
+import { createComplexIdLookup } from './complex-id-lookup'
+
+/** 아파트·연립다세대 자동 연결 임계값 — 고신뢰만 붙인다(DATA-10, T-07-03-02) */
+const SALE_MIN_SIMILARITY = 0.9
 
 // ── dedupe_key ─────────────────────────────────────────────
 // aptSeq("48121-792") 가 있으면 이름보다 안정적이므로 우선 사용
@@ -107,31 +111,9 @@ export async function ingestMonth(
   let totalRows = 0
 
   // DATA-10: complex_id 캐시 (ingestMonth 호출 당 — 중복 RPC 방지, Pitfall 5)
-  // 모듈 스코프 금지 — 호출 간 캐시 오염 방지를 위해 함수 스코프에 정의
-  const complexIdCache = new Map<string, string | null>()
-
-  async function lookupComplexIdCached(
-    itemSggCode: string,
-    nameNormalized: string,
-    umdNm?: string,
-  ): Promise<string | null> {
-    const key = `${itemSggCode}:${nameNormalized}:${umdNm ?? ''}`
-    if (complexIdCache.has(key)) return complexIdCache.get(key)!
-    const { data, error } = await supabase.rpc('match_complex_by_admin', {
-      p_sgg_code:        itemSggCode,
-      p_name_normalized: nameNormalized,
-      p_min_similarity:  0.9,  // 자동 연결은 고신뢰만 (DATA-10, T-07-03-02)
-      p_umd_nm:          umdNm ?? null,
-    })
-    if (error || !data || (data as unknown[]).length === 0) {
-      complexIdCache.set(key, null)
-      return null
-    }
-    const row = (data as { id: string; trgm_sim: number }[])[0]!
-    const complexId = Number(row.trgm_sim) >= 0.9 ? row.id : null
-    complexIdCache.set(key, complexId)
-    return complexId
-  }
+  // 캐시는 호출마다 새로 만든다(모듈 스코프 금지 — 적재 간 오염 방지).
+  // RPC 실패는 캐시하지 않고 던진다 — 이유는 complex-id-lookup.ts 주석 참고(2026-05-26 사고).
+  const lookupComplexIdCached = createComplexIdLookup(supabase, SALE_MIN_SIMILARITY)
 
   async function processSaleItem(raw: unknown): Promise<void> {
     totalRows++
@@ -303,30 +285,7 @@ export async function ingestMonthVilla(
   let totalRows = 0
 
   // complex_id 캐시 (ingestMonthVilla 호출 당 — 중복 RPC 방지)
-  const complexIdCache = new Map<string, string | null>()
-
-  async function lookupComplexIdCached(
-    itemSggCode: string,
-    nameNormalized: string,
-    umdNm?: string,
-  ): Promise<string | null> {
-    const key = `${itemSggCode}:${nameNormalized}:${umdNm ?? ''}`
-    if (complexIdCache.has(key)) return complexIdCache.get(key)!
-    const { data, error } = await supabase.rpc('match_complex_by_admin', {
-      p_sgg_code:        itemSggCode,
-      p_name_normalized: nameNormalized,
-      p_min_similarity:  0.9,
-      p_umd_nm:          umdNm ?? null,
-    })
-    if (error || !data || (data as unknown[]).length === 0) {
-      complexIdCache.set(key, null)
-      return null
-    }
-    const row = (data as { id: string; trgm_sim: number }[])[0]!
-    const complexId = Number(row.trgm_sim) >= 0.9 ? row.id : null
-    complexIdCache.set(key, complexId)
-    return complexId
-  }
+  const lookupComplexIdCached = createComplexIdLookup(supabase, SALE_MIN_SIMILARITY)
 
   async function processVillaSaleItem(raw: unknown): Promise<void> {
     totalRows++

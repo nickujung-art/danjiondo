@@ -16,6 +16,10 @@ import {
 import { nameNormalize } from './name-normalize'
 import { getActiveRegionAddrs, type RegionAddr } from './regions'
 import { upsertTransaction, type IngestResult } from './realprice'
+import { matchComplexId } from './complex-id-lookup'
+
+/** 오피스텔 자동 연결 임계값 — 이름이 고유해 아파트(0.9)보다 낮게 잡는다 */
+const OFFI_MIN_SIMILARITY = 0.85
 
 // ── dedupe_key (APT와 충돌 방지: 'offi_' prefix) ──────────
 function makeOffiDedupeKey(params: {
@@ -49,16 +53,19 @@ async function getOrCreateOffiComplex(
   if (cache.has(cacheKey)) return cache.get(cacheKey)!
 
   // 1단계: 기존 매칭 시도 (APT 포함 전체 complexes 대상)
-  const { data: matchData } = await supabase.rpc('match_complex_by_admin', {
-    p_sgg_code:        sggCd,
-    p_name_normalized: nameNorm,
-    p_min_similarity:  0.85,   // 오피스텔은 이름이 고유해 0.85로 충분
-    p_umd_nm:          umdNm ?? null,
-  })
-  const match = (matchData as { id: string; trgm_sim: number }[] | null)?.[0]
-  if (match && Number(match.trgm_sim) >= 0.85) {
-    cache.set(cacheKey, match.id)
-    return match.id
+  //
+  // matchComplexId는 RPC가 실패하면 **던진다**. 여기서 특히 중요한데, 예전 구현은
+  // error를 아예 받지 않아(`const { data: matchData } = ...`) 호출 실패가 "매칭 없음"이
+  // 되고 그대로 2단계로 내려가 **새 단지를 생성**했다. 일시적 실패 한 번이 기존 단지의
+  // 중복 레코드를 만드는 경로였다 — 미연결 거래보다 되돌리기 어려운 오염이다.
+  const matchedId = await matchComplexId(
+    supabase,
+    { sggCode: sggCd, nameNormalized: nameNorm, umdNm },
+    OFFI_MIN_SIMILARITY,
+  )
+  if (matchedId) {
+    cache.set(cacheKey, matchedId)
+    return matchedId
   }
 
   // 2단계: 매칭 실패 → 오피스텔 단지 자동 생성
