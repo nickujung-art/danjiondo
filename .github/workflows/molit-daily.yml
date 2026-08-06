@@ -84,7 +84,29 @@ jobs:
         run: |
           echo "::error::3개 러너 모두 data.go.kr 에 차단돼 수집하지 못했습니다. 차단 범위가 넓어졌을 수 있습니다."
           exit 1
+      # 적재는 됐는데 단지 연결이 깨진 상태를 잡는다. 위 "차단" 판정과 다른 축이다 —
+      # 수집은 성공했는데 complex_id 가 안 붙으면 거래가 어느 단지 화면에도 나타나지
+      # 않는다. 2026-05-26 백필이 정확히 그 상태였고 4개월간 아무도 몰랐다.
+      # 임계 미만이면 exit 1(스크립트가 처리) — 조용한 성공을 만들지 않는다.
+      # verdict 잡은 원래 checkout 이 없다(에코만 했다) — 스크립트를 돌리려면 필요하다.
+      - uses: actions/checkout@v5
+        if: needs.attempt3.outputs.blocked != 'true'
+      - uses: actions/setup-node@v5
+        if: needs.attempt3.outputs.blocked != 'true'
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: 연결률 검사
+        if: needs.attempt3.outputs.blocked != 'true'
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          npm ci --silent
+          npx tsx scripts/check-ingest-linkage.ts --since-hours=6
+
       - name: 요약
+        if: always()
         run: |
           echo "attempt1 blocked=${{ needs.attempt1.outputs.blocked }}"
           echo "attempt2 blocked=${{ needs.attempt2.outputs.blocked }}"

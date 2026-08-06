@@ -36,5 +36,25 @@ jobs:
             --resume \
             --sgg=${{ inputs.sgg_codes }}
 
+      # 백필이 조용히 미연결 더미를 만드는 것을 막는다.
+      #
+      # 2026-05-26 백필에서 창원·김해만 15,315건이 complex_id=null 로 적재됐다.
+      # 그날 적재 18,934건 중 연결은 3,619건(19.1%)뿐이었는데 **아무도 몰랐다** —
+      # 4개월 뒤 마린애시앙(4,298세대) 페이지에 "4개월째 거래 없음"이 뜨고 나서야
+      # 발견됐다. 원인(매칭 RPC 실패가 "매칭 없음"과 구분되지 않고 캐시에 굳음)은
+      # src/lib/data/complex-id-lookup.ts 에서 고쳤지만, 그 위에 "아무도 결과를 보지
+      # 않는" 문제가 겹쳐 있었다. 이 단계가 그쪽을 막는다.
+      #
+      # 연결률이 임계 미만이면 exit 1 로 잡을 빨간불로 만든다 — 조용한 성공이
+      # 이 프로젝트가 반복해 겪은 실패 원인이다.
+      - name: Check linkage rate
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          npx tsx scripts/check-ingest-linkage.ts \
+            --since-hours=8 \
+            --sgg=${{ inputs.sgg_codes }}
+
       - name: Backfill complete
         run: echo "백필 완료 — ingest_runs 테이블에서 결과 확인"
