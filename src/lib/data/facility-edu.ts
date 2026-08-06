@@ -164,10 +164,13 @@ export async function getComplexFacilityEdu(
     Promise.all(
       assignedSchools.map(async s => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data } = await (supabase as any).rpc('school_district_avg_price', {
+        const { data, error } = await (supabase as any).rpc('school_district_avg_price', {
           p_school_name: s.school_name,
           p_months:      12,
         })
+        if (error) {
+          console.error(`[edu] school_district_avg_price 실패 (${s.school_name}): ${error.message}`)
+        }
         const row = data?.[0] as { district_avg_py: number | null; si_avg_py: number | null } | undefined
         const dpy = row?.district_avg_py ? Number(row.district_avg_py) : null
         const spy = row?.si_avg_py       ? Number(row.si_avg_py)       : null

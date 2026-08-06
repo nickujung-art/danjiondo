@@ -132,11 +132,16 @@ export async function getComplexesForMap(
 
   const ids = rows.map((r) => r.id)
 
-  const { data: txData } = await supabase
+  // error를 본다 — 실패하면 지도 핀의 최근 실거래가 전부 비는데, 그게 "거래 없음"과
+  // 구분되지 않는다(supabase-js는 예외를 던지지 않는다).
+  const { data: txData, error: txError } = await supabase
     .rpc('get_recent_complex_sales', {
       p_complex_ids: ids,
       p_since:       sinceDateStr,
     })
+  if (txError) {
+    console.error(`[map] get_recent_complex_sales 실패 (${ids.length}개 단지): ${txError.message}`)
+  }
 
   // 스텝 3: RPC가 DISTINCT ON으로 단지별 1건만 반환하므로 그대로 Map화
   const recentTxMap = new Map<string, { price: number; deal_date: string; area_m2: number }>()

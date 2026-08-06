@@ -60,12 +60,18 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   // 6. admin client로 INSERT (SEC-02 — createSupabaseAdminClient() 단일 경유)
   const supabase = createSupabaseAdminClient()
-  await supabase.from('ad_events').insert({
+  // supabase-js는 실패에 예외를 던지지 않는다. error를 보지 않으면 INSERT가 통째로
+  // 실패해도 201 ok가 나가고, 광고 노출·클릭 집계가 조용히 비어 간다(정산 데이터다).
+  const { error } = await supabase.from('ad_events').insert({
     campaign_id: b.campaign_id,
     event_type: eventType,
     ip_hash,
     is_anomaly,
   })
+  if (error) {
+    console.error(`[ads/events] ${eventType} 적재 실패 (campaign=${b.campaign_id}): ${error.message}`)
+    return NextResponse.json({ ok: false, error: 'event insert failed' }, { status: 500 })
+  }
 
   return NextResponse.json({ ok: true }, { status: 201 })
 }

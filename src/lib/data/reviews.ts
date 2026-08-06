@@ -36,7 +36,11 @@ export async function getComplexReviewStats(
 
   // avg는 limit 없이 전체를 fetch하는 대신 DB 집계 RPC 활용
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: aggData } = await (supabase as any).rpc('get_complex_review_avg', { p_complex_id: complexId })
+  const { data: aggData, error: aggError } = await (supabase as any)
+    .rpc('get_complex_review_avg', { p_complex_id: complexId })
+  if (aggError) {
+    console.error(`[reviews] 평점 집계 실패 (complex=${complexId}): ${aggError.message}`)
+  }
   const avg = aggData != null ? Number(aggData) : null
 
   return { count, avg_rating: avg }

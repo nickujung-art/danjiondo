@@ -14,6 +14,7 @@ import {
   type MolitVillaRentItem,
 } from '@/services/molit'
 import { nameNormalize } from './name-normalize'
+import { finalizeIngestRun } from './finalize-ingest-run'
 import { createComplexIdLookup } from './complex-id-lookup'
 
 /** 아파트·연립다세대 자동 연결 임계값 — 고신뢰만 붙인다(DATA-10, T-07-03-02) */
@@ -251,13 +252,9 @@ export async function ingestMonth(
     ? `zod 실패율 ${(zodFailRate * 100).toFixed(1)}% (임계 ${ZOD_FAILURE_THRESHOLD * 100}% 초과)`
     : null
 
-  await supabase.from('ingest_runs').update({
-    status,
-    rows_fetched:  rowsFetched,
-    rows_upserted: rowsUpserted,
-    error_message: errorMessage,
-    completed_at:  new Date().toISOString(),
-  }).eq('id', runId)
+  // 마감 기록은 실패해도 조용하면 안 된다 — 이게 실패하면 run 이 영원히 'running' 으로
+  // 남고 무엇을 몇 건 넣었는지 기록이 사라진다(finalize-ingest-run.ts 주석 참고).
+  await finalizeIngestRun(supabase, runId, { status, rowsFetched, rowsUpserted, errorMessage })
 
   return { runId, sggCode, yearMonth, rowsFetched, rowsUpserted, rowsSkipped, rowsFailed, status }
 }
@@ -412,13 +409,9 @@ export async function ingestMonthVilla(
     ? `zod 실패율 ${(zodFailRate * 100).toFixed(1)}% (임계 ${ZOD_FAILURE_THRESHOLD * 100}% 초과)`
     : null
 
-  await supabase.from('ingest_runs').update({
-    status,
-    rows_fetched:  rowsFetched,
-    rows_upserted: rowsUpserted,
-    error_message: errorMessage,
-    completed_at:  new Date().toISOString(),
-  }).eq('id', runId)
+  // 마감 기록은 실패해도 조용하면 안 된다 — 이게 실패하면 run 이 영원히 'running' 으로
+  // 남고 무엇을 몇 건 넣었는지 기록이 사라진다(finalize-ingest-run.ts 주석 참고).
+  await finalizeIngestRun(supabase, runId, { status, rowsFetched, rowsUpserted, errorMessage })
 
   return { runId, sggCode, yearMonth, rowsFetched, rowsUpserted, rowsSkipped, rowsFailed, status }
 }

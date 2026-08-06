@@ -79,12 +79,17 @@ export async function verifyGpsForReview(
   }
 
   // 스푸핑 방지: 클라이언트 좌표를 PostGIS로 서버 검증 (D-07)
-  const { data: proximity } = await supabase.rpc('check_gps_proximity', {
+  // error를 본다. 실패해도 verified=false로 안전하게 닫히지만(fail-closed), 그러면
+  // "위치 검증 실패"와 "검증 기능 고장"이 화면에서 똑같아 보인다. 로그에는 남겨야 한다.
+  const { data: proximity, error: proximityError } = await supabase.rpc('check_gps_proximity', {
     p_complex_id: complexId,
     p_lat:        lat,
     p_lng:        lng,
     p_distance_m: 100,
   })
+  if (proximityError) {
+    console.error(`[review] GPS 검증 RPC 실패 (complex=${complexId}): ${proximityError.message}`)
+  }
 
   const verified = proximity === true
   if (verified) {

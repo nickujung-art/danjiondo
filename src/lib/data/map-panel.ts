@@ -20,6 +20,31 @@ export interface MapPanelData {
   url_slug:     string | null
 }
 
+/**
+ * 학원 등급 조회. **error를 반드시 본다.**
+ *
+ * 예전 구현은 `(await supabase.rpc(...)).data ?? null` 이었다. 그런데 이 RPC는
+ * `search_path=''` 인데 본문이 complexes 를 미수식 참조해 **호출 즉시 실패**하고 있었다
+ * (2026-07-31 발견, 2026-08-06 수정 — 마이그레이션 20260806030000).
+ * 그 4주 동안 hagwon_score 가 있는 단지 2,553곳의 등급이 전부 비어 나갔는데,
+ * error 를 삼키는 바람에 화면에는 장애가 아니라 "정보 없음"으로 보였다.
+ *
+ * 등급이 없다고 지도 패널 전체를 실패시킬 이유는 없으므로 던지지는 않는다.
+ * 대신 조용히 넘기지도 않는다.
+ */
+async function fetchHagwonGrade(
+  supabase: SupabaseClient,
+  complexId: string,
+): Promise<string | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any).rpc('get_hagwon_grade', { p_complex_id: complexId })
+  if (error) {
+    console.error(`[map-panel] get_hagwon_grade 실패 (complex=${complexId}): ${error.message}`)
+    return null
+  }
+  return (data as string | null) ?? null
+}
+
 export async function getMapPanelData(
   complexId: string,
   supabase: SupabaseClient,
@@ -77,9 +102,7 @@ export async function getMapPanelData(
       floor:     (t.floor as number | null) ?? null,
     })),
     // hagwon_score는 정수(raw 학원수 가중합) — PERCENT_RANK RPC로 전체 분포 대비 등급 계산
-    hagwon_grade: r.hagwon_score !== null
-      ? ((await supabase.rpc('get_hagwon_grade', { p_complex_id: complexId })).data ?? null) as string | null
-      : null,
+    hagwon_grade: r.hagwon_score !== null ? await fetchHagwonGrade(supabase, complexId) : null,
     url_slug:     r.url_slug ?? null,
     detail_url:   r.url_slug && r.status === 'active'
       ? '/' + encodeURI(r.url_slug)

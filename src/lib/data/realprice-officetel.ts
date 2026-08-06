@@ -17,6 +17,7 @@ import { nameNormalize } from './name-normalize'
 import { getActiveRegionAddrs, type RegionAddr } from './regions'
 import { upsertTransaction, type IngestResult } from './realprice'
 import { matchComplexId } from './complex-id-lookup'
+import { finalizeIngestRun } from './finalize-ingest-run'
 
 /** 오피스텔 자동 연결 임계값 — 이름이 고유해 아파트(0.9)보다 낮게 잡는다 */
 const OFFI_MIN_SIMILARITY = 0.85
@@ -270,13 +271,12 @@ export async function ingestOffiMonth(
     finalErrorMessage = err instanceof Error ? err.message : String(err)
     rowsFailed++
   } finally {
-    await supabase.from('ingest_runs').update({
-      status:        finalStatus,
-      rows_fetched:  rowsFetched,
-      rows_upserted: rowsUpserted,
-      error_message: finalErrorMessage,
-      completed_at:  new Date().toISOString(),
-    }).eq('id', runId)
+    await finalizeIngestRun(supabase, runId, {
+      status: finalStatus,
+      rowsFetched,
+      rowsUpserted,
+      errorMessage: finalErrorMessage,
+    })
   }
 
   return { runId, sggCode, yearMonth, rowsFetched, rowsUpserted, rowsSkipped, rowsFailed, status: finalStatus }
