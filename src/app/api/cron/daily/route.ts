@@ -385,12 +385,20 @@ export async function GET(request: Request): Promise<Response> {
           total_area:      info.totalArea ?? null,
           data_month:      new Date().toISOString().slice(0, 7) + '-01',
         },
-        // 제약은 UNIQUE (complex_id, data_month) 다 — 월별 스냅샷 이력을 남기려는 의도된 설계.
-        // 'complex_id' 만 주면 매칭되는 유니크 제약이 없어 upsert 가 **100% 실패**한다
-        // (2026-07-30 프로덕션 로그: "there is no unique or exclusion constraint matching the
-        //  ON CONFLICT specification" 50건 = 그날 .limit(50) 대상 수와 정확히 일치).
-        // 실패가 조용해서 오래 묻혔다 — facility_kapt 최종 적재가 2026-07-06 에 멈춰 있었다.
-        { onConflict: 'complex_id,data_month' },
+        // 제약은 **UNIQUE (complex_id)** 다(2026-08-05 변경).
+        //
+        // 원래는 UNIQUE (complex_id, data_month) 로 월별 스냅샷을 쌓는 설계였으나,
+        // 그 결과 한 단지에 여러 행이 생겼고 FacilityList 가 최신 data_month 한 행만
+        // 읽어 값이 비면 시설 정보가 통째로 빈 화면이 됐다(중복 3,730행 → 1,732행 정리,
+        // 마이그레이션 20260805063000_facility_kapt_dedupe_and_area.sql).
+        //
+        // onConflict 는 반드시 실재하는 유니크 제약과 일치해야 한다. 어긋나면 upsert 가
+        // **100% 실패**하고 그 실패는 조용하다:
+        //   * 2026-07-30: 'complex_id' 만 줬는데 제약이 (complex_id, data_month) 라 전량 실패
+        //   * 2026-08-05: 제약을 (complex_id) 로 바꾸면서 이 줄을 같이 못 고쳐 다시 전량 실패
+        //     (data_sources.kapt = 'failed'. scripts/kapt-facility-enrich.ts 는 고쳤는데
+        //      이 라우트를 빠뜨렸다 — 제약을 바꾸면 **모든 쓰기 지점**을 훑어야 한다.)
+        { onConflict: 'complex_id' },
       ) as { error: { message: string } | null }
       if (!error) {
         kaptUpserted++
@@ -411,16 +419,30 @@ export async function GET(request: Request): Promise<Response> {
   // 대상이 있었는데 한 건도 못 넣었으면 **실패**다. 예전에는 상태가 'success'|'partial' 뿐이라
   // 전량 스킵(API 가 전부 null)도 'success' 로 보고됐다 — MOLIT 배치가 152/152 실패에도
   // ✅ 를 찍던 것과 같은 구조의 구멍이다(ADR-056).
+  // 시간예산 초과를 상태에 반영한다(2026-08-06). 예전에는 kaptBudgetExceeded를 계산해
+  // 놓고 판정에 쓰지 않아, 60초 예산이 끝나 중단된 것과 API가 망가진 것이 똑같이
+  // 'failed'로 찍혔다. 이 단계는 라우트 **마지막**에 있어 앞 단계가 느려지면 예산을
+  // 못 받는 일이 실제로 생긴다 — 원인이 다르면 대응도 달라야 한다.
+  const kaptReason = [
+    `대상 ${kaptTargets.length}`,
+    `적재 ${kaptUpserted}`,
+    `실패 ${kaptErrors}`,
+    `미조회 ${kaptNotFound}`,
+    kaptBudgetExceeded ? `시간예산 ${KAPT_TIME_BUDGET_MS / 1000}초 초과로 중단` : null,
+  ].filter(Boolean).join(' · ')
+
   const kaptStatus =
-    kaptTargets.length > 0 && kaptUpserted === 0 ? 'failed'
-    : kaptErrors === 0 ? 'success'
-    : 'partial'
-  if (kaptStatus === 'failed') {
-    errors.push(
-      `kapt: 대상 ${kaptTargets.length}건 중 0건 적재 (실패 ${kaptErrors}, 미조회 ${kaptNotFound})`,
-    )
-  }
-  if (!await markCronStatus(supabase, 'kapt', kaptStatus)) {
+    kaptTargets.length === 0 ? 'success'
+    : kaptUpserted === 0 ? 'failed'
+    : (kaptErrors > 0 || kaptBudgetExceeded) ? 'partial'
+    : 'success'
+
+  if (kaptStatus !== 'success') errors.push(`kapt: ${kaptReason}`)
+  // 사유를 data_sources.error_message에 남긴다. 예전에는 인자를 넘기지 않아
+  // last_status='failed' + error_message=null 이 되어 원인을 알 길이 없었다.
+  if (!await markCronStatus(
+    supabase, 'kapt', kaptStatus, kaptStatus === 'success' ? undefined : kaptReason,
+  )) {
     errors.push('markCronStatus(kapt) 갱신 실패 — 로그 확인')
   }
 

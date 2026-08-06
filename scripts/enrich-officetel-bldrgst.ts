@@ -263,9 +263,12 @@ async function main() {
         if (item.totPkngCnt != null)     facilityRow.parking_count   = item.totPkngCnt
         if (item.rideUseElvtCnt != null) facilityRow.elevator_count  = item.rideUseElvtCnt
 
+        // 제약은 UNIQUE (complex_id) 다 — 2026-08-05 중복 정리에서
+        // (complex_id, data_month) 를 걷어냈다(마이그레이션 20260805063000).
+        // 어긋나면 upsert 가 전량 실패한다. onconflict-constraint-gate 로 대조할 것.
         const { error: fErr } = await supabase
           .from('facility_kapt')
-          .upsert(facilityRow, { onConflict: 'complex_id,data_month' })
+          .upsert(facilityRow, { onConflict: 'complex_id' })
         if (fErr) {
           console.warn(`\n  ⚠️  facility_kapt upsert 실패 (${c.canonical_name}): ${fErr.message}`)
         }
