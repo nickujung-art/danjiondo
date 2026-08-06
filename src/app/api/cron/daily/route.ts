@@ -300,10 +300,35 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   // ── Phase 11: 평당가·30일 변동률·거래량 배치 집계 (MAP-02, MAP-05) ──────────
+  //
+  // 이 단계는 2026-07-09부터 4주간 조용히 실패하고 있었다. 원인이 둘이다.
+  //
+  //  (1) supabase.rpc()는 **에러를 throw하지 않는다** — { data, error }를 돌려준다.
+  //      그래서 예전의 try/catch는 RPC 에러에 한 번도 발동하지 않았고, 타임아웃
+  //      에러가 errors 배열에조차 들어가지 않았다. 아래처럼 error를 직접 봐야 한다.
+  //  (2) 이 단계에는 data_sources 항목이 없어 data-freshness-check도 볼 수 없었다.
+  //      'price-stats' 행을 두고 성패를 남긴다.
+  //
+  // 실패 원인 자체(PostgREST 8초 statement timeout vs 함수 실행 41초)는
+  // supabase/migrations/20260806000000_refresh_complex_price_stats_setbased.sql 참고.
+  // 집합 기반 재작성으로 줄였지만 여전히 8초를 밑돌지 못한다 — 그래서 더더욱
+  // 실패가 드러나야 한다.
   try {
-    await supabase.rpc('refresh_complex_price_stats')
+    const { error: statsError } = await supabase.rpc('refresh_complex_price_stats')
+    if (statsError) {
+      errors.push(`refresh_complex_price_stats: ${statsError.message}`)
+      if (!await markCronStatus(supabase, 'price-stats', 'failed', statsError.message)) {
+        errors.push('markCronStatus(price-stats) 갱신 실패 — 로그 확인')
+      }
+    } else if (!await markCronSuccess(supabase, 'price-stats')) {
+      errors.push('markCronSuccess(price-stats) 갱신 실패 — 로그 확인')
+    }
   } catch (err) {
+    // 네트워크 예외 등 rpc()가 실제로 던지는 경우
     errors.push(`refresh_complex_price_stats: ${describeError(err)}`)
+    if (!await markCronStatus(supabase, 'price-stats', 'failed', describeError(err))) {
+      errors.push('markCronStatus(price-stats) 갱신 실패 — 로그 확인')
+    }
   }
 
   // ── 갭투자 통계 재계산 (GAP-D05) ──────────────────────────────────────────
