@@ -7,33 +7,113 @@ name: Complex Integrity Check
 # 76세대 레코드가 791건 보유 등)은 전부 **조용히** 쌓였다. 잡기 어려워서가 아니라
 # 아무도 보지 않았기 때문이다. 그 점검을 매일 자동으로 돌린다.
 #
-# [무엇이 실패를 만드나]
-# 절대 수치가 아니라 **기준선 대비 증가**만 실패시킨다. 미해결이 남아 있는 상태에서
-# 절대값으로 판정하면 매일 빨간불이라 아무도 안 보게 된다.
-# 기준선은 scripts/check-complex-integrity.ts 의 BASELINE 상수다 — 오염을 줄였으면
-# 그 값도 함께 내려 되돌아가지 못하게 잠근다.
+# [세 검출 축 — 서로 다른 것을 잡는다]
+#   1) 다중 지번    지번이 갈리고 **동까지 다르면** 다른 건물이 섞였다. 같은 동 인접
+#                  필지(창원더샵센트럴파크 = 가음동 15·16·17)는 정상이라 동으로 거른다.
+#                  이 필터가 없으면 거짓 양성이 절반이다.
+#   2) 회전율 이상  거래수÷세대수÷10년 > 25%. **지번이 단일이어도 잡혀** 1번이 놓치는
+#                  것을 잡는다(76세대가 791건을 갖고 있던 STX칸이 이 축으로 발견됐다).
+#   3) 정식 단지 공백  kapt_code 가 있는데 거래 0건이면 그 거래는 다른 레코드에 있다.
+#                  1·2번의 **대상 단지를 찾는 데** 쓴다.
 #
-# [시각] 일배치(19:00 UTC)와 파생값 집계(20:00 UTC) 뒤인 21:00 UTC(06:00 KST).
-# 그날 적재가 무결성을 깨뜨렸는지 그날 안에 드러난다.
+# [왜 psql 직결인가 — PostgREST 가 아니라]
+# 계산이 8~11초 걸린다(운영권역 거래 30만 행 집계). PostgREST 세션 상한은 8초라
+# 처음 만든 TS 스크립트는 원격에서 그대로 타임아웃으로 죽었다(run 31074627194).
+# sgg_code 인덱스를 추가해도 나아지지 않았다 — 병목이 스캔이 아니라 집계다.
+# psql 직결에는 statement_timeout 이 없다(refresh-price-stats.yml 과 같은 경로).
+#
+# [무엇이 실패를 만드나]
+# 절대 수치가 아니라 **기준선 대비 증가**만 실패시킨다. 아직 미해결이 남아 있는데
+# (대상 단지가 아예 없어 붙일 곳이 없는 것들) 절대값으로 판정하면 매일 빨간불이라
+# 아무도 안 보게 된다. 오염을 줄였으면 아래 기준선도 함께 내려 잠근다.
 
 on:
   schedule:
-    - cron: '0 21 * * *'   # 06:00 KST — 일배치·파생값 집계 이후
+    - cron: '0 21 * * *'   # 06:00 KST — 일배치(04:00)·파생값 집계(05:00) 이후
   workflow_dispatch: {}
+
+env:
+  # 기준선 (2026-08-06 측정). 넘으면 실패한다.
+  BASE_MULTI_JIBUN: 9
+  BASE_TURNOVER: 23
+  BASE_EMPTY_KAPT: 60
 
 jobs:
   check:
     name: 단지-거래 무결성
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: npm ci
-      - name: Run integrity check
+      - name: Install psql 17
+        run: |
+          set -e
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common
+          echo | sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq postgresql-client-17
+
+      - name: Check integrity
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: npx tsx scripts/check-complex-integrity.ts
+          BACKUP_AGENT_PASSWORD: ${{ secrets.BACKUP_AGENT_PASSWORD }}
+        run: |
+          set -e
+          export PGCONNECT_TIMEOUT=60
+          export PGPASSWORD="$BACKUP_AGENT_PASSWORD"
+          # ON_ERROR_STOP=1 이 없으면 RAISE EXCEPTION 이 나도 psql 이 0 을 반환해
+          # 이 잡이 초록불이 된다 — 이번 점검이 잡아낸 부류의 실수가 정확히 그것이다.
+          /usr/lib/postgresql/17/bin/psql \
+            --host=aws-1-ap-southeast-2.pooler.supabase.com \
+            --port=5432 \
+            --username=backup_agent.auoravdadyzvuoxunogh \
+            --dbname=postgres \
+            --no-password \
+            -v ON_ERROR_STOP=1 \
+            -v base_mj="$BASE_MULTI_JIBUN" \
+            -v base_to="$BASE_TURNOVER" \
+            -v base_ek="$BASE_EMPTY_KAPT" \
+            <<'SQL'
+          \set QUIET on
+          \timing off
+          -- psql 변수는 $$ ... $$ 안에서 치환되지 않는다. GUC 로 넘긴 뒤 DO 블록에서
+          -- current_setting() 으로 읽는다. (여기 SET 줄은 달러인용 밖이라 치환된다.)
+          SET myapp.base_mj = :base_mj;
+          SET myapp.base_to = :base_to;
+          SET myapp.base_ek = :base_ek;
+          DO $$
+          DECLARE
+            r        record;
+            base_mj  int := current_setting('myapp.base_mj')::int;
+            base_to  int := current_setting('myapp.base_to')::int;
+            base_ek  int := current_setting('myapp.base_ek')::int;
+            worse    text[] := '{}';
+            better   text[] := '{}';
+          BEGIN
+            SELECT * INTO r FROM public.complex_integrity_counts(
+              ARRAY['48121','48123','48125','48127','48129','48250']);
+
+            RAISE INFO '다중 지번(동 다름, 소수 50건↑)  %  (기준 %)', r.multi_jibun, base_mj;
+            RAISE INFO '회전율 이상(>25%%, 거래 100건↑)  %  (기준 %)', r.turnover_anomaly, base_to;
+            RAISE INFO 'K-apt 등록인데 거래 0건          %  (기준 %)', r.empty_kapt, base_ek;
+
+            IF r.multi_jibun      > base_mj THEN worse := worse || format('multi_jibun %s→%s', base_mj, r.multi_jibun); END IF;
+            IF r.turnover_anomaly > base_to THEN worse := worse || format('turnover %s→%s', base_to, r.turnover_anomaly); END IF;
+            IF r.empty_kapt       > base_ek THEN worse := worse || format('empty_kapt %s→%s', base_ek, r.empty_kapt); END IF;
+
+            IF r.multi_jibun      < base_mj THEN better := better || format('multi_jibun %s→%s', base_mj, r.multi_jibun); END IF;
+            IF r.turnover_anomaly < base_to THEN better := better || format('turnover %s→%s', base_to, r.turnover_anomaly); END IF;
+            IF r.empty_kapt       < base_ek THEN better := better || format('empty_kapt %s→%s', base_ek, r.empty_kapt); END IF;
+
+            IF array_length(better,1) > 0 THEN
+              RAISE INFO '기준선보다 낮아졌다: % — 워크플로의 BASE_* 를 내려 잠글 것',
+                array_to_string(better, ', ');
+            END IF;
+
+            IF array_length(worse,1) > 0 THEN
+              RAISE EXCEPTION E'오염이 늘었다: %\n조사 방법은 realtrade-story 의 .planning/data-quality/audit-20260806.md '
+                '"검출 축 세 가지" 참고. 원인은 대개 셋 중 하나다 — 새 중복 레코드 생성 / '
+                '병합이 시딩으로 되돌아감 / 매칭이 엉뚱한 단지를 잡음.',
+                array_to_string(worse, ', ');
+            END IF;
+
+            RAISE INFO '기준선 이내';
+          END $$;
+          SQL
