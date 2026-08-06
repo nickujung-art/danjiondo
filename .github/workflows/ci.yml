@@ -54,6 +54,34 @@ jobs:
       - run: npm ci
       - run: npm run test
 
+  # onConflict ↔ 실제 UNIQUE 제약 대조 (2026-08-06 추가)
+  #
+  # 왜 unit-test 잡에 자격증명을 얹지 않고 잡을 분리했나:
+  # src/__tests__ 의 통합 테스트 상당수는 **프로덕션 DB에 쓴다**. 예를 들어
+  # facility-kapt-upsert.test.ts 는 complexes 에 status='active' 인 가짜 단지를 넣었다가
+  # afterAll 에서 지운다 — 러너가 중간에 죽으면 그 단지가 운영 데이터에 남는다.
+  # 매 푸시마다 그 위험을 지는 것은 이 게이트의 가치와 무관하다.
+  #
+  # 이 게이트는 pg 카탈로그 조회 + 소스 정적 스캔뿐이라 **쓰기가 없다**. 그래서 이것만
+  # 따로 켠다. 2026-08-05 facility_kapt 유니크 제약 변경 때 크론 라우트의 onConflict 를
+  # 같이 못 고친 회귀가 있었는데, 이 게이트가 skip 되고 있어 CI 를 그대로 통과했다.
+  # 하루 뒤 수동 실행에서야 발견됐고, 같은 불일치가 스크립트 한 곳에 더 있었다.
+  constraint-gate:
+    name: onConflict Constraint Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx vitest run src/__tests__/onconflict-constraint-gate.test.ts
+        env:
+          TEST_SUPABASE_URL:  ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          TEST_SUPABASE_SKEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TEST_SUPABASE_AKEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
   e2e:
     name: E2E Tests (Playwright)
     runs-on: ubuntu-latest
