@@ -1,0 +1,39 @@
+name: Complex Integrity Check
+
+# 단지-거래 무결성 감시.
+#
+# [왜 있나]
+# 2026-08-06 전수 점검에서 찾은 오염(거래가 엉뚱한 단지에 붙음, 정식 단지가 빈 페이지,
+# 76세대 레코드가 791건 보유 등)은 전부 **조용히** 쌓였다. 잡기 어려워서가 아니라
+# 아무도 보지 않았기 때문이다. 그 점검을 매일 자동으로 돌린다.
+#
+# [무엇이 실패를 만드나]
+# 절대 수치가 아니라 **기준선 대비 증가**만 실패시킨다. 미해결이 남아 있는 상태에서
+# 절대값으로 판정하면 매일 빨간불이라 아무도 안 보게 된다.
+# 기준선은 scripts/check-complex-integrity.ts 의 BASELINE 상수다 — 오염을 줄였으면
+# 그 값도 함께 내려 되돌아가지 못하게 잠근다.
+#
+# [시각] 일배치(19:00 UTC)와 파생값 집계(20:00 UTC) 뒤인 21:00 UTC(06:00 KST).
+# 그날 적재가 무결성을 깨뜨렸는지 그날 안에 드러난다.
+
+on:
+  schedule:
+    - cron: '0 21 * * *'   # 06:00 KST — 일배치·파생값 집계 이후
+  workflow_dispatch: {}
+
+jobs:
+  check:
+    name: 단지-거래 무결성
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - name: Run integrity check
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npx tsx scripts/check-complex-integrity.ts
