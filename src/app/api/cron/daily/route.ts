@@ -313,23 +313,13 @@ export async function GET(request: Request): Promise<Response> {
   // supabase/migrations/20260806000000_refresh_complex_price_stats_setbased.sql 참고.
   // 집합 기반 재작성으로 줄였지만 여전히 8초를 밑돌지 못한다 — 그래서 더더욱
   // 실패가 드러나야 한다.
-  try {
-    const { error: statsError } = await supabase.rpc('refresh_complex_price_stats')
-    if (statsError) {
-      errors.push(`refresh_complex_price_stats: ${statsError.message}`)
-      if (!await markCronStatus(supabase, 'price-stats', 'failed', statsError.message)) {
-        errors.push('markCronStatus(price-stats) 갱신 실패 — 로그 확인')
-      }
-    } else if (!await markCronSuccess(supabase, 'price-stats')) {
-      errors.push('markCronSuccess(price-stats) 갱신 실패 — 로그 확인')
-    }
-  } catch (err) {
-    // 네트워크 예외 등 rpc()가 실제로 던지는 경우
-    errors.push(`refresh_complex_price_stats: ${describeError(err)}`)
-    if (!await markCronStatus(supabase, 'price-stats', 'failed', describeError(err))) {
-      errors.push('markCronStatus(price-stats) 갱신 실패 — 로그 확인')
-    }
-  }
+  // **여기서 호출하지 않는다.** .github/workflows/refresh-price-stats.yml 이 담당한다.
+  //
+  // 이 배치는 41~46초가 걸리는데 PostgREST 세션 상한은 8초다. 그래서 이 라우트에서
+  // 부르던 시절에는 매일 호출되면서도 매일 8초에 잘렸고, 2026-07-09 부터 4주간
+  // 아무 일도 하지 않았다. 여기 다시 넣으면 매일 04:00 에 'failed' 를 찍고 05:00 에
+  // 워크플로가 'success' 로 덮는 상태가 된다.
+  // 성패 기록(data_sources.price-stats)도 그 워크플로가 남긴다.
 
   // ── 갭투자 통계 재계산 (GAP-D05) ──────────────────────────────────────────
   try {

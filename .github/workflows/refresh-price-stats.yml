@@ -1,0 +1,87 @@
+name: Refresh Complex Price Stats
+
+# 단지 가격 파생값(평당가·30일 변동률·거래량·신고가) 재계산.
+#
+# [왜 GitHub Actions 인가 — Vercel 크론이 아니라]
+# 이 배치는 PostgREST 로 호출되는 한 절대 완주할 수 없다. 실측:
+#   * 함수 실행           41~46초
+#   * PostgREST 세션 상한  8초 (authenticator 롤 statement_timeout)
+# /api/cron/daily 가 매일 호출하고 있었지만 8초에 잘려 **2026-07-09 부터 4주간 아무
+# 일도 하지 않았다**. supabase.rpc() 는 예외를 던지지 않아 에러가 배열에조차 안 담겼고,
+# data_sources 에 항목도 없어 freshness check 도 볼 수 없었다.
+#
+# psql 직결에는 statement_timeout 이 걸려 있지 않아 완주한다(backup_agent rolconfig 비어
+# 있음, DB 기본 설정에도 없음 — 확인함).
+#
+# [시각] MOLIT 일배치와 Vercel 일배치가 19:00 UTC(04:00 KST) 에 돈다. 그 결과를 반영해야
+# 하므로 한 시간 뒤인 20:00 UTC(05:00 KST) 에 실행한다.
+#
+# [권한] refresh_complex_price_stats 는 SECURITY DEFINER(소유자 postgres) 라서
+# 읽기 전용인 backup_agent 로도 트리거할 수 있다 — 백업 롤에 쓰기 권한을 주지 않는다.
+# 자세한 근거는 supabase/migrations/20260806040000_*.sql 참고.
+
+on:
+  schedule:
+    - cron: '0 20 * * *'   # 05:00 KST — 일배치(04:00) 결과 반영 후
+  workflow_dispatch: {}
+
+jobs:
+  refresh:
+    name: refresh_complex_price_stats
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install psql 17
+        run: |
+          set -e
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common
+          echo | sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq postgresql-client-17
+          /usr/lib/postgresql/17/bin/psql --version
+
+      - name: Run refresh
+        env:
+          BACKUP_AGENT_PASSWORD: ${{ secrets.BACKUP_AGENT_PASSWORD }}
+        run: |
+          set -e
+          export PGCONNECT_TIMEOUT=60
+          export PGPASSWORD="$BACKUP_AGENT_PASSWORD"
+          # -v ON_ERROR_STOP=1 이 없으면 함수가 실패해도 psql 이 0 을 반환해
+          # 이 잡이 초록불이 된다 — 이번 장애가 정확히 그 부류였다.
+          START=$(date +%s)
+          /usr/lib/postgresql/17/bin/psql \
+            --host=aws-1-ap-southeast-2.pooler.supabase.com \
+            --port=5432 \
+            --username=backup_agent.auoravdadyzvuoxunogh \
+            --dbname=postgres \
+            --no-password \
+            -v ON_ERROR_STOP=1 \
+            -c "SELECT public.refresh_complex_price_stats();"
+          echo "refresh 완료: $(( $(date +%s) - START ))초"
+
+      - name: Mark data_sources on success
+        if: success()
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -e
+          curl -sS -X PATCH "$SUPABASE_URL/rest/v1/data_sources?id=eq.price-stats" \
+            -H "apikey: $SERVICE_KEY" \
+            -H "Authorization: Bearer $SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d "{\"last_synced_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"last_status\":\"success\",\"consecutive_failures\":0,\"error_message\":null}"
+
+      - name: Mark data_sources on failure
+        if: failure()
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          curl -sS -X PATCH "$SUPABASE_URL/rest/v1/data_sources?id=eq.price-stats" \
+            -H "apikey: $SERVICE_KEY" \
+            -H "Authorization: Bearer $SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d '{"last_status":"failed","error_message":"refresh-price-stats 워크플로 실패 — Actions 로그 확인"}'
