@@ -362,3 +362,13 @@ MVP 속도 최우선. 무료 티어로 가능한 한 늘림. 외부 의존성 �
 **영향 범위**(2026-08-07 실측): 운영권역 활성 1,895곳 중 평형정보 보유 965곳(51%). 평형정보가 없으면 화면은 공식 평형명 대신 "전용 N㎡"로 폴백한다(설계된 동작, realtrade-story `peak-gap.ts`·`FloorPremiumCard` 규칙). 수집이 멈춘 2026-06-19 이후 운영권역 신규 단지는 **1곳**뿐이라 보류 중에 더 나빠지지는 않는다. `listing_prices`는 realtrade-story가 아예 쓰지 않는다  
 **하지 않은 것**: 자체 호스팅 러너(상시 가동 PC 필요)와 프록시. 프록시는 ADR-056에서 이미 기각했다 — 프록시 IP도 차단될 수 있어 위험만 옮긴다  
 **롤백**: 두 워크플로의 `schedule` 주석을 풀고 `pausedReason`을 지운다. 차단 해제 확인은 `workflow_dispatch` 수동 실행(limit=10 권장)으로 한다
+
+### ADR-060 — transactions autovacuum = scale_factor 0.05 (기본 0.2 는 이 테이블에 안 맞는다)
+**결정**: `ALTER TABLE public.transactions SET (autovacuum_vacuum_scale_factor = 0.05)`. 일회성 `VACUUM (ANALYZE)`도 함께 실행했다(2026-08-07 08:20 UTC)  
+**이유**: dead tuple 151,452건(18%)이 쌓였는데 마지막 autovacuum이 2026-07-25였다. **처음엔 "autovacuum이 죽었다"고 봤으나 아니었다** — 설정은 전부 정상이고(`autovacuum=on`, threshold 50, scale_factor 0.2 기본값, 테이블 개별 설정 없음), 발동 임계값이 `50 + 0.2 × 837,661 = 167,582`건이라 **아직 때가 아니라고 판단하고 있었을 뿐**이다. 문제는 그 20%를 기다리는 동안 visibility map이 낡아 **Index Only Scan이 index-only가 아니게 된다**는 것이다  
+**실측**(`compute_gap_stats` 내부 스캔): VACUUM 전 `Heap Fetches 95,417` / 5,482ms → 후 `Heap Fetches 0` / 3,818ms. **Heap Fetches를 판정 지표로 쓴 이유는 캐시 상태에 흔들리지 않기 때문이다** — 실행시간만 봤으면 warm/cold 차이와 구분할 수 없었다(같은 날 `compute_gap_stats`를 cold 한 번만 재고 오판할 뻔한 전례가 있다)  
+**파급**: gap-stats만의 문제가 아니다. `transactions`를 Index Only Scan하는 모든 경로가 함께 느려진다 — realtrade-story의 전고점 조회(`complex_historical_max_before`, 20260731000001 부분 인덱스)도 포함된다  
+**왜 transactions만인가**: `n_live_tup > 20000` 테이블을 전수 확인했다. dead 비율이 눈에 띄는 건 `complex_price_predictions`(10.1%)·`facility_school`(10.9%)인데 둘 다 22MB·10MB로 작고 각자 임계값(8,736/4,767)에 근접해 곧 정리된다. **크고 변경이 잦아 20%가 16만 건이 되는 테이블은 `transactions` 하나뿐**이다  
+**값 선택**: 0.05 → 임계값 약 41,933건(약 4배 자주). 이 테이블 VACUUM은 실측 몇 초 수준이고 384MB라 비용이 문제되지 않는다. 더 낮추지 않은 이유는 테이블이 매일 자라기 때문이다 — 200만 행이 돼도 10만 건이라 여전히 지금보다 낫고 과도한 vacuum I/O도 피한다  
+**하지 않은 것**: `VACUUM FULL`. 배타 락으로 테이블을 재작성해 운영 중 위험하다. 일반 `VACUUM`은 읽기·쓰기를 막지 않는다  
+**롤백**: `ALTER TABLE public.transactions RESET (autovacuum_vacuum_scale_factor);` — 데이터 영향이 없어 비용 0

@@ -1,0 +1,44 @@
+-- transactions autovacuum 발동 임계값을 낮춘다 (2026-08-07)
+--
+-- [문제 — autovacuum 고장이 아니라 기본값이 이 테이블에 안 맞는 것]
+-- 2026-08-07 실측: dead tuple 151,452건(18%), 마지막 autovacuum 2026-07-25(13일 전).
+-- 처음엔 "autovacuum 이 죽었다"고 봤으나 아니었다. 설정은 전부 정상이다:
+--   autovacuum                     = on
+--   autovacuum_vacuum_threshold    = 50
+--   autovacuum_vacuum_scale_factor = 0.2   (기본값, 테이블 개별 설정 없음)
+-- 발동 임계값 = 50 + 0.2 × 837,661 = **167,582건**. dead 151,452 는 아직 그 밑이라
+-- autovacuum 은 설정대로 "아직 할 때가 아니다"라고 판단하고 있었다.
+--
+-- [왜 그게 문제인가 — visibility map 이 썩는다]
+-- 20% 를 기다리는 동안 visibility map 이 낡아 **Index Only Scan 이 index-only 가 아니게 된다.**
+-- 실측(compute_gap_stats 의 내부 스캔):
+--   VACUUM 전  Heap Fetches 95,417 / 실행 5,482ms
+--   VACUUM 후  Heap Fetches      0 / 실행 3,818ms
+-- Heap Fetches 는 캐시 상태에 흔들리지 않는 지표라 이쪽이 결정적이다(시간은 참고값).
+--
+-- **이건 gap-stats 만의 문제가 아니다.** transactions 를 Index Only Scan 하는 모든 경로가
+-- 같이 느려진다 — realtrade-story 의 전고점 조회(complex_historical_max_before,
+-- 20260731000001 부분 인덱스)도 여기 포함된다.
+--
+-- [왜 transactions 만인가]
+-- live_tup 2만 이상 테이블을 전수 확인했다. dead 비율이 눈에 띄는 건
+-- complex_price_predictions(10.1%)·facility_school(10.9%) 인데 둘 다 22MB·10MB 로 작고
+-- 각자 임계값(8,736 / 4,767)에 가까워 곧 정리된다. **크고 변경이 잦아 20% 가 16만 건이
+-- 되는 테이블은 transactions 하나뿐**이라 여기만 좁힌다.
+--
+-- [값 선택]
+-- 0.05 → 임계값 50 + 0.05 × 837,661 ≈ 41,933건. 지금보다 약 4배 자주 돈다.
+-- 이 테이블 VACUUM 은 실측 몇 초 수준이고 384MB 라 비용이 문제되지 않는다.
+-- 더 낮추지 않은 이유는 테이블이 매일 자란다는 점이다 — 200만 행이 돼도 10만 건이라
+-- 여전히 지금(16.7만)보다 낫고, 과도한 vacuum I/O 도 피한다.
+--
+-- [이미 한 것]
+-- 일회성 `VACUUM (ANALYZE) public.transactions` 는 2026-08-07 08:20 UTC 에 수동 실행했다
+-- (dead 151,452 → 0). VACUUM FULL 은 쓰지 않았다 — 배타 락으로 테이블을 재작성해
+-- 운영 중에 위험하다. 일반 VACUUM 은 읽기·쓰기를 막지 않는다.
+--
+-- [롤백]
+--   ALTER TABLE public.transactions RESET (autovacuum_vacuum_scale_factor);
+-- 되돌리면 기본값 0.2 로 돌아간다. 데이터에 영향이 없어 비용 0 이다.
+
+ALTER TABLE public.transactions SET (autovacuum_vacuum_scale_factor = 0.05);
