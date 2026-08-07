@@ -69,6 +69,23 @@ interface Check {
    * molit_trade 의 최종 적재는 08-01 에 멈춰 있었다.
    */
   embeddedFilter?: { relation: string; column: string; in: readonly string[] }
+
+  /**
+   * 원인이 밝혀졌고 **코드로 고칠 수 없어** 의식적으로 보류한 항목. 위반으로 세지 않고
+   * `⏸` 로 표기만 한다.
+   *
+   * [왜 필요한가]
+   * 고칠 수 없는 항목이 매일 빨간불을 켜면 감시기 전체가 무의미해진다 — 이 파일 위쪽
+   * SLA 주석이 경고하는 바로 그 상태이고, school_alimi 가 실제로 그렇게 방치됐다.
+   * 2026-08-07 기준 이 감시기의 위반 4건 중 2건이 네이버 크롤러였는데, 둘 다 네이버의
+   * GitHub Actions IP 차단이라 우리 코드로는 손댈 수 없다. 그대로 두면 같은 날 이 감시기가
+   * 찾아낸 진짜 고장(gap-stats·kapt)이 소음에 묻힌다.
+   *
+   * **끄는 게 아니라 분리하는 것이다.** 목록에는 계속 뜨고 경과일도 그대로 보인다.
+   * 그리고 보류 항목이 다시 신선해지면 `▶️` 로 알린다 — 차단이 풀렸는데 아무도 모르는
+   * 상태를 막기 위한 장치다. 그 신호가 뜨면 이 필드를 지운다.
+   */
+  pausedReason?: string
 }
 
 /**
@@ -94,8 +111,13 @@ const CHECKS: Check[] = [
   { label: '카페 아티클',          table: 'cafe_articles',            column: 'fetched_at',   maxAgeDays: 3,   job: 'cafe-ingest.yml' },
   { label: '주간 지역 AI 코멘트',  table: 'regional_commentary',      column: 'generated_at', maxAgeDays: 10,  job: 'weekly-regional-commentary.yml' },
   { label: '월간 AI 해설',         table: 'complex_price_predictions', column: 'ai_cached_at', maxAgeDays: 45,  job: 'monthly-ai-commentary.yml' },
-  { label: '네이버 호가',          table: 'listing_prices',           column: 'created_at',   maxAgeDays: 21,  job: 'naver-listings-biweekly.yml' },
-  { label: '네이버 평형',          table: 'complex_area_types',       column: 'created_at',   maxAgeDays: 45,  job: 'naver-area-types-monthly.yml' },
+  // 네이버 2종은 보류다(2026-08-07). 네이버가 GitHub Actions IP 를 차단해 200개 단지가
+  // 전부 매물 0건으로 돌아온다. 국내 IP 에서 같은 코드를 돌리면 정상 수집되는 것을 두 번
+  // 확인했다(2026-08-03 로컬, 2026-08-07 프로브 — API 경로·응답 형태 모두 그대로였고
+  // 쿠키 유무·만료와도 무관했다). 복구에는 자체 호스팅 러너나 프록시가 필요하다 —
+  // ADR-059 참고. 데이터가 더 나빠지지는 않는다(중단 후 50일간 신규 단지 1곳).
+  { label: '네이버 호가',          table: 'listing_prices',           column: 'created_at',   maxAgeDays: 21,  job: 'naver-listings-biweekly.yml',   pausedReason: '네이버가 GitHub Actions IP 차단 (ADR-059)' },
+  { label: '네이버 평형',          table: 'complex_area_types',       column: 'created_at',   maxAgeDays: 45,  job: 'naver-area-types-monthly.yml',  pausedReason: '네이버가 GitHub Actions IP 차단 (ADR-059)' },
   { label: 'K-apt 시설',           table: 'facility_kapt',            column: 'created_at',   maxAgeDays: 45,  job: 'cron/daily (Vercel)' },
   { label: '지역 미분양',          table: 'regional_unsold',          column: 'fetched_at',   maxAgeDays: 45,  job: 'fetch-regional-unsold.yml' },
   { label: 'SGIS 통계',            table: 'district_stats',           column: 'fetched_at',   maxAgeDays: 120, job: 'sgis-stats.yml' },
@@ -195,6 +217,10 @@ async function main(): Promise<void> {
 
     const raw = (data as Record<string, unknown> | null)?.[check.column]
     if (!raw) {
+      if (check.pausedReason) {
+        console.log(`⏸     ${check.label.padEnd(22)} (데이터 없음) — 보류: ${check.pausedReason}`)
+        continue
+      }
       violations.push(`${check.label}: 데이터 없음 (${check.job})`)
       console.log(`🔴    ${check.label.padEnd(22)} (데이터 없음)`)
       continue
@@ -203,6 +229,22 @@ async function main(): Promise<void> {
     const last = new Date(String(raw))
     const ageDays = (Date.now() - last.getTime()) / 86_400_000
     const stale = ageDays > check.maxAgeDays
+
+    if (check.pausedReason) {
+      // 보류 항목이 **다시 신선해졌다면** 차단이 풀렸다는 뜻이다. 보류를 걸어놓고
+      // 복구를 모르는 게 이 장치의 유일한 실패 모드라, 그때는 눈에 띄게 알린다.
+      // 위반으로는 세지 않는다 — 좋은 소식으로 배치를 빨간불 만들 이유가 없다.
+      const mark = stale ? '⏸ ' : '▶️ '
+      const note = stale
+        ? `보류: ${check.pausedReason}`
+        : `**보류 해제 후보** — 수집이 재개됐다. CHECKS 의 pausedReason 을 지우세요`
+      console.log(
+        `${mark}    ${check.label.padEnd(22)} ${last.toISOString().slice(0, 10)}   ` +
+          `${ageDays.toFixed(1).padStart(6)}일 ${String(check.maxAgeDays).padStart(5)}일   ${note}`,
+      )
+      continue
+    }
+
     if (stale) violations.push(`${check.label}: ${ageDays.toFixed(1)}일 경과 (한도 ${check.maxAgeDays}일) — ${check.job}`)
 
     console.log(

@@ -1,9 +1,21 @@
 name: Naver Listings Biweekly
 
+# [정기 실행 중단 — 2026-08-07, ADR-059]
+# 네이버가 GitHub Actions IP 를 차단해 200개 단지가 전부 매물 0건으로 돌아온다.
+# 국내 IP 에서 같은 코드를 돌리면 정상 수집되는 것을 두 번 확인했다(2026-08-03 로컬,
+# 2026-08-07 프로브 — API 경로·응답 형태 그대로, 쿠키 유무·만료와 무관).
+# 복구에는 자체 호스팅 러너나 프록시가 필요해 보류했다.
+#
+# 스케줄을 끄는 이유는 "안 되니까 숨긴다"가 아니라, **주 2회 확정 실패가 감시기를
+# 무의미하게 만들기 때문**이다(ADR-057 의 school_alimi 전례). 신선도 감시 쪽에서는
+# pausedReason 으로 계속 보이고, 차단이 풀리면 ▶️ 로 알려준다.
+#
+# 차단 해제 여부를 확인하려면 아래 workflow_dispatch 로 수동 실행한다(limit=10 권장).
+# 수집이 되면 이 schedule 블록과 check-data-freshness 의 pausedReason 을 함께 되살린다.
 on:
-  schedule:
-    - cron: '0 1 * * 2'  # 화요일 10:00 KST (UTC 01:00)
-    - cron: '0 1 * * 5'  # 금요일 10:00 KST (UTC 01:00)
+  # schedule:
+  #   - cron: '0 1 * * 2'  # 화요일 10:00 KST (UTC 01:00)
+  #   - cron: '0 1 * * 5'  # 금요일 10:00 KST (UTC 01:00)
   workflow_dispatch:
     inputs:
       limit:
