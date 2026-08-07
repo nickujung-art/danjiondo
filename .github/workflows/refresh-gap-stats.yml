@@ -1,0 +1,97 @@
+name: Refresh Complex Gap Stats
+
+# 갭 통계(중앙 매매가·전세가·갭비율·위험도) 재계산.
+#
+# [왜 GitHub Actions 인가 — Vercel 크론이 아니라]
+# refresh-price-stats.yml 과 같은 이유다. 실측(2026-08-07):
+#   * cold  11.45초 / warm 0.35~5.1초
+#   * PostgREST 세션 상한  8초 (authenticator 롤 statement_timeout)
+# price-stats(41초)처럼 항상 넘는 게 아니라 **cold 일 때만 넘는데, 크론이 도는 시각이
+# 정확히 cold 다**(19:00 UTC = DB 가 밤새 놀다 깨는 04:00 KST). 실제로 /api/cron/daily 에서
+# data_sources.gap-stats 가 'failed' 로 굳었고 complex_gap_stats 는 2026-08-05 이후 정지했다.
+#
+# psql 직결에는 statement_timeout 이 걸려 있지 않아 cold 든 warm 이든 완주한다.
+# (cold 가 비싼 근본 원인 — transactions autovacuum 지연 — 은 별건으로 남아 있다.
+#  그게 해결돼도 임계값 바로 아래로 돌아갈 뿐이라 직결은 유지하는 게 맞다.)
+#
+# [시각] MOLIT 일배치와 Vercel 일배치가 19:00 UTC(04:00 KST), refresh-price-stats 가
+# 20:00 UTC 에 돈다. 갭 통계는 transactions 만 읽고 price-stats 결과에 의존하지 않지만,
+# 둘 다 무거운 집계라 같은 분에 겹치지 않게 20:30 UTC(05:30 KST) 로 둔다.
+# complex-integrity(21:00 UTC) 앞이다.
+#
+# [권한] refresh_complex_gap_stats 는 SECURITY DEFINER(소유자 postgres) 라서 읽기 전용인
+# backup_agent 로도 트리거할 수 있다 — 백업 롤에 쓰기 권한을 주지 않는다.
+# 근거는 supabase/migrations/20260807052310_refresh_complex_gap_stats.sql 참고.
+
+on:
+  schedule:
+    - cron: '30 20 * * *'   # 05:30 KST — 일배치(04:00)·price-stats(05:00) 뒤
+  workflow_dispatch: {}
+
+jobs:
+  refresh:
+    name: refresh_complex_gap_stats
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install psql 17
+        run: |
+          set -e
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common
+          echo | sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq postgresql-client-17
+          /usr/lib/postgresql/17/bin/psql --version
+
+      - name: Run refresh
+        env:
+          BACKUP_AGENT_PASSWORD: ${{ secrets.BACKUP_AGENT_PASSWORD }}
+        run: |
+          set -e
+          export PGCONNECT_TIMEOUT=60
+          export PGPASSWORD="$BACKUP_AGENT_PASSWORD"
+          # -v ON_ERROR_STOP=1 이 없으면 함수가 실패해도 psql 이 0 을 반환해 이 잡이
+          # 초록불이 된다 — 이 저장소가 반복해서 당한 부류다(ADR-056).
+          START=$(date +%s)
+          ROWS=$(/usr/lib/postgresql/17/bin/psql \
+            --host=aws-1-ap-southeast-2.pooler.supabase.com \
+            --port=5432 \
+            --username=backup_agent.auoravdadyzvuoxunogh \
+            --dbname=postgres \
+            --no-password \
+            -v ON_ERROR_STOP=1 \
+            --tuples-only --no-align \
+            -c "SELECT public.refresh_complex_gap_stats(12);")
+          echo "refresh 완료: ${ROWS}행 · $(( $(date +%s) - START ))초"
+          # 0행이면 잡은 성공했는데 데이터는 안 들어온 상태다 — 이 저장소가 반복해서
+          # 놓친 '침묵 실패'가 정확히 이 모양이라 여기서 끊는다.
+          if [ "$ROWS" -eq 0 ]; then
+            echo "::error::반영 행이 0 이다 — compute_gap_stats 가 빈 결과를 냈다"
+            exit 1
+          fi
+
+      - name: Mark data_sources on success
+        if: success()
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -e
+          curl -sS -X PATCH "$SUPABASE_URL/rest/v1/data_sources?id=eq.gap-stats" \
+            -H "apikey: $SERVICE_KEY" \
+            -H "Authorization: Bearer $SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d "{\"last_synced_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"last_status\":\"success\",\"consecutive_failures\":0,\"error_message\":null}"
+
+      - name: Mark data_sources on failure
+        if: failure()
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          curl -sS -X PATCH "$SUPABASE_URL/rest/v1/data_sources?id=eq.gap-stats" \
+            -H "apikey: $SERVICE_KEY" \
+            -H "Authorization: Bearer $SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d '{"last_status":"failed","error_message":"refresh-gap-stats 워크플로 실패 — Actions 로그 확인"}'

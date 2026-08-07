@@ -1,13 +1,22 @@
 /**
- * Phase 20 갭투자 통계 수용 기준 테스트 — GAP-01 ~ GAP-05
+ * Phase 20 갭투자 통계 수용 기준 테스트 — GAP-04 ~ GAP-05
  *
- * - GAP-01: computeRiskLevel 경계값 검증 (safe/caution/danger)
- * - GAP-02: RPC 빈 배열이면 upsert 호출 없음
- * - GAP-03: RPC 에러 → errors 배열에 메시지 포함, complexesUpdated=0
  * - GAP-04: GET /api/cron/daily Authorization 없음 → 401
  * - GAP-05: 올바른 CRON_SECRET → 200 + ok 필드
+ *
+ * [GAP-01~03 이 사라진 이유 — 2026-08-07]
+ * 갭 통계 계산·반영이 앱(computeGapStats/computeRiskLevel)에서 SQL 함수
+ * `refresh_complex_gap_stats` 로 넘어갔다. compute_gap_stats 가 11.45초라 PostgREST
+ * 8초 상한을 넘어 이 라우트에서는 매일 타임아웃하고 있었기 때문이다
+ * (supabase/migrations/20260807052310_refresh_complex_gap_stats.sql).
+ * 대상 함수가 없어져 세 테스트도 함께 내렸다.
+ *
+ * 이관 시점의 충실성은 기존 786행(앱이 쓴 값)과 대조해 확인했다(불일치 0).
+ * 임계값 자체는 GAP-06 이 마이그레이션 SQL 을 직접 읽어 지킨다.
  */
 import { describe, it, expect, vi, beforeAll } from 'vitest'
+import fs from 'node:fs'
+import path from 'node:path'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 
@@ -57,63 +66,40 @@ function makeMockSupabase(overrides: Record<string, ReturnType<typeof makeMockCh
   } as unknown as SupabaseClient<Database> & { rpc: typeof rpc }
 }
 
-// ── GAP-01: computeRiskLevel 경계값 ───────────────────────────────────────────
+// ── GAP-06: risk_level 임계값이 마이그레이션 SQL 에 그대로 있는지 ────────────────
+//
+// GAP-01(computeRiskLevel 경계값 단위 테스트)을 대신한다. 판정이 SQL 로 넘어가면서
+// **경계 숫자를 잘못 바꾸는 것을 아무도 못 잡는 구멍**이 생겼다 — 값 집합 오타는
+// complex_gap_stats_risk_level_check 제약이 잡지만, 40 을 45 로 바꾸는 건 제약도
+// ON_ERROR_STOP 도 통과한다.
+//
+// 라이브 DB 없이 CI 에서 돌아야 하므로 onconflict-audit.test.ts 와 같은 방식 —
+// 실물 파일을 읽어 텍스트로 검사한다. 마이그레이션은 append-only 라 이 파일이
+// 바뀌면 그건 의도된 변경이고, 그때 이 테스트도 같이 고치게 된다.
+describe('GAP-06: risk_level 임계값 (SQL 단일 진실 원천)', () => {
+  const MIGRATION = path.resolve(
+    __dirname,
+    '../../supabase/migrations/20260807052310_refresh_complex_gap_stats.sql',
+  )
 
-describe('computeRiskLevel', () => {
-  it('GAP-01: 갭 비율 40% 미만 → safe', async () => {
-    const { computeRiskLevel } = await import('@/lib/data/gap-stats')
-    expect(computeRiskLevel(0)).toBe('safe')
-    expect(computeRiskLevel(39.9)).toBe('safe')
+  it('마이그레이션 파일이 존재한다', () => {
+    expect(fs.existsSync(MIGRATION), `없음: ${MIGRATION}`).toBe(true)
   })
 
-  it('GAP-01: 갭 비율 40~60% (경계값 포함) → caution', async () => {
-    const { computeRiskLevel } = await import('@/lib/data/gap-stats')
-    expect(computeRiskLevel(40)).toBe('caution')
-    expect(computeRiskLevel(60)).toBe('caution')
-  })
+  it('CASE 식의 경계와 출력값이 D-02 정의와 일치한다', () => {
+    const sql = fs.readFileSync(MIGRATION, 'utf8')
+    // 주석에도 같은 숫자가 나오므로 CASE 블록만 떼어내 검사한다.
+    const caseBlock = sql.slice(sql.indexOf('CASE'), sql.indexOf('END') + 3)
 
-  it('GAP-01: 갭 비율 60% 초과 → danger', async () => {
-    const { computeRiskLevel } = await import('@/lib/data/gap-stats')
-    expect(computeRiskLevel(60.1)).toBe('danger')
-    expect(computeRiskLevel(100)).toBe('danger')
-  })
-})
+    expect(caseBlock).toMatch(/WHEN\s+g\.gap_ratio\s*<\s*0\s+THEN\s+'danger'/)
+    expect(caseBlock).toMatch(/WHEN\s+g\.gap_ratio\s*<\s*40\s+THEN\s+'safe'/)
+    expect(caseBlock).toMatch(/WHEN\s+g\.gap_ratio\s*<=\s*60\s+THEN\s+'caution'/)
+    expect(caseBlock).toMatch(/ELSE\s+'danger'/)
 
-// ── GAP-02: RPC 빈 배열 → upsert 호출 없음 ────────────────────────────────────
-
-describe('computeGapStats', () => {
-  it('GAP-02: RPC 결과 빈 배열이면 upsert 호출 없음, complexesUpdated=0', async () => {
-    const { computeGapStats } = await import('@/lib/data/gap-stats')
-    const mockSupabase = makeMockSupabase()
-    // rpc는 빈 배열 반환 (기본 설정)
-    mockSupabase.rpc.mockResolvedValue({ data: [], error: null })
-
-    // complex_gap_stats chain을 별도 spy로 추적
-    const gapChain = makeMockChain({ data: null, error: null })
-    const upsertSpy = gapChain['upsert'] as ReturnType<typeof vi.fn>
-    // from('complex_gap_stats') 호출 시 spy chain 반환하도록 덮어쓰기
-    const fromFn = mockSupabase.from as ReturnType<typeof vi.fn>
-    fromFn.mockImplementation((table: string) => {
-      if (table === 'complex_gap_stats') return gapChain
-      return makeMockChain({ data: [], error: null })
-    })
-
-    const result = await computeGapStats(mockSupabase as unknown as SupabaseClient<Database>)
-    expect(upsertSpy).not.toHaveBeenCalled()
-    expect(result.complexesUpdated).toBe(0)
-    expect(result.complexesSkipped).toBe(0)
-    expect(result.errors).toHaveLength(0)
-  })
-
-  it('GAP-03: RPC 에러 → errors 배열에 메시지 포함, complexesUpdated=0', async () => {
-    const { computeGapStats } = await import('@/lib/data/gap-stats')
-    const mockSupabase = makeMockSupabase()
-    mockSupabase.rpc.mockResolvedValue({ data: null, error: { message: 'RPC timeout' } })
-
-    const result = await computeGapStats(mockSupabase as unknown as SupabaseClient<Database>)
-    expect(result.complexesUpdated).toBe(0)
-    expect(result.errors.length).toBeGreaterThan(0)
-    expect(result.errors[0]).toContain('RPC timeout')
+    // CHECK 제약이 허용하는 값만 나와야 한다 — 오타는 런타임에 제약 위반으로
+    // 터지지만, 그때는 이미 야간 배치가 죽은 뒤다.
+    const emitted = [...caseBlock.matchAll(/'([a-z]+)'/g)].map(m => m[1])
+    expect(new Set(emitted)).toEqual(new Set(['danger', 'safe', 'caution']))
   })
 })
 

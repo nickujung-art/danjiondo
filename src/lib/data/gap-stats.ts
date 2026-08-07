@@ -1,108 +1,26 @@
-import 'server-only'
-import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '@/types/database'
+/**
+ * 갭투자 위험도 타입.
+ *
+ * [2026-08-07 — 이 파일에서 계산 코드가 사라진 이유]
+ * 갭 통계의 계산·반영은 SQL 함수 `refresh_complex_gap_stats` 로 넘어갔다
+ * (supabase/migrations/20260807052310_refresh_complex_gap_stats.sql).
+ * `compute_gap_stats` 가 cold 에서 11.45초라 PostgREST 8초 상한을 넘었고,
+ * /api/cron/daily 가 그 자리에서 매일 조용히 타임아웃하고 있었기 때문이다.
+ *
+ * 그래서 여기 있던 `computeGapStats`(RPC 호출 + UPSERT)와 `computeRiskLevel`
+ * (임계값 판정)은 삭제했다. **임계값의 단일 진실 원천은 이제 그 마이그레이션의
+ * CASE 식이다** — 두 곳에 두면 갈라진다.
+ *
+ * 타입만 남긴 이유: `gap-analysis.ts` 가 DB 에서 읽은 `risk_level` 문자열을
+ * 좁히는 데 쓴다. 값 집합은 `complex_gap_stats_risk_level_check` 제약과
+ * 마이그레이션의 CASE 출력, 이 타입 셋이 함께 맞아야 한다.
+ */
 
-const WINDOW_MONTHS = 12
-
+/**
+ * D-02 갭 비율 기준 위험도.
+ *   gap_ratio < 0   역전세(전세가 > 매매가) = 깡통전세 위험 → danger
+ *   0 ≤ gap_ratio < 40                소자본 갭투자 가능    → safe
+ *   40 ≤ gap_ratio ≤ 60                                    → caution
+ *   gap_ratio > 60  고자본 필요                            → danger
+ */
 export type RiskLevel = 'safe' | 'caution' | 'danger'
-
-/**
- * D-02: 갭 비율 기준 위험도 분류
- * gap_ratio < 0 = 역전세(전세가 > 매매가) = 깡통전세 위험 → danger
- * 0 ≤ gap_ratio < 40% → safe (소자본 갭투자 가능)
- * 40% ≤ gap_ratio ≤ 60% → caution
- * gap_ratio > 60% → danger (고자본 필요)
- */
-export function computeRiskLevel(gapRatio: number): RiskLevel {
-  if (gapRatio < 0) return 'danger'   // 역전세: 전세보증금 > 매매가 = 깡통전세 위험
-  if (gapRatio < 40) return 'safe'
-  if (gapRatio <= 60) return 'caution'
-  return 'danger'
-}
-
-export interface GapStatsRow {
-  complexId: string
-  medianSalePrice: number
-  medianJeonsePrice: number
-  gapAmount: number
-  gapRatio: number
-  jeonseRatio: number
-  riskLevel: RiskLevel
-  saleCount: number
-  jeonseCount: number
-}
-
-interface RpcRow {
-  complex_id: string
-  median_sale_price: number
-  median_jeonse_price: number
-  gap_amount: number
-  gap_ratio: number
-  jeonse_ratio: number
-  sale_count: number
-  jeonse_count: number
-}
-
-interface ComputeGapStatsResult {
-  complexesUpdated: number
-  complexesSkipped: number
-  errors: string[]
-}
-
-/**
- * compute_gap_stats SQL RPC를 호출해 갭 통계를 계산하고
- * complex_gap_stats 테이블에 UPSERT한다.
- * createSupabaseAdminClient()로 생성한 supabase만 전달할 것.
- */
-export async function computeGapStats(
-  supabase: SupabaseClient<Database>,
-): Promise<ComputeGapStatsResult> {
-  const errors: string[] = []
-
-  // SQL RPC로 전체 집계 (DB에서 PERCENTILE_CONT 계산)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: rpcRows, error: rpcError } = await (supabase as any).rpc('compute_gap_stats', {
-    p_window_months: WINDOW_MONTHS,
-  })
-
-  if (rpcError) {
-    return {
-      complexesUpdated: 0,
-      complexesSkipped: 0,
-      errors: [`compute_gap_stats RPC: ${rpcError.message}`],
-    }
-  }
-
-  const rows = (rpcRows ?? []) as RpcRow[]
-
-  if (rows.length === 0) {
-    return { complexesUpdated: 0, complexesSkipped: 0, errors: [] }
-  }
-
-  const computedAt = new Date().toISOString()
-  const upsertRows = rows.map(row => ({
-    complex_id:          row.complex_id,
-    median_sale_price:   row.median_sale_price,
-    median_jeonse_price: row.median_jeonse_price,
-    gap_amount:          row.gap_amount,
-    gap_ratio:           row.gap_ratio,
-    jeonse_ratio:        row.jeonse_ratio,
-    risk_level:          computeRiskLevel(Number(row.gap_ratio)),
-    sale_count:          row.sale_count,
-    jeonse_count:        row.jeonse_count,
-    window_months:       WINDOW_MONTHS,
-    computed_at:         computedAt,
-  }))
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: upsertError } = await (supabase as any)
-    .from('complex_gap_stats')
-    .upsert(upsertRows, { onConflict: 'complex_id', ignoreDuplicates: false })
-
-  if (upsertError) {
-    errors.push(`complex_gap_stats UPSERT: ${upsertError.message}`)
-    return { complexesUpdated: 0, complexesSkipped: rows.length, errors }
-  }
-
-  return { complexesUpdated: upsertRows.length, complexesSkipped: 0, errors }
-}

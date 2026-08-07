@@ -1,7 +1,8 @@
 import { verifyCronSecret } from '@/lib/cron-auth'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
-import { markCronStatus, markCronSuccess, markCronFailed } from '@/lib/data/cron-status'
-import { computeGapStats } from '@/lib/data/gap-stats'
+// markCronSuccess/markCronFailed 는 gap-stats 전용이었다 — 그 단계가 워크플로로 빠지면서
+// 이 라우트에서는 markCronStatus 하나만 쓴다(cron-status 모듈에는 그대로 남아 있다).
+import { markCronStatus } from '@/lib/data/cron-status'
 import { fetchKaptBasicInfo } from '@/services/kapt'
 import {
   fetchPresaleTrades,
@@ -105,7 +106,6 @@ export async function GET(request: Request): Promise<Response> {
   let competitionUpdated = 0
   let expiredDeactivated = 0
   let offiUpserted = 0
-  let gapUpdated = 0
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createSupabaseAdminClient() as any
@@ -322,23 +322,19 @@ export async function GET(request: Request): Promise<Response> {
   // 성패 기록(data_sources.price-stats)도 그 워크플로가 남긴다.
 
   // ── 갭투자 통계 재계산 (GAP-D05) ──────────────────────────────────────────
-  try {
-    const gapResult = await computeGapStats(supabase)
-    gapUpdated = gapResult.complexesUpdated
-    if (gapResult.errors.length > 0) {
-      errors.push(...gapResult.errors)
-      if (!await markCronFailed(supabase, 'gap-stats')) {
-        errors.push('markCronFailed(gap-stats) 갱신 실패 — 로그 확인')
-      }
-    } else if (!await markCronSuccess(supabase, 'gap-stats')) {
-      errors.push('markCronSuccess(gap-stats) 갱신 실패 — 로그 확인')
-    }
-  } catch (err) {
-    errors.push(`computeGapStats: ${describeError(err)}`)
-    if (!await markCronFailed(supabase, 'gap-stats')) {
-      errors.push('markCronFailed(gap-stats) 갱신 실패 — 로그 확인')
-    }
-  }
+  //
+  // **여기서 호출하지 않는다.** .github/workflows/refresh-gap-stats.yml 이 담당한다.
+  // 바로 위 price-stats 와 같은 벽이지만 성격이 조금 다르다. 실측(2026-08-07):
+  //   * cold  11.45초 / warm 0.35~5.1초
+  //   * PostgREST 세션 상한  8초 (authenticator 롤 statement_timeout)
+  // price-stats(41초)처럼 항상 넘는 게 아니라 **cold 일 때만 넘는데, 이 라우트가 도는
+  // 19:00 UTC 가 정확히 cold 다.** 그래서 이 자리에서 매일 타임아웃하며
+  // data_sources.gap-stats 를 'failed' 로 찍고 있었다(complex_gap_stats 는 2026-08-05
+  // 이후 정지). 앱 UPSERT 를 SQL 안으로 옮겨 psql 직결로 돌린다 —
+  // supabase/migrations/20260807052310_refresh_complex_gap_stats.sql 참고.
+  //
+  // 여기 다시 넣으면 매일 04:00 에 'failed' 를 찍고 05:30 에 워크플로가 'success' 로
+  // 덮는 깜빡임이 된다. 성패 기록(data_sources.gap-stats)도 그 워크플로가 남긴다.
 
   // ── K-apt 부대시설 UPSERT (DATA-01) ──────────────────────────────────────
   // 라우트 **마지막**에 둔다. K-apt는 SLA 45일짜리 시설 데이터로 우선순위가 가장
@@ -452,7 +448,6 @@ export async function GET(request: Request): Promise<Response> {
     competitionUpdated,
     expiredDeactivated,
     offiUpserted,
-    gapUpdated,
     errors,
   })
 }

@@ -37,3 +37,30 @@ TypeError: supabase.from(...).select(...).not(...).order(...).range is not a fun
    두 번(알림 크론, 이번) 같은 방법으로 판정했다.
 3. 페이지네이션 루프에는 **최대 페이지 상한**을 둔다. 소스가 계속 PAGE_SIZE를
    돌려주면 무한 루프가 된다 — 목이 그렇게 동작하면 테스트가 멈춘다.
+
+---
+
+## #002 · 2026-08-07 · [lib/data/gap-stats · api/cron/daily]
+
+**상황**: `compute_gap_stats` 가 PostgREST 8초 상한을 넘어 매일 타임아웃하던 걸
+psql 직결 워크플로 + SECURITY DEFINER 함수로 뺐다. 계산이 SQL 로 넘어가면서
+`src/lib/data/gap-stats.ts` 가 死코드가 됐다고 보고 **파일째 삭제**했다.
+
+**실수**: 그 파일에는 `computeGapStats`·`computeRiskLevel` 말고 **`RiskLevel` 타입**도
+있었고, `lib/data/gap-analysis.ts` 가 그 타입을 쓰고 있었다.
+```
+src/lib/data/gap-analysis.ts(4,32): error TS2307: Cannot find module './gap-stats'
+src/app/invest/page.tsx(239,36): error TS7053: ... type 'RiskLevel' can't be used to index ...
+```
+삭제 전 소비처를 `computeRiskLevel|computeGapStats|complex_gap_stats` 로 grep 했는데
+**함수·테이블 이름만 봤고 타입 이름을 빼먹었다.** 테스트도 베이스라인 17 → 18 로
+1건 순증했다(gap-analysis 테스트).
+
+**교훈**:
+1. **모듈을 지우기 전엔 심볼이 아니라 모듈 경로로 grep 한다** — `from './gap-stats'`,
+   `lib/data/gap-stats`. 심볼 목록은 항상 빠뜨린 게 생기고, 특히 `import type` 은
+   런타임 참조가 없어 눈에 덜 띈다.
+2. 계산 로직만 옮기는 작업이라면 **파일을 지우지 말고 옮겨간 부분만 덜어낸다.**
+   이번에는 타입만 남겨 해결했다.
+3. 베이스라인 실측(#001 교훈)이 이번에도 값을 했다 — 사전 실패 17건이라 총계만
+   봤으면 18 이 회귀인지 flaky 인지 몰랐을 것이다. `git stash` 로 먼저 재고 비교한다.

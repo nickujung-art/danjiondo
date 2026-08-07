@@ -259,13 +259,18 @@ describe('실물 src/ 스캐너 건전성 (DB 불필요 — CI 에서도 항상 
   // 이 테스트 파일은 src/lib/db/ 에 있다 → ../.. = <repo>/src. CWD 의존을 피한다.
   const SRC_DIR = path.resolve(__dirname, '../..')
 
-  // 하한 16 의 근거:
+  // 하한 15 의 근거:
   //   39-CONTEXT <baseline> 표 18 건
   //   − F-03 이 제거한 new_listings MOLIT upsert 1 건
   //   − F-02 가 제거한 favorites upsert 1 건 (통합 인덱스 대신 select→insert 로 전환)
-  //   = 16 건. 2026-07-31 실측값도 정확히 **16 건**이다.
+  //   = 16 건. 2026-07-31 실측값도 정확히 16 건이었다.
+  //   − 2026-08-07: complex_gap_stats upsert 1 건 (lib/data/gap-stats.ts)
+  //     계산·반영이 SQL 함수 refresh_complex_gap_stats 로 넘어가 앱에서 사라졌다
+  //     (마이그레이션 20260807052310). **이 감사기가 SQL 쪽 ON CONFLICT 는 못 본다** —
+  //     앱 upsert 를 SQL 로 옮길 때마다 이 감사의 사각지대가 넓어진다는 뜻이다.
+  //   = 15 건.
   // 상한은 두지 않는다 — 신규 upsert 추가는 정상이고, 감사 대상이 늘어날 뿐이다.
-  const MIN_SITES = 16
+  const MIN_SITES = 15
 
   it(`🔴 collectUpsertSites('src') 가 ${MIN_SITES}건 이상을 수집한다`, () => {
     const sites = collectUpsertSites(SRC_DIR)
