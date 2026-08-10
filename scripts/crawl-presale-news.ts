@@ -21,9 +21,27 @@ import { matchArchHub } from '../src/services/arch-hub/client'
 
 loadEnvConfig(process.cwd(), true)
 
-const NAVER_ID  = process.env.NAVER_CLIENT_ID
-const NAVER_SEC = process.env.NAVER_CLIENT_SECRET
-const KAKAO_KEY = process.env.KAKAO_REST_API_KEY
+/**
+ * 시크릿 값을 HTTP 헤더에 넣기 전에 씻는다.
+ *
+ * [왜 필요한가 — 2026-08-10 실장애]
+ * 이 배치가 매일 초록불이면서 발굴 0건이었다. 원인은 차단도 API 변경도 아니라
+ * **시크릿 값 맨 앞의 BOM(U+FEFF)** 이었다:
+ *   TypeError: Cannot convert argument to a ByteString because the character
+ *   at index 0 has a value of 65279 which is greater than 255
+ * BOM 이 붙은 파일에서 복사해 GitHub Secret 에 붙여넣으면 이렇게 된다. fetch 는
+ * 헤더 값에 U+00FF 를 넘는 문자를 허용하지 않아 **요청이 나가기도 전에** 터진다.
+ *
+ * 눈에 안 보이는 문자라 시크릿을 육안으로 비교해도 찾을 수 없다 — 그래서 코드에서 씻는다.
+ * 앞뒤 공백도 같이 턴다(붙여넣기에 개행이 딸려오는 일이 흔하다).
+ */
+function cleanSecret(v: string | undefined): string | undefined {
+  return v?.replace(/^﻿/, '').trim()
+}
+
+const NAVER_ID  = cleanSecret(process.env.NAVER_CLIENT_ID)
+const NAVER_SEC = cleanSecret(process.env.NAVER_CLIENT_SECRET)
+const KAKAO_KEY = cleanSecret(process.env.KAKAO_REST_API_KEY)
 
 if (!NAVER_ID || !NAVER_SEC) { console.error('❌ NAVER_CLIENT_ID/SECRET 없음'); process.exit(1) }
 if (!KAKAO_KEY)               { console.error('❌ KAKAO_REST_API_KEY 없음');      process.exit(1) }
@@ -192,14 +210,33 @@ async function main() {
 
   // 1. 뉴스 수집
   const allItems: NaverNewsItem[] = []
+  let searchFailed = 0
   for (const q of queries) {
     try {
       const items = await searchNews(q, 20)
       allItems.push(...items)
     } catch (err) {
+      searchFailed++
       console.warn(`  ⚠ "${q}" 검색 실패: ${String(err)}`)
     }
     await new Promise(r => setTimeout(r, 150)) // 지역 확대(6→60개 쿼리)로 Naver 뉴스 API 429 방지
+  }
+
+  // 검색이 **전부** 실패하면 실패로 끝낸다.
+  //
+  // 2026-08-10 이전에는 60개 쿼리가 전부 터져도 warn 만 찍고 exit 0 이라 워크플로가
+  // 매일 초록불이었다. 그동안 presale_discoveries 는 0행이었고 아무도 몰랐다
+  // (신선도 감시의 CHECKS 목록에도 이 테이블이 없다).
+  // 원인은 시크릿 BOM 이었는데(cleanSecret 주석 참고), 원인이 무엇이든
+  // "전부 실패"는 언제나 고장이다 — 이 저장소가 반복해서 당한 부류다(ADR-056/057).
+  //
+  // 일부 실패는 정상이다(429·일시 오류). 전량 실패만 막는다.
+  if (queries.length > 0 && searchFailed === queries.length) {
+    console.error(
+      `\n❌ 검색 쿼리 ${queries.length}건이 전부 실패했습니다 — 시크릿 오염(BOM·공백)이나 ` +
+      `API 차단을 의심하세요. 위 경고의 에러 메시지를 확인할 것.`,
+    )
+    process.exit(1)
   }
 
   // 2. 중복 제거 (link 기준)
