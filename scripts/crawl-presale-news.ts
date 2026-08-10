@@ -18,27 +18,11 @@
 import { loadEnvConfig } from '@next/env'
 import { createClient } from '@supabase/supabase-js'
 import { matchArchHub } from '../src/services/arch-hub/client'
+import { cleanSecret } from '../src/lib/api/clean-secret'
 
 loadEnvConfig(process.cwd(), true)
 
-/**
- * 시크릿 값을 HTTP 헤더에 넣기 전에 씻는다.
- *
- * [왜 필요한가 — 2026-08-10 실장애]
- * 이 배치가 매일 초록불이면서 발굴 0건이었다. 원인은 차단도 API 변경도 아니라
- * **시크릿 값 맨 앞의 BOM(U+FEFF)** 이었다:
- *   TypeError: Cannot convert argument to a ByteString because the character
- *   at index 0 has a value of 65279 which is greater than 255
- * BOM 이 붙은 파일에서 복사해 GitHub Secret 에 붙여넣으면 이렇게 된다. fetch 는
- * 헤더 값에 U+00FF 를 넘는 문자를 허용하지 않아 **요청이 나가기도 전에** 터진다.
- *
- * 눈에 안 보이는 문자라 시크릿을 육안으로 비교해도 찾을 수 없다 — 그래서 코드에서 씻는다.
- * 앞뒤 공백도 같이 턴다(붙여넣기에 개행이 딸려오는 일이 흔하다).
- */
-function cleanSecret(v: string | undefined): string | undefined {
-  return v?.replace(/^﻿/, '').trim()
-}
-
+// 시크릿은 반드시 cleanSecret 을 통과시킨다 — 이유는 그 파일 주석 참고(2026-08-10 실장애).
 const NAVER_ID  = cleanSecret(process.env.NAVER_CLIENT_ID)
 const NAVER_SEC = cleanSecret(process.env.NAVER_CLIENT_SECRET)
 const KAKAO_KEY = cleanSecret(process.env.KAKAO_REST_API_KEY)

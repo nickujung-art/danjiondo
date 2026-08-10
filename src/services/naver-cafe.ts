@@ -1,5 +1,6 @@
 import 'server-only'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { cleanSecret } from '@/lib/api/clean-secret'
 
 // T-8-02: NAVER_CLIENT_ID/SECRET는 서버 전용. 클라이언트에서 절대 호출 금지.
 const CAFE_SEARCH_URL = 'https://openapi.naver.com/v1/search/cafearticle.json'
@@ -36,8 +37,8 @@ export async function searchCafePosts(
 
   const res = await fetch(url.toString(), {
     headers: {
-      'X-Naver-Client-Id':     process.env.NAVER_CLIENT_ID     ?? '',
-      'X-Naver-Client-Secret': process.env.NAVER_CLIENT_SECRET ?? '',
+      'X-Naver-Client-Id':     cleanSecret(process.env.NAVER_CLIENT_ID) ?? '',
+      'X-Naver-Client-Secret': cleanSecret(process.env.NAVER_CLIENT_SECRET) ?? '',
     },
     signal: AbortSignal.timeout(10_000),
   })
@@ -85,8 +86,8 @@ export async function searchCafeArticles(
 
   const res = await fetch(url.toString(), {
     headers: {
-      'X-Naver-Client-Id':     process.env.NAVER_CLIENT_ID     ?? '',
-      'X-Naver-Client-Secret': process.env.NAVER_CLIENT_SECRET ?? '',
+      'X-Naver-Client-Id':     cleanSecret(process.env.NAVER_CLIENT_ID) ?? '',
+      'X-Naver-Client-Secret': cleanSecret(process.env.NAVER_CLIENT_SECRET) ?? '',
     },
     signal: AbortSignal.timeout(10_000),
   })

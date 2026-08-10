@@ -17,6 +17,7 @@
 import { createClient } from '@supabase/supabase-js'
 import * as dotenv from 'dotenv'
 import path from 'path'
+import { cleanSecret } from '../src/lib/api/clean-secret'
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
 
@@ -74,9 +75,11 @@ async function fetchBlogSnippets(
 
   try {
     const res = await fetch(url.toString(), {
+      // cleanSecret 필수 — 시크릿에 BOM 이 섞이면 fetch 가 요청 전에 TypeError 를 던지는데,
+      // 이 호출은 catch 로 감싸여 있어 그 실패가 "결과 0건"으로 조용히 묻힌다(2026-08-10 실장애).
       headers: {
-        'X-Naver-Client-Id':     process.env.NAVER_CLIENT_ID!,
-        'X-Naver-Client-Secret': process.env.NAVER_CLIENT_SECRET!,
+        'X-Naver-Client-Id':     cleanSecret(process.env.NAVER_CLIENT_ID) ?? '',
+        'X-Naver-Client-Secret': cleanSecret(process.env.NAVER_CLIENT_SECRET) ?? '',
       },
       signal: AbortSignal.timeout(8_000),
     })
