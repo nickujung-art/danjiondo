@@ -1,0 +1,29 @@
+-- backup_agent 에 BYPASSRLS 부여 — 백업이 6주째 스키마만 담기던 근본 원인 (2026-08-10)
+--
+-- [증상] db-backup.yml 이 6주 넘게 초록불이면서 덤프가 38~43KB 로 고정이었다.
+-- 열어보니 CREATE TABLE 99개는 있는데 COPY 는 1개뿐이고 첫 데이터 테이블
+-- (auth.audit_log_entries) 한가운데서 끊겨 있었다.
+--
+-- [원인] stderr 를 로그로 빼내자 진짜 메시지가 나왔다:
+--   pg_dump: error: query failed: ERROR: query would be affected by
+--            row-level security policy for table "audit_log_entries"
+--
+-- backup_agent 는 pg_read_all_data 멤버라 SELECT 는 되지만, **이 역할은 BYPASSRLS 를
+-- 주지 않는다**(PostgreSQL 문서 명시). pg_dump 는 row_security=off 로 접속하는데 그 설정은
+-- "RLS 가 결과를 거르면 조용히 넘기지 말고 에러를 내라"는 뜻이라 RLS 걸린 첫 테이블에서 죽는다.
+-- 이 DB 의 RLS 테이블은 public 64 + auth 16 + storage 8 = 88개다.
+--
+-- [왜 --enable-row-security 로 우회하지 않았나]
+-- 그 옵션은 RLS 에 보이는 행만 담아 **조용히 부분 백업**을 만든다. 크기·종료코드가 정상이라
+-- 아무도 모르고, 복구할 때 알게 되는데 그때는 늦다. 이 저장소가 반복해서 당한 부류다
+-- (ADR-056/057). 자세한 판단은 ADR-061.
+--
+-- [보안 판단] backup_agent 는 이미 pg_read_all_data 로 전 테이블 SELECT 권한이 있다.
+-- BYPASSRLS 가 추가로 여는 것은 "RLS 로 걸러지던 행"뿐이고, 백업은 정의상 그게 필요하다.
+-- superuser·createrole·createdb 는 주지 않는다(전부 false 유지). 쓰기 권한도 없다.
+--
+-- [검증] 수정 후 실행 — raw 318MB / 압축 66MB / COPY 블록 100개(이전 1개).
+--
+-- [롤백] ALTER ROLE backup_agent NOBYPASSRLS;  ← 단, 그러면 백업이 다시 스키마만 담긴다.
+
+ALTER ROLE backup_agent BYPASSRLS;

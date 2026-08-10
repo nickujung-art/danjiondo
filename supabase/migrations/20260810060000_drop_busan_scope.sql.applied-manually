@@ -1,0 +1,58 @@
+-- 부산 16개 자치구 데이터 정리 + 수집 범위 축소 (2026-08-10)
+--
+-- ⚠️ 이 파일은 **이력 기록용**이다. 실제 삭제는 statement timeout 때문에 배치로 나눠
+-- 수동 실행했고, 원장(supabase_migrations)에는 등록하지 않았다. 확장자를
+-- `.applied-manually` 로 둔 이유 — `supabase db push` 가 이걸 다시 실행하면 안 된다
+-- (이미 지워졌고, 재실행은 무의미하거나 위험하다).
+--
+-- ── 왜 지웠나 ────────────────────────────────────────────────────────────────
+-- Supabase Free 한도(500MB)를 초과한 상태였다(565MB). realtrade-story 는 창원 5구+김해만
+-- 서비스하고, 단지온도(danjiondo) 사이트는 더 이상 쓰지 않기로 했다(2026-08-10 사용자 확정,
+-- 이제 이 DB 는 API/수집 용도로만 쓴다). 부산은 danjiondo 시절의 확장 범위였다.
+--
+-- 경남 22개 시군은 **남겼다** — 진주·양산 등으로 권역을 넓힐 여지를 유지하기 위함.
+--
+-- ── 삭제 전 확인한 것 ───────────────────────────────────────────────────────
+-- complexes 를 참조하는 FK 25개를 전수 조사해 부산 단지에 걸린 행을 셌다.
+-- **사용자가 만든 데이터는 전부 0건**이었다: favorites·complex_reviews·gps_visits·
+-- realtor_assignments·ai_estimates·content_complexes 모두 0.
+--
+-- 그리고 **롤백 경로를 먼저 만들었다** — 확인해보니 주간 백업이 6주째 스키마만 담고
+-- 있어서(ADR-061) 삭제를 중단하고 백업부터 고쳤다. 이 삭제의 롤백 기준은
+-- 릴리즈 db-backups 의 backup-2026-08-10.sql.gz (압축 66MB, COPY 블록 100개)다.
+--
+-- ── 실제로 지운 것 ─────────────────────────────────────────────────────────
+--   transactions               282,444
+--   complex_price_predictions   11,611
+--   cafe_articles                1,654  (complex_id 가 NOT NULL 이라 링크만 끊을 수 없었다)
+--   complexes                    1,594
+--   facility_kapt                1,463
+--   complex_rankings               330
+--   complex_gap_stats              299
+--   regions.is_active = false       16개 구  ← 이걸 안 하면 다음 배치가 다시 쌓는다
+--
+-- ── 결과 ───────────────────────────────────────────────────────────────────
+--   DB 565MB → 403MB (한도의 80.5%)
+--   운영권역 거래 303,837 / 활성단지 1,895 / 즐겨찾기 4 — 전부 그대로
+--
+-- **DELETE 만으로는 용량이 줄지 않는다**는 걸 실측했다: 28만건을 지운 직후 DB 는
+-- 565 → 567MB 로 오히려 늘었다. 일반 VACUUM 은 공간을 재사용 가능으로 표시할 뿐
+-- OS 에 반환하지 않는다. VACUUM FULL 을 돌려야 실제로 줄어든다(배타 락, 사용자 0명이라 수행).
+--
+-- ── 되돌리려면 ──────────────────────────────────────────────────────────────
+-- 1) regions.is_active = true (부산 16개 구)
+-- 2) MOLIT 백필로 재수집. 백업에서 복원하는 것보다 이쪽이 안전하다 —
+--    백업 복원은 그 시점 이후의 창원·김해 데이터까지 되돌려버린다.
+
+-- 참고용 원본 SQL (실행하지 말 것 — 이미 적용됨)
+--
+-- WITH busan AS (SELECT id FROM complexes WHERE sgg_code LIKE '26%')
+-- DELETE FROM cafe_articles             WHERE complex_id IN (SELECT id FROM busan);
+-- DELETE FROM complex_rankings          WHERE complex_id IN (SELECT id FROM busan);
+-- DELETE FROM complex_price_predictions WHERE complex_id IN (SELECT id FROM busan);
+-- DELETE FROM complex_gap_stats         WHERE complex_id IN (SELECT id FROM busan);
+-- DELETE FROM facility_kapt             WHERE complex_id IN (SELECT id FROM busan);
+-- DELETE FROM transactions              WHERE sgg_code LIKE '26%';   -- 배치로 나눠 실행
+-- DELETE FROM complexes                 WHERE sgg_code LIKE '26%';   -- 배치로 나눠 실행
+-- UPDATE regions SET is_active = false  WHERE sgg_code LIKE '26%';
+-- VACUUM FULL public.transactions;  -- 및 나머지 영향 테이블
