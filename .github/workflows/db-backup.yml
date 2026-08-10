@@ -34,6 +34,20 @@ jobs:
           FILENAME="backup-$(date +%Y-%m-%d).sql.gz"
           export PGCONNECT_TIMEOUT=60
           export PGPASSWORD="$BACKUP_AGENT_PASSWORD"
+          # ── 2026-08-10 정정 3건 ──────────────────────────────────────────────
+          # 이 잡은 6주 넘게 초록불이면서 **스키마만** 백업하고 있었다(덤프 38~43KB 고정).
+          # 실제 파일을 열어보니 CREATE TABLE 99개는 다 있는데 COPY 는 1개뿐이고
+          # auth.audit_log_entries 한가운데서 끝나 있었다 — 첫 데이터 테이블에서 죽은 것이다.
+          #
+          # (1) `2>&1 | gzip` 이 **stderr 를 백업 파일 안으로** 밀어넣고 있었다.
+          #     그래서 Actions 로그가 깨끗했고 6주 동안 아무도 몰랐다. stderr 는 로그로 보낸다.
+          # (2) `set -e` 는 파이프라인 중간 명령의 실패를 못 잡는다(최종 종료코드는 gzip 의 0).
+          #     pipefail 을 켜고 PIPESTATUS 로 pg_dump 자체의 종료코드를 본다.
+          # (3) 크기 하한 10KB 는 무의미했다 — 스키마만 담긴 43KB 가 그대로 통과했다.
+          #     실데이터가 들어오면 수십 MB 이므로 10MB 로 올린다.
+          # 파이프·프로세스치환을 쓰지 않는다 — 중간 명령의 실패를 놓치기 쉽다.
+          # 평범한 파일로 받고, 종료코드를 확인한 뒤에 압축한다.
+          set +e
           /usr/lib/postgresql/17/bin/pg_dump \
             --host=aws-1-ap-southeast-2.pooler.supabase.com \
             --port=5432 \
@@ -42,12 +56,35 @@ jobs:
             --no-password \
             --no-owner \
             --no-privileges \
-          2>&1 | gzip > "/tmp/$FILENAME"
+            > /tmp/dump.sql 2> /tmp/pg_dump.err
+          PG_RC=$?
+          set -e
+
+          echo "── pg_dump stderr ──"
+          cat /tmp/pg_dump.err || true
+          echo "────────────────────"
+          echo "raw dump: $(wc -c < /tmp/dump.sql) bytes / exit=$PG_RC"
+          if [ "$PG_RC" -ne 0 ]; then
+            echo "ERROR: pg_dump 가 exit $PG_RC 로 실패했습니다(위 stderr 확인)" >&2; exit 1
+          fi
+
+          gzip -c /tmp/dump.sql > "/tmp/$FILENAME"
           echo "FILENAME=$FILENAME" >> "$GITHUB_ENV"
           DUMP_SIZE=$(wc -c < "/tmp/$FILENAME")
           echo "pg_dump complete: $DUMP_SIZE bytes"
-          if [ "$DUMP_SIZE" -lt 10000 ]; then
-            echo "ERROR: dump too small" >&2; exit 1
+
+          # 크기 가드: 스키마만 담긴 덤프가 통과하지 못하는 값이어야 한다.
+          if [ "$DUMP_SIZE" -lt 10000000 ]; then
+            echo "ERROR: 덤프가 ${DUMP_SIZE} bytes 로 너무 작습니다 — 데이터가 안 담긴 것으로 보입니다(하한 10MB)" >&2
+            exit 1
+          fi
+
+          # 크기만으로는 부족하다. **데이터 블록이 실제로 있는지** 확인한다.
+          COPY_COUNT=$(gzip -dc "/tmp/$FILENAME" | grep -c '^COPY ' || true)
+          echo "COPY 블록: ${COPY_COUNT}개"
+          if [ "$COPY_COUNT" -lt 20 ]; then
+            echo "ERROR: COPY 블록이 ${COPY_COUNT}개뿐입니다 — 스키마만 덤프된 상태입니다" >&2
+            exit 1
           fi
 
       - name: Upload to GitHub Release (db-backups)
