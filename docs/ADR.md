@@ -372,3 +372,14 @@ MVP 속도 최우선. 무료 티어로 가능한 한 늘림. 외부 의존성 �
 **값 선택**: 0.05 → 임계값 약 41,933건(약 4배 자주). 이 테이블 VACUUM은 실측 몇 초 수준이고 384MB라 비용이 문제되지 않는다. 더 낮추지 않은 이유는 테이블이 매일 자라기 때문이다 — 200만 행이 돼도 10만 건이라 여전히 지금보다 낫고 과도한 vacuum I/O도 피한다  
 **하지 않은 것**: `VACUUM FULL`. 배타 락으로 테이블을 재작성해 운영 중 위험하다. 일반 `VACUUM`은 읽기·쓰기를 막지 않는다  
 **롤백**: `ALTER TABLE public.transactions RESET (autovacuum_vacuum_scale_factor);` — 데이터 영향이 없어 비용 0
+
+### ADR-061 — backup_agent 에 BYPASSRLS = 백업이 6주째 스키마만 담기던 근본 원인
+**결정**: `ALTER ROLE backup_agent BYPASSRLS`(마이그레이션 `20260810...`). 함께 `db-backup.yml` 에서 stderr 를 백업 파일 밖으로 빼고, 크기 가드를 10KB → 10MB 로 올리고, `COPY` 블록 20개 이상 검사를 추가했다  
+**증상**: 주간 DB 백업이 6주 넘게 **초록불이면서 데이터가 없었다**. 덤프가 38~43KB 로 고정이었고, 실제로 열어보니 `CREATE TABLE` 99개는 다 있는데 `COPY` 는 1개뿐이며 `auth.audit_log_entries` 한가운데서 끊겨 있었다 — 첫 데이터 테이블에서 죽은 것이다  
+**원인**: `pg_dump: error: query failed: ERROR: query would be affected by row-level security policy for table "audit_log_entries"`. `backup_agent` 는 `pg_read_all_data` 멤버라 SELECT 는 되지만 **그 역할은 BYPASSRLS 를 주지 않는다**(PostgreSQL 문서 명시). `pg_dump` 는 `row_security=off` 로 접속하는데 그 설정은 "RLS 가 결과를 거르면 조용히 넘기지 말고 **에러를 내라**"는 뜻이라 RLS 걸린 첫 테이블에서 즉사한다. 이 DB 의 RLS 테이블은 public 64 + auth 16 + storage 8 = **88개**  
+**왜 6주 동안 몰랐나 — 세 결함이 겹쳤다**: ① `2>&1 | gzip` 이 stderr 를 **백업 파일 안으로** 밀어넣어 Actions 로그가 깨끗했다 ② `set -e` 는 파이프라인 중간 명령의 실패를 못 잡는다(최종 종료코드는 `gzip` 의 0) ③ 크기 하한 10KB 가 무의미했다 — 스키마만 담긴 43KB 가 그대로 통과. **가드가 있다고 지켜지는 게 아니다. 임계값이 실제 실패를 걸러야 가드다**  
+**거부한 대안**: `pg_dump --enable-row-security`. RLS 에 보이는 행만 담아 **조용히 부분 백업**을 만든다 — 크기·종료코드가 정상이라 아무도 모르고, 복구할 때 알게 되는데 그때는 늦다. 이 저장소가 반복해서 당한 부류다(ADR-056/057)  
+**보안 판단**: `backup_agent` 는 이미 `pg_read_all_data` 로 전 테이블 SELECT 권한이 있다. BYPASSRLS 가 추가로 여는 것은 "RLS 로 걸러지던 행"뿐이고 백업은 정의상 그게 필요하다. superuser·createrole·createdb 는 전부 false 유지, 쓰기 권한 없음  
+**검증**: 수정 후 실행 — raw 318MB / 압축 66MB / `COPY` 블록 **100개**(이전 1개). 릴리즈 업로드 확인  
+**발견 경위**: 부산 데이터 28만건 삭제를 준비하다 **롤백 경로를 확인하는 과정**에서 드러났다. 백업이 없어 삭제는 중단했다 — 되돌릴 수 없는 삭제 전에 백업을 확인하는 절차가 실제로 사고를 막았다  
+**롤백**: `ALTER ROLE backup_agent NOBYPASSRLS;` — 단, 그러면 백업이 다시 스키마만 담긴다
