@@ -3,12 +3,24 @@
  * 실행: npx tsx scripts/geocode-to-sql.ts
  * 환경변수 필요: KAKAO_REST_API_KEY
  */
-const SUPABASE_URL = 'https://auoravdadyzvuoxunogh.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1b3JhdmRhZHl6dnVveHVub2doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0OTgxMDYsImV4cCI6MjA5MzA3NDEwNn0.gSE-i6Rq15PXNt1IIcrdPHsR9BN4srIJOKRvyN5d-mY'
+/*
+  URL·키를 하드코딩하지 않는다(2026-08-18).
+
+  이전엔 프로젝트 URL 과 anon 키가 이 파일에 박혀 있었다. 2026-08-18 에 Supabase 를
+  시드니에서 서울로 옮겼는데(ADR/RUNBOOK 참고) 이 스크립트만 옛 프로젝트를 가리킨 채
+  남았다 — 실행했다면 **폐기된 DB 를 읽고 그 결과로 SQL 을 만들어냈을 것**이고
+  아무 에러도 안 났을 것이다. 환경변수로 읽으면 프로젝트가 바뀌어도 따라간다.
+*/
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 const KAKAO_KEY = process.env.KAKAO_REST_API_KEY
 if (!KAKAO_KEY) {
   console.error('❌ KAKAO_REST_API_KEY 가 설정되지 않음')
+  process.exit(1)
+}
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.error('❌ NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY 가 설정되지 않음')
   process.exit(1)
 }
 
