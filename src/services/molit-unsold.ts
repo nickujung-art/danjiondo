@@ -65,7 +65,27 @@ export async function fetchGyeongnamUnsold(pageNo = 1, numOfRows = 1000): Promis
       throw Object.assign(new Error(`gyeongnamunsold HTTP ${res.status}`), { status: res.status })
     }
 
-    const json = ResponseSchema.parse(await res.json())
+    /*
+      본문을 먼저 텍스트로 읽는다 — `res.json()` 을 바로 부르면 안 된다.
+
+      이 API 는 `resultType=json` 을 줘도 **오류일 때는 XML 로 답한다.** 그러면
+      `res.json()` 이 `SyntaxError: Unexpected token '<'` 로 터지고 서버가 알려준
+      이유는 통째로 사라진다. 2026-08-18 에 실제로 그랬다 — 로그엔 JSON 파싱 실패만
+      남아서, API 를 손으로 때려보고서야
+      `<resultCode>99</resultCode><resultMsg>UNKNOWN_ERROR</resultMsg>` 를 알았다.
+      HTTP 는 200 이라 위의 `res.ok` 검사도 통과한다.
+
+      withRetry 로 감싸도 소용없다 — 지속 오류라 세 번 다 같은 XML 이 온다.
+      목적은 복구가 아니라 **재시도가 무의미한 실패를 그렇게 읽히게** 만드는 것이다.
+    */
+    const raw = await res.text()
+    if (!raw.trimStart().startsWith('{')) {
+      const code = raw.match(/<resultCode>([^<]*)<\/resultCode>/)?.[1] ?? '?'
+      const msg = raw.match(/<resultMsg>([^<]*)<\/resultMsg>/)?.[1] ?? raw.slice(0, 200)
+      throw new Error(`gyeongnamunsold 비-JSON 응답 (resultCode=${code}): ${msg}`)
+    }
+
+    const json = ResponseSchema.parse(JSON.parse(raw))
     const body = json.gyeongnamunsoldlist.body
 
     if (json.gyeongnamunsoldlist.header.resultCode !== '00') {
