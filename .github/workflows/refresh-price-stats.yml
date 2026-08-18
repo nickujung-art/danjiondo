@@ -50,9 +50,9 @@ jobs:
           # 이 잡이 초록불이 된다 — 이번 장애가 정확히 그 부류였다.
           START=$(date +%s)
           /usr/lib/postgresql/17/bin/psql \
-            --host=aws-1-ap-southeast-2.pooler.supabase.com \
+            --host=aws-0-ap-northeast-2.pooler.supabase.com \
             --port=5432 \
-            --username=backup_agent.auoravdadyzvuoxunogh \
+            --username=backup_agent.jaamyvlsehlimtrxgrgn \
             --dbname=postgres \
             --no-password \
             -v ON_ERROR_STOP=1 \

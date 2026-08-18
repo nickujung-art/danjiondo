@@ -49,9 +49,9 @@ jobs:
           # 평범한 파일로 받고, 종료코드를 확인한 뒤에 압축한다.
           set +e
           /usr/lib/postgresql/17/bin/pg_dump \
-            --host=aws-1-ap-southeast-2.pooler.supabase.com \
+            --host=aws-0-ap-northeast-2.pooler.supabase.com \
             --port=5432 \
-            --username=backup_agent.auoravdadyzvuoxunogh \
+            --username=backup_agent.jaamyvlsehlimtrxgrgn \
             --dbname=postgres \
             --no-password \
             --no-owner \
