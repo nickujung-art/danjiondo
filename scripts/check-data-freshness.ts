@@ -119,7 +119,18 @@ const CHECKS: Check[] = [
   { label: '네이버 호가',          table: 'listing_prices',           column: 'created_at',   maxAgeDays: 21,  job: 'naver-listings-biweekly.yml',   pausedReason: '네이버가 GitHub Actions IP 차단 (ADR-059)' },
   { label: '네이버 평형',          table: 'complex_area_types',       column: 'created_at',   maxAgeDays: 45,  job: 'naver-area-types-monthly.yml',  pausedReason: '네이버가 GitHub Actions IP 차단 (ADR-059)' },
   { label: 'K-apt 시설',           table: 'facility_kapt',            column: 'created_at',   maxAgeDays: 45,  job: 'cron/daily (Vercel)' },
-  { label: '지역 미분양',          table: 'regional_unsold',          column: 'fetched_at',   maxAgeDays: 45,  job: 'fetch-regional-unsold.yml' },
+  // 지역 미분양도 보류다(2026-08-18). 상대 API 가 고장났고 우리가 고칠 수 없다.
+  // 08-01 실행은 HTTP 502 로 죽었고(그땐 재시도가 없었다 — 08-04 에 추가됨),
+  // 08-18 에 수동 재실행하니 이번엔 다른 실패가 나왔다:
+  //   <resultCode>99</resultCode><resultMsg>UNKNOWN_ERROR</resultMsg>
+  // 키를 바꿔 직접 호출해도 같은 응답이라 지속 오류이고 재시도가 통하지 않는다.
+  // (같은 날 molit-unsold.ts 도 고쳤다 — XML 오류 응답을 JSON 으로 파싱하다 터져
+  //  이 resultCode 가 로그에 안 보이던 문제)
+  //
+  // 보류로 돌리는 이유: 월 1회 크론이라 상대가 복구될 때까지 **매일** 빨간불이 켜지는데,
+  // 그러면 감시기 전체가 무의미해진다(ADR-057 의 school_alimi 전례).
+  // 복구를 놓칠 걱정은 없다 — 다시 신선해지면 이 스크립트가 "보류 해제 후보"로 알린다.
+  { label: '지역 미분양',          table: 'regional_unsold',          column: 'fetched_at',   maxAgeDays: 45,  job: 'fetch-regional-unsold.yml',     pausedReason: '경남 미분양 API 가 resultCode 99 UNKNOWN_ERROR 로 지속 실패 (2026-08-18 확인)' },
   { label: 'SGIS 통계',            table: 'district_stats',           column: 'fetched_at',   maxAgeDays: 120, job: 'sgis-stats.yml' },
   { label: '지역 소득',            table: 'regional_income',          column: 'created_at',   maxAgeDays: 400, job: 'update-regional-income.yml' },
 ]
