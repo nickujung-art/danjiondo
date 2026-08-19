@@ -3,9 +3,22 @@
  *
  * 실행:
  *   npx tsx scripts/seed-complexes.ts
+ *   npx tsx scripts/seed-complexes.ts --sgg=26110,26140   # 지정 지역만 시딩 (전체 재시딩 회피)
  *   npx tsx scripts/seed-complexes.ts --bootstrap   # API 없이 bootstrap SQL만 적재
  *
  * 필요 환경변수: KAPT_API_KEY (없으면 --bootstrap 모드로 자동 전환)
+ *
+ * ⚠️ --sgg 가 있는 이유(41-03): `seedComplex()` 의 UPDATE 경로가 `built_year` 를 무조건
+ * null 로 덮어쓴다(`raw.kaptUseApproveYmd` 가 `KaptComplex` 스키마에 없어 항상 null이다).
+ * `--sgg` 없이 돌리면 `regions.is_active=true` 전체가 대상이 되어 **이미 보강된 지역의
+ * built_year 가 리셋된다** — Phase 34 가 실제로 겪고 `kapt-enrich.ts` 를 10회 반복 실행해
+ * 복구했다(34-03-SUMMARY.md "Deviations from Plan" #3). `seedComplex()` 자체의 무조건
+ * 덮어쓰기를 고치는 것은 이 스크립트의 범위 밖이다 — `--sgg` 로 사정거리를 좁히는 것이 대응이다.
+ *
+ * 🔴 `KAPT_API_KEY` 가 안 잡히면 `useBootstrap` 이 자동으로 켜져 `runBootstrap()` 이 실행된다
+ * — **창원·김해 샘플 10건만 upsert** 하고 "성공"으로 끝난다. `--sgg` 로 다른 지역(예: 부산)을
+ * 시딩하려는 실행에서 이 경로를 타면 조용한 오작동이다. 실행 로그에 "🔧 Bootstrap 모드"가
+ * 보이면 즉시 중단할 것.
  */
 import { loadEnvConfig } from '@next/env'
 import { createClient } from '@supabase/supabase-js'
@@ -14,6 +27,7 @@ import { join } from 'path'
 import { fetchComplexList } from '../src/services/kapt'
 import { seedComplex, type SeedComplexInput } from '../src/lib/data/complex-matching'
 import { nameNormalize } from '../src/lib/data/name-normalize'
+import { parseSggCodes } from '../src/lib/data/backfill-args'
 
 loadEnvConfig(process.cwd())
 
@@ -29,7 +43,8 @@ interface FailureRecord {
   reason: string
 }
 
-async function getSggCodes(): Promise<string[]> {
+async function getSggCodes(sggCodes: string[] | undefined): Promise<string[]> {
+  if (sggCodes) return sggCodes
   const { data, error } = await supabase
     .from('regions')
     .select('sgg_code')
@@ -133,12 +148,24 @@ async function runBootstrap(): Promise<void> {
 async function main() {
   const useBootstrap = process.argv.includes('--bootstrap') || !process.env.KAPT_API_KEY
 
+  // 인자 검증(41-03) — regions 전체 조회 전에 형식 위반을 exit 1 로 잡는다.
+  // 빈 --sgg= 가 그대로 새면 parseSggCodes 가 undefined 로 오인해 regions 전체로
+  // 조용히 확장될 위험이 있다(41-02 가 이미 이 경로를 막아뒀다).
+  const sggArg = process.argv.find(a => a.startsWith('--sgg='))?.split('=')[1]
+  let validatedSggCodes: string[] | undefined
+  try {
+    validatedSggCodes = parseSggCodes(sggArg)
+  } catch (err) {
+    console.error(`❌ 인자 검증 실패: ${err instanceof Error ? err.message : String(err)}`)
+    process.exit(1)
+  }
+
   if (useBootstrap && !process.argv.includes('--bootstrap')) {
     console.warn('⚠️  KAPT_API_KEY 없음 → bootstrap 모드로 실행합니다.')
     console.warn('   실제 데이터 수집: KAPT_API_KEY 설정 후 재실행\n')
   }
 
-  const sggCodes = await getSggCodes()
+  const sggCodes = await getSggCodes(validatedSggCodes)
   console.log(`대상 지역: ${sggCodes.join(', ')}`)
 
   if (useBootstrap) {
