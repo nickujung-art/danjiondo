@@ -1672,6 +1672,74 @@ Actions artifact(retention 30일, 만료) 어디에도 없다. **늘리는 방�
 **UI hint**: no (0-6 수행 시 어드민 카드뉴스 빌더 비율만 1:1 → 4:5)
 
 ---
+### Phase 41: 부산 16개 구 수집 재개 — regions 스위치 + MOLIT 10년 백필 + 파생값 복원
+
+**Goal:** 2026-08-10 에 **용량 때문에** 껐던 부산광역시 16개 자치구 수집을 다시 켠다(ADR-062 → realtrade-story ADR-012). Pro 전환으로 한도가 500MB → 8GB 가 되면서 보류 사유가 없어졌다. `regions.is_active` 스위치를 켜고, K-apt Golden Record → 지오코딩 → MOLIT 10년 백필 순서로 데이터를 복원하고, 파생값 배치(매칭·랭킹·예측·갭)가 부산까지 돌게 한다. **수집만 한다 — 화면 노출은 realtrade-story 소관이며 이 Phase 범위 밖이다.**
+
+**Requirements:**
+- BUSAN-01: `regions` 부산 16개 `is_active=true` — 정식 마이그레이션으로 원장에 기록 (ADR-062 는 `.applied-manually` 였다)
+- BUSAN-02: 🔴 잔존 `ingest_runs` 무효화 — 부산 4,006행(success 3,868)이 `--resume` 를 전부 skip 시킨다
+- BUSAN-03: 🔴 `molit-backfill-once.yml` 에 `resume`·`from`·`to` 입력 노출 — 현재 `--resume` 하드코딩 + 기간 입력 없음
+- BUSAN-04: `complexes` 부산 Golden Record 재시딩(K-apt) + 좌표 지오코딩 — **백필보다 반드시 먼저**
+- BUSAN-05: MOLIT 실거래 백필 201501~ (apt + villa), 분할 dispatch + 용량 체크포인트
+- BUSAN-06: 파생값 복원 실측 — `complex_price_stats`·`complex_rankings`·`complex_gap_stats`·`complex_price_predictions`
+- BUSAN-07: 감시 기준선 재조정 — `empty_kapt`(방금 59로 잠김)·`complex-integrity`·`data-freshness`·`check-ingest-linkage`
+- BUSAN-08: ADR 기록 — ADR-062 의 "되돌리려면" 절차를 실제로 실행한 결과 + Phase 34 추적 공백 메우기
+
+**Depends on:** Phase 34 (부산 최초 구축 — 34-03 K-apt 시딩 / 34-05 지오코딩 / 34-06 백필 PLAN 이 이 작업의 플레이북)
+
+**Plans:** 9 plans (8 waves)
+
+| Wave | Plans | 내용 |
+|---|---|---|
+| 1 | 41-01 ‖ 41-02 | 스위치+원장 정합(마이그레이션·실측 도구) ‖ 워크플로 입력 노출 — **파일 겹침 0, 병렬 가능** |
+| 2 | 41-03 | K-apt 재시딩 (`--sgg` 로 경남 built_year 리셋 회피) |
+| 3 | 41-04 | 지오코딩 + 🔴 **백필 진입 게이트** + 체크포인트 |
+| 4 | 41-05 | 백필 그룹 A (대형 5구) + 체크포인트 |
+| 5 | 41-06 | 백필 그룹 B (중대형 5구) + 체크포인트 |
+| 6 | 41-07 | 백필 그룹 C (소형 6구) + 완료 확정 + 재개 실증 + 체크포인트 |
+| 7 | 41-08 | 파생값 복원 + 규모·용량 대조 보고 |
+| 8 | 41-09 | 감시 기준선 판정 + ADR-064 + 마감 체크포인트 |
+
+Plans:
+- [ ] 41-01-PLAN.md — `regions` 부산 활성화 + 부산 `ingest_runs` 4,006행 무효화(정식 마이그레이션) + `busan-status.ts` 실측 진입점 + `complex_integrity_counts` 스코프 실측
+- [ ] 41-02-PLAN.md — `molit-backfill-once.yml` 에 `resume`·`from`·`to`·`min_linked_pct` 입력 + 빈 `--from=` 이 0건 적재로 exit 0 하던 경로 차단(유닛 테스트)
+- [ ] 41-03-PLAN.md — `seed-complexes.ts --sgg=` 추가 + 부산 16개 구 K-apt 재시딩 + `kapt-enrich` 수렴 (경남 `built_year` 무회귀 단언)
+- [ ] 41-04-PLAN.md — 카카오 지오코딩 반복 실행(1,000행 캡) + 중복 후보 로그 + 🔴 **백필 진입 게이트 판정** + 진입 승인 체크포인트
+- [ ] 41-05-PLAN.md — 백필 그룹 A `26230,26260,26320,26350,26380` (`from=201501`) + 🔴 **첫 run skip=0 증명** + 연결률·용량 실측
+- [ ] 41-06-PLAN.md — 백필 그룹 B `26290,26410,26440,26470,26500` + 41-05 실측 반영 분할 판단 + 누적 추이 표
+- [ ] 41-07-PLAN.md — 백필 그룹 C `26110,26140,26170,26200,26530,26710` + 부산 16개 구 완료 확정 + 재개 메커니즘 실증
+- [ ] 41-08-PLAN.md — 파생값 배치 4종 재실행 + 삭제분 7항목 대조표(미복원 2항목 포함) + 용량·연결률 보고
+- [ ] 41-09-PLAN.md — `complex-integrity`·`data-freshness` 실측 후 기준선 판정 + 용량 상시 로깅 + ADR-064 + FEATURES.json
+
+**Success Criteria:**
+1. `regions` 부산 16개 `is_active=true` 이고 마이그레이션이 원장에 등록됨 (`migration list --linked` drift 0)
+2. `complexes` 부산 행 ≥ 1,500, 좌표 non-null 비율이 창원·김해와 동등
+3. 부산 `transactions` 가 2015-01~ 범위로 적재되고 **`complex_id` 연결률 ≥ 90%** (`check-ingest-linkage.ts` 통과)
+4. 삭제 시점 규모(거래 282,444 / 단지 1,594)와 복원 규모를 대조 보고 — 차이가 있으면 사유 규명
+5. 파생값 4테이블에 부산 행이 생성됨 (배치 재실행 후 실측)
+6. DB 용량 실측 + 8GB 한도 대비 여유 보고 (사용자 추정 650MB = 8%)
+7. `empty_kapt` 등 기준선이 **부산 유입을 인지한 값**으로 갱신되고 `complex-integrity`·`data-freshness` 초록불
+8. 백필 중단 시 재개 지점이 `ingest_runs` 로 판정 가능 (BUSAN-02·03 의 결과 검증)
+9. `npm run lint` exit 0 / 테스트 실패 이름 집합 불변
+
+**Notes:**
+- 🔴 **F-1 `--resume` 가 백필을 전부 skip 한다.** `molit-backfill-once.yml` 이 `--resume` 를 하드코딩하고, `backfill-realprice.ts` 의 `getCompletedRuns()`/`getCompletedVillaRuns()` 는 `ingest_runs` 의 `status='success'` 를 건너뛴다. 삭제 때 `ingest_runs` 는 지우지 않았다 → **0건 적재에 초록불.** `check-ingest-linkage.ts`·freshness 감시가 `ingest_runs` 를 읽는지 먼저 확인한 뒤 무효화 방식을 정한다
+- 🔴 **F-2 적재 경로는 `complexes` 를 만들지 않는다.** `realprice.ts` 의 `ingestMonth`/`ingestMonthVilla` 는 `createComplexIdLookup()` 으로 **조회만** 한다. 단지 없이 백필하면 28만건이 전부 `complex_id=null` — 2026-05-26 사고(연결률 19.1%, 마린애시앙 "4개월째 거래 없음")의 재현이다
+- 🔴 **F-3 기간 기본값 불일치.** 워크플로에 `from`/`to` 입력이 없어 스크립트 기본값(현재로부터 10년 = 201608~)이 쓰인다. 기존 데이터는 **2015-01** 부터다
+- ✅ **3번 항목(배치가 부산까지)은 코드 변경이 필요 없다.** `getActiveSggCodes()` 호출부 14곳이 `regions.is_active` 를 동적으로 읽는다 — 사실상 1번의 결과다. `seed-complexes.ts`·`backfill-realprice.ts` 도 동일 패턴
+- 📌 **API 한도가 얇다.** 16개 구 × 140개월(201501~202608) × (apt+villa) = **4,480 지역-월**, 페이지 추가분 포함 5,000~7,000 호출 추정 / 일 10,000 한도. 워크플로 `timeout-minutes: 300`(5시간)에 한 job 이 들어가는지 검토 → 안 되면 지역 분할 다회 dispatch
+- 📌 **data.go.kr 이 Actions IP 일부를 TCP 차단**한다. `preflight()`/`EXIT_BLOCKED_RUNNER=75` 재시도가 이미 있으니 이를 전제로 계획한다
+- ⛔ **범위 밖**: realtrade-story 의 모든 파일(노출·UI·SEO·`sgg-codes.ts`) / 부산 노출 방식·도메인·`site_id` 의미(ADR-012 가 "미정"으로 남긴 4건) / 네이버 호가 크롤링 부산 확장 / 부산 미분양(`regional_unsold` — 상대 API 고장, 1bf05c0 로 보류 처리) / 울산 등 추가 지역 / `VACUUM FULL`(데이터가 늘어나므로 불필요)
+- ⛔ Phase 34 재활용 시 **34-02(UI 지역 라벨)·34-08/34-10(네이버 매핑)은 제외** — danjiondo 는 전 페이지 noindex 로 폐지됐다(4eae341)
+- 🔴 **정정 1 — Success Criteria 3 의 연결률 90% 는 41-CONTEXT D-07 이 65% 로 대체했다.** 운영권역 94.6% 는 수동 별칭 보정 누적 결과이고, K-apt 시딩만 받은 경남 기타 16곳은 실측 **64.7%** 다. 90% 를 요구하면 상시 빨간불이 되어 감시가 무력화된다. 90% 는 별칭 보정 후속 작업의 목표이며 이 Phase 범위 밖이다
+- 🔴 **정정 2 — Success Criteria 2 의 `complexes` ≥ 1,500 은 K-apt 시딩만으로는 닿지 않을 수 있다.** Phase 34 의 실측 시딩량은 **1,463** 이었고 2026-08-10 삭제분 1,594 는 그 위에 한 달간 다른 경로로 131건이 얹힌 값이다. 따라서 백필 **차단 게이트는 1,400** 으로 두고, 실측값을 1,463·1,594·1,500 세 숫자와 대조 보고한다(41-01 Task 3 · 41-03 Task 2)
+- 🔴 **정정 3 — `complex_price_stats` 라는 테이블은 없다.** 가격 파생값은 `complexes` 의 4개 컬럼(`avg_sale_per_pyeong`·`price_change_30d`·`tx_count_30d`·`is_new_record_30d`)이며 `refresh_complex_price_stats()` 가 갱신한다. 따라서 BUSAN-06 의 측정 대상은 **3개 테이블 + `complexes` 4컬럼**이다
+- 📌 **`molit-backfill-once.yml` 에 `min_linked_pct` 입력도 추가한다** (BUSAN-03 원문에 없던 4번째 입력). 현재 워크플로는 `check-ingest-linkage.ts` 를 임계 인자 없이 호출해 기본값 80 이 적용되는데, 부산 예상 연결률(≈65%)에서는 적재가 성공해도 매 그룹이 빨간불이 된다
+
+**UI hint**: no (수집 전용, 화면 변경 0)
+
+---
 ## Milestone Summary
 
 | Milestone | Phases | Gate |
