@@ -61,7 +61,14 @@ interface Metrics {
   ingest_runs_rows_upserted_sum: number
   transactions_busan_total: number
   transactions_complex_id_null: number
-  transactions_linked_pct: number
+  /**
+   * 부산 거래가 0건이면 `null` 이다 — **0을 100% 로 보고하지 않는다.**
+   *
+   * 이 프로젝트의 반복된 실패 모양이 "실패가 정상 응답의 모습으로 오는 것"이다(ADR-063).
+   * 백필 그룹이 0건을 적재했을 때 연결률 100% 가 찍히면 그게 정확히 그 모양이 된다 —
+   * 41-05~07 의 수용 기준이 이 값을 근거로 삼으므로 표본 없음과 완전 연결을 구분해야 한다.
+   */
+  transactions_linked_pct: number | null
   transactions_deal_date_min: string | null
   transactions_deal_date_max: string | null
   complex_rankings_busan: number
@@ -150,7 +157,7 @@ async function collectMetrics(
   const transactionsLinkedPct =
     transactionsBusanTotal > 0
       ? ((transactionsBusanTotal - transactionsComplexIdNull) / transactionsBusanTotal) * 100
-      : 100
+      : null
 
   let transactionsDealDateMin: string | null = null
   let transactionsDealDateMax: string | null = null
@@ -257,7 +264,11 @@ function printHumanReadable(m: Metrics): void {
   }
 
   console.log('\n=== transactions ===')
-  console.log(`  부산 총 ${m.transactions_busan_total.toLocaleString()} / complex_id NULL ${m.transactions_complex_id_null.toLocaleString()} / 연결률 ${m.transactions_linked_pct.toFixed(1)}%`)
+  const linkedPctText =
+    m.transactions_linked_pct === null
+      ? '표본 없음 (거래 0건 — 연결률 판정 불가)'
+      : `${m.transactions_linked_pct.toFixed(1)}%`
+  console.log(`  부산 총 ${m.transactions_busan_total.toLocaleString()} / complex_id NULL ${m.transactions_complex_id_null.toLocaleString()} / 연결률 ${linkedPctText}`)
   console.log(`  deal_date ${m.transactions_deal_date_min ?? '-'} ~ ${m.transactions_deal_date_max ?? '-'}`)
 
   console.log('\n=== 파생값 ===')
