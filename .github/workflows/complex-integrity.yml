@@ -36,7 +36,7 @@ env:
   # 기준선 (2026-08-06 측정). 넘으면 실패한다.
   BASE_MULTI_JIBUN: 9
   BASE_TURNOVER: 23
-  BASE_EMPTY_KAPT: 60
+  BASE_EMPTY_KAPT: 59
 
 jobs:
   check:
