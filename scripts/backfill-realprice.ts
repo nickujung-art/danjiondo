@@ -11,6 +11,12 @@
  *
  * 필요 환경변수: MOLIT_API_KEY, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
  * API 한도: 일 10,000회 → 100건/페이지, 월 최대 수십 페이지 → 지역×월 단위 조절
+ *
+ * 인자 검증(41-02): `--from`/`--to`/`--sgg` 가 빈 값이거나 형식(YYYYMM / 5자리 코드)을
+ * 어기면 MOLIT API 를 찌르기 전에 즉시 exit 1 한다. 빈 `--from=` 을 그냥 통과시키면
+ * `fromArg ?? defaultFrom` 이 빈 문자열을 nullish 로 취급하지 않아 그대로 새고,
+ * `monthRange('', '')` 가 NaN 비교로 빈 배열을 돌려줘 `total=0` → `✅ 0건 upsert` 로
+ * **exit 0** 하는 조용한 성공이 된다(ADR-063). 그 경로를 막기 위한 방어다.
  */
 import dotenv from 'dotenv'
 import path from 'path'
@@ -29,6 +35,7 @@ import type { Database } from '../src/types/database'
 const FAILURE_ABORT_RATE = 0.3
 import { ingestMonth, ingestMonthVilla } from '../src/lib/data/realprice'
 import { describeError, isConnectivityError } from '../src/lib/api/describe-error'
+import { monthRange, assertYearMonth, parseSggCodes } from '../src/lib/data/backfill-args'
 
 /**
  * 이 머신에서 MOLIT 에 **연결이 되긴 하는지** 한 번만 확인한다.
@@ -97,16 +104,8 @@ const sggArg    = args.find(a => a.startsWith('--sgg='))?.split('=')[1]
 const useVilla = args.includes('--villa') || !args.includes('--apt')
 const useApt   = args.includes('--apt')   || !args.includes('--villa')
 
-function monthRange(from: string, to: string): string[] {
-  const months: string[] = []
-  let [y, m] = [parseInt(from.slice(0, 4), 10), parseInt(from.slice(4, 6), 10)]
-  const [ey, em] = [parseInt(to.slice(0, 4), 10), parseInt(to.slice(4, 6), 10)]
-  while (y < ey || (y === ey && m <= em)) {
-    months.push(`${y}${String(m).padStart(2, '0')}`)
-    m++; if (m > 12) { m = 1; y++ }
-  }
-  return months
-}
+// main() 최상단(preflight() 앞)에서 검증 후 채워진다. getSggCodes() 가 참조한다.
+let validatedSggCodes: string[] | undefined
 
 async function getCompletedRuns(sggCode: string): Promise<Set<string>> {
   const { data } = await supabase
@@ -129,7 +128,7 @@ async function getCompletedVillaRuns(sggCode: string): Promise<Set<string>> {
 }
 
 async function getSggCodes(): Promise<string[]> {
-  if (sggArg) return sggArg.split(',').map(s => s.trim())
+  if (validatedSggCodes) return validatedSggCodes
   const { data, error } = await supabase
     .from('regions')
     .select('sgg_code')
@@ -162,6 +161,18 @@ async function main() {
     process.exit(1)
   }
 
+  // 인자 검증 — MOLIT API 를 찌르기 전(preflight() 앞)에 형식 위반을 exit 1 로 잡는다.
+  // 빈 --from=/--to=/--sgg= 가 monthRange(NaN 비교)를 거쳐 조용히 0개월/0건 적재로
+  // "✅ 완료" exit 0 하던 경로를 여기서 막는다(41-02, ADR-063).
+  try {
+    assertYearMonth('--from', fromArg)
+    assertYearMonth('--to', toArg)
+    validatedSggCodes = parseSggCodes(sggArg)
+  } catch (err) {
+    console.error(`❌ 인자 검증 실패: ${err instanceof Error ? err.message : String(err)}`)
+    process.exit(1)
+  }
+
   // 러너가 차단된 IP 를 배정받았는지 먼저 확인 — 여기서 걸러야 2시간 반을 안 태운다
   await preflight()
 
@@ -177,6 +188,13 @@ async function main() {
   const from    = fromArg ?? defaultFrom
   const to      = toArg   ?? defaultTo
   const months  = monthRange(from, to)
+  if (months.length === 0) {
+    // 개별 인자는 형식이 맞아도(YYYYMM) 범위가 역전되면(예: --from=202608 --to=201501)
+    // monthRange 가 빈 배열을 돌려준다. 이게 마지막 방어선이다 — 여기를 안 막으면
+    // total=0 으로 그대로 진행해 "✅ 0건 upsert" exit 0 이 재현된다.
+    console.error(`❌ 기간이 비었습니다 (--from=${from} --to=${to}) — from 이 to 보다 늦거나 형식이 역전된 것으로 보입니다.`)
+    process.exit(1)
+  }
   const sggCodes = await getSggCodes()
 
   const modes: string[] = []
