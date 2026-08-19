@@ -1,5 +1,10 @@
 name: MOLIT Backfill (1회성)
 
+# [D-05] 한 job(job timeout 5시간)에 들어가는 양은 대략 1,560 지역-월(11.5초 중간값
+# 기준) = 5~6개 구다. 부산 16개 구 × 201501~ 전체(4,480 지역-월)는 약 14.3시간 추정 — 한 job 의
+# 3배라 3그룹(5·5·6) 분할 dispatch 가 필수다. 그룹 경계는 --sgg_codes 로, 기간은 아래 from/to
+# 입력으로, 이어달리기는 resume 입력으로 조절한다(41-02, .planning/phases/41-busan-recollect/41-CONTEXT.md).
+
 on:
   workflow_dispatch:
     inputs:
@@ -7,6 +12,29 @@ on:
         description: 'SGG 코드 (쉼표 구분, 예: 48121,48123,48125). regions 테이블에서 확인.'
         required: true
         default: '48121,48123'
+      resume:
+        description: >-
+          완료된 (지역,월) 을 skip 한다. 기본값 true — 미입력 시 현재 동작(--resume 고정)과 동일하다.
+          부산 최초 재수집처럼 ingest_runs 를 비운 직후에는 켜둬도 무해하다.
+        type: boolean
+        default: true
+      from:
+        description: >-
+          시작 연월(YYYYMM). 미입력 시 스크립트 기본값(현재로부터 10년 전)을 그대로 쓴다 —
+          기존 동작과 동일. 부산 재수집은 201501(창원·김해와 대칭, D-04).
+        required: false
+        default: ''
+      to:
+        description: >-
+          종료 연월(YYYYMM). 미입력 시 스크립트 기본값(당월)을 그대로 쓴다 — 기존 동작과 동일.
+        required: false
+        default: ''
+      min_linked_pct:
+        description: >-
+          연결률 검사 임계(%). 미입력 시 check-ingest-linkage.ts 기본값 80 이 그대로 적용된다 —
+          기존 동작(창원·김해 임계 80)과 동일. 부산은 65(경남 기타 실측 64.7%, D-07).
+        required: false
+        default: ''
 
 jobs:
   backfill:
@@ -31,10 +59,33 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
-          echo "SGG codes: ${{ inputs.sgg_codes }}"
-          npx tsx scripts/backfill-realprice.ts \
-            --resume \
-            --sgg=${{ inputs.sgg_codes }}
+          # 입력을 셸 변수로 먼저 받고 인용해서 쓴다 — run: 본문에 ${{ inputs.* }} 를
+          # 직접 보간하지 않는다(명령 주입 방지, T-41-05).
+          SGG="${{ inputs.sgg_codes }}"
+          RESUME="${{ inputs.resume }}"
+          FROM="${{ inputs.from }}"
+          TO="${{ inputs.to }}"
+
+          ARGS=(--sgg="$SGG")
+
+          # resume 이 'true' 일 때만 --resume 를 붙인다. 미입력 시 기본값이 'true' 이므로
+          # 입력을 전부 비운 dispatch 는 현재 동작(--resume 하드코딩)과 같아진다.
+          if [ "$RESUME" = "true" ]; then
+            ARGS+=(--resume)
+          fi
+
+          # from/to 가 비어 있지 않을 때만 플래그를 붙인다. 🔴 빈 값을 --from= 형태로
+          # 그대로 넘기면 backfill-realprice.ts 의 인자 검증(41-02)이 exit 1 로 잡아
+          # dispatch 가 전부 실패한다 — molit-daily.yml prepare job 의 [ -z "$FROM" ] 패턴을 따른다.
+          if [ -n "$FROM" ]; then
+            ARGS+=(--from="$FROM")
+          fi
+          if [ -n "$TO" ]; then
+            ARGS+=(--to="$TO")
+          fi
+
+          echo "실행: npx tsx scripts/backfill-realprice.ts ${ARGS[*]}"
+          npx tsx scripts/backfill-realprice.ts "${ARGS[@]}"
 
       # 백필이 조용히 미연결 더미를 만드는 것을 막는다.
       #
@@ -52,9 +103,19 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
-          npx tsx scripts/check-ingest-linkage.ts \
-            --since-hours=8 \
-            --sgg=${{ inputs.sgg_codes }}
+          SGG="${{ inputs.sgg_codes }}"
+          MIN_LINKED_PCT="${{ inputs.min_linked_pct }}"
+
+          ARGS=(--since-hours=8 --sgg="$SGG")
+
+          # 비어 있지 않을 때만 --min-linked-pct= 를 붙인다. 미입력 시 스크립트 기본값
+          # 80 이 그대로 적용돼 기존 용도(창원·김해)의 감시 기준선이 바뀌지 않는다.
+          if [ -n "$MIN_LINKED_PCT" ]; then
+            ARGS+=(--min-linked-pct="$MIN_LINKED_PCT")
+          fi
+
+          echo "실행: npx tsx scripts/check-ingest-linkage.ts ${ARGS[*]}"
+          npx tsx scripts/check-ingest-linkage.ts "${ARGS[@]}"
 
       - name: Backfill complete
         run: echo "백필 완료 — ingest_runs 테이블에서 결과 확인"
