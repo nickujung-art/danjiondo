@@ -1,5 +1,5 @@
-// server‑only 미포함 — scripts/backfill-realprice.ts 가 tsx 로 직접 임포트해야 함
-// (src/lib/data/regions.ts 와 동일 패턴, 33-06 선례). 'server‑only' 마커는 Node 스크립트
+// server-only 미포함 — scripts/backfill-realprice.ts 가 tsx 로 직접 임포트해야 함
+// (src/lib/data/regions.ts 와 동일 패턴, 33-06 선례). 'server-only' 마커는 Node 스크립트
 // 실행 시 exports 조건이 맞지 않아 무조건 throw 하여 백필 스크립트를 깨뜨린다.
 // 클라이언트 컴포넌트에서 import된 적 없음 — 스크립트 전용 순수 함수 모듈.
 
