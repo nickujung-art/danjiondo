@@ -98,22 +98,32 @@ async function collectMetrics(
   if (eRegionsTotal) throw new Error(`regions(전체 활성) 조회 실패: ${eRegionsTotal.message}`)
 
   // ── complexes (좌표·구별 breakdown·avg_sale_per_pyeong 을 한 번에) ────────
-  const { data: complexRows, error: eComplexes } = await supabase
-    .from('complexes')
-    .select('sgg_code, lat, avg_sale_per_pyeong')
-    .in('sgg_code', BUSAN_SGG_CODES)
-  if (eComplexes) throw new Error(`complexes(부산) 조회 실패: ${eComplexes.message}`)
+  // 🔴 41-03 에서 발견: PostgREST 는 .select() 에 명시적 .range() 가 없으면 최대 1,000행만
+  // 반환한다(기본 페이지 크기). 부산 시딩량이 1,467건으로 1,000을 넘어서면서 뒤쪽 구
+  // (26440~26710)가 0으로 관측되는 조용한 절단이 실측으로 확인됐다 — .range() 페이지네이션으로
+  // 전량을 끌어온다.
+  type ComplexRow = { sgg_code: string; lat: number | null; avg_sale_per_pyeong: number | null }
+  const complexRows: ComplexRow[] = []
+  const PAGE_SIZE = 1000
+  for (let page = 0; ; page++) {
+    const { data: pageRows, error: eComplexes } = await supabase
+      .from('complexes')
+      .select('sgg_code, lat, avg_sale_per_pyeong')
+      .in('sgg_code', BUSAN_SGG_CODES)
+      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+    if (eComplexes) throw new Error(`complexes(부산) 조회 실패: ${eComplexes.message}`)
+    const rows = (pageRows ?? []) as ComplexRow[]
+    complexRows.push(...rows)
+    if (rows.length < PAGE_SIZE) break
+  }
 
-  const complexesBusanTotal = complexRows?.length ?? 0
-  const complexesCoordNotNull =
-    complexRows?.filter((r: { lat: number | null }) => r.lat !== null).length ?? 0
-  const complexesAvgSaleNotNull =
-    complexRows?.filter((r: { avg_sale_per_pyeong: number | null }) => r.avg_sale_per_pyeong !== null)
-      .length ?? 0
+  const complexesBusanTotal = complexRows.length
+  const complexesCoordNotNull = complexRows.filter((r) => r.lat !== null).length
+  const complexesAvgSaleNotNull = complexRows.filter((r) => r.avg_sale_per_pyeong !== null).length
   const complexesByGu: Record<string, number> = Object.fromEntries(
     BUSAN_SGG_CODES.map((code) => [code, 0]),
   )
-  for (const r of (complexRows ?? []) as { sgg_code: string }[]) {
+  for (const r of complexRows) {
     if (r.sgg_code in complexesByGu) complexesByGu[r.sgg_code] += 1
   }
   const complexesCoordCoveragePct =
