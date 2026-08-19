@@ -102,10 +102,19 @@ async function buildTransactionChunk(complexId: string): Promise<string> {
 
 async function buildSchoolChunk(lat: number | null, lng: number | null): Promise<string> {
   if (!lat || !lng) return '학구 정보 없음'
-  const { data: schools } = await supabase
+  // error 를 본다 — 안 보면 RPC 가 통째로 죽어도 '학구 정보 없음' 과 구분되지 않는다.
+  // 실제로 그랬다: get_schools_for_point 가 search_path='' 에 미수식 참조라 호출 즉시
+  // 죽고 있었는데(2026-08-19 발견·수정), 여기서 삼켜서 **모든 단지의 임베딩에
+  // '학구 정보 없음' 이 박힐 뻔했다.** 임베딩은 한번 만들면 다시 안 보므로 조용히 나빠진다.
+  // (같은 파일의 complexes-map.ts 는 이미 error 를 보고 있었다 — 그쪽 관행이 옳다)
+  const { data: schools, error } = await supabase
     .rpc('get_schools_for_point', { p_lat: lat, p_lng: lng }) as {
       data: Array<{ school_level: string; school_name: string }> | null
+      error: { message: string } | null
     }
+  if (error) {
+    throw new Error(`get_schools_for_point 실패 (${lat},${lng}): ${error.message}`)
+  }
   if (!schools || schools.length === 0) return '학구 정보 없음'
   const elem = schools.filter(s => s.school_level === 'elementary').map(s => s.school_name).join(', ')
   const middle = schools.filter(s => s.school_level === 'middle').map(s => s.school_name).join(', ')
