@@ -130,19 +130,28 @@ async function collectMetrics(
     complexesBusanTotal > 0 ? (complexesCoordNotNull / complexesBusanTotal) * 100 : 0
 
   // ── ingest_runs (source_id × status 교차 집계 + rows_upserted 합계) ──────
-  const { data: ingestRows, error: eIngest } = await supabase
-    .from('ingest_runs')
-    .select('source_id, status, rows_upserted')
-    .in('sgg_code', BUSAN_SGG_CODES)
-  if (eIngest) throw new Error(`ingest_runs(부산) 조회 실패: ${eIngest.message}`)
+  // 🔴 complexes 와 동일한 1,000행 캡이 여기에도 걸린다. 41-03 시점엔 부산 ingest_runs 가
+  // 0행이라 재현되지 않았지만, 백필은 지역-월마다 1행을 쌓는다 — 그룹 A(5개 구 × 140개월 ×
+  // apt/villa)만으로 1,400행이라 **첫 백필에서 바로 잘린다.**
+  // rows_upserted 합계는 41-05~07 수용 기준의 근거이므로, 잘린 합계는 적재량을 과소보고해
+  // "워크플로는 성공인데 숫자가 안 맞는다"는 오진을 만든다.
+  type IngestRow = { source_id: string; status: string; rows_upserted: number | null }
+  const ingestRows: IngestRow[] = []
+  for (let page = 0; ; page++) {
+    const { data: pageRows, error: eIngest } = await supabase
+      .from('ingest_runs')
+      .select('source_id, status, rows_upserted')
+      .in('sgg_code', BUSAN_SGG_CODES)
+      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+    if (eIngest) throw new Error(`ingest_runs(부산) 조회 실패: ${eIngest.message}`)
+    const rows = (pageRows ?? []) as IngestRow[]
+    ingestRows.push(...rows)
+    if (rows.length < PAGE_SIZE) break
+  }
 
   const ingestBySource: Record<string, Record<string, number>> = {}
   let ingestRowsUpsertedSum = 0
-  for (const r of (ingestRows ?? []) as {
-    source_id: string
-    status: string
-    rows_upserted: number | null
-  }[]) {
+  for (const r of ingestRows) {
     ingestBySource[r.source_id] ??= {}
     ingestBySource[r.source_id][r.status] = (ingestBySource[r.source_id][r.status] ?? 0) + 1
     ingestRowsUpsertedSum += r.rows_upserted ?? 0
@@ -236,7 +245,7 @@ async function collectMetrics(
     complexes_coord_coverage_pct: complexesCoordCoveragePct,
     complexes_by_gu: complexesByGu,
     complexes_avg_sale_per_pyeong_not_null: complexesAvgSaleNotNull,
-    ingest_runs_busan_total: ingestRows?.length ?? 0,
+    ingest_runs_busan_total: ingestRows.length,
     ingest_runs_by_source: ingestBySource,
     ingest_runs_rows_upserted_sum: ingestRowsUpsertedSum,
     transactions_busan_total: transactionsBusanTotal,
