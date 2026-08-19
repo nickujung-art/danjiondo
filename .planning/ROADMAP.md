@@ -1702,10 +1702,10 @@ Actions artifact(retention 30일, 만료) 어디에도 없다. **늘리는 방�
 | 8 | 41-09 | 감시 기준선 판정 + ADR-064 + 마감 체크포인트 |
 
 Plans:
-- [ ] 41-01-PLAN.md — `regions` 부산 활성화 + 부산 `ingest_runs` 4,006행 무효화(정식 마이그레이션) + `busan-status.ts` 실측 진입점 + `complex_integrity_counts` 스코프 실측
-- [ ] 41-02-PLAN.md — `molit-backfill-once.yml` 에 `resume`·`from`·`to`·`min_linked_pct` 입력 + 빈 `--from=` 이 0건 적재로 exit 0 하던 경로 차단(유닛 테스트)
-- [ ] 41-03-PLAN.md — `seed-complexes.ts --sgg=` 추가 + 부산 16개 구 K-apt 재시딩 + `kapt-enrich` 수렴 (경남 `built_year` 무회귀 단언)
-- [ ] 41-04-PLAN.md — 카카오 지오코딩 반복 실행(1,000행 캡) + 중복 후보 로그 + 🔴 **백필 진입 게이트 판정** + 진입 승인 체크포인트
+- [x] 41-01-PLAN.md — `regions` 부산 활성화 + 부산 `ingest_runs` 4,006행 무효화(정식 마이그레이션) + `busan-status.ts` 실측 진입점 + `complex_integrity_counts` 스코프 실측
+- [x] 41-02-PLAN.md — `molit-backfill-once.yml` 에 `resume`·`from`·`to`·`min_linked_pct` 입력 + 빈 `--from=` 이 0건 적재로 exit 0 하던 경로 차단(유닛 테스트)
+- [x] 41-03-PLAN.md — `seed-complexes.ts --sgg=` 추가 + 부산 16개 구 K-apt 재시딩 + `kapt-enrich` 수렴 (경남 `built_year` 무회귀 단언)
+- [~] 41-04-PLAN.md — 카카오 지오코딩 반복 실행(1,000행 캡) + 중복 후보 로그 + 🔴 **백필 진입 게이트 판정** + 진입 승인 체크포인트
 - [ ] 41-05-PLAN.md — 백필 그룹 A `26230,26260,26320,26350,26380` (`from=201501`) + 🔴 **첫 run skip=0 증명** + 연결률·용량 실측
 - [ ] 41-06-PLAN.md — 백필 그룹 B `26290,26410,26440,26470,26500` + 41-05 실측 반영 분할 판단 + 누적 추이 표
 - [ ] 41-07-PLAN.md — 백필 그룹 C `26110,26140,26170,26200,26530,26710` + 부산 16개 구 완료 확정 + 재개 메커니즘 실증
