@@ -23,10 +23,13 @@ cd "$(dirname "$0")/.."
 LOGDIR="scripts/.busan-backfill-logs"
 mkdir -p "$LOGDIR"
 
+# ⚠️ 변수명이 GROUPS 이면 안 된다 — bash 내장 특수 변수(사용자 그룹 ID 배열)라
+# 할당이 먹지 않고 루프가 실제 그룹 ID 를 돈다. 2026-08-20 에 실제로 겪었고,
+# --sgg=197121 이 41-02 의 인자 검증에 걸려 잡혔다.
 # 단지 수를 밀도 대리지표로 삼아 최대-최소를 짝지어 8조로 균형 배분했다.
 # (26350:200 26230:171 26380:142 26260:127 26320:114 26470:106 26290:101 26530:98
 #  26410:87 26710:82 26500:64 26440:52 26200:43 26140:42 26170:27 26110:11)
-GROUPS=(
+BATCHES=(
   "26350,26110"
   "26230,26170"
   "26380,26140"
@@ -41,9 +44,9 @@ FROM=201501
 PIDS=()
 
 echo "부산 백필 로컬 병렬 시작 — $(date '+%Y-%m-%d %H:%M:%S')"
-echo "그룹 ${#GROUPS[@]}개 / from=$FROM / resume=on"
+echo "그룹 ${#BATCHES[@]}개 / from=$FROM / resume=on"
 
-for g in "${GROUPS[@]}"; do
+for g in "${BATCHES[@]}"; do
   LOG="$LOGDIR/${g//,/_}.log"
   npx tsx scripts/backfill-realprice.ts --sgg="$g" --from="$FROM" --resume > "$LOG" 2>&1 &
   PIDS+=($!)
@@ -56,13 +59,13 @@ echo "전 그룹 기동 완료. 종료 대기..."
 FAIL=0
 for i in "${!PIDS[@]}"; do
   if wait "${PIDS[$i]}"; then
-    echo "✅ 그룹 ${GROUPS[$i]} 정상 종료"
+    echo "✅ 그룹 ${BATCHES[$i]} 정상 종료"
   else
     RC=$?
-    echo "❌ 그룹 ${GROUPS[$i]} 비정상 종료 (exit $RC) — $LOGDIR/${GROUPS[$i]//,/_}.log 확인"
+    echo "❌ 그룹 ${BATCHES[$i]} 비정상 종료 (exit $RC) — $LOGDIR/${BATCHES[$i]//,/_}.log 확인"
     FAIL=$((FAIL+1))
   fi
 done
 
-echo "완료 — $(date '+%Y-%m-%d %H:%M:%S') / 실패 그룹 $FAIL/${#GROUPS[@]}"
+echo "완료 — $(date '+%Y-%m-%d %H:%M:%S') / 실패 그룹 $FAIL/${#BATCHES[@]}"
 exit $FAIL
