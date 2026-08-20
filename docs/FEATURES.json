@@ -1,12 +1,12 @@
 {
   "_schema": "feature-registry/v1",
   "_usage": "세션 시작 시 읽어서 todo/in_progress 항목 파악. done이지만 checklist 미완료 항목은 주의.",
-  "lastUpdated": "2026-06-29",
+  "lastUpdated": "2026-08-20",
   "summary": {
-    "done": 28,
+    "done": 27,
     "in_progress": 0,
     "todo": 0,
-    "deferred": 5,
+    "deferred": 4,
     "blocked": 2
   },
   "features": [
@@ -32,7 +32,7 @@
       "name": "단지 상세 (10년 그래프 · 거래 내역 · 시설 요약)",
       "status": "done",
       "priority": "critical",
-      "notes": "cancel_date IS NULL AND superseded_by IS NULL 필터 필수. ISR 1h.",
+      "notes": "cancel_date IS NULL AND superseded_by IS NULL 필터 필수. ISR 1h. 수집 권역 = 경남 22개 시군 + 부산 16개 구(2026-08-19 재개, ADR-064). 부산 화면 노출은 이 저장소 범위 밖(realtrade-story ADR-012).",
       "checklist": [
         { "layer": "ui", "name": "Recharts 10년 그래프", "status": "done" },
         { "layer": "ui", "name": "거래 내역 테이블 (취소·정정 제외)", "status": "done" },
