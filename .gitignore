@@ -79,3 +79,4 @@ naver-mapping-diagnosis.json
 # 리전 이전(2026-08-18) 때 만든 env 백업 — 옛 프로젝트 자격증명이 들어 있다.
 # 절대 커밋하지 않는다. 옛 프로젝트를 지운 뒤 삭제할 것.
 *.bak-precutover
+scripts/.busan-backfill-logs/
