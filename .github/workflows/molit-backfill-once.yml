@@ -1,8 +1,18 @@
 name: MOLIT Backfill (1회성)
 
-# [D-05] 한 job(job timeout 5시간)에 들어가는 양은 대략 1,560 지역-월(11.5초 중간값
-# 기준) = 5~6개 구다. 부산 16개 구 × 201501~ 전체(4,480 지역-월)는 약 14.3시간 추정 — 한 job 의
-# 3배라 3그룹(5·5·6) 분할 dispatch 가 필수다. 그룹 경계는 --sgg_codes 로, 기간은 아래 from/to
+# dispatch 입력을 run 제목에 노출한다. 없으면 진행 중인 run 이 어느 지역을
+# 돌고 있는지 API 로 알 수 없어(gh 는 workflow_dispatch inputs 를 돌려주지 않는다)
+# 중복 dispatch 를 식별·취소할 수 없다 — 2026-08-20 부산 백필에서 실제로 겪었다.
+run-name: "백필 ${{ inputs.sgg_codes }} (from=${{ inputs.from }} resume=${{ inputs.resume }})"
+
+# [D-05 정정 · 2026-08-20 실측] 지역-월 소요는 11.5초가 아니다 — 그 값은 "당월 1개월을
+# dedupe 로 넘기는 일배치" 이력에서 뽑은 것이라 모집단이 틀렸다. 백필은 월당 수백 행을
+# 새로 넣고 행마다 complex_id RPC + upsert 왕복이 붙는다.
+# 삭제 전 부산 ingest_runs 4,006행 실측: molit_trade 평균 80.2s(p90 159.4s) /
+# molit_villa_trade 평균 23.8s. 과거 부산 전체(201607~202608)가 실제로 54.7시간 걸렸다.
+# 따라서 5~6개 구를 한 job 에 넣으면 5시간 한도를 반드시 넘긴다(이력상 최근 5회 전부
+# 정확히 5h00m 에 cancelled). **구 1개당 job 1개로 병렬 dispatch 한다** — 구당 280 지역-월이라
+# 한도 안에 들어간다. 그룹 경계는 --sgg_codes 로, 기간은 아래 from/to
 # 입력으로, 이어달리기는 resume 입력으로 조절한다(41-02, .planning/phases/41-busan-recollect/41-CONTEXT.md).
 
 on:
