@@ -69,6 +69,20 @@ interface Metrics {
    * 41-05~07 의 수용 기준이 이 값을 근거로 삼으므로 표본 없음과 완전 연결을 구분해야 한다.
    */
   transactions_linked_pct: number | null
+  /**
+   * 🔴 apt/villa 를 나눠 재야 한다 — 합산만 보면 잘못된 결론이 나온다.
+   *
+   * 실측(2026-08-20, 백필 중): 아파트 65.7% / 연립다세대 **0.6%**.
+   * `complexes` 는 K-apt 기반 **아파트 단지** 마스터라 연립·다세대에 대응 단지가
+   * 애초에 없다. 매칭 고장이 아니라 구조적 특성이다.
+   *
+   * villa 가 유입될수록 합산 연결률이 계속 내려가는데 그건 악화가 아니라 분모 변화다.
+   * D-07 의 임계 65 는 **아파트 기준**으로 읽어야 한다.
+   */
+  transactions_apt_total: number
+  transactions_apt_linked_pct: number | null
+  transactions_villa_total: number
+  transactions_villa_linked_pct: number | null
   transactions_deal_date_min: string | null
   transactions_deal_date_max: string | null
   complex_rankings_busan: number
@@ -178,6 +192,32 @@ async function collectMetrics(
       ? ((transactionsBusanTotal - transactionsComplexIdNull) / transactionsBusanTotal) * 100
       : null
 
+  // source_id 로 apt(molit_trade) / villa(molit_villa_trade) 를 갈라 잰다.
+  // transactions 에는 건물 유형 컬럼이 없고 source_run_id → ingest_runs.source_id 가
+  // 유일하게 정확한 출처다 (check-data-freshness.ts 의 embeddedFilter 와 같은 근거).
+  async function bySource(sourceId: string): Promise<{ total: number; pct: number | null }> {
+    const q = () =>
+      supabase
+        .from('transactions')
+        .select('id, ingest_runs!inner(source_id)', { count: 'exact', head: true })
+        .in('sgg_code', BUSAN_SGG_CODES)
+        .is('cancel_date', null)
+        .is('superseded_by', null)
+        .eq('ingest_runs.source_id', sourceId)
+    const [{ count: tot, error: e1 }, { count: nul, error: e2 }] = await Promise.all([
+      q(),
+      q().is('complex_id', null),
+    ])
+    if (e1) throw new Error(`transactions(${sourceId} 총계) 조회 실패: ${e1.message}`)
+    if (e2) throw new Error(`transactions(${sourceId} 미연결) 조회 실패: ${e2.message}`)
+    const total = tot ?? 0
+    return { total, pct: total > 0 ? ((total - (nul ?? 0)) / total) * 100 : null }
+  }
+  const [aptStats, villaStats] = await Promise.all([
+    bySource('molit_trade'),
+    bySource('molit_villa_trade'),
+  ])
+
   let transactionsDealDateMin: string | null = null
   let transactionsDealDateMax: string | null = null
   if (transactionsBusanTotal > 0) {
@@ -251,6 +291,10 @@ async function collectMetrics(
     transactions_busan_total: transactionsBusanTotal,
     transactions_complex_id_null: transactionsComplexIdNull,
     transactions_linked_pct: transactionsLinkedPct,
+    transactions_apt_total: aptStats.total,
+    transactions_apt_linked_pct: aptStats.pct,
+    transactions_villa_total: villaStats.total,
+    transactions_villa_linked_pct: villaStats.pct,
     transactions_deal_date_min: transactionsDealDateMin,
     transactions_deal_date_max: transactionsDealDateMax,
     complex_rankings_busan: complexRankingsBusan,
@@ -288,6 +332,9 @@ function printHumanReadable(m: Metrics): void {
       ? '표본 없음 (거래 0건 — 연결률 판정 불가)'
       : `${m.transactions_linked_pct.toFixed(1)}%`
   console.log(`  부산 총 ${m.transactions_busan_total.toLocaleString()} / complex_id NULL ${m.transactions_complex_id_null.toLocaleString()} / 연결률 ${linkedPctText}`)
+  const pctText = (v: number | null) => (v === null ? '표본 없음' : `${v.toFixed(1)}%`)
+  console.log(`    ├ 아파트     ${m.transactions_apt_total.toLocaleString().padStart(9)} / 연결률 ${pctText(m.transactions_apt_linked_pct)}`)
+  console.log(`    └ 연립다세대 ${m.transactions_villa_total.toLocaleString().padStart(9)} / 연결률 ${pctText(m.transactions_villa_linked_pct)}  (complexes 가 아파트 마스터라 구조적으로 낮다)`)
   console.log(`  deal_date ${m.transactions_deal_date_min ?? '-'} ~ ${m.transactions_deal_date_max ?? '-'}`)
 
   console.log('\n=== 파생값 ===')
