@@ -17,7 +17,7 @@
 import { config as dotenvConfig } from 'dotenv'
 import path from 'path'
 import { createClient } from '@supabase/supabase-js'
-import { fetchComplexList, fetchKaptBasicInfo } from '../src/services/kapt'
+import { fetchComplexList, fetchKaptBasicInfoDetailed } from '../src/services/kapt'
 
 dotenvConfig({ path: path.resolve(process.cwd(), '.env.local') })
 
@@ -141,23 +141,43 @@ async function main(): Promise<void> {
   }
 
   // 4. 각 단지 처리
+  //
+  // [사유를 나눠 센다 — 2026-08-20]
+  // 예전에는 값을 못 얻으면 전부 failCount 였다. 그래서 로그에 "null 반환 (스킵)" 만 남고
+  // **왜 못 얻었는지 알 수 없었다.** 그 상태에서 원인을 세 번 잘못 짚었다.
+  //  - noItem   : API 는 정상인데 그 코드에 항목이 없다 → 대상 아님. 종료 코드에 넣지 않는다
+  //  - envelope : data.go.kr 에러 봉투(쿼터 초과 등) → **재시도로 풀린다. 실패로 센다**
+  //  - schema   : 응답 구조가 바뀌었다 → 실패로 센다
+  //  - fail     : 예외·DB 업데이트 오류
   let successCount = 0
   let failCount = 0
+  let noItemCount = 0
+  let envelopeCount = 0
+  let schemaCount = 0
+  const noItemNames: string[] = []
 
   for (let i = 0; i < complexes.length; i++) {
     const complex = complexes[i]!
     const progress = `[${i + 1}/${total}]`
 
     try {
-      // fetchKaptBasicInfo 호출
-      const info = await fetchKaptBasicInfo(complex.kapt_code)
+      const outcome = await fetchKaptBasicInfoDetailed(complex.kapt_code)
 
-      if (!info) {
-        console.warn(`${progress} ${complex.canonical_name} — fetchKaptBasicInfo null 반환 (스킵)`)
-        failCount++
+      if (!outcome.ok) {
+        // 사유를 **로그에 남긴다** — 이게 없어서 원인 규명에 하루가 걸렸다.
+        console.warn(`${progress} ${complex.canonical_name} — ${outcome.reason}: ${outcome.hint}`)
+        if (outcome.reason === 'no_item') {
+          noItemCount++
+          noItemNames.push(complex.canonical_name)
+        } else if (outcome.reason === 'error_envelope') {
+          envelopeCount++
+        } else {
+          schemaCount++
+        }
         await delay(RATE_LIMIT_DELAY_MS)
         continue
       }
+      const info = outcome.data
 
       if (DEBUG) {
         console.log(`${progress} [DEBUG] raw info:`, JSON.stringify(info))
@@ -216,12 +236,30 @@ async function main(): Promise<void> {
 
   // 5. 완료 요약
   console.log('\n[kapt-enrich] 완료 ─────────────────────────────────')
-  console.log(`  성공: ${successCount}/${total}`)
-  console.log(`  실패: ${failCount}/${total}`)
+  const realFailures = failCount + envelopeCount + schemaCount
+  console.log(`  성공:          ${successCount}/${total}`)
+  console.log(`  대상 아님:     ${noItemCount}/${total}  (API 정상 응답, 해당 항목 없음)`)
+  console.log(`  실패:          ${realFailures}/${total}`)
+  console.log(`    ├ 에러 봉투: ${envelopeCount}  (쿼터·키 등 — 재시도로 풀린다)`)
+  console.log(`    ├ 스키마:    ${schemaCount}  (응답 구조 변경 의심)`)
+  console.log(`    └ 그 외:     ${failCount}  (예외·DB 업데이트 오류)`)
   console.log(`  완료 시각: ${new Date().toISOString()}`)
 
-  if (failCount > 0) {
-    console.warn(`[kapt-enrich] ${failCount}개 단지 실패 — 재실행 시 WHERE si IS NULL 조건으로 재시도됩니다.`)
+  if (noItemCount > 0) {
+    // 대상 아님은 **실패가 아니다.** K-apt 등록이 없거나 코드가 갱신된 단지가 섞여 있고
+    // 재실행해도 결과가 같다. 이걸 실패로 세면 워크플로가 영구히 빨간색이 되고,
+    // 그러면 진짜 장애(realFailures)가 그 빨간색에 묻힌다.
+    console.log(
+      `[kapt-enrich] 대상 아님 ${noItemCount}개 — 재실행해도 같다: ` +
+        noItemNames.slice(0, 10).join(', ') +
+        (noItemNames.length > 10 ? ` 외 ${noItemNames.length - 10}개` : ''),
+    )
+  }
+
+  if (realFailures > 0) {
+    // 에러 봉투·스키마 변경·예외는 **시끄럽게 실패해야 한다.** 특히 에러 봉투를 조용히
+    // 넘기면 쿼터 때문에 못 받은 단지를 영영 건너뛴다.
+    console.warn(`[kapt-enrich] ${realFailures}개 실패 — 재실행 시 WHERE si IS NULL 조건으로 재시도됩니다.`)
     process.exit(1)
   }
 }

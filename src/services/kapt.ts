@@ -68,21 +68,34 @@ export async function fetchComplexList(sggCode: string): Promise<KaptComplex[]> 
 const BASIC_INFO_URL_V4 = 'https://apis.data.go.kr/1613000/AptBasisInfoServiceV4/getAphusBassInfoV4'
 const BASIC_INFO_URL_V1 = 'https://apis.data.go.kr/1613000/AptBasisInfoService/getAphusBassInfo'
 
+/**
+ * ⚠️ optional 문자열은 반드시 `.nullish()` 다 — `.optional()` 은 `undefined` 만 받고
+ * **`null` 은 거부한다.** K-apt 는 값이 없는 필드를 `null` 로 보낸다(도로명주소 없는
+ * 신축·임대주택 등). 그래서 `doroJuso: null` 하나 때문에 단지 전체가 파싱 실패하고,
+ * 호출부에는 그냥 `null` 이 돌아가 "데이터 없는 단지" 로 취급됐다.
+ *
+ * 2026-08-20 에 이걸로 17개 단지가 계속 스킵되고 있었고, 워크플로는 영구히 빨간색이었다.
+ * 실제 응답으로 확인한 문구:
+ *   schema_mismatch: doroJuso: Invalid input: expected string, received null
+ *
+ * ⚠️ 숫자 필드(`z.coerce.number()`)는 반대로 **`null` 을 조용히 `0` 으로 바꾼다.**
+ * 파싱은 통과하지만 값이 틀린다 — 별개 문제로 남겨둔다(2026-08-20 확인).
+ */
 export const kaptBasicInfoSchema = z.object({
   kaptCode:       z.string(),
   kaptName:       z.string(),
   kaptdaCnt:      z.coerce.number().optional(),   // 세대수
   kaptDongCnt:    z.coerce.number().optional(),   // 동수
-  heatType:       z.string().optional(),          // 난방방식 (V1 필드명)
-  managementType: z.string().optional(),          // 관리방식
+  heatType:       z.string().nullish(),          // 난방방식 (V1 필드명)
+  managementType: z.string().nullish(),          // 관리방식
   totalArea:      z.coerce.number().optional(),   // 연면적 (V1 필드명)
   // V4 는 같은 값을 kaptTarea 로 준다. totalArea 만 읽고 있어서 facility_kapt.total_area 가
   // 한 번도 채워진 적이 없었다(전 행 NULL, 2026-08-05 확인).
   kaptTarea:      z.coerce.number().optional(),   // 연면적 (V4 필드명)
-  kaptUsedate:    z.string().optional(),          // 사용승인일 YYYYMMDD (준공연도 원천)
-  doroJuso:       z.string().optional(),          // 도로명주소
-  codeHeatNm:     z.string().optional(),          // 난방방식 명칭 (heatType 폴백용)
-  kaptAddr:       z.string().optional(),          // 법정동주소
+  kaptUsedate:    z.string().nullish(),          // 사용승인일 YYYYMMDD (준공연도 원천)
+  doroJuso:       z.string().nullish(),          // 도로명주소
+  codeHeatNm:     z.string().nullish(),          // 난방방식 명칭 (heatType 폴백용)
+  kaptAddr:       z.string().nullish(),          // 법정동주소
   // ── 관리비 평형별 배분용(2026-08-05) ───────────────────────────────────
   // 공동주택 관리비는 법령상 **관리비부과면적 비례**로 부과된다. kaptMarea 가 있어야
   // 단지 총액(management_cost_monthly)을 평형별 금액으로 쪼갤 수 있다. 없으면 세대당
@@ -99,16 +112,53 @@ export const kaptBasicInfoSchema = z.object({
   kaptMparea136:  z.coerce.number().optional(),   // 135㎡ 초과
 })
 
-/** @deprecated KaptBasicInfoSchema → kaptBasicInfoSchema 로 변경됨. 내부용으로 유지. */
-const KaptBasicInfoSchema = kaptBasicInfoSchema
-
 export type KaptBasicInfo = z.infer<typeof kaptBasicInfoSchema>
+
+/**
+ * `fetchKaptBasicInfo` 가 값을 못 얻은 **이유**.
+ *
+ * [왜 필요한가 — 2026-08-20]
+ * 예전에는 서로 다른 상황이 전부 `null` 하나로 뭉개졌다. 그래서 `kapt-enrich` 로그에는
+ * "fetchKaptBasicInfo null 반환 (스킵)" 만 남고 **원인을 알 방법이 없었다.**
+ * 그 상태에서 판단을 세 번 틀렸다:
+ *   ① "kapt_code 가 없어서다" — 아니었다. 그 스크립트는 애초에 kapt_code 있는 것만 본다
+ *   ② "API 타임아웃이라 시간을 두면 된다" — 타임아웃은 풀렸는데도 계속 실패했다
+ *   ③ "데이터가 없는 단지다" — **아니었다.** 실패했다는 코드를 직접 호출하니
+ *      HTTP 200 · resultCode 00 · item 정상 · 스키마 위반 0 이었다
+ *
+ * ③ 을 믿고 "null = 대상 아님" 으로 처리했다면 **멀쩡한 단지를 영구히 건너뛰었을 것이다.**
+ * 그래서 이유를 분류해 돌려준다 — 셋은 대응이 완전히 다르다.
+ */
+export type KaptBasicInfoFailure =
+  /** data.go.kr 이 HTTP 200 에 실어 보내는 **에러 봉투**(쿼터 초과·키 오류 등).
+   *  `response.body.item` 이 없어 예전에는 "데이터 없음" 과 구분되지 않았다.
+   *  **재시도로 풀리는 종류이므로 조용히 넘기면 안 된다.** */
+  | { reason: 'error_envelope'; hint: string }
+  /** API 는 정상 응답인데 그 코드에 해당하는 항목이 없다. 진짜 "대상 아님" 후보. */
+  | { reason: 'no_item'; hint: string }
+  /** 항목은 있는데 우리 스키마와 안 맞는다. **응답 구조가 바뀐 것**이라 시끄럽게 실패해야 한다. */
+  | { reason: 'schema_mismatch'; hint: string }
+
+export type KaptBasicInfoOutcome =
+  | { ok: true; data: KaptBasicInfo }
+  | ({ ok: false } & KaptBasicInfoFailure)
+
+/** data.go.kr 공통 에러 봉투인지 판별한다(JSON·XML 양쪽 형태를 본다). */
+function readErrorEnvelope(raw: string): string | null {
+  if (!/OpenAPI_ServiceResponse|cmmMsgHeader|returnReasonCode/.test(raw)) return null
+  const pick = (re: RegExp) => (raw.match(re) ?? []).slice(1).find(Boolean) ?? ''
+  const code = pick(/<returnReasonCode>([^<]*)<|"returnReasonCode"\s*:\s*"([^"]*)"/)
+  const msg = pick(/<errMsg>([^<]*)<|"errMsg"\s*:\s*"([^"]*)"/)
+  const auth = pick(/<returnAuthMsg>([^<]*)<|"returnAuthMsg"\s*:\s*"([^"]*)"/)
+  const parts = [msg, auth, code ? 'code=' + code : ''].filter(Boolean)
+  return parts.length > 0 ? parts.join(' ') : '(사유 불명)'
+}
 
 async function fetchKaptBasicInfoFromUrl(
   baseUrl: string,
   kaptCode: string,
   apiKey: string,
-): Promise<KaptBasicInfo | null> {
+): Promise<KaptBasicInfoOutcome> {
   const url = new URL(baseUrl)
   url.searchParams.set('ServiceKey', apiKey)
   url.searchParams.set('kaptCode', kaptCode)
@@ -120,13 +170,50 @@ async function fetchKaptBasicInfoFromUrl(
   })
   if (!res.ok) throw new Error(`K-apt BasicInfo API ${res.status}`)
 
-  const json: unknown = await res.json()
+  // 본문을 **텍스트로 먼저** 읽는다 — 에러 봉투가 XML 로 오는 경우가 있어 JSON 파싱만
+  // 시도하면 그 사실을 잃는다(molit-unsold 에서 같은 함정을 이미 겪었다).
+  const raw = await res.text()
+
+  const envelope = readErrorEnvelope(raw)
+  if (envelope) return { ok: false, reason: 'error_envelope', hint: envelope }
+
+  let json: unknown
+  try {
+    json = JSON.parse(raw)
+  } catch {
+    return { ok: false, reason: 'schema_mismatch', hint: 'JSON 아님: ' + raw.slice(0, 120) }
+  }
+
   const item = (json as { response?: { body?: { item?: unknown } } })?.response?.body?.item
-  const parsed = KaptBasicInfoSchema.safeParse(item)
-  return parsed.success ? parsed.data : null
+  if (item === undefined || item === null || (Array.isArray(item) && item.length === 0)) {
+    return { ok: false, reason: 'no_item', hint: 'response.body.item 없음' }
+  }
+
+  // 존재하지 않는 kaptCode 는 **빈 항목이 아니라 필드가 전부 null 인 항목**으로 돌아온다
+  // (실측 2026-08-20: A99999999 → kaptCode:null, kaptName:null). 이걸 스키마에 넘기면
+  // schema_mismatch 로 잡혀 "응답 구조가 바뀌었다" 는 잘못된 신호를 준다.
+  // 식별자가 비어 있으면 그건 구조 문제가 아니라 **그 코드가 없는 것**이다.
+  const ident = item as { kaptCode?: unknown; kaptName?: unknown }
+  if (ident?.kaptCode == null && ident?.kaptName == null) {
+    return { ok: false, reason: 'no_item', hint: 'kaptCode·kaptName 이 모두 null — 해당 코드 없음' }
+  }
+
+  const parsed = kaptBasicInfoSchema.safeParse(item)
+  if (!parsed.success) {
+    const issues = parsed.error.issues
+      .slice(0, 3)
+      .map((i) => i.path.join('.') + ': ' + i.message)
+      .join(' / ')
+    return { ok: false, reason: 'schema_mismatch', hint: issues }
+  }
+  return { ok: true, data: parsed.data }
 }
 
-export async function fetchKaptBasicInfo(kaptCode: string): Promise<KaptBasicInfo | null> {
+/**
+ * 사유까지 돌려주는 형태. 새 코드는 이쪽을 쓴다.
+ * 기존 `fetchKaptBasicInfo` 는 호출부가 8곳이라 시그니처를 유지한 얇은 래퍼로 남긴다.
+ */
+export async function fetchKaptBasicInfoDetailed(kaptCode: string): Promise<KaptBasicInfoOutcome> {
   const apiKey = process.env.KAPT_API_KEY
   if (!apiKey) throw new Error('KAPT_API_KEY is not set')
 
@@ -138,6 +225,12 @@ export async function fetchKaptBasicInfo(kaptCode: string): Promise<KaptBasicInf
     if (!msg.includes('500')) throw err
     return await fetchKaptBasicInfoFromUrl(BASIC_INFO_URL_V1, kaptCode, apiKey)
   }
+}
+
+/** @deprecated 실패 사유를 알 수 없다. 새 코드는 `fetchKaptBasicInfoDetailed` 를 쓸 것. */
+export async function fetchKaptBasicInfo(kaptCode: string): Promise<KaptBasicInfo | null> {
+  const outcome = await fetchKaptBasicInfoDetailed(kaptCode)
+  return outcome.ok ? outcome.data : null
 }
 
 // ===== fetchKaptDetailInfo =====
