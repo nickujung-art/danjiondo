@@ -1,16 +1,43 @@
 name: DB Backup
 
+# 🔴 2026-08-21 사고 — 이 백업이 **공개 인터넷에 노출돼 있었다.**
+#
+# 이 잡은 원본 `pg_dump` 를 쓴다(`supabase db dump` 와 달리 `auth`·`storage` 를 포함한다 —
+# 전체 복원에 필요하므로 그건 옳다). 그런데 결과물을 **`github.repository`(= 공개 저장소
+# `nickujung-art/danjiondo`)의 Release 자산**으로 올리고 있었다. 인증 없이 HTTP 200 이었다.
+#
+# 노출된 것(2026-08-19 덤프 기준): auth.users 7행(email·encrypted_password) ·
+# auth.refresh_tokens 58행 · auth.custom_oauth_providers.client_secret(네이버 OAuth 시크릿) ·
+# auth.identities · auth.sessions · public.push_subscriptions 5행(endpoint+p256dh+auth →
+# 임의 푸시 발송 가능) · profiles · favorites · notifications · user_child_profiles.
+# 다운로드 횟수는 전부 0 이었다 — 제3자가 받아간 흔적은 없다.
+#
+# **교훈: 백업의 안전이 "저장소 공개 설정"에 달려 있으면 안 된다.** 그 설정은 사람이 언제든
+# 바꿀 수 있고, 바뀌어도 이 잡은 계속 초록불이다(6주간 스키마만 백업하면서도 초록불이었던
+# 아래 2026-08-10 사례와 같은 모양이다 — **실패가 신호를 내지 않는 구조**).
+# 그래서 목적지를 비공개 저장소로 옮기고, **올리기 직전에 목적지가 정말 비공개인지 확인하는
+# 게이트**를 넣었다.
+
 on:
   schedule:
     - cron: '0 19 * * 6'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read   # 더 이상 이 저장소에 쓰지 않는다 — 결과물은 비공개 저장소로 간다
+
+env:
+  # 백업 보관 저장소. **반드시 비공개여야 한다**(아래 Verify 단계가 강제한다).
+  #
+  # 이 저장소와 `BACKUP_PAT` 시크릿은 **2026-05-07~08 에 이미 만들어져 있었다** —
+  # 저장소 생성 다음 날 PAT 이 등록됐다. 즉 비공개 보관은 원래 의도된 구조였는데
+  # 워크플로가 그걸 안 쓰고 `github.repository`(공개)로 올리고 있었다.
+  # `GITHUB_TOKEN` 은 자기 저장소에만 쓸 수 있어 교차 저장소 업로드에는 PAT 이 필요하다.
+  BACKUP_REPO: nickujung-art/danjiondo-backup
 
 jobs:
   backup:
-    name: pg_dump -> GitHub Release
+    name: pg_dump -> private repo release
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -25,6 +52,25 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y postgresql-client-17
           /usr/lib/postgresql/17/bin/pg_dump --version
+
+      # 🔴 덤프를 뜨기 **전에** 목적지를 확인한다. 뜬 뒤에 확인하면, 게이트가 막아도
+      # 러너 디스크에 개인정보 덤프가 남은 채로 잡이 끝난다. 만들지 않는 게 낫다.
+      - name: Verify destination repo is private
+        env:
+          GH_TOKEN: ${{ secrets.BACKUP_PAT }}
+        run: |
+          set -e
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "ERROR: BACKUP_PAT 시크릿이 없습니다. 비공개 저장소에 올릴 수 없습니다." >&2
+            exit 1
+          fi
+          VIS=$(gh repo view "$BACKUP_REPO" --json visibility --jq .visibility)
+          echo "destination: $BACKUP_REPO ($VIS)"
+          if [ "$VIS" != "PRIVATE" ]; then
+            echo "ERROR: 백업 목적지가 PRIVATE 이 아닙니다($VIS). 덤프를 만들지 않고 중단합니다." >&2
+            echo "이 덤프에는 auth.users·refresh_tokens·OAuth client_secret 이 들어 있습니다." >&2
+            exit 1
+          fi
 
       - name: Run pg_dump
         env:
@@ -87,34 +133,32 @@ jobs:
             exit 1
           fi
 
-      - name: Upload to GitHub Release (db-backups)
+      - name: Upload to private backup repo
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.BACKUP_PAT }}
         run: |
           set -e
-          # Create or get existing release tag "db-backups"
-          if ! gh release view db-backups --repo ${{ github.repository }} > /dev/null 2>&1; then
+          if ! gh release view db-backups --repo "$BACKUP_REPO" > /dev/null 2>&1; then
             gh release create db-backups \
-              --repo ${{ github.repository }} \
+              --repo "$BACKUP_REPO" \
               --title "DB Backups" \
-              --notes "Automated weekly database backups" \
+              --notes "주간 자동 DB 백업. **개인정보·자격증명 포함**(auth.users·refresh_tokens·OAuth client_secret) — 이 저장소를 절대 공개로 바꾸지 말 것." \
               --prerelease
           fi
-          # Upload backup file
           gh release upload db-backups "/tmp/$FILENAME" \
-            --repo ${{ github.repository }} \
+            --repo "$BACKUP_REPO" \
             --clobber
-          echo "Uploaded $FILENAME to release db-backups"
+          echo "Uploaded $FILENAME to $BACKUP_REPO"
 
       - name: Cleanup backups older than 90 days
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.BACKUP_PAT }}
         run: |
           CUTOFF=$(date -d '90 days ago' +%Y-%m-%d)
-          gh release view db-backups --repo ${{ github.repository }} --json assets \
+          gh release view db-backups --repo "$BACKUP_REPO" --json assets \
             --jq ".assets[] | select(.name | test(\"backup-\")) | select(.name | ltrimstr(\"backup-\") | rtrimstr(\".sql.gz\") < \"$CUTOFF\") | .name" \
           | while read -r OLD_FILE; do
             gh release delete-asset db-backups "$OLD_FILE" \
-              --repo ${{ github.repository }} --yes || true
+              --repo "$BACKUP_REPO" --yes || true
             echo "Deleted old backup: $OLD_FILE"
           done
