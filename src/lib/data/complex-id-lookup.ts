@@ -39,6 +39,16 @@ export interface MatchArgs {
   sggCode: string
   nameNormalized: string
   umdNm?: string | null
+  /**
+   * MOLIT 원본 지번. **이름 매칭보다 강한 근거다** — 넘기면 지번 게이트가 작동한다.
+   *
+   * 이 지번이 다른 단지의 확정 지번(`complex_canonical_jibun`)이면 RPC 가 이름 매칭
+   * 결과를 무시하고 그 단지를 돌려준다. 2026-08-21 전수 조사에서 이름만으로 붙은
+   * 오연결 1,659건을 발견한 뒤 추가했다(시영장미 ← 7.5km 떨어진 양덕동 거래 67건 등).
+   *
+   * 생략하면 게이트가 비활성이고 기존 이름 매칭 그대로 동작한다.
+   */
+  jibun?: string | null
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -63,6 +73,8 @@ export async function matchComplexId(
       p_min_similarity: minSimilarity,
       // 생략하면 DB 기본값 NULL이 적용된다(p_umd_nm text DEFAULT NULL) — 동 필터 없음과 같다
       p_umd_nm: args.umdNm ?? undefined,
+      // 지번 게이트(20260821090000). 생략 시 DB 기본값 NULL — 게이트 비활성.
+      p_jibun: args.jibun ?? undefined,
     })
 
     if (!error) {
@@ -92,15 +104,27 @@ export async function matchComplexId(
 export function createComplexIdLookup(
   supabase: SupabaseClient<Database>,
   minSimilarity: number,
-): (sggCode: string, nameNormalized: string, umdNm?: string | null) => Promise<string | null> {
+): (
+  sggCode: string,
+  nameNormalized: string,
+  umdNm?: string | null,
+  jibun?: string | null,
+) => Promise<string | null> {
   const cache = new Map<string, string | null>()
 
-  return async function lookupComplexIdCached(sggCode, nameNormalized, umdNm) {
-    const key = `${sggCode}:${nameNormalized}:${umdNm ?? ''}`
+  return async function lookupComplexIdCached(sggCode, nameNormalized, umdNm, jibun) {
+    // 🔴 캐시 키에 지번을 포함해야 한다. 지번 게이트가 도입되면서 같은 (지역, 이름, 동)
+    // 이라도 지번에 따라 답이 달라진다 — 키에서 빼면 첫 거래의 답이 나머지에 굳는다.
+    // 이 오염이 정확히 2026-08-21 에 고친 부류다.
+    const key = `${sggCode}:${nameNormalized}:${umdNm ?? ''}:${jibun ?? ''}`
     const cached = cache.get(key)
     if (cached !== undefined) return cached
 
-    const complexId = await matchComplexId(supabase, { sggCode, nameNormalized, umdNm }, minSimilarity)
+    const complexId = await matchComplexId(
+      supabase,
+      { sggCode, nameNormalized, umdNm, jibun },
+      minSimilarity,
+    )
     cache.set(key, complexId)
     return complexId
   }

@@ -56,7 +56,13 @@ jobs:
             --dbname=postgres \
             --no-password \
             -v ON_ERROR_STOP=1 \
-            -c "SELECT public.refresh_complex_price_stats();"
+            -c "SELECT public.refresh_complex_price_stats();" \
+            -c "SELECT public.refresh_complex_canonical_jibun();"
+
+          # 확정 지번(complex_canonical_jibun)은 match_complex_by_admin 의 지번 게이트가
+          # 참조한다(20260821090000). 거래가 늘면 다수결이 바뀔 수 있으므로 가격 파생값과
+          # 같은 주기로 갱신한다. 여기 얹는 이유 — 둘 다 거래 변화에 반응하는 집계이고,
+          # psql 직결 경로를 이미 확보하고 있어 새 워크플로를 만들 필요가 없다.
           echo "refresh 완료: $(( $(date +%s) - START ))초"
 
       - name: Mark data_sources on success

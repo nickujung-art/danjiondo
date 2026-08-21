@@ -131,7 +131,7 @@ export async function ingestMonth(
 
       // DATA-10: complex_id 자동 연결 (umdNm 동 필터로 정밀 매칭)
       const nameNorm = nameNormalize(item.aptNm)
-      const complexId = await lookupComplexIdCached(String(item.sggCd), nameNorm, item.umdNm)
+      const complexId = await lookupComplexIdCached(String(item.sggCd), nameNorm, item.umdNm, item.jibun?.trim() || null)
 
       // molit_complex_code 저장: aptSeq 있고 매칭 성공 시 1회만 (T-07-03-01)
       if (item.aptSeq && complexId) {
@@ -187,7 +187,7 @@ export async function ingestMonth(
 
       // DATA-10: complex_id 자동 연결 (전월세 — aptSeq 없으므로 molit_complex_code 업데이트 불필요)
       const nameNorm = nameNormalize(item.aptNm)
-      const complexId = await lookupComplexIdCached(String(item.sggCd), nameNorm, item.umdNm)
+      const complexId = await lookupComplexIdCached(String(item.sggCd), nameNorm, item.umdNm, item.jibun?.trim() || null)
 
       const outcome = await upsertTransaction({
         deal_type:        dealType,
@@ -298,7 +298,7 @@ export async function ingestMonthVilla(
       const cancelDate = isCancelled ? dealDate : null
 
       const nameNorm = nameNormalize(item.mhouseNm)
-      const complexId = await lookupComplexIdCached(String(item.sggCd), nameNorm, item.umdNm)
+      const complexId = await lookupComplexIdCached(String(item.sggCd), nameNorm, item.umdNm, item.jibun?.trim() || null)
 
       // 연립다세대는 aptSeq 없으므로 molit_complex_code 업데이트 없음
 
@@ -345,7 +345,7 @@ export async function ingestMonthVilla(
       const dealDateCompact = `${item.dealYear}${String(item.dealMonth).padStart(2, '0')}${String(item.dealDay).padStart(2, '0')}`
 
       const nameNorm = nameNormalize(item.mhouseNm)
-      const complexId = await lookupComplexIdCached(String(item.sggCd), nameNorm, item.umdNm)
+      const complexId = await lookupComplexIdCached(String(item.sggCd), nameNorm, item.umdNm, item.jibun?.trim() || null)
 
       const outcome = await upsertTransaction({
         deal_type:        dealType,
