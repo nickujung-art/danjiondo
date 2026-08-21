@@ -80,3 +80,4 @@ naver-mapping-diagnosis.json
 # 절대 커밋하지 않는다. 옛 프로젝트를 지운 뒤 삭제할 것.
 *.bak-precutover
 scripts/.busan-backfill-logs/
+scripts/.core-gap-logs/
