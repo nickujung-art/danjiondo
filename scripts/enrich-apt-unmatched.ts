@@ -36,6 +36,18 @@ const RETRY_MODE     = args.includes('--retry')           // 좌표 없는 단�
 const HOUSEHOLD_ZERO = args.includes('--household-zero')  // household_count=0|null 단지에 건축물대장으로 세대수 보강
 const TARGET_ID      = args.find(a => a.startsWith('--id='))?.split('=')[1]
 
+/**
+ * 이번 실행에서 처리할 단지 수 상한. 미지정이면 전건.
+ *
+ * 🔴 왜 필요한가 — 카카오 API 를 연속 재실행해 **막힌 전례가 있다**(KAPT, 2026-08-19).
+ * `.planning/inbox/HANDOFF-bds-20260821.md` '주의' 절이 같은 경고를 반복한다:
+ * *"카카오 API 를 연속 재실행해 막힌 전례가 있다. 실패하면 시간을 두고 재시도한다."*
+ *
+ * 이 스크립트는 단지당 카카오를 최대 3회(키워드검색 + coord2regioncode + coord2address)
+ * 호출한다. 619곳을 한 번에 돌리면 약 1,800회다. 나눠 돌 수 있게 상한을 둔다.
+ */
+const LIMIT = Number(args.find(a => a.startsWith('--limit='))?.split('=')[1] ?? '0') || null
+
 // 창원/김해 bbox (오좌표 단지 제외용)
 const BBOX = { minLat: 34.8, maxLat: 35.7, minLng: 128.2, maxLng: 129.1 }
 
@@ -213,10 +225,16 @@ async function main() {
   if (error) throw new Error(`complexes 조회 실패: ${error.message}`)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rows = complexes as any[]
-  if (rows.length === 0) { console.log('✅ 보강할 단지 없음'); return }
+  const allRows = complexes as any[]
+  if (allRows.length === 0) { console.log('✅ 보강할 단지 없음'); return }
 
-  console.log(`📋 대상: ${rows.length}개 단지`)
+  // --limit 상한 적용 (카카오 연속 호출 차단 전례 대응 — 위 LIMIT 주석 참조)
+  const rows = LIMIT ? allRows.slice(0, LIMIT) : allRows
+  if (LIMIT && allRows.length > LIMIT) {
+    console.log(`📋 대상: ${rows.length}개 (--limit=${LIMIT}) / 전체 ${allRows.length}개 — 나머지는 다음 실행으로`)
+  } else {
+    console.log(`📋 대상: ${rows.length}개 단지`)
+  }
 
   // retry 모드: 거래 데이터에서 동명 미리 수집
   const umdNmMap = RETRY_MODE
