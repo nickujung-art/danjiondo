@@ -138,6 +138,12 @@ Next.js 15 App Router · TypeScript strict · Tailwind 3.4 · Supabase (Postgres
   - `onConflict`는 **비부분(non-partial) UNIQUE 인덱스**만 추론할 수 있다. 부분 인덱스(`WHERE …`)를 만들면 컬럼 목록을 어떻게 맞춰도 PostgREST upsert는 `42P10`으로 실패한다 → 그 테이블은 upsert 대신 명시적 select→insert/update를 쓴다
   - 검증 2층: ① `src/lib/db/onconflict-audit.test.ts` — **DB 불필요·항상 실행.** 부분 인덱스 오판 방지 + 실물 `src/` 스캐너 건전성 ② `src/__tests__/onconflict-constraint-gate.test.ts` — 실제 카탈로그 대조. **라이브 DB 필요하고 CI에는 자격증명이 없어 skip된다** → `TEST_SUPABASE_URL=… TEST_SUPABASE_SKEY=… npx vitest run src/__tests__/onconflict-constraint-gate.test.ts`로 수동 실행
 - **CRITICAL** `complexes`가 Golden Record. 단지명 단독 매칭 금지 — 항상 좌표+이름 복합 매칭. 별칭은 `complex_aliases`에 누적
+- **CRITICAL** 거래→단지 연결은 **지번을 넘긴다.** `lookupComplexIdCached(sgg, name, umdNm, jibun)` 의 4번째 인자를 생략하면 지번 게이트가 꺼지고 이름 단독 매칭으로 되돌아간다
+  - 2026-08-21 전수 조사에서 이름만으로 붙은 오연결 1,659건이 나왔다 (시영장미 ← 7.5km 떨어진 양덕동 거래 67건 등). 이 규약이 거래 연결 경로에서 지켜지지 않고 있었다
+  - 게이트는 `complex_canonical_jibun`(거래 다수결로 만든 단지별 확정 지번)을 본다. 지번이 **유일하게** 한 단지를 가리킬 때만 작동하고, 1차·2차가 같은 지번을 쓰는 충돌 그룹에서는 꺼져 이름에 맡긴다
+  - **두 근거는 상호 보완한다** — 이름 같고 지번 다르면 지번이, 지번 같고 차수 다르면 이름이 가른다. 어느 한쪽만으로는 못 푼다
+  - 배경·함정·잔여 과제: `.planning/data-quality/matching-integrity-20260821.md`
+- **CRITICAL** 매칭 RPC(`match_complex_by_admin`)를 바꾸면 **반드시 호출해서 확인한다.** `db push` 성공은 검증이 아니다 — plpgsql 은 지연 바인딩이라 본문 오류가 실행 시점에야 드러난다 (선례: `min(uuid)` 부재로 함수가 통째로 죽음 / `search_path=''` + 미수식 참조로 즉시 죽음 `20260819030000`)
 - **CRITICAL** 광고 쿼리: `now() BETWEEN starts_at AND ends_at AND status='approved'` 필수
 - 거래 조회: `WHERE cancel_date IS NULL AND superseded_by IS NULL` 필수 (취소·정정 제외)
 - Server Action 우선 (폼·mutation). REST Route는 외부 노출 필요 시만
