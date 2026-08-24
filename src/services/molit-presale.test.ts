@@ -1,31 +1,46 @@
-import { describe, it, expect, vi } from 'vitest'
-import { fetchPresaleTrades } from '@/services/molit-presale'
+import { describe, it, expect, afterEach, vi } from 'vitest'
+import { currentYearMonth, previousYearMonth } from './molit-presale'
 
-describe('fetchPresaleTrades (DATA-02)', () => {
-  it('MOLIT_API_KEY 미설정 시 에러를 throw한다', async () => {
-    const orig = process.env.MOLIT_API_KEY
-    delete process.env.MOLIT_API_KEY
-    await expect(fetchPresaleTrades('38110', '202605')).rejects.toThrow('MOLIT_API_KEY')
-    process.env.MOLIT_API_KEY = orig
+/**
+ * 일배치가 훑는 기간을 정하는 함수들이다. 여기가 틀리면 조용히 한 달치를 통째로
+ * 놓친다 — 2026-08-24 에 오피스텔 일배치가 당월만 봐서 지난 달 거래의 22~62%를
+ * 영구 누락하던 것이 정확히 그 부류였다.
+ *
+ * 특히 previousYearMonth 는 **1월 경계**가 유일한 위험 지점이다. 월에서 1을 빼는
+ * 구현이 12월/전년으로 넘어가지 않으면 매년 1월에 한 달치가 사라진다.
+ */
+describe('previousYearMonth', () => {
+  afterEach(() => { vi.useRealTimers() })
+
+  const at = (iso: string) => { vi.useFakeTimers(); vi.setSystemTime(new Date(iso)) }
+
+  it('달 중간에서 전월을 돌려준다', () => {
+    at('2026-08-24T10:00:00')
+    expect(previousYearMonth()).toBe('202607')
   })
 
-  it('API ok=false이면 에러를 throw한다', async () => {
-    process.env.MOLIT_API_KEY = 'test-key'
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }))
-    await expect(fetchPresaleTrades('38110', '202605')).rejects.toThrow('MOLIT API 500')
-    vi.unstubAllGlobals()
+  it('1월이면 전년 12월로 넘어간다', () => {
+    at('2026-01-15T10:00:00')
+    expect(previousYearMonth()).toBe('202512')
   })
 
-  it('정상 XML 응답에서 PresaleTrade 배열을 파싱한다', async () => {
-    process.env.MOLIT_API_KEY = 'test-key'
-    const xml = `<?xml version="1.0"?><response><body><items><item><aptNm>테스트분양</aptNm><umdNm>의창구</umdNm><dealAmount>50,000</dealAmount><dealYear>2026</dealYear><dealMonth>05</dealMonth><dealDay>01</dealDay></item></items></body></response>`
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      text: () => Promise.resolve(xml),
-    }))
-    const result = await fetchPresaleTrades('38110', '202605')
-    expect(result.length).toBeGreaterThan(0)
-    expect(result[0]?.aptNm).toBe('테스트분양')
-    vi.unstubAllGlobals()
+  it('3월 1일에도 2월을 돌려준다 (말일 수가 다른 달로 새지 않는다)', () => {
+    at('2026-03-01T00:30:00')
+    expect(previousYearMonth()).toBe('202602')
+  })
+
+  it('윤년 3월에도 2월을 돌려준다', () => {
+    at('2028-03-31T23:00:00')
+    expect(previousYearMonth()).toBe('202802')
+  })
+
+  it('항상 YYYYMM 6자리다', () => {
+    at('2026-09-09T00:00:00')
+    expect(previousYearMonth()).toMatch(/^\d{6}$/)
+  })
+
+  it('currentYearMonth 와 서로 다른 달을 가리킨다', () => {
+    at('2026-08-24T10:00:00')
+    expect(previousYearMonth()).not.toBe(currentYearMonth())
   })
 })

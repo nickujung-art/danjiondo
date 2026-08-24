@@ -8,6 +8,7 @@ import {
   fetchPresaleTrades,
   parseAmount,
   currentYearMonth,
+  previousYearMonth,
 } from '@/services/molit-presale'
 import { fetchCheongyakList, fetchRemndrList, fetchCompetitionRate } from '@/services/cheongyak/client'
 import { normalizeCheongyakItem, normalizeRemndrItem } from '@/services/cheongyak/normalize'
@@ -274,24 +275,43 @@ export async function GET(request: Request): Promise<Response> {
     errors.push(`expired deactivation: ${describeError(err)}`)
   }
 
-  // ── 오피스텔 실거래 당월 수집 (OFFI-01) ──────────────────────────────────
-  const offiYm = currentYearMonth()
+  // ── 오피스텔 실거래 전월+당월 수집 (OFFI-01) ──────────────────────────────
+  //
+  // 🔴 **전월을 반드시 함께 훑는다.** MOLIT 은 계약 후 신고까지 시차가 있어 M 월 거래가
+  // M+1 월에 들어온다. 당월만 보면 달이 바뀌는 순간 그 달을 두 번 다시 보지 않아
+  // 지연 신고분이 **영구 누락**된다.
+  //
+  // 2026-08-24 실측(48121·48123·48125 오피스텔을 백필로 다시 훑어 신규 생성된 행의 비율):
+  //   2026-05  81/131 = 61.8% 누락      2026-08(당월)  0/67 = 0%
+  //   2026-06  37/168 = 22.0% 누락      2025년         3/1,665 = 0.2%(이전 백필분)
+  //   2026-07  30/139 = 21.6% 누락
+  //   ↔ 아파트 대조군(전월+당월을 매일 훑는 molit-daily.yml): 2026-06·07 둘 다 **0건**
+  // 당월 0% / 지난 달 22~62% / 아파트 0 이라는 시그니처가 원인을 정확히 가리킨다.
+  //
+  // 아파트·연립은 molit-daily.yml 이 from=전월 to=당월 로 이미 이렇게 돈다.
+  // 오피스텔만 이 저장소에서 빠져 있었다.
+  const offiYms = [previousYearMonth(), currentYearMonth()]
   let offiErrors = 0
   for (const sggCode of activeSggCodes) {
-    try {
-      const result = await ingestOffiMonth(sggCode, offiYm, supabase)
-      offiUpserted += result.rowsUpserted
-      if (result.status === 'failed') {
-        errors.push(`offi ${sggCode} ${offiYm}: ${result.rowsFailed}건 실패`)
+    for (const offiYm of offiYms) {
+      try {
+        const result = await ingestOffiMonth(sggCode, offiYm, supabase)
+        offiUpserted += result.rowsUpserted
+        if (result.status === 'failed') {
+          errors.push(`offi ${sggCode} ${offiYm}: ${result.rowsFailed}건 실패`)
+          offiErrors++
+        }
+      } catch (err) {
+        errors.push(`offi ${sggCode} ${offiYm}: ${describeError(err)}`)
         offiErrors++
       }
-    } catch (err) {
-      errors.push(`offi ${sggCode}: ${describeError(err)}`)
-      offiErrors++
     }
   }
   totalUpserted += offiUpserted
-  const offiStatus = offiErrors === 0 ? 'success' : offiErrors < activeSggCodes.length ? 'partial' : 'failed'
+  // 분모는 시도 횟수다 — 전월+당월로 2배가 됐으므로 sgg 수만 쓰면 'partial' 구간이
+  // 절반으로 줄어 전멸에 가까운 실패도 'partial' 로 보고된다.
+  const offiAttempts = activeSggCodes.length * offiYms.length
+  const offiStatus = offiErrors === 0 ? 'success' : offiErrors < offiAttempts ? 'partial' : 'failed'
   const offiErrMsg = offiErrors > 0
     ? errors.filter(e => e.startsWith('offi')).slice(-3).join('; ')
     : undefined

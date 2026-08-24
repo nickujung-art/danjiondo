@@ -77,3 +77,16 @@ export function currentYearMonth(): string {
   const d = new Date()
   return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`
 }
+
+/**
+ * 전월 YYYYMM. 신고 지연 때문에 M 월 거래가 M+1 월에 들어오므로, 일배치는 당월만이
+ * 아니라 전월도 함께 훑어야 한다(molit-daily.yml 이 아파트에 대해 이미 그렇게 한다).
+ *
+ * `new Date(y, m - 1, 1)` 로 만든다 — 월 인덱스가 음수여도 Date 가 연도를 자동으로
+ * 넘겨주므로 1월에 12월/전년으로 정확히 떨어진다.
+ */
+export function previousYearMonth(): string {
+  const d = new Date()
+  const p = new Date(d.getFullYear(), d.getMonth() - 1, 1)
+  return `${p.getFullYear()}${String(p.getMonth() + 1).padStart(2, '0')}`
+}
