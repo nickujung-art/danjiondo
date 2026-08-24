@@ -1,0 +1,483 @@
+{
+  "at": "2026-08-24T06:13:46.414Z",
+  "rows": [
+    {
+      "p": {
+        "verdict": "단지주소_오류",
+        "complex_id": "0086126d-bc65-4437-9ea8-0078364bc595",
+        "name": "씨티해오름",
+        "sgg_code": "48125",
+        "status": "active",
+        "own_dong": "월영동",
+        "own_axis": "dong",
+        "own_address": "경상남도 창원시 마산합포구 월영동11길 57",
+        "canonical": "해운동 48",
+        "tx_count": 198,
+        "raw_name": "해오름",
+        "d_own_m": 842,
+        "d_canon_m": 297,
+        "why": "좌표가 확정 지번 동 쪽에 있다 — 거래가 맞다",
+        "candidates": []
+      },
+      "lat": 35.178913462362,
+      "lng": 128.566243349148,
+      "rev": {
+        "jibun": "경남 창원시 마산합포구 해운동 48",
+        "road": "경상남도 창원시 마산합포구 월영동11길 57",
+        "dong": "해운동"
+      },
+      "agree": true,
+      "note": "확정 지번의 동과 일치",
+      "shared": 0
+    },
+    {
+      "p": {
+        "verdict": "단지주소_오류",
+        "complex_id": "5bb62d5d-debb-453a-be99-f6c473c3c047",
+        "name": "센트럴시티",
+        "sgg_code": "48123",
+        "status": "active",
+        "own_dong": "반포동",
+        "own_axis": "jibun_address",
+        "own_address": "서울 서초구 반포동 19-3",
+        "canonical": "가음동 22-4",
+        "tx_count": 186,
+        "raw_name": "센트럴시티",
+        "d_own_m": null,
+        "d_canon_m": 84,
+        "why": "등록 주소의 동이 이 시군구에 없다 — 주소가 딴 도시",
+        "candidates": [
+          {
+            "id": "307380ab-b9f0-4831-bc1a-2d88de65e01e",
+            "name": "창원더샵센트럴파크",
+            "sim": 0.33,
+            "metres": 239
+          }
+        ]
+      },
+      "lat": 35.2084735985684,
+      "lng": 128.695526328346,
+      "rev": {
+        "jibun": "경남 창원시 성산구 가음동 22-4",
+        "road": "경상남도 창원시 성산구 원이대로883번길 11-21",
+        "dong": "가음동"
+      },
+      "agree": true,
+      "note": "확정 지번의 동과 일치",
+      "shared": 0
+    },
+    {
+      "p": {
+        "verdict": "단지주소_오류",
+        "complex_id": "8e20435f-7f45-4a87-ba91-3cb5284585bb",
+        "name": "대림파크맨션",
+        "sgg_code": "48127",
+        "status": "active",
+        "own_dong": "청학동",
+        "own_axis": "jibun_address",
+        "own_address": "인천 연수구 청학동 564-3",
+        "canonical": "회원동 355-13",
+        "tx_count": 92,
+        "raw_name": "대림파크맨션",
+        "d_own_m": null,
+        "d_canon_m": 291,
+        "why": "등록 주소의 동이 이 시군구에 없다 — 주소가 딴 도시",
+        "candidates": []
+      },
+      "lat": 35.2182907988681,
+      "lng": 128.569242175137,
+      "rev": {
+        "jibun": "경남 창원시 마산회원구 회원동 355-13",
+        "road": null,
+        "dong": "회원동"
+      },
+      "agree": true,
+      "note": "확정 지번의 동과 일치",
+      "shared": 0
+    },
+    {
+      "p": {
+        "verdict": "단지주소_오류",
+        "complex_id": "efe11439-8fc7-4c51-9020-86a9e9280c51",
+        "name": "크라운",
+        "sgg_code": "48127",
+        "status": "active",
+        "own_dong": "동천동",
+        "own_axis": "jibun_address",
+        "own_address": "대구 북구 동천동 909-7",
+        "canonical": "구암동 1345",
+        "tx_count": 82,
+        "raw_name": "크라운",
+        "d_own_m": null,
+        "d_canon_m": 1808,
+        "why": "등록 주소의 동이 이 시군구에 없다 — 주소가 딴 도시",
+        "candidates": []
+      },
+      "lat": 35.2376286568009,
+      "lng": 128.582490996457,
+      "rev": {
+        "jibun": "경남 창원시 마산회원구 합성동 126-4",
+        "road": "경상남도 창원시 마산회원구 3·15대로 736",
+        "dong": "합성동"
+      },
+      "agree": false,
+      "note": "불일치: 확정 구암동 vs 역지오코딩 합성동",
+      "shared": 0
+    },
+    {
+      "p": {
+        "verdict": "단지주소_오류",
+        "complex_id": "75a67247-1d56-4c40-a81f-a3b2c8832a08",
+        "name": "늘해랑아파트",
+        "sgg_code": "48250",
+        "status": "active",
+        "own_dong": "부평동",
+        "own_axis": "jibun_address",
+        "own_address": "인천 부평구 부평동 179-1",
+        "canonical": "동상동 795-13",
+        "tx_count": 28,
+        "raw_name": "늘해랑아파트",
+        "d_own_m": null,
+        "d_canon_m": 405,
+        "why": "등록 주소의 동이 이 시군구에 없다 — 주소가 딴 도시",
+        "candidates": []
+      },
+      "lat": 35.2361424363535,
+      "lng": 128.885091698303,
+      "rev": {
+        "jibun": "경남 김해시 동상동 795-13",
+        "road": "경상남도 김해시 호계로 508-13",
+        "dong": "동상동"
+      },
+      "agree": true,
+      "note": "확정 지번의 동과 일치",
+      "shared": 0
+    },
+    {
+      "p": {
+        "verdict": "단지주소_오류",
+        "complex_id": "2e06951b-823c-4c40-95ed-3099d6b3b4bb",
+        "name": "소라1",
+        "sgg_code": "48127",
+        "status": "active",
+        "own_dong": "성정동",
+        "own_axis": "jibun_address",
+        "own_address": "충남 천안시 서북구 성정동 723-12",
+        "canonical": "합성동 167-4",
+        "tx_count": 27,
+        "raw_name": "소라1",
+        "d_own_m": null,
+        "d_canon_m": 299,
+        "why": "등록 주소의 동이 이 시군구에 없다 — 주소가 딴 도시",
+        "candidates": []
+      },
+      "lat": 35.2422872837288,
+      "lng": 128.588497038123,
+      "rev": {
+        "jibun": "경남 창원시 마산회원구 합성동 167-5",
+        "road": "경상남도 창원시 마산회원구 합성동12길 42",
+        "dong": "합성동"
+      },
+      "agree": true,
+      "note": "확정 지번의 동과 일치",
+      "shared": 0
+    },
+    {
+      "p": {
+        "verdict": "단지주소_오류",
+        "complex_id": "949c65fc-652d-490b-9002-8729139c4561",
+        "name": "덕천파크",
+        "sgg_code": "48127",
+        "status": "active",
+        "own_dong": "자산동",
+        "own_axis": "jibun_address",
+        "own_address": "경남 창원시 마산합포구 자산동 11-3",
+        "canonical": "회성동 81-3",
+        "tx_count": 27,
+        "raw_name": "덕천파크",
+        "d_own_m": null,
+        "d_canon_m": 2763,
+        "why": "등록 주소의 동이 이 시군구에 없다 — 주소가 딴 도시",
+        "candidates": []
+      },
+      "lat": 35.2076886212503,
+      "lng": 128.563846416393,
+      "rev": {
+        "jibun": "경남 창원시 마산합포구 자산동 11-3",
+        "road": "경상남도 창원시 마산합포구 무학로 442",
+        "dong": "자산동"
+      },
+      "agree": false,
+      "note": "불일치: 확정 회성동 vs 역지오코딩 자산동",
+      "shared": 0
+    },
+    {
+      "p": {
+        "verdict": "단지주소_오류",
+        "complex_id": "ba5fa8a5-bb13-4da3-a66b-2db282f79992",
+        "name": "금화",
+        "sgg_code": "48129",
+        "status": "active",
+        "own_dong": "익선동",
+        "own_axis": "jibun_address",
+        "own_address": "경남 창원시 진해구 익선동 13-1",
+        "canonical": "태백동 10-33",
+        "tx_count": 22,
+        "raw_name": "금화",
+        "d_own_m": null,
+        "d_canon_m": 1587,
+        "why": "등록 주소의 동이 이 시군구에 없다 — 주소가 딴 도시",
+        "candidates": []
+      },
+      "lat": 35.1498555179029,
+      "lng": 128.657413003268,
+      "rev": {
+        "jibun": "경남 창원시 진해구 익선동 13-1",
+        "road": "경상남도 창원시 진해구 편백로13번길 3",
+        "dong": "익선동"
+      },
+      "agree": false,
+      "note": "불일치: 확정 태백동 vs 역지오코딩 익선동",
+      "shared": 0
+    },
+    {
+      "p": {
+        "verdict": "단지주소_오류",
+        "complex_id": "ef5b4a52-bb20-462a-9ffd-27e8294fca7d",
+        "name": "한일사원",
+        "sgg_code": "48127",
+        "status": "active",
+        "own_dong": "매포읍평동리",
+        "own_axis": "jibun_address",
+        "own_address": "충북 단양군 매포읍 평동리 16",
+        "canonical": "양덕동 57-6",
+        "tx_count": 20,
+        "raw_name": "한일사원",
+        "d_own_m": null,
+        "d_canon_m": 969,
+        "why": "등록 주소의 동이 이 시군구에 없다 — 주소가 딴 도시",
+        "candidates": []
+      },
+      "lat": 35.220851526193,
+      "lng": 128.579713884234,
+      "rev": {
+        "jibun": "경남 창원시 마산회원구 양덕동 477",
+        "road": "경상남도 창원시 마산회원구 삼호로 63",
+        "dong": "양덕동"
+      },
+      "agree": false,
+      "note": "🔴 좌표를 4곳이 공유 — 지오코딩 폴백 가능성, 역지오코딩을 못 믿는다",
+      "shared": 4
+    },
+    {
+      "p": {
+        "verdict": "단지주소_오류",
+        "complex_id": "dc7b6880-ec2e-45bc-b18e-281f056b8802",
+        "name": "경인빌라",
+        "sgg_code": "48129",
+        "status": "active",
+        "own_dong": "화곡동",
+        "own_axis": "jibun_address",
+        "own_address": "서울 강서구 화곡동 56-356",
+        "canonical": "석동 612-1",
+        "tx_count": 18,
+        "raw_name": "경인빌라",
+        "d_own_m": null,
+        "d_canon_m": 2533,
+        "why": "등록 주소의 동이 이 시군구에 없다 — 주소가 딴 도시",
+        "candidates": []
+      },
+      "lat": 35.1334297856872,
+      "lng": 128.710188416055,
+      "rev": {
+        "jibun": "경남 창원시 진해구 풍호동 1",
+        "road": "경상남도 창원시 진해구 진해대로 1101",
+        "dong": "풍호동"
+      },
+      "agree": false,
+      "note": "🔴 좌표를 5곳이 공유 — 지오코딩 폴백 가능성, 역지오코딩을 못 믿는다",
+      "shared": 5
+    },
+    {
+      "p": {
+        "verdict": "단지주소_오류",
+        "complex_id": "59114c2d-c5f5-46e9-a47e-61cadfd16fde",
+        "name": "현대국민주택",
+        "sgg_code": "48127",
+        "status": "active",
+        "own_dong": "벌리동",
+        "own_axis": "jibun_address",
+        "own_address": "경남 사천시 벌리동 31-4",
+        "canonical": "회원동 671-8",
+        "tx_count": 14,
+        "raw_name": "현대국민주택",
+        "d_own_m": null,
+        "d_canon_m": 719,
+        "why": "등록 주소의 동이 이 시군구에 없다 — 주소가 딴 도시",
+        "candidates": []
+      },
+      "lat": 35.2179362843052,
+      "lng": 128.563222190727,
+      "rev": {
+        "jibun": "경남 창원시 마산회원구 회원동 671-8",
+        "road": "경상남도 창원시 마산회원구 회원남31길 41",
+        "dong": "회원동"
+      },
+      "agree": true,
+      "note": "확정 지번의 동과 일치",
+      "shared": 0
+    },
+    {
+      "p": {
+        "verdict": "단지주소_오류",
+        "complex_id": "dcb2d806-1d20-4403-91fc-95ce5b61f297",
+        "name": "대림팰리스",
+        "sgg_code": "48250",
+        "status": "active",
+        "own_dong": "공도읍마정리",
+        "own_axis": "jibun_address",
+        "own_address": "경기 안성시 공도읍 마정리 100-41",
+        "canonical": "부원동 87",
+        "tx_count": 11,
+        "raw_name": "대림팰리스",
+        "d_own_m": null,
+        "d_canon_m": 149,
+        "why": "등록 주소의 동이 이 시군구에 없다 — 주소가 딴 도시",
+        "candidates": []
+      },
+      "lat": 35.228565355864,
+      "lng": 128.88936269803,
+      "rev": {
+        "jibun": "경남 김해시 부원동 623",
+        "road": "경상남도 김해시 김해대로 2401",
+        "dong": "부원동"
+      },
+      "agree": false,
+      "note": "🔴 좌표를 10곳이 공유 — 지오코딩 폴백 가능성, 역지오코딩을 못 믿는다",
+      "shared": 10
+    },
+    {
+      "p": {
+        "verdict": "단지주소_오류",
+        "complex_id": "72e7b4db-8716-4b10-9bc5-d4db4a735a64",
+        "name": "현대하이츠빌라",
+        "sgg_code": "48125",
+        "status": "active",
+        "own_dong": "명륜1가",
+        "own_axis": "jibun_address",
+        "own_address": "서울 종로구 명륜1가 22",
+        "canonical": "자산동 28-1",
+        "tx_count": 10,
+        "raw_name": "현대하이츠빌라",
+        "d_own_m": null,
+        "d_canon_m": 145,
+        "why": "등록 주소의 동이 이 시군구에 없다 — 주소가 딴 도시",
+        "candidates": []
+      },
+      "lat": 35.204932589327,
+      "lng": 128.561336153278,
+      "rev": {
+        "jibun": "경남 창원시 마산합포구 자산동 28-1",
+        "road": "경상남도 창원시 마산합포구 자산서10길 35",
+        "dong": "자산동"
+      },
+      "agree": true,
+      "note": "확정 지번의 동과 일치",
+      "shared": 0
+    },
+    {
+      "p": {
+        "verdict": "단지주소_오류",
+        "complex_id": "b92fdc52-e22f-4589-b6ec-f0ca4afa3b2e",
+        "name": "한빛빌라4차",
+        "sgg_code": "48250",
+        "status": "active",
+        "own_dong": "신천동",
+        "own_axis": "jibun_address",
+        "own_address": "경기 시흥시 신천동 819-9",
+        "canonical": "흥동 418-10",
+        "tx_count": 10,
+        "raw_name": "한빛빌라4차",
+        "d_own_m": null,
+        "d_canon_m": 2645,
+        "why": "등록 주소의 동이 이 시군구에 없다 — 주소가 딴 도시",
+        "candidates": [
+          {
+            "id": "85228d3a-37a5-4075-9361-de77ba5b8cf3",
+            "name": "한빛빌라2차",
+            "sim": 0.6,
+            "metres": 2664
+          }
+        ]
+      },
+      "lat": 35.228565355864,
+      "lng": 128.88936269803,
+      "rev": {
+        "jibun": "경남 김해시 부원동 623",
+        "road": "경상남도 김해시 김해대로 2401",
+        "dong": "부원동"
+      },
+      "agree": false,
+      "note": "🔴 좌표를 10곳이 공유 — 지오코딩 폴백 가능성, 역지오코딩을 못 믿는다",
+      "shared": 10
+    },
+    {
+      "p": {
+        "verdict": "단지주소_오류",
+        "complex_id": "c704c440-7a19-4444-8be8-5ee48ada1a04",
+        "name": "진흥빌라A동",
+        "sgg_code": "48127",
+        "status": "active",
+        "own_dong": "망원동",
+        "own_axis": "jibun_address",
+        "own_address": "서울 마포구 망원동 432-18",
+        "canonical": "합성동 131-3",
+        "tx_count": 7,
+        "raw_name": "진흥빌라A동",
+        "d_own_m": null,
+        "d_canon_m": 237,
+        "why": "등록 주소의 동이 이 시군구에 없다 — 주소가 딴 도시",
+        "candidates": []
+      },
+      "lat": 35.2432540418438,
+      "lng": 128.586868617746,
+      "rev": {
+        "jibun": "경남 창원시 마산회원구 합성동 131-3",
+        "road": "경상남도 창원시 마산회원구 합성동4길 8",
+        "dong": "합성동"
+      },
+      "agree": true,
+      "note": "확정 지번의 동과 일치",
+      "shared": 0
+    },
+    {
+      "p": {
+        "verdict": "단지주소_오류",
+        "complex_id": "0b16120b-267a-464f-aa35-7e49f7728012",
+        "name": "빌라맨숀2동",
+        "sgg_code": "48125",
+        "status": "active",
+        "own_dong": "두암동",
+        "own_axis": "jibun_address",
+        "own_address": "광주 북구 두암동 570-11",
+        "canonical": "완월동 304-9",
+        "tx_count": 6,
+        "raw_name": "빌라맨숀2동",
+        "d_own_m": null,
+        "d_canon_m": 274,
+        "why": "등록 주소의 동이 이 시군구에 없다 — 주소가 딴 도시",
+        "candidates": []
+      },
+      "lat": 35.1953581587016,
+      "lng": 128.562329192791,
+      "rev": {
+        "jibun": "경남 창원시 마산합포구 완월동 304-9",
+        "road": "경상남도 창원시 마산합포구 중앙남8길 75",
+        "dong": "완월동"
+      },
+      "agree": true,
+      "note": "확정 지번의 동과 일치",
+      "shared": 0
+    }
+  ]
+}
