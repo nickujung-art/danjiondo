@@ -1,0 +1,350 @@
+{
+  "at": "2026-08-24T06:39:20.995Z",
+  "rows": [
+    {
+      "t": {
+        "complex_id": "a95da4ef-fdf1-4a54-879f-042508b18678",
+        "name": "그라니아아파트",
+        "sgg_code": "48250",
+        "canonical": "삼정동 611-3",
+        "own_address": null
+      },
+      "query": "김해시 그라니아아파트",
+      "hit": {
+        "title": "그라니아아파트",
+        "address": "경상남도 김해시 삼정동 611-3 그라니아아파트",
+        "road": "경상남도 김해시 김해대로2471번길 7 그라니아아파트",
+        "coord": [
+          35.2286588,
+          128.8968668
+        ]
+      },
+      "agree": true,
+      "note": "확정 지번의 동과 일치"
+    },
+    {
+      "t": {
+        "complex_id": "b92fdc52-e22f-4589-b6ec-f0ca4afa3b2e",
+        "name": "한빛빌라4차",
+        "sgg_code": "48250",
+        "canonical": "흥동 418-10",
+        "own_address": null
+      },
+      "query": "김해시 한빛빌라4차",
+      "agree": false,
+      "note": "그 시군구 결과 없음"
+    },
+    {
+      "t": {
+        "complex_id": "cab39379-d0cd-4339-be30-ffe613df1c91",
+        "name": "한빛빌라5차",
+        "sgg_code": "48250",
+        "canonical": "흥동 418-9",
+        "own_address": null
+      },
+      "query": "김해시 한빛빌라5차",
+      "agree": false,
+      "note": "그 시군구 결과 없음"
+    },
+    {
+      "t": {
+        "complex_id": "d14d0282-461c-4c8e-a815-caaff143a0de",
+        "name": "AK휴엘아파트",
+        "sgg_code": "48250",
+        "canonical": "생림면 봉림리 659",
+        "own_address": null
+      },
+      "query": "김해시 AK휴엘아파트",
+      "hit": {
+        "title": "AK휴웰아파트",
+        "address": "경상남도 김해시 생림면 봉림리 659 AK휴웰 아파트",
+        "road": "경상남도 김해시 생림면 봉림로 46 AK휴웰 아파트",
+        "coord": [
+          35.3283072,
+          128.8489262
+        ]
+      },
+      "agree": true,
+      "note": "확정 지번의 동과 일치"
+    },
+    {
+      "t": {
+        "complex_id": "d874462a-f86b-433d-bbe5-6f26bceb7473",
+        "name": "화목궁전빌라5차",
+        "sgg_code": "48250",
+        "canonical": "어방동 721-11",
+        "own_address": null
+      },
+      "query": "김해시 화목궁전빌라5차",
+      "agree": false,
+      "note": "그 시군구 결과 없음"
+    },
+    {
+      "t": {
+        "complex_id": "dcb2d806-1d20-4403-91fc-95ce5b61f297",
+        "name": "대림팰리스",
+        "sgg_code": "48250",
+        "canonical": "부원동 87",
+        "own_address": null
+      },
+      "query": "김해시 대림팰리스",
+      "hit": {
+        "title": "대림팰리스빌라",
+        "address": "경상남도 김해시 부원동 87",
+        "road": "경상남도 김해시 호계로438번길 29-12",
+        "coord": [
+          35.230328,
+          128.888438
+        ]
+      },
+      "agree": true,
+      "note": "확정 지번의 동과 일치"
+    },
+    {
+      "t": {
+        "complex_id": "e5b91e95-4298-42e5-8c0b-94607cf0be94",
+        "name": "기영맨션(기영타워)",
+        "sgg_code": "48250",
+        "canonical": "진영읍 여래리 230-1",
+        "own_address": null
+      },
+      "query": "김해시 기영맨션(기영타워)",
+      "hit": {
+        "title": "기영타워아파트",
+        "address": "경상남도 김해시 진영읍 여래리 230-1",
+        "road": "경상남도 김해시 진영읍 진영로 303",
+        "coord": [
+          35.3020705,
+          128.7466543
+        ]
+      },
+      "agree": true,
+      "note": "확정 지번의 동과 일치"
+    },
+    {
+      "t": {
+        "complex_id": "f1c417e1-f141-4764-8c3d-9ecd40e5190b",
+        "name": "동원하우스",
+        "sgg_code": "48250",
+        "canonical": "지내동 525",
+        "own_address": null
+      },
+      "query": "김해시 동원하우스",
+      "agree": false,
+      "note": "그 시군구 결과 없음"
+    },
+    {
+      "t": {
+        "complex_id": "f40fabb5-e288-4f21-90a3-dcdff88c7cb0",
+        "name": "신일아트맨션",
+        "sgg_code": "48250",
+        "canonical": "안동 343",
+        "own_address": null
+      },
+      "query": "김해시 신일아트맨션",
+      "agree": false,
+      "note": "그 시군구 결과 없음"
+    },
+    {
+      "t": {
+        "complex_id": "fdfcae37-f3c3-440a-bb03-086882453f47",
+        "name": "부원광명타운",
+        "sgg_code": "48250",
+        "canonical": "부원동 155-11",
+        "own_address": null
+      },
+      "query": "김해시 부원광명타운",
+      "hit": {
+        "title": "부원광명타운맨션",
+        "address": "경상남도 김해시 부원동 155-11",
+        "road": "경상남도 김해시 김해대로2431번길 26",
+        "coord": [
+          35.2296096,
+          128.8924874
+        ]
+      },
+      "agree": true,
+      "note": "확정 지번의 동과 일치"
+    },
+    {
+      "t": {
+        "complex_id": "d1be3edc-2df4-4751-9413-12c9bfce2450",
+        "name": "동양상가빌라2차",
+        "sgg_code": "48129",
+        "canonical": "숭인동 18-2",
+        "own_address": null
+      },
+      "query": "창원시 진해구 동양상가빌라2차",
+      "hit": {
+        "title": "동양상가빌라2차",
+        "address": "경상남도 창원시 진해구 숭인동 18-2 동양상가빌라2차",
+        "road": "경상남도 창원시 진해구 중원로10번길 14",
+        "coord": [
+          35.1447251,
+          128.6602877
+        ]
+      },
+      "agree": true,
+      "note": "확정 지번의 동과 일치"
+    },
+    {
+      "t": {
+        "complex_id": "dc7b6880-ec2e-45bc-b18e-281f056b8802",
+        "name": "경인빌라",
+        "sgg_code": "48129",
+        "canonical": "석동 612-1",
+        "own_address": null
+      },
+      "query": "창원시 진해구 경인빌라",
+      "hit": {
+        "title": "경인빌라",
+        "address": "경상남도 창원시 진해구 석동 612-1",
+        "road": "경상남도 창원시 진해구 진해대로728번길 8-24",
+        "coord": [
+          35.1581079,
+          128.6940372
+        ]
+      },
+      "agree": true,
+      "note": "확정 지번의 동과 일치"
+    },
+    {
+      "t": {
+        "complex_id": "fb3d81d8-5d34-4b2f-a76d-3e7afa86bd0d",
+        "name": "동산그린빌라",
+        "sgg_code": "48129",
+        "canonical": "인사동 7-106",
+        "own_address": null
+      },
+      "query": "창원시 진해구 동산그린빌라",
+      "agree": false,
+      "note": "그 시군구 결과 없음"
+    },
+    {
+      "t": {
+        "complex_id": "b9eee9e0-8bdf-4299-9569-fcfc00228ab0",
+        "name": "한아름맨션",
+        "sgg_code": "48125",
+        "canonical": "문화동 2-2",
+        "own_address": null
+      },
+      "query": "창원시 마산합포구 한아름맨션",
+      "agree": false,
+      "note": "그 시군구 결과 없음"
+    },
+    {
+      "t": {
+        "complex_id": "e7390b9d-e2a6-4ad5-9d6d-fba6e98fec16",
+        "name": "반월동르메이에르",
+        "sgg_code": "48125",
+        "canonical": "대성동1가 5-7",
+        "own_address": null
+      },
+      "query": "창원시 마산합포구 반월동르메이에르",
+      "agree": false,
+      "note": "그 시군구 결과 없음"
+    },
+    {
+      "t": {
+        "complex_id": "f5c68708-5e03-4229-8f90-cedccfc053a6",
+        "name": "뜨란채빌",
+        "sgg_code": "48125",
+        "canonical": "추산동 71-4",
+        "own_address": null
+      },
+      "query": "창원시 마산합포구 뜨란채빌",
+      "hit": {
+        "title": "뜨란채빌오피스텔",
+        "address": "경상남도 창원시 마산합포구 추산동 71-4",
+        "road": "경상남도 창원시 마산합포구 몽고정길 86",
+        "coord": [
+          35.2050072,
+          128.571058
+        ]
+      },
+      "agree": true,
+      "note": "확정 지번의 동과 일치"
+    },
+    {
+      "t": {
+        "complex_id": "df675dad-f8a9-44bf-a68a-000eb4f62ca3",
+        "name": "팔육국민주택",
+        "sgg_code": "48127",
+        "canonical": "회원동 662-6",
+        "own_address": null
+      },
+      "query": "창원시 마산회원구 팔육국민주택",
+      "agree": false,
+      "note": "그 시군구 결과 없음"
+    },
+    {
+      "t": {
+        "complex_id": "ef5b4a52-bb20-462a-9ffd-27e8294fca7d",
+        "name": "한일사원",
+        "sgg_code": "48127",
+        "canonical": "양덕동 57-6",
+        "own_address": null
+      },
+      "query": "창원시 마산회원구 한일사원",
+      "agree": false,
+      "note": "그 시군구 결과 없음"
+    },
+    {
+      "t": {
+        "complex_id": "f30263cf-4c2d-4c39-9eee-77689a7ea0c9",
+        "name": "세화A.P.T",
+        "sgg_code": "48127",
+        "canonical": "구암동 12-10",
+        "own_address": null
+      },
+      "query": "창원시 마산회원구 세화A.P.T",
+      "agree": false,
+      "note": "그 시군구 결과 없음"
+    },
+    {
+      "t": {
+        "complex_id": "c7e1e274-1e85-4e37-9912-658ee31ed581",
+        "name": "대동시티빌",
+        "sgg_code": "48123",
+        "canonical": "외동 853-35",
+        "own_address": null
+      },
+      "query": "창원시 성산구 대동시티빌",
+      "hit": {
+        "title": "외동대동아파트",
+        "address": "경상남도 창원시 성산구 외동 853-35",
+        "road": "경상남도 창원시 성산구 창원대로780번길 47",
+        "coord": [
+          35.2122114,
+          128.679165
+        ]
+      },
+      "agree": true,
+      "note": "확정 지번의 동과 일치"
+    },
+    {
+      "t": {
+        "complex_id": "ef086993-e8b7-4b9d-af5f-5f6fac3a1266",
+        "name": "대우사원",
+        "sgg_code": "48123",
+        "canonical": "남산동 601-7",
+        "own_address": null
+      },
+      "query": "창원시 성산구 대우사원",
+      "agree": false,
+      "note": "그 시군구 결과 없음"
+    },
+    {
+      "t": {
+        "complex_id": "f11f7b5d-7211-49fe-8072-f1ffcec840a0",
+        "name": "태주실업",
+        "sgg_code": "48123",
+        "canonical": "가음동 20-12",
+        "own_address": null
+      },
+      "query": "창원시 성산구 태주실업",
+      "agree": false,
+      "note": "확정 지번(가음동 20-12)과 맞는 결과 없음 — 본 것: 여성노동자임대아파트@가음동"
+    }
+  ]
+}
