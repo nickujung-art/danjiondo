@@ -39,7 +39,13 @@ jobs:
           sudo apt-get install -y -qq postgresql-client-17
           /usr/lib/postgresql/17/bin/psql --version
 
-      - name: Run refresh
+      # 🔴 두 집계를 **한 psql 호출에 이어 붙이지 않는다.**
+      # 2026-08-21~23 3연속 실패가 정확히 그 구조 때문이었다. 앞의
+      # refresh_complex_price_stats() 는 성공했는데(로그에 `(1 row)`) 뒤의
+      # refresh_complex_canonical_jibun() 이 권한 부족으로 죽어 잡 전체가 실패로 뒤집혔고,
+      # data_sources.price-stats 가 failed 로 기록됐다 — 값은 최신인데 감시는 빨간불.
+      # 스텝을 쪼개면 어느 쪽이 죽었는지 로그와 상태에 그대로 남는다.
+      - name: Refresh price stats
         env:
           BACKUP_AGENT_PASSWORD: ${{ secrets.BACKUP_AGENT_PASSWORD }}
         run: |
@@ -47,7 +53,7 @@ jobs:
           export PGCONNECT_TIMEOUT=60
           export PGPASSWORD="$BACKUP_AGENT_PASSWORD"
           # -v ON_ERROR_STOP=1 이 없으면 함수가 실패해도 psql 이 0 을 반환해
-          # 이 잡이 초록불이 된다 — 이번 장애가 정확히 그 부류였다.
+          # 이 잡이 초록불이 된다 — 2026-08-06 장애가 정확히 그 부류였다.
           START=$(date +%s)
           /usr/lib/postgresql/17/bin/psql \
             --host=aws-0-ap-northeast-2.pooler.supabase.com \
@@ -56,14 +62,31 @@ jobs:
             --dbname=postgres \
             --no-password \
             -v ON_ERROR_STOP=1 \
-            -c "SELECT public.refresh_complex_price_stats();" \
-            -c "SELECT public.refresh_complex_canonical_jibun();"
+            -c "SELECT public.refresh_complex_price_stats();"
+          echo "price stats 완료: $(( $(date +%s) - START ))초"
 
-          # 확정 지번(complex_canonical_jibun)은 match_complex_by_admin 의 지번 게이트가
-          # 참조한다(20260821090000). 거래가 늘면 다수결이 바뀔 수 있으므로 가격 파생값과
-          # 같은 주기로 갱신한다. 여기 얹는 이유 — 둘 다 거래 변화에 반응하는 집계이고,
-          # psql 직결 경로를 이미 확보하고 있어 새 워크플로를 만들 필요가 없다.
-          echo "refresh 완료: $(( $(date +%s) - START ))초"
+      # 확정 지번(complex_canonical_jibun)은 match_complex_by_admin 의 지번 게이트가
+      # 참조한다(20260821090000). 거래가 늘면 다수결이 바뀔 수 있으므로 가격 파생값과
+      # 같은 주기로 갱신한다. 여기 얹는 이유 — 둘 다 거래 변화에 반응하는 집계이고,
+      # psql 직결 경로를 이미 확보하고 있어 새 워크플로를 만들 필요가 없다.
+      # EXECUTE 권한은 20260824090000 에서 backup_agent 에 부여했다(최초 생성 시 누락).
+      - name: Refresh canonical jibun
+        env:
+          BACKUP_AGENT_PASSWORD: ${{ secrets.BACKUP_AGENT_PASSWORD }}
+        run: |
+          set -e
+          export PGCONNECT_TIMEOUT=60
+          export PGPASSWORD="$BACKUP_AGENT_PASSWORD"
+          START=$(date +%s)
+          /usr/lib/postgresql/17/bin/psql \
+            --host=aws-0-ap-northeast-2.pooler.supabase.com \
+            --port=5432 \
+            --username=backup_agent.jaamyvlsehlimtrxgrgn \
+            --dbname=postgres \
+            --no-password \
+            -v ON_ERROR_STOP=1 \
+            -c "SELECT public.refresh_complex_canonical_jibun();"
+          echo "확정 지번 완료: $(( $(date +%s) - START ))초"
 
       - name: Mark data_sources on success
         if: success()
