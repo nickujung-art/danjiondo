@@ -235,12 +235,19 @@ async function main(): Promise<void> {
   const cent = dongCentroids(cxs)
 
   const suspects: Canon[] = []
-  const skipped = { 근거없음: 0, 비활성: 0 }
+  const skipped = { 근거없음: 0, 제외상태: 0 }
   let matched = 0
+  let mergedSeen = 0
   for (const cj of canon) {
     const c = cxById.get(cj.complex_id)
     if (!c) continue
-    if (c.status !== 'active') { skipped.비활성++; continue }
+    // 🔴 `active` 만 보면 안 된다 — 2026-08-24 에 이 필터가 정확히 사각지대였다.
+    // `merged` 단지에 거래가 남아 있으면 화면에 안 나오는데도 감사에 안 잡혀,
+    // 5곳(거래 51건)이 여태 보이지 않았다. 그중 4곳은 거래가 아니라 **단지 레코드**가
+    // 틀린 것이었고(등록 주소가 경기 양주·상남동 71-3 등) 살릴 수 있었다.
+    // `demolished`·`out_of_region` 은 의도적으로 제외한다 — 매칭 RPC 도 그 둘만 뺀다.
+    if (c.status === 'demolished' || c.status === 'out_of_region') { skipped.제외상태++; continue }
+    if (c.status === 'merged') mergedSeen++
     const od = ownDong(c)
     if (!od) { skipped.근거없음++; continue }
     if (dongMatches(od.dong, cj.umd_nm ?? '')) { matched++; continue }
@@ -251,6 +258,10 @@ async function main(): Promise<void> {
   console.log(`  동 일치        ${matched.toLocaleString()}`)
   console.log(`  🔴 동 불일치   ${suspects.length.toLocaleString()}  ← 전건 오연결 후보`)
   console.log(`  판정 불가      ${JSON.stringify(skipped)}`)
+  if (mergedSeen) {
+    console.log(`  ℹ️ merged 단지 ${mergedSeen}곳도 검사했다 — 화면에 안 나오지만 거래가 남아 있으면`)
+    console.log(`     '연결됨' 으로 집계돼 연결률을 과대평가한다. merge-complexes.ts --audit-merged 참조`)
+  }
 
   suspects.sort((a, b) => b.tx_count - a.tx_count)
   const plan: { verdict: Verdict; tx_count: number; [k: string]: unknown }[] = []
@@ -272,7 +283,7 @@ async function main(): Promise<void> {
     const cls = classify(c, `${c.sgg_code}|${od.dong}`, `${cj.sgg_code}|${squash(cj.umd_nm)}`, cent)
 
     plan.push({
-      verdict: cls.verdict, complex_id: c.id, name: c.canonical_name, sgg_code: c.sgg_code,
+      verdict: cls.verdict, complex_id: c.id, name: c.canonical_name, sgg_code: c.sgg_code, status: c.status,
       own_dong: od.dong, own_axis: od.axis, own_address: c.jibun_address ?? c.road_address,
       canonical: `${cj.umd_nm} ${cj.jibun}`, tx_count: cj.tx_count, raw_name: raw,
       d_own_m: cls.dOwn, d_canon_m: cls.dCanon, why: cls.why,
@@ -294,7 +305,8 @@ async function main(): Promise<void> {
     console.log(`\n=== ${v} — 상위 ${Math.min(15, rows.length)} / ${rows.length}곳 ===`)
     for (const p of rows.slice(0, 15)) {
       const cands = p.candidates as { name: string; sim: number; metres: number | null }[]
-      console.log(`\n  ${p.name}  [${p.sgg_code}]  거래 ${p.tx_count}건`)
+      const st = p.status === 'active' ? '' : ` ⚠️(${p.status})`
+      console.log(`\n  ${p.name}  [${p.sgg_code}]${st}  거래 ${p.tx_count}건`)
       console.log(`     등록 ${p.own_dong} (${p.own_axis}) ↔ 확정 ${p.canonical}`)
       console.log(`     좌표거리  등록동 ${p.d_own_m ?? '?'}m / 확정동 ${p.d_canon_m ?? '?'}m — ${p.why}`)
       console.log(cands.length
