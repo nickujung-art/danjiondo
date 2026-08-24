@@ -199,6 +199,21 @@ function indexByDong(cxs: Cx[]): Map<string, Cx[]> {
   return byDong
 }
 
+/**
+ * 그 동에 등록된 단지들. **포함 비교**로 찾는다 — 정확 일치는 읍·면을 놓친다.
+ * 거래의 동은 리까지(`정관읍 용수리`), 단지의 dong 은 읍까지(`정관읍`)인 경우가 흔하다.
+ */
+function candidatesInDong(byDong: Map<string, Cx[]>, sgg: string, umd: string | null): Cx[] {
+  const want = squash(umd)
+  if (!want) return []
+  const out: Cx[] = []
+  for (const [k, list] of byDong) {
+    const [s, d] = k.split('|')
+    if (s === sgg && dongMatches(d, want)) out.push(...list)
+  }
+  return out
+}
+
 async function main(): Promise<void> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -245,7 +260,11 @@ async function main(): Promise<void> {
     const od = ownDong(c)
     if (!od) continue
     const raw = await topRawName(sb, c.id)
-    const cands = (byDong.get(`${cj.sgg_code}|${squash(cj.umd_nm)}`) ?? [])
+    // 🔴 정확 일치로 찾으면 읍·면 단지를 통째로 놓친다.
+    // 거래의 동은 `정관읍 용수리`(리까지), 단지의 dong 은 `정관읍`(읍까지)이라 키가 안 맞는다.
+    // 그래서 `정관이진캐스빌2차아파트` 가 DB 에 있는데도 "이동 목표 없음" 으로 나왔다
+    // (2026-08-24 부산 감사에서 실제로 겪음). 판정에 쓰는 dongMatches 와 같은 포함 비교를 쓴다.
+    const cands = candidatesInDong(byDong, cj.sgg_code, cj.umd_nm)
       .filter((t) => t.id !== c.id)
       .map((t) => ({ cx: t, sim: nameSim(raw, t.canonical_name), m: metres(c, t) }))
       .filter((x) => x.sim >= NAME_SIM_MIN)
