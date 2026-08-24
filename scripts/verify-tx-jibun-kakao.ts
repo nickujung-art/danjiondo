@@ -27,6 +27,10 @@
  *   npx tsx scripts/verify-tx-jibun-kakao.ts --in=audit-core-20260821.json
  *   npx tsx scripts/verify-tx-jibun-kakao.ts --in=... --max=40 --json=out.json
  *
+ * 전건 오연결 모드(2026-08-24) — audit-wholesale-mislink.ts 산출물을 그대로 먹는다:
+ *   npx tsx scripts/verify-tx-jibun-kakao.ts --in-wholesale=wholesale-mislink-20260824.json --max=20 --json=v.json
+ *   npx tsx scripts/verify-tx-jibun-kakao.ts --in-wholesale=... --verdict=판정불가
+ *
  * 환경변수: KAKAO_REST_API_KEY, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
  */
 import dotenv from 'dotenv'
@@ -113,9 +117,64 @@ async function main(): Promise<void> {
   if (!url || !key) throw new Error('NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY 필요')
   const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
 
-  const inPath = arg('in')
-  if (!inPath) throw new Error('--in=<audit json> 필요')
   const maxLookups = Number(arg('max') ?? DEFAULT_MAX_LOOKUPS)
+
+  // ── 입력 모드 2: 전건 오연결 감사 (2026-08-24) ──────────────────────────────
+  //
+  // audit-wholesale-mislink.ts 는 **다른 질문**을 던진다. 원래 모드는 "소수 지번이
+  // 딴 곳인가"를 묻지만, 전건 오연결은 **다수 지번(= 확정 지번) 자체가 남의 것**이라
+  // 소수를 봐야 아무것도 안 나온다. 그래서 확정 지번을 지오코딩해 단지 좌표와 잰다.
+  //
+  //   가깝다 → 단지가 실제로 그 지번에 있다 → 오연결이 아니다(좌표 판별이 틀렸다)
+  //   멀다   → 거래가 남의 곳 것이다 → 이동·끊기 대상 확정
+  //
+  // 별도 변환 스크립트를 만들지 않고 여기에 얹는 이유: NEAR_M/FAR_M·호출 상한·429 중단
+  // 같은 판단 기준이 두 벌로 갈라지면 안 된다.
+  const wholesalePath = arg('in-wholesale')
+  if (wholesalePath) {
+    interface WPlan {
+      verdict: string; complex_id: string; name: string; sgg_code: string
+      canonical: string; tx_count: number; own_address: string | null; why: string
+    }
+    const w = JSON.parse(readFileSync(wholesalePath, 'utf8')) as { plan: WPlan[] }
+    const only = arg('verdict') ?? '거래_오연결'
+    const targets = w.plan
+      .filter((p) => p.verdict === only)
+      .sort((a, b) => b.tx_count - a.tx_count)
+    console.log(`대상 ${targets.length}곳 (verdict=${only}) / 호출 상한 ${maxLookups}`)
+
+    const out: Record<string, unknown>[] = []
+    for (const t of targets) {
+      if (halted || lookups >= maxLookups) {
+        console.log(`\n⏸ 호출 상한(${maxLookups}) 도달 또는 중단 — 남은 ${targets.length - out.length}곳은 다음 실행으로`)
+        break
+      }
+      const { data: cx } = await sb.from('complexes').select('lat,lng').eq('id', t.complex_id).single()
+      if (!cx?.lat || !cx?.lng) { console.log(`  ${t.name}: 좌표 없음 — 건너뜀`); continue }
+      const q = `${SGG_PREFIX[t.sgg_code] ?? ''} ${t.canonical}`.trim()
+      const pos = await geocode(q, kakaoKey)
+      if (!pos) {
+        console.log(`  ${t.name}(${t.tx_count}건): "${q}" 미검출`)
+        out.push({ ...t, result: 'not_found' })
+        continue
+      }
+      const dist = Math.round(haversineM([cx.lat as number, cx.lng as number], pos))
+      // 원래 모드와 같은 임계를 쓴다.
+      const verdict = dist < NEAR_M ? 'same_site' : dist >= FAR_M ? 'different_place' : 'ambiguous'
+      console.log(`  ${t.name}(${t.tx_count}건) ← ${t.canonical}: ${dist}m ${verdict}`)
+      out.push({ ...t, query: q, dist_m: dist, kakao_verdict: verdict })
+    }
+    const far = out.filter((o) => o.kakao_verdict === 'different_place').length
+    const same = out.filter((o) => o.kakao_verdict === 'same_site').length
+    console.log(`\n판정: 오연결 확정 ${far} / 같은 부지(오연결 아님) ${same} / 나머지 ${out.length - far - same}`)
+    console.log(`카카오 호출 ${lookups}회${halted ? ' (중단됨)' : ''}`)
+    const o = arg('json')
+    if (o) { writeFileSync(o, JSON.stringify({ mode: 'wholesale', results: out, lookups, halted }, null, 2)); console.log(`📄 ${o}`) }
+    return
+  }
+
+  const inPath = arg('in')
+  if (!inPath) throw new Error('--in=<audit json> 또는 --in-wholesale=<wholesale json> 필요')
 
   const audit = JSON.parse(readFileSync(inPath, 'utf8')) as { findings: Finding[] }
   const targets = audit.findings
