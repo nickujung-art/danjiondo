@@ -45,12 +45,16 @@ async function getOrCreateOffiComplex(
   offiNm: string,
   sggCd: string,
   umdNm?: string,
+  jibun?: string | null,
   buildYear?: number,
   cache: Map<string, string | null> = new Map(),
   regionAddrMap: Map<string, RegionAddr> = new Map(),
 ): Promise<string | null> {
   const nameNorm = nameNormalize(offiNm)
-  const cacheKey = `${sggCd}:${nameNorm}:${umdNm ?? ''}`
+  // 🔴 캐시 키에 지번을 포함한다. 지번 게이트가 도입되면서 같은 (지역, 이름, 동) 이라도
+  // 지번에 따라 답이 달라진다 — 키에서 빼면 첫 거래의 답이 나머지에 굳는다.
+  // 아파트 경로(createComplexIdLookup)가 같은 이유로 이미 지번을 키에 넣는다.
+  const cacheKey = `${sggCd}:${nameNorm}:${umdNm ?? ''}:${jibun ?? ''}`
   if (cache.has(cacheKey)) return cache.get(cacheKey)!
 
   // 1단계: 기존 매칭 시도 (APT 포함 전체 complexes 대상)
@@ -61,7 +65,10 @@ async function getOrCreateOffiComplex(
   // 중복 레코드를 만드는 경로였다 — 미연결 거래보다 되돌리기 어려운 오염이다.
   const matchedId = await matchComplexId(
     supabase,
-    { sggCode: sggCd, nameNormalized: nameNorm, umdNm },
+    // 🔴 지번을 넘긴다. 생략하면 지번 게이트가 꺼져 이름 단독 매칭으로 되돌아간다
+    // (CLAUDE.md CRITICAL). 2026-08-24 까지 이 경로가 정확히 그 상태였다 —
+    // 아파트는 lookupComplexIdCached 로 지번을 넘기는데 오피스텔만 빠져 있었다.
+    { sggCode: sggCd, nameNormalized: nameNorm, umdNm, jibun: jibun ?? undefined },
     OFFI_MIN_SIMILARITY,
   )
   if (matchedId) {
@@ -155,7 +162,7 @@ export async function ingestOffiMonth(
 
       const complexId = await getOrCreateOffiComplex(
         supabase, item.offiNm, String(item.sggCd),
-        item.umdNm, item.buildYear, complexCache, regionAddrMap,
+        item.umdNm, item.jibun?.trim() || null, item.buildYear, complexCache, regionAddrMap,
       )
 
       const outcome = await upsertTransaction({
@@ -168,6 +175,7 @@ export async function ingestOffiMonth(
         raw_complex_name: item.offiNm,
         raw_region_code:  sggCode,
         umd_nm:           item.umdNm ?? null,
+        jibun:            item.jibun?.trim() || null,
         cancel_date:      cancelDate,
         source_run_id:    runId,
         complex_id:       complexId,
@@ -201,7 +209,7 @@ export async function ingestOffiMonth(
 
       const complexId = await getOrCreateOffiComplex(
         supabase, item.offiNm, String(item.sggCd),
-        item.umdNm, item.buildYear, complexCache, regionAddrMap,
+        item.umdNm, item.jibun?.trim() || null, item.buildYear, complexCache, regionAddrMap,
       )
 
       const outcome = await upsertTransaction({
@@ -215,6 +223,7 @@ export async function ingestOffiMonth(
         raw_complex_name: item.offiNm,
         raw_region_code:  sggCode,
         umd_nm:           item.umdNm ?? null,
+        jibun:            item.jibun?.trim() || null,
         source_run_id:    runId,
         complex_id:       complexId,
         dedupe_key:       makeOffiDedupeKey({
