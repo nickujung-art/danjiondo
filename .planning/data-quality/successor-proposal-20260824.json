@@ -1,0 +1,336 @@
+{
+  "at": "2026-08-24T05:32:47.599Z",
+  "props": [
+    {
+      "id": "a1dd36e3-d818-4992-9cc2-65365cdcc3dc",
+      "name": "대건101동",
+      "sgg_code": "48250",
+      "stuck": 7,
+      "to": "95794186-a867-4b54-9d57-b3824a8b5356",
+      "toName": "대건빌라트101동",
+      "metres": 0,
+      "sim": 0.62,
+      "verdict": "명확"
+    },
+    {
+      "id": "0302dc09-a7c6-47cc-abb4-711773013a1b",
+      "name": "대건102동",
+      "sgg_code": "48250",
+      "stuck": 4,
+      "to": "f7f8f3e6-0e8d-4516-ad81-e9a609f5b7ff",
+      "toName": "대건빌라트102동",
+      "metres": 0,
+      "sim": 0.62,
+      "verdict": "명확"
+    },
+    {
+      "id": "0ae2c3c6-403d-4b9f-9e53-b2ef22e48254",
+      "name": "현대산업아파트",
+      "sgg_code": "48123",
+      "stuck": 0,
+      "to": "ce780aa7-2faa-44e3-be52-27016d582dcd",
+      "toName": "현대아파트",
+      "metres": 64,
+      "sim": 0.6,
+      "verdict": "명확"
+    },
+    {
+      "id": "1266555e-f39b-4e0f-bd81-bcc6d986138e",
+      "name": "월영화인아파트",
+      "sgg_code": "48125",
+      "stuck": 0,
+      "to": "336471dd-706e-4442-b3be-9aa9950a096b",
+      "toName": "화인",
+      "metres": 0,
+      "sim": 0.61,
+      "verdict": "명확"
+    },
+    {
+      "id": "29b199dc-7ab5-474d-872c-102a20f8e6ae",
+      "name": "동부산훼밀리2차아파트",
+      "sgg_code": "48121",
+      "stuck": 0,
+      "to": "601cc8f6-fcb9-4735-9027-6c0b25b8ba77",
+      "toName": "동부산훼미리2차",
+      "metres": 0,
+      "sim": 0.59,
+      "verdict": "명확"
+    },
+    {
+      "id": "2ab2eb6f-d7a3-4f1e-ae96-bf7f0ed7acb7",
+      "name": "대원대동2차",
+      "sgg_code": "48123",
+      "stuck": 0,
+      "to": "ec4647b5-1830-4006-ab0f-82dd12357b5c",
+      "toName": "대원2차대동",
+      "metres": 0,
+      "sim": 0.6,
+      "verdict": "명확"
+    },
+    {
+      "id": "330783bc-a098-4cde-85c1-8dc2ea05a41c",
+      "name": "한일타운4차아파트",
+      "sgg_code": "48127",
+      "stuck": 0,
+      "to": "f8281a08-769e-4c7e-b309-dd6ca5a2bf34",
+      "toName": "마산양덕4차한일타운아파트",
+      "metres": 0,
+      "sim": 0.6,
+      "verdict": "명확"
+    },
+    {
+      "id": "409ed4bb-50c6-466b-98cd-1e4dfda796f4",
+      "name": "안동대아",
+      "sgg_code": "48250",
+      "stuck": 0,
+      "to": "9f7de3de-e2f0-4623-87a8-fcdc599b903f",
+      "toName": "대아",
+      "metres": 0,
+      "sim": 0.7,
+      "verdict": "명확"
+    },
+    {
+      "id": "63504ae6-16e2-4b8f-88d1-48b9ec74c8a1",
+      "name": "부산신항5단지부영아파트",
+      "sgg_code": "48129",
+      "stuck": 0,
+      "to": "715201e2-2275-4f1a-b6e1-ce8f7aac0c63",
+      "toName": "부산신항사랑으로부영5단지",
+      "metres": 0,
+      "sim": 0.52,
+      "verdict": "명확"
+    },
+    {
+      "id": "a4e97a0a-bf2f-4907-9e91-342e436a3ecb",
+      "name": "한일유앤아이오르젠아파트",
+      "sgg_code": "48123",
+      "stuck": 0,
+      "to": "1ae29d4f-15fd-4fc1-b49e-06ab84a18418",
+      "toName": "한일유엔아이오르젠",
+      "metres": 0,
+      "sim": 0.63,
+      "verdict": "명확"
+    },
+    {
+      "id": "e4aad2a7-a928-460f-8064-64d76fac335e",
+      "name": "상남오피스텔",
+      "sgg_code": "48123",
+      "stuck": 21,
+      "to": "82df663b-3d64-4772-b003-2338a8806b80",
+      "toName": "창원서광오피스텔",
+      "metres": 161,
+      "sim": 0.5,
+      "verdict": "애매"
+    },
+    {
+      "id": "db75f48d-41fe-4b17-b50d-c5d00641a1d1",
+      "name": "대우그린",
+      "sgg_code": "48250",
+      "stuck": 15,
+      "to": "4d735ea4-ed42-41be-b573-cfe0002e3a5b",
+      "toName": "그린",
+      "metres": 3989,
+      "sim": 0.7,
+      "verdict": "애매"
+    },
+    {
+      "id": "956de0e4-58f7-47d1-a4ce-68138558aa87",
+      "name": "형제상가빌라",
+      "sgg_code": "48121",
+      "stuck": 9,
+      "to": "8c79979f-c979-4515-8645-20be3439b6b0",
+      "toName": "송원상가빌라",
+      "metres": 316296,
+      "sim": 0.6,
+      "verdict": "애매"
+    },
+    {
+      "id": "a937a94c-13a7-47c2-afb3-15bc11f11678",
+      "name": "한빛드림빌2차",
+      "sgg_code": "48250",
+      "stuck": 2,
+      "to": "8fa6ffe3-dd73-4bbe-8e60-e99d360a94d7",
+      "toName": "한빛드림빌",
+      "metres": 85,
+      "sim": 0.79,
+      "verdict": "애매"
+    },
+    {
+      "id": "02418cba-0b8c-4058-b25f-fed209144dac",
+      "name": "대방성원3차아파트",
+      "sgg_code": "48123",
+      "stuck": 0,
+      "to": "6329135d-5328-4daa-8465-62f90118122a",
+      "toName": "남양성원2차아파트",
+      "metres": 399,
+      "sim": 0.5,
+      "verdict": "애매"
+    },
+    {
+      "id": "06969940-2d3b-4f52-8e77-6239e6f29f9c",
+      "name": "월영현대산업1차",
+      "sgg_code": "48125",
+      "stuck": 0,
+      "to": "61cc8e44-092f-4c65-b622-73e26959b0c3",
+      "toName": "월영현대3차",
+      "metres": 62,
+      "sim": 0.5,
+      "verdict": "애매"
+    },
+    {
+      "id": "18f3bc4b-dca1-4447-9d76-cb296fe956b6",
+      "name": "경남아파트",
+      "sgg_code": "48123",
+      "stuck": 0,
+      "to": "73ef497d-31d5-4977-a678-8609d6b0f227",
+      "toName": "두산아파트",
+      "metres": 260,
+      "sim": 0.5,
+      "verdict": "애매"
+    },
+    {
+      "id": "5b074d4d-e58c-4239-9774-156f8d5995e5",
+      "name": "부영e-그린6차",
+      "sgg_code": "48250",
+      "stuck": 0,
+      "to": "c37abec5-5d87-4b77-95ae-7e6f1750be3e",
+      "toName": "부영e-그린5차",
+      "metres": 463,
+      "sim": 0.67,
+      "verdict": "애매"
+    },
+    {
+      "id": "88b4019c-6f14-426c-8d4f-bf6c3bbf7e19",
+      "name": "경남신포맨션",
+      "sgg_code": "48125",
+      "stuck": 0,
+      "to": "e6d2c8e6-d64f-4228-aaf7-003cb1b8a8a6",
+      "toName": "신포경남",
+      "metres": 515,
+      "sim": 0.5,
+      "verdict": "애매"
+    },
+    {
+      "id": "c048111c-db7b-454f-8611-7739218fb464",
+      "name": "삼계대동이미지",
+      "sgg_code": "48127",
+      "stuck": 0,
+      "to": "ece222a6-43b2-43d6-a245-538547f713db",
+      "toName": "대동이미지1단지아파트",
+      "metres": 0,
+      "sim": 0.5,
+      "verdict": "애매"
+    },
+    {
+      "id": "d108f38e-d56f-4694-880f-32cc003437fb",
+      "name": "부산신항3단지 부영아파트",
+      "sgg_code": "48129",
+      "stuck": 0,
+      "to": "f47e6366-9ea7-42a5-a9dd-572471f86b48",
+      "toName": "부산신항8단지부영아파트",
+      "metres": 931,
+      "sim": 0.82,
+      "verdict": "애매"
+    },
+    {
+      "id": "d7918881-fb33-46d6-8311-f091e4f89070",
+      "name": "거송아파트",
+      "sgg_code": "48250",
+      "stuck": 0,
+      "to": "db535b55-5cb5-4493-9b53-760fb43ac0ab",
+      "toName": "주공아파트",
+      "metres": 388,
+      "sim": 0.5,
+      "verdict": "애매"
+    },
+    {
+      "id": "e639b31a-f23a-4294-99c6-d196d49bb591",
+      "name": "기산아파트",
+      "sgg_code": "48125",
+      "stuck": 0,
+      "to": "3607bfc2-298f-41a8-8a4a-93316557a972",
+      "toName": "라원아파트",
+      "metres": 723,
+      "sim": 0.5,
+      "verdict": "애매"
+    },
+    {
+      "id": "ebeb9234-0541-43ec-ace1-7b77844383bd",
+      "name": "부영e-그린8차",
+      "sgg_code": "48250",
+      "stuck": 0,
+      "to": "c37abec5-5d87-4b77-95ae-7e6f1750be3e",
+      "toName": "부영e-그린5차",
+      "metres": 1148,
+      "sim": 0.67,
+      "verdict": "애매"
+    },
+    {
+      "id": "ee933550-f0f3-4e35-9dc4-9fdc07f026a1",
+      "name": "장유월산13단지 푸르지오",
+      "sgg_code": "48250",
+      "stuck": 0,
+      "to": "838a8e7a-1e6a-4114-bc10-58cdb15930e6",
+      "toName": "월산마을13단지푸르지오1차",
+      "metres": 0,
+      "sim": 0.67,
+      "verdict": "애매"
+    },
+    {
+      "id": "aef402f1-3115-41eb-b8e2-a2cfa5e55558",
+      "name": "형제상가빌라",
+      "sgg_code": "48127",
+      "stuck": 4,
+      "verdict": "후보없음"
+    },
+    {
+      "id": "236a2f77-4631-4bf2-b9fd-04d0a43a8295",
+      "name": "삼계대동",
+      "sgg_code": "48127",
+      "stuck": 0,
+      "verdict": "후보없음"
+    },
+    {
+      "id": "2edf8133-7135-4835-9b15-51bb45046497",
+      "name": "진해녹산2차부영",
+      "sgg_code": "48129",
+      "stuck": 0,
+      "verdict": "후보없음"
+    },
+    {
+      "id": "4db2c685-e13e-4143-bc79-4f87936d7bfa",
+      "name": "반림현대건설",
+      "sgg_code": "48123",
+      "stuck": 0,
+      "verdict": "후보없음"
+    },
+    {
+      "id": "4fc20195-f9b2-4292-a4ab-890e6564ebaa",
+      "name": "대동피렌체아파트",
+      "sgg_code": "48127",
+      "stuck": 0,
+      "verdict": "후보없음"
+    },
+    {
+      "id": "6a84bb8a-01ec-4903-824c-70a6ad6b5786",
+      "name": "푸르내아파트",
+      "sgg_code": "48127",
+      "stuck": 0,
+      "verdict": "후보없음"
+    },
+    {
+      "id": "73f812e7-b97c-4da8-b287-0434abfbe6c5",
+      "name": "장유대동2단지",
+      "sgg_code": "48250",
+      "stuck": 0,
+      "verdict": "후보없음"
+    },
+    {
+      "id": "84ed4ec3-5c63-4be2-a55f-d7eb216badfb",
+      "name": "장유부영16차",
+      "sgg_code": "48250",
+      "stuck": 0,
+      "verdict": "후보없음"
+    }
+  ]
+}

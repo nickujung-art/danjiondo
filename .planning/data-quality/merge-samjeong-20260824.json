@@ -1,0 +1,318 @@
+{
+  "at": "2026-08-24T05:35:29.360Z",
+  "from": {
+    "id": "ec542d54-2ae2-4429-95fd-e95fd0042664",
+    "canonical_name": "삼정그린코아",
+    "name_normalized": "삼정그린코아",
+    "molit_complex_code": "48123-584",
+    "kapt_code": null,
+    "sgg_code": "48123",
+    "road_address": "경남 창원시 성산구 안민로 100",
+    "jibun_address": "경남 창원시 성산구 안민동 691",
+    "si": "창원시",
+    "gu": "성산구",
+    "dong": "안민동",
+    "lat": 35.1859807374983,
+    "lng": 128.6858528259,
+    "location": "0101000020E61000007C23A081F2156040DB9E8037CE974140",
+    "geocoding_accuracy": null,
+    "household_count": 123,
+    "built_year": 2024,
+    "floors_above": 25,
+    "floors_below": 0,
+    "heat_type": null,
+    "status": "merged",
+    "predecessor_id": null,
+    "successor_id": "3524ec4b-6629-4b24-8a9c-fb7de7fd4c54",
+    "data_completeness": {
+      "poi": false,
+      "kapt": false,
+      "school": false,
+      "transactions": false
+    },
+    "created_at": "2026-05-18T05:00:28.327096+00:00",
+    "updated_at": "2026-06-09T06:32:46.175252+00:00",
+    "hagwon_score": 196,
+    "avg_sale_per_pyeong": null,
+    "view_count": 0,
+    "price_change_30d": null,
+    "tx_count_30d": 1,
+    "building_type": "apt",
+    "is_new_record_30d": false,
+    "url_slug": "창원시/성산구/안민동/삼정그린코아",
+    "naver_complex_no": null
+  },
+  "into": {
+    "id": "3524ec4b-6629-4b24-8a9c-fb7de7fd4c54",
+    "canonical_name": "성산삼정그린코아 웰레스트",
+    "name_normalized": "성산삼정그린코아웰레스트",
+    "molit_complex_code": null,
+    "kapt_code": "A10020810",
+    "sgg_code": "48123",
+    "road_address": "경상남도 창원시 성산구 안민로 100",
+    "jibun_address": null,
+    "si": "창원시",
+    "gu": "성산구",
+    "dong": "안민동",
+    "lat": 35.1859807374983,
+    "lng": 128.6858528259,
+    "location": "0101000020E61000007C23A081F2156040DB9E8037CE974140",
+    "geocoding_accuracy": null,
+    "household_count": 608,
+    "built_year": 2024,
+    "floors_above": 25,
+    "floors_below": 0,
+    "heat_type": "개별난방",
+    "status": "active",
+    "predecessor_id": null,
+    "successor_id": null,
+    "data_completeness": {
+      "poi": false,
+      "kapt": true,
+      "school": false,
+      "transactions": false
+    },
+    "created_at": "2026-05-11T02:27:40.111529+00:00",
+    "updated_at": "2026-08-24T03:37:06.108217+00:00",
+    "hagwon_score": 196,
+    "avg_sale_per_pyeong": 1855,
+    "view_count": 0,
+    "price_change_30d": null,
+    "tx_count_30d": 2,
+    "building_type": "apt",
+    "is_new_record_30d": true,
+    "url_slug": "창원시/성산구/안민동/성산삼정그린코아 웰레스트",
+    "naver_complex_no": null
+  },
+  "plans": [
+    {
+      "table": "complex_rankings",
+      "col": "complex_id",
+      "uniq": [
+        "rank_type",
+        "window_days"
+      ],
+      "moveCount": 1,
+      "drop": [
+        {
+          "rank_type": "high_price",
+          "window_days": 30
+        },
+        {
+          "rank_type": "price_per_pyeong",
+          "window_days": 30
+        }
+      ]
+    },
+    {
+      "table": "facility_poi",
+      "col": "complex_id",
+      "uniq": [
+        "category",
+        "poi_name"
+      ],
+      "moveCount": 0,
+      "drop": [
+        {
+          "category": "daycare",
+          "poi_name": "대동청솔어린이집"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "대동한솔어린이집"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "동그라미어린이집"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "사랑가득 안민어린이집"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "성주어린이집"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "안민초등학교 병설유치원"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "크는어린이집"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "한사랑어린이집"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "N케임브리지안민학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "YBM잉글루 창원안민 제1캠퍼스"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "그리다미술교습소"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "그림이야기 미술교습소"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "노쌤영어교습소"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "등정학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "딱풀리는수학교습소"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "리스트 음악 교습소"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "리엔음악학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "뮤엠영어 안민점"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "베스트음악학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "빨간펜수학의달인 창원안민점"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "삼성영어 안민어학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "스마트해법수학"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "안민드림학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "안민칸어학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "앰버영어교습소"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "엠버엘리트 안민학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "윤선생우리집앞영어교실 안민학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "잉글리시아이 안민점"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "잉글리시아이 코칭수학학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "조슈아영어안민학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "차세대영어전문학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "창원수학나무수학교습소"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "청솔무지개음악학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "최정상배움학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "큐맥스수학학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "푸르넷아카데미"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "해법수학 일등수학교습소"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "현아트미술학원"
+        },
+        {
+          "category": "sports_dojo",
+          "poi_name": "명문복싱클럽"
+        },
+        {
+          "category": "sports_dojo",
+          "poi_name": "최강태권스쿨"
+        }
+      ]
+    },
+    {
+      "table": "cafe_articles",
+      "col": "complex_id",
+      "uniq": null,
+      "moveCount": 12,
+      "drop": []
+    },
+    {
+      "table": "facility_school",
+      "col": "complex_id",
+      "uniq": [
+        "school_name"
+      ],
+      "moveCount": 0,
+      "drop": [
+        {
+          "school_name": "안민중학교"
+        },
+        {
+          "school_name": "안민초등학교"
+        }
+      ]
+    },
+    {
+      "table": "transactions",
+      "col": "complex_id",
+      "uniq": null,
+      "moveCount": 9,
+      "drop": []
+    },
+    {
+      "table": "complex_canonical_jibun",
+      "col": "complex_id",
+      "uniq": [],
+      "moveCount": 0,
+      "drop": [
+        {}
+      ]
+    }
+  ]
+}

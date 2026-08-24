@@ -1,0 +1,258 @@
+{
+  "at": "2026-08-24T05:34:17.545Z",
+  "from": {
+    "id": "a1dd36e3-d818-4992-9cc2-65365cdcc3dc",
+    "canonical_name": "대건101동",
+    "name_normalized": "대건101동",
+    "molit_complex_code": "48250-196",
+    "kapt_code": null,
+    "sgg_code": "48250",
+    "road_address": "경남 김해시 진영읍 진영로 304-23",
+    "jibun_address": "경남 김해시 진영읍 여래리 233-8",
+    "si": "김해시",
+    "gu": null,
+    "dong": "진영읍",
+    "lat": 35.3001919211941,
+    "lng": 128.746855428779,
+    "location": "0101000020E61000004A2E5B3DE6176040A6065AB06CA64140",
+    "geocoding_accuracy": null,
+    "household_count": 18,
+    "built_year": 2002,
+    "floors_above": 9,
+    "floors_below": 0,
+    "heat_type": null,
+    "status": "merged",
+    "predecessor_id": null,
+    "successor_id": "95794186-a867-4b54-9d57-b3824a8b5356",
+    "data_completeness": {
+      "poi": false,
+      "kapt": false,
+      "school": false,
+      "transactions": false
+    },
+    "created_at": "2026-05-18T05:00:28.327096+00:00",
+    "updated_at": "2026-08-24T05:33:14.608596+00:00",
+    "hagwon_score": 40,
+    "avg_sale_per_pyeong": 300,
+    "view_count": 0,
+    "price_change_30d": null,
+    "tx_count_30d": 0,
+    "building_type": "apt",
+    "is_new_record_30d": false,
+    "url_slug": "김해시/진영읍/대건101동",
+    "naver_complex_no": null
+  },
+  "into": {
+    "id": "95794186-a867-4b54-9d57-b3824a8b5356",
+    "canonical_name": "대건빌라트101동",
+    "name_normalized": "대건빌라트101동",
+    "molit_complex_code": "48250-1657",
+    "kapt_code": null,
+    "sgg_code": "48250",
+    "road_address": "경남 김해시 진영읍 진영로 304-23",
+    "jibun_address": "경남 김해시 진영읍 여래리 233-8",
+    "si": "김해시",
+    "gu": null,
+    "dong": "진영읍",
+    "lat": 35.3001919211941,
+    "lng": 128.746855428779,
+    "location": "0101000020E61000004A2E5B3DE6176040A6065AB06CA64140",
+    "geocoding_accuracy": null,
+    "household_count": 18,
+    "built_year": 2002,
+    "floors_above": 9,
+    "floors_below": 0,
+    "heat_type": null,
+    "status": "active",
+    "predecessor_id": null,
+    "successor_id": null,
+    "data_completeness": {
+      "poi": false,
+      "kapt": false,
+      "school": false,
+      "transactions": false
+    },
+    "created_at": "2026-05-18T05:00:28.327096+00:00",
+    "updated_at": "2026-08-24T03:37:06.108217+00:00",
+    "hagwon_score": 40,
+    "avg_sale_per_pyeong": 292,
+    "view_count": 0,
+    "price_change_30d": null,
+    "tx_count_30d": 0,
+    "building_type": "apt",
+    "is_new_record_30d": false,
+    "url_slug": "김해시/진영읍/대건빌라트101동",
+    "naver_complex_no": null
+  },
+  "plans": [
+    {
+      "table": "facility_poi",
+      "col": "complex_id",
+      "uniq": [
+        "category",
+        "poi_name"
+      ],
+      "moveCount": 0,
+      "drop": [
+        {
+          "category": "daycare",
+          "poi_name": "나무와아이들유치원"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "바른어린이집"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "버클리어린이집"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "산들숲어린이집"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "올바른어린이집"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "진영대창초등학교 병설유치원"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "진영천년나무어린이집"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "진영휴먼시아어린이집"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "협성휴포레어린이집"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "CCS어학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "나래피아노"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "나리음악학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "마루애학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "삼성영어셀레나 대창학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "쏘나타음악학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "씨엘수학교습소"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "아소비 김해 진영나무센터"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "예능미술음악학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "예음찬양음악신학교 실용음악학습관"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "와이즈코딩러닝센터 진영점"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "한사랑음악학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "한솔피아노"
+        },
+        {
+          "category": "sports_dojo",
+          "poi_name": "MTA태권도장"
+        },
+        {
+          "category": "sports_dojo",
+          "poi_name": "대한태권도체육관"
+        },
+        {
+          "category": "sports_dojo",
+          "poi_name": "무사합기도"
+        },
+        {
+          "category": "sports_dojo",
+          "poi_name": "세계태권도장"
+        },
+        {
+          "category": "sports_dojo",
+          "poi_name": "종합무예 의성도장 3관"
+        },
+        {
+          "category": "sports_dojo",
+          "poi_name": "진영검도관"
+        },
+        {
+          "category": "sports_dojo",
+          "poi_name": "청룡태권도"
+        },
+        {
+          "category": "sports_dojo",
+          "poi_name": "품태권도장"
+        }
+      ]
+    },
+    {
+      "table": "facility_school",
+      "col": "complex_id",
+      "uniq": [
+        "school_name"
+      ],
+      "moveCount": 0,
+      "drop": [
+        {
+          "school_name": "진영대창초등학교"
+        },
+        {
+          "school_name": "진영제일고등학교"
+        },
+        {
+          "school_name": "진영중학교"
+        },
+        {
+          "school_name": "한얼중학교"
+        }
+      ]
+    },
+    {
+      "table": "transactions",
+      "col": "complex_id",
+      "uniq": null,
+      "moveCount": 7,
+      "drop": []
+    },
+    {
+      "table": "complex_canonical_jibun",
+      "col": "complex_id",
+      "uniq": [],
+      "moveCount": 0,
+      "drop": [
+        {}
+      ]
+    }
+  ]
+}

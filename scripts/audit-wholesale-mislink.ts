@@ -35,7 +35,7 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { writeFileSync } from 'fs'
-import { nameSim } from './lib/name-similarity'
+import { nameSim } from '../src/lib/data/name-similarity'
 
 const CORE_SGG = ['48121', '48123', '48125', '48127', '48129', '48250']
 const BUSAN_SGG = [

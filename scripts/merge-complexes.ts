@@ -34,6 +34,13 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { writeFileSync } from 'fs'
+import { nameSim } from '../src/lib/data/name-similarity'
+
+/** successor 제안에 쓰는 최소 필드. */
+interface Cx {
+  id: string; canonical_name: string; sgg_code: string; status: string
+  successor_id: string | null; lat: number | null; lng: number | null
+}
 
 /** `complexes.id` 를 가리키는 컬럼. 런타임에 OpenAPI 로 재확인한다(하드코딩 신뢰 금지). */
 const FALLBACK_REFS: Array<[string, string]> = [
@@ -138,6 +145,86 @@ async function planTable(
 
 }
 
+/**
+ * successor_id 가 빈 merged 단지에 승계 목표를 제안한다 (2026-08-24).
+ *
+ * 🔴 **판정자는 이름이 아니라 거리다.** 이름만 보면 순위가 거꾸로 뒤집힌다 — 실측:
+ *   대우그린 ↔ 그린                 이름 매우 유사, 실제 **3,989m** (남남)
+ *   경남신포맨션 ↔ 경남               이름 매우 유사, 실제 **13,901m** (남남)
+ *   동부산훼밀리2차아파트 ↔ 동부산훼미리2차  오타 1자, 실제 **0m** (같은 단지)
+ *   대원대동2차 ↔ 대원2차대동           어순만 다름, 실제 **0m** (같은 단지)
+ * 그래서 거리를 1차 기준으로 쓰고 이름은 약한 보조로만 쓴다.
+ */
+const SUCC_CLEAR_M = 100
+const SUCC_NAME_MIN = 0.5
+
+/**
+ * 이름에서 차수·단지·동 번호를 뽑는다.
+ *
+ * 🔴 거리만으로는 **1차/2차 뭉갬을 못 막는다** — 같은 개발의 인접 차수는 자연히 100m
+ * 안에 있다. 실측으로 잡힌 위험 후보:
+ *   월영현대산업1차 → 월영현대3차          62m  (1차를 3차에!)
+ *   한빛드림빌2차   → 한빛드림빌           85m  (2차를 무차수에)
+ *   삼계대동이미지   → 대동이미지1단지아파트    0m  (단지 번호가 한쪽만)
+ * `matching-ambiguous-20260805.md` 가 경고한 실패 모양 그대로다. 번호 집합이 다르면
+ * 거리가 0m 이어도 '명확' 으로 올리지 않는다.
+ */
+function phaseTokens(name: string): string {
+  const m = String(name).match(/\d+\s*(?:차|단지|동)/g) ?? []
+  return [...new Set(m.map((x) => x.replace(/\s/g, '')))].sort().join(',')
+}
+
+interface SuccProposal {
+  id: string; name: string; sgg_code: string; stuck: number
+  to?: string; toName?: string; metres?: number | null; sim?: number
+  verdict: '명확' | '애매' | '후보없음'
+}
+
+async function proposeSuccessors(sb: SupabaseClient): Promise<SuccProposal[]> {
+  const all: Cx[] = []
+  for (let p = 0; ; p++) {
+    const { data, error } = await sb.from('complexes')
+      .select('id,canonical_name,sgg_code,status,successor_id,lat,lng')
+      .order('id').range(p * 1000, p * 1000 + 999)
+    if (error) throw new Error(`complexes: ${error.message}`)
+    all.push(...(data as unknown as Cx[]))
+    if (data.length < 1000) break
+  }
+  const orphans = all.filter((c) => c.status === 'merged' && !c.successor_id)
+  const actives = all.filter((c) => c.status === 'active')
+
+  const out: SuccProposal[] = []
+  for (const c of orphans) {
+    const { count } = await sb.from('transactions').select('id', { count: 'exact', head: true })
+      .eq('complex_id', c.id).is('cancel_date', null).is('superseded_by', null)
+    const cands = actives
+      .filter((t) => t.sgg_code === c.sgg_code)
+      .map((t) => ({ t, sim: nameSim(c.canonical_name, t.canonical_name), m: metres(c, t) }))
+      .filter((x) => x.sim >= SUCC_NAME_MIN)
+      // 🔴 거리 우선 정렬. 이름은 동점 처리에만 쓴다.
+      .sort((a, b) => (a.m ?? Infinity) - (b.m ?? Infinity) || b.sim - a.sim)
+    const top = cands[0]
+    const verdict: SuccProposal['verdict'] = !top ? '후보없음'
+      : (top.m != null && top.m <= SUCC_CLEAR_M
+          && phaseTokens(c.canonical_name) === phaseTokens(top.t.canonical_name)) ? '명확' : '애매'
+    out.push({
+      id: c.id, name: c.canonical_name, sgg_code: c.sgg_code, stuck: count ?? 0,
+      to: top?.t.id, toName: top?.t.canonical_name, metres: top?.m, sim: top ? +top.sim.toFixed(2) : undefined,
+      verdict,
+    })
+  }
+  return out
+}
+
+const EARTH_R = 6371000
+const rad = (d: number) => (d * Math.PI) / 180
+function metres(a: Cx, b: Cx): number | null {
+  if (a.lat == null || a.lng == null || b.lat == null || b.lng == null) return null
+  const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng)
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2
+  return Math.round(2 * EARTH_R * Math.asin(Math.sqrt(h)))
+}
+
 async function auditMerged(sb: SupabaseClient): Promise<void> {
   const { data } = await sb.from('complexes').select('id,canonical_name,sgg_code,successor_id').eq('status', 'merged')
   const rows = data ?? []
@@ -156,14 +243,38 @@ async function auditMerged(sb: SupabaseClient): Promise<void> {
   }
   console.log(`\n갇힌 거래 합계 ${stuck}건`)
 }
-
 async function main(): Promise<void> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) throw new Error('NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY 필요')
   const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
-
   if (has('audit-merged')) { await auditMerged(sb); return }
+
+  // successor_id 가 빈 merged 단지 수리. 거리로 명확한 것만 --fix-successors 로 넣는다.
+  if (has('propose-successors') || has('fix-successors')) {
+    const props = await proposeSuccessors(sb)
+    const order = { 명확: 0, 애매: 1, 후보없음: 2 } as const
+    for (const p of props.sort((a, b) => order[a.verdict] - order[b.verdict] || b.stuck - a.stuck)) {
+      const dest = p.toName ? `→ ${p.toName} (${p.metres}m, 유사 ${p.sim})` : '→ 후보 없음'
+      console.log(`  ${p.verdict}  ${p.name.padEnd(24)} [${p.sgg_code}] 갇힌거래 ${String(p.stuck).padStart(3)}  ${dest}`)
+    }
+    const clear = props.filter((p) => p.verdict === '명확')
+    console.log(`\n명확 ${clear.length} / 애매 ${props.filter((p) => p.verdict === '애매').length} / 후보없음 ${props.filter((p) => p.verdict === '후보없음').length}`)
+    console.log(`판정 기준: 거리 ≤ ${SUCC_CLEAR_M}m + 차수·단지 번호 일치 (이름 유사도는 ≥ ${SUCC_NAME_MIN} 필터로만)`)
+    const bk = arg('backup')
+    if (bk) { writeFileSync(bk, JSON.stringify({ at: new Date().toISOString(), props }, null, 2)); console.log(`📄 ${bk}`) }
+    if (!has('fix-successors')) { console.log('\n(읽기 전용 — 넣으려면 --fix-successors --backup=<file>)'); return }
+    if (!bk) throw new Error('--fix-successors 는 --backup=<file> 을 요구한다')
+    console.log('\n🔴 명확 건에 successor_id 적용 중...')
+    for (const p of clear) {
+      const { error } = await sb.from('complexes').update({ successor_id: p.to }).eq('id', p.id)
+      if (error) throw new Error(`${p.name} 실패: ${error.message}`)
+      console.log(`  ✅ ${p.name} → ${p.toName}`)
+    }
+    console.log(`\n✅ ${clear.length}곳 적용. 애매·후보없음은 사람이 판정해야 한다.`)
+    return
+  }
+
 
   const from = arg('from'), into = arg('into')
   if (!from || !into) throw new Error('--from=<uuid> --into=<uuid> 필요 (또는 --audit-merged)')

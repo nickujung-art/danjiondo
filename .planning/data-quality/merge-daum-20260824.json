@@ -1,0 +1,446 @@
+{
+  "at": "2026-08-24T05:35:42.726Z",
+  "from": {
+    "id": "0911f7cc-03e1-4e4b-90d4-62ce1a4c47eb",
+    "canonical_name": "석전동 다움 아파트",
+    "name_normalized": "석전동다움",
+    "molit_complex_code": "48127-810",
+    "kapt_code": null,
+    "sgg_code": "48127",
+    "road_address": "경남 창원시 마산회원구 석전동15길 40",
+    "jibun_address": "경남 창원시 마산회원구 석전동 223-2",
+    "si": "창원시",
+    "gu": "마산회원구",
+    "dong": "석전동",
+    "lat": 35.2366055873383,
+    "lng": 128.580297262367,
+    "location": "0101000020E6100000697A90CB91126040A2D58517499E4140",
+    "geocoding_accuracy": null,
+    "household_count": 68,
+    "built_year": 2017,
+    "floors_above": 23,
+    "floors_below": 1,
+    "heat_type": null,
+    "status": "merged",
+    "predecessor_id": null,
+    "successor_id": "c44850cd-aa46-41e5-b602-a925f1e3e04c",
+    "data_completeness": {
+      "poi": false,
+      "kapt": false,
+      "school": false,
+      "transactions": false
+    },
+    "created_at": "2026-05-21T03:41:16.803755+00:00",
+    "updated_at": "2026-07-06T01:35:46.97601+00:00",
+    "hagwon_score": 274,
+    "avg_sale_per_pyeong": null,
+    "view_count": 0,
+    "price_change_30d": null,
+    "tx_count_30d": 0,
+    "building_type": "officetel",
+    "is_new_record_30d": false,
+    "url_slug": "창원시/마산회원구/석전동/석전동 다움 아파트",
+    "naver_complex_no": null
+  },
+  "into": {
+    "id": "c44850cd-aa46-41e5-b602-a925f1e3e04c",
+    "canonical_name": "다움아파트",
+    "name_normalized": "다움",
+    "molit_complex_code": null,
+    "kapt_code": "A10026658",
+    "sgg_code": "48127",
+    "road_address": "경상남도 창원시 마산회원구 석전동15길 40",
+    "jibun_address": null,
+    "si": "창원시",
+    "gu": "마산회원구",
+    "dong": "석전동",
+    "lat": 35.2366055873383,
+    "lng": 128.580297262367,
+    "location": "0101000020E6100000697A90CB91126040A2D58517499E4140",
+    "geocoding_accuracy": null,
+    "household_count": 68,
+    "built_year": 2017,
+    "floors_above": 23,
+    "floors_below": 1,
+    "heat_type": "개별난방",
+    "status": "active",
+    "predecessor_id": null,
+    "successor_id": null,
+    "data_completeness": {
+      "poi": false,
+      "kapt": true,
+      "school": false,
+      "transactions": false
+    },
+    "created_at": "2026-05-11T02:28:14.123853+00:00",
+    "updated_at": "2026-08-24T03:37:06.108217+00:00",
+    "hagwon_score": 283,
+    "avg_sale_per_pyeong": 1119,
+    "view_count": 0,
+    "price_change_30d": null,
+    "tx_count_30d": 0,
+    "building_type": "apt",
+    "is_new_record_30d": false,
+    "url_slug": "창원시/마산회원구/석전동/다움아파트",
+    "naver_complex_no": "123197"
+  },
+  "plans": [
+    {
+      "table": "facility_poi",
+      "col": "complex_id",
+      "uniq": [
+        "category",
+        "poi_name"
+      ],
+      "moveCount": 2,
+      "drop": [
+        {
+          "category": "daycare",
+          "poi_name": "BNK창원어린이집"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "개구쟁이어린이집"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "계명어린이집"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "글로벌아이유치원"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "라임어린이집"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "사회복지법인금강어린이집"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "삼정어린이집"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "새싹유치원"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "세화어린이집"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "세화유치원"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "신기한어린이집"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "아셀어린이집"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "양덕초등학교 병설유치원"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "창원시립 근주어린이집"
+        },
+        {
+          "category": "daycare",
+          "poi_name": "해무리어린이집"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "IVY캠퍼스 창원점"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "KBS아트비전미용학원 마산캠퍼스"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "가람수학교습소"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "경남국학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "경남사진학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "경남이용학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "김성희피아노"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "김환수 대금국악연구소"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "꿈나라보습학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "다솜실용음악학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "리더스컴퓨터아카데미학원 양덕점"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "리더스컴퓨터회계코딩학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "리듬음악교습소"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "리스트음악원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "마산간호학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "마산정우컴퓨터전산회계학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "마산제과제빵전문학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "모네미술학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "배움인테리어기술학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "벨라루시애견미용학원 창원마산점"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "블루스앨리보컬실용음악학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "빨간펜수학의달인 경남지사"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "샬롬음악나라"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "숨즈컬러"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "스팅실용음악학원 마산캠퍼스"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "신세계음악피아노"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "아트샘미술학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "원성윤 과학탐구교습소"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "은산서예"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "이선생"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "정철어학원주니어 동마산캠퍼스"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "중앙공무원전문학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "중앙필음악학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "지유진 피부아카데미"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "지혜피아노학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "최동철수학"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "클리어링"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "포인트정석속독학원 동마산교육원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "한양검정고시학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "한일영수전문학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "한효학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "합성미술학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "해바라기피아노"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "현대 요리커피아카데미학원"
+        },
+        {
+          "category": "hagwon",
+          "poi_name": "현대일본어전문학원"
+        },
+        {
+          "category": "sports_dojo",
+          "poi_name": "가고파삼성태권도장"
+        },
+        {
+          "category": "sports_dojo",
+          "poi_name": "마루한 다한 태권도"
+        },
+        {
+          "category": "sports_dojo",
+          "poi_name": "메타태권도장"
+        },
+        {
+          "category": "sports_dojo",
+          "poi_name": "무창 태권도장"
+        },
+        {
+          "category": "sports_dojo",
+          "poi_name": "북성태권도체육관"
+        },
+        {
+          "category": "sports_dojo",
+          "poi_name": "브레인박사태권도"
+        },
+        {
+          "category": "sports_dojo",
+          "poi_name": "성룡에스알스포츠"
+        },
+        {
+          "category": "sports_dojo",
+          "poi_name": "수심검도관"
+        },
+        {
+          "category": "sports_dojo",
+          "poi_name": "양덕동양태권도"
+        },
+        {
+          "category": "sports_dojo",
+          "poi_name": "양덕용인대태권도장"
+        },
+        {
+          "category": "sports_dojo",
+          "poi_name": "용인대성무유도관"
+        },
+        {
+          "category": "sports_dojo",
+          "poi_name": "챌린지 무예스쿨"
+        },
+        {
+          "category": "sports_dojo",
+          "poi_name": "합성태권도"
+        }
+      ]
+    },
+    {
+      "table": "cafe_articles",
+      "col": "complex_id",
+      "uniq": null,
+      "moveCount": 13,
+      "drop": []
+    },
+    {
+      "table": "facility_school",
+      "col": "complex_id",
+      "uniq": [
+        "school_name"
+      ],
+      "moveCount": 0,
+      "drop": [
+        {
+          "school_name": "가고파초등학교"
+        },
+        {
+          "school_name": "북성초등학교"
+        },
+        {
+          "school_name": "석전초등학교"
+        },
+        {
+          "school_name": "양덕초등학교"
+        },
+        {
+          "school_name": "팔룡초등학교"
+        },
+        {
+          "school_name": "한일여자고등학교"
+        },
+        {
+          "school_name": "합성초등학교"
+        }
+      ]
+    },
+    {
+      "table": "transactions",
+      "col": "complex_id",
+      "uniq": null,
+      "moveCount": 1,
+      "drop": []
+    },
+    {
+      "table": "facility_kapt",
+      "col": "complex_id",
+      "uniq": [],
+      "moveCount": 0,
+      "drop": [
+        {}
+      ]
+    }
+  ]
+}
