@@ -1,0 +1,132 @@
+[
+ {
+  "table": "ai_estimates",
+  "col": "target_complex_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "cafe_articles",
+  "col": "complex_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "cafe_posts",
+  "col": "complex_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "complex_aliases",
+  "col": "complex_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "complex_area_types",
+  "col": "complex_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "complex_canonical_jibun",
+  "col": "complex_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "complex_embeddings",
+  "col": "complex_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "complex_gap_stats",
+  "col": "complex_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "complex_price_predictions",
+  "col": "complex_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "complex_rankings",
+  "col": "complex_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "complex_reviews",
+  "col": "complex_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "complexes",
+  "col": "predecessor_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "complexes",
+  "col": "successor_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "content_complexes",
+  "col": "complex_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "facility_kapt",
+  "col": "complex_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "facility_poi",
+  "col": "complex_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "facility_school",
+  "col": "complex_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "favorites",
+  "col": "complex_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "gps_verification_requests",
+  "col": "complex_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "gps_visits",
+  "col": "complex_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "listing_prices",
+  "col": "complex_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "management_cost_monthly",
+  "col": "complex_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "new_listings",
+  "col": "complex_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "realtor_assignments",
+  "col": "complex_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "redevelopment_projects",
+  "col": "complex_id",
+  "fk": "complexes"
+ },
+ {
+  "table": "transactions",
+  "col": "complex_id",
+  "fk": "complexes"
+ }
+]
