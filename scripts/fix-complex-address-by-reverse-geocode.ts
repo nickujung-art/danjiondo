@@ -25,6 +25,19 @@
  *   npx tsx scripts/fix-complex-address-by-reverse-geocode.ts --in=<audit json>
  *   npx tsx scripts/fix-complex-address-by-reverse-geocode.ts --in=... --exclude-sgg=48121
  *   npx tsx scripts/fix-complex-address-by-reverse-geocode.ts --in=... --apply --backup=b.json
+ *   npx tsx scripts/fix-complex-address-by-reverse-geocode.ts --in=... --allow-dong-only  # 권장하지 않음
+ *
+ * [왜 지번까지 봐야 하나 — 2026-08-25 에 배웠다]
+ * 처음 판정 기준은 **동 일치**뿐이었다. 그래서 이런 게 통과했다:
+ *   금강빌라 가·다·라동   확정 소답동 146-6 / 148-4 / 153-2   ← 핀은 셋 다 소답동 145-7
+ * 가~마동은 서로 다른 필지에 선 형제 건물인데 좌표가 한 점에 뭉쳐 있다. 동만 보면
+ * 전부 통과해 **네 단지에 같은 주소를 쓰게 된다.** 2026-08-24 적용분에서도 소라1 이
+ * 확정 합성동 167-4 대신 핀의 167-5 를 받았다(인접 필지, 영향은 작지만 같은 원인).
+ *
+ * 그래서 기본 판정은 **역지오코딩 지번 == 확정 지번**이다. 서로 독립인 두 근거
+ * (카카오의 "이 좌표가 어디냐" vs 거래 다수결의 "이 단지가 어디냐")가 같은 답을 낼 때만
+ * 적용한다. 동만 맞는 건은 보류하고 `fix-complex-coords-by-canonical-jibun.ts` 로 넘긴다
+ * — 그쪽은 확정 지번을 **정방향** 지오코딩하므로 이 상황에 맞는 도구다.
  */
 import dotenv from 'dotenv'
 import path from 'path'
@@ -87,7 +100,7 @@ function canonDong(canonical: string): string {
 
 interface Row {
   p: Plan; lat: number; lng: number; rev: RevGeo
-  agree: boolean; note: string; shared: number
+  agree: boolean; note: string; shared: number; jibunOk: boolean
 }
 
 /**
@@ -105,7 +118,7 @@ async function sharedCoordCount(sb: SupabaseClient, id: string, lat: number, lng
   return count ?? 0
 }
 
-async function build(sb: SupabaseClient, plans: Plan[], key: string, max: number): Promise<Row[]> {
+async function build(sb: SupabaseClient, plans: Plan[], key: string, max: number, dongOnly: boolean): Promise<Row[]> {
   const out: Row[] = []
   for (const p of plans) {
     if (halted || lookups >= max) {
@@ -119,12 +132,17 @@ async function build(sb: SupabaseClient, plans: Plan[], key: string, max: number
     const want = squash(canonDong(p.canonical))
     const got = squash(rev.dong)
     const dongOk = !!want && !!got && (want === got || want.includes(got) || got.includes(want))
+    // 🔴 동 일치만으로는 부족하다 — 파일 헤더 [왜 지번까지 봐야 하나] 참조.
+    const jibunOk = squash(rev.jibun).endsWith(squash(p.canonical))
     const shared = await sharedCoordCount(sb, p.complex_id, c.lat as number, c.lng as number)
-    const agree = dongOk && shared === 0
+    const agree = dongOk && shared === 0 && (jibunOk || dongOnly)
     const note = shared > 0
       ? `🔴 좌표를 ${shared}곳이 공유 — 지오코딩 폴백 가능성, 역지오코딩을 못 믿는다`
-      : dongOk ? '확정 지번의 동과 일치' : `불일치: 확정 ${want} vs 역지오코딩 ${got}`
-    out.push({ p, lat: c.lat as number, lng: c.lng as number, rev, agree, note, shared })
+      : !dongOk ? `불일치: 확정 ${want} vs 역지오코딩 ${got}`
+      : jibunOk ? '확정 지번과 정확히 일치 (독립된 두 근거가 같은 답)'
+      : `🟡 동은 맞고 지번이 다르다: 확정 ${p.canonical} vs 핀 ${rev.jibun}` +
+        (dongOnly ? ' — --allow-dong-only 로 강행' : ' — 보류')
+    out.push({ p, lat: c.lat as number, lng: c.lng as number, rev, agree, note, shared, jibunOk })
   }
   return out
 }
@@ -151,7 +169,7 @@ async function main(): Promise<void> {
   console.log(`🔗 ${url} / 모드: ${apply ? '🔴 APPLY' : 'dry-run'}`)
   console.log(`대상 ${plans.length}곳 (단지주소_오류${exclude.length ? ` / ${exclude.join(',')} 제외` : ''}) / 호출 상한 ${max}`)
 
-  const rows = await build(sb, plans, kakaoKey, max)
+  const rows = await build(sb, plans, kakaoKey, max, has('allow-dong-only'))
 
   console.log(`\n=== 역지오코딩 결과 ===`)
   for (const r of rows) {
@@ -161,7 +179,9 @@ async function main(): Promise<void> {
     console.log(`     확정 지번  ${r.p.canonical}  → ${r.note}`)
   }
   const ok = rows.filter((r) => r.agree)
-  console.log(`\n일치 ${ok.length} / 불일치 ${rows.length - ok.length} / 카카오 호출 ${lookups}회${halted ? ' (중단)' : ''}`)
+  const held = rows.filter((r) => !r.agree && r.shared === 0 && !r.jibunOk)
+  console.log(`\n적용 가능 ${ok.length} / 보류 ${rows.length - ok.length} / 카카오 호출 ${lookups}회${halted ? ` (중단)` : ``}`)
+  if (held.length) console.log(`   그중 ${held.length}곳은 동만 맞고 지번이 어긋난다 — 확정 지번으로 재지오코딩하는 쪽이 맞다`)
 
   const backup = arg('backup')
   if (backup) {
