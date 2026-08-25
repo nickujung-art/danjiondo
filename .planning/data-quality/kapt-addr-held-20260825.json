@@ -1,0 +1,126 @@
+{
+  "at": "2026-08-25T07:38:16.140Z",
+  "held": [
+    {
+      "id": "1da0e1f6-d843-4411-8922-5da49debc40a",
+      "name": "안동한일유앤아이",
+      "sgg": "48250",
+      "kaptAddr": "경상남도 김해시 안동 333-28 안동한일유앤아이",
+      "normalized": "경남 김해시 안동 333-28",
+      "dong": "안동",
+      "canonicalDong": "구산동",
+      "ok": false,
+      "note": "🔴 확정 지번의 동과 다르다: K-apt 안동 vs 거래 다수결 구산동 — kapt_code 연결 의심"
+    },
+    {
+      "id": "4a123321-7b2a-47a1-bd62-ea47d220398e",
+      "name": "대동아파트",
+      "sgg": "48250",
+      "kaptAddr": "경상남도 김해시 구산동 316 대동아파트",
+      "normalized": "경남 김해시 구산동 316",
+      "dong": "구산동",
+      "canonicalDong": "삼방동",
+      "ok": false,
+      "note": "🔴 확정 지번의 동과 다르다: K-apt 구산동 vs 거래 다수결 삼방동 — kapt_code 연결 의심"
+    },
+    {
+      "id": "7e724dba-5326-4c03-8a8d-339063dfe252",
+      "name": "창원대우(1차)아파트",
+      "sgg": "48123",
+      "kaptAddr": "경상남도 창원성산구 남산동 601-1 창원대우(1차)아파트",
+      "normalized": "경남 창원시 성산구 남산동 601-1",
+      "dong": "남산동",
+      "canonicalDong": "상남동",
+      "ok": false,
+      "note": "🔴 확정 지번의 동과 다르다: K-apt 남산동 vs 거래 다수결 상남동 — kapt_code 연결 의심"
+    },
+    {
+      "id": "b07156b2-d345-453e-a24c-6f6aa8630166",
+      "name": "율하중앙하이츠",
+      "sgg": "48250",
+      "kaptAddr": "경상남도 김해시 율하동 1371 율하중앙하이츠",
+      "normalized": "경남 김해시 율하동 1371",
+      "dong": "율하동",
+      "canonicalDong": "부원동",
+      "ok": false,
+      "note": "🔴 확정 지번의 동과 다르다: K-apt 율하동 vs 거래 다수결 부원동 — kapt_code 연결 의심"
+    },
+    {
+      "id": "c69af799-8142-47dc-9c08-da2fc370e5c8",
+      "name": "더샵신문그리니티1차",
+      "sgg": "48250",
+      "kaptAddr": "경상남도 김해시 신문동 - 더샵신문그리니티1차",
+      "normalized": null,
+      "dong": null,
+      "canonicalDong": "신문동",
+      "ok": false,
+      "note": "지번으로 끝나지 않는다: \"신문동 -\""
+    },
+    {
+      "id": "c8671c01-b064-4188-be1c-52a5cb7152ee",
+      "name": "김해 푸르지오 하이엔드 1단지",
+      "sgg": "48250",
+      "kaptAddr": "경상남도 김해시 안동  김해 푸르지오 하이엔드 1단지",
+      "normalized": null,
+      "dong": null,
+      "canonicalDong": "안동",
+      "ok": false,
+      "note": "지번으로 끝나지 않는다: \"안동\""
+    },
+    {
+      "id": "ca816cd4-94e0-44d1-a72b-9663ad445692",
+      "name": "유신장미아파트",
+      "sgg": "48250",
+      "kaptAddr": "경상남도 김해시 구산동 491-5 유신장미아파트",
+      "normalized": "경남 김해시 구산동 491-5",
+      "dong": "구산동",
+      "canonicalDong": "삼정동",
+      "ok": false,
+      "note": "🔴 확정 지번의 동과 다르다: K-apt 구산동 vs 거래 다수결 삼정동 — kapt_code 연결 의심"
+    },
+    {
+      "id": "e13d5f2e-a2d7-49dd-b43a-173a8443ee6e",
+      "name": "김해장유삼정그린코아 더베스트",
+      "sgg": "48250",
+      "kaptAddr": "경상남도 김해시 무계동  김해장유삼정그린코아 더베스트",
+      "normalized": null,
+      "dong": null,
+      "canonicalDong": "무계동",
+      "ok": false,
+      "note": "지번으로 끝나지 않는다: \"무계동\""
+    },
+    {
+      "id": "e698cdb9-124f-4650-a970-01b9f3ca9b90",
+      "name": "김해푸르지오하이엔드2차아파트",
+      "sgg": "48250",
+      "kaptAddr": "경상남도 김해시 안동 - 김해푸르지오하이엔드2차아파트",
+      "normalized": null,
+      "dong": null,
+      "canonicalDong": "안동",
+      "ok": false,
+      "note": "지번으로 끝나지 않는다: \"안동 -\""
+    },
+    {
+      "id": "e9c78bd0-3347-445a-bcef-2f45c3cb7ba3",
+      "name": "장유역중흥S-클래스더퍼스트",
+      "sgg": "48250",
+      "kaptAddr": "경상남도 김해시 내덕동 - 장유역중흥S-클래스더퍼스트",
+      "normalized": null,
+      "dong": null,
+      "canonicalDong": "내덕동",
+      "ok": false,
+      "note": "지번으로 끝나지 않는다: \"내덕동 -\""
+    },
+    {
+      "id": "f269ac29-5fb8-4207-a73f-17cda3fd0b8b",
+      "name": "김해센텀Q시티아파트",
+      "sgg": "48250",
+      "kaptAddr": "경상남도 김해시 주촌면 선지리  김해센텀Q시티아파트",
+      "normalized": null,
+      "dong": null,
+      "canonicalDong": "주촌면 선지리",
+      "ok": false,
+      "note": "지번으로 끝나지 않는다: \"주촌면 선지리\""
+    }
+  ]
+}
