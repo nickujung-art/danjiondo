@@ -5,9 +5,14 @@
 import { z } from 'zod/v4'
 
 // 국토교통부_공동주택 단지 목록제공 서비스 (data.go.kr 승인 API)
-// 오퍼레이션: getSigunguAptList3 — 시군구코드로 단지 코드+단지명 조회
+// 오퍼레이션: getSigunguAptList4 — 시군구코드로 단지 코드+단지명 조회
 // 파라미터명: sigunguCode (sigunguCd 아님)
-const BASE_URL = 'https://apis.data.go.kr/1613000/AptListService3/getSigunguAptList3'
+//
+// 🔴 2026-08-25: `AptListService3` 가 폐기됐다. data.go.kr 이 HTTP 400 에
+//    `NO_OPENAPI_SERVICE_ERROR / 해당 오픈API 서비스가 없거나 폐기됨(code 12)` 을 실어 보낸다.
+//    V4 는 응답 필드가 V3 와 **동일하다**(kaptCode·kaptName·bjdCode·as1~as4, items 는 배열 직접).
+//    실측으로 확인했다 — 48121 조회 시 totalCount 74, 첫 항목 형태 일치.
+const BASE_URL = 'https://apis.data.go.kr/1613000/AptListService4/getSigunguAptList4'
 
 const KaptComplexSchema = z.object({
   kaptCode: z.string(),
@@ -41,9 +46,10 @@ export async function fetchComplexList(sggCode: string): Promise<KaptComplex[]> 
       headers: { Accept: 'application/json' },
       signal: AbortSignal.timeout(10_000),
     })
-    if (!res.ok) throw new Error(`K-apt API error: HTTP ${res.status}`)
+    const raw = await res.text()
+    if (!res.ok) throw new Error(describeHttpFailure('K-apt 단지목록 API', res.status, raw))
 
-    const json: unknown = await res.json()
+    const json: unknown = JSON.parse(raw)
     const body = (json as { response?: { body?: unknown } })?.response?.body
     const rawItems = (body as { items?: unknown })?.items
     const items: unknown[] = Array.isArray(rawItems) ? rawItems : []
@@ -64,9 +70,20 @@ export async function fetchComplexList(sggCode: string): Promise<KaptComplex[]> 
 }
 
 // ===== fetchKaptBasicInfo (DATA-01) =====
-// V4 엔드포인트 (data.go.kr 국토교통부_공동주택 기본 정보제공 서비스 승인 필요). 500 시 V1으로 fallback.
-const BASIC_INFO_URL_V4 = 'https://apis.data.go.kr/1613000/AptBasisInfoServiceV4/getAphusBassInfoV4'
-const BASIC_INFO_URL_V1 = 'https://apis.data.go.kr/1613000/AptBasisInfoService/getAphusBassInfo'
+// V5 엔드포인트 (data.go.kr 국토교통부_공동주택 기본 정보제공 서비스 승인 필요).
+//
+// 🔴 2026-08-25: **V4 와 V1 이 둘 다 폐기됐다.** 둘 다 HTTP 400 +
+//    `NO_OPENAPI_SERVICE_ERROR / 해당 오픈API 서비스가 없거나 폐기됨(code 12)`.
+//    V3 도 없다(실측). 살아 있는 것은 V5 뿐이다.
+//
+//    예전 코드는 "500 이면 V1 으로 폴백" 했는데 실제로 오는 것은 400 이라 폴백이 걸리지
+//    않았고, 걸렸어도 V1 역시 죽어 있어 소용없었다. **죽은 엔드포인트로의 폴백은
+//    오류를 가리고 지연만 늘리므로 제거한다.** 폴백 대상이 생기면 그때 되살린다.
+//
+//    언제 끊겼나: facility_kapt 마지막 성공 기록이 2026-08-23T19:07Z(=08-24 04:07 KST
+//    일배치)이고 다음 실행(08-25 04:43 KST)이 70/70 실패다. data_sources.kapt 의
+//    consecutive_failures=1 과 일치한다.
+const BASIC_INFO_URL_V5 = 'https://apis.data.go.kr/1613000/AptBasisInfoServiceV5/getAphusBassInfoV5'
 
 /**
  * ⚠️ optional 문자열은 반드시 `.nullish()` 다 — `.optional()` 은 `undefined` 만 받고
@@ -110,7 +127,33 @@ export const kaptBasicInfoSchema = z.object({
   kaptMparea85:   z.coerce.number().optional(),   // 60~85㎡
   kaptMparea135:  z.coerce.number().optional(),   // 85~135㎡
   kaptMparea136:  z.coerce.number().optional(),   // 135㎡ 초과
+  // V5 의 관리방식 필드명. V1 의 managementType 에 대응한다.
+  codeMgrNm:      z.string().nullish(),          // 관리방식 명칭 (managementType 폴백용)
 })
+  // ── 버전별 필드명 차이를 **여기서** 흡수한다 ─────────────────────────────
+  // V1 은 heatType·totalArea·managementType 을, V4/V5 는 codeHeatNm·kaptTarea·codeMgrNm 을
+  // 준다. 같은 값에 이름이 두 벌인 것이다.
+  //
+  // 🔴 이 폴백이 호출부마다 흩어져 있었고, **그래서 갈렸다.** 2026-08-25 실측:
+  //      kapt-facility-enrich.ts  codeHeatNm ?? heatType  / kaptTarea ?? totalArea  ✅
+  //      kapt-enrich.ts           heatType ?? codeHeatNm                             ✅
+  //      app/api/cron/daily       info.heatType ?? null   (폴백 없음)                ❌
+  //
+  //    일배치는 V1 이름만 읽는데 API 는 V4/V5 이름으로 준다. 그래서 매일 70곳에
+  //    heat_type·management_type·total_area 를 **null 로 upsert 해 enrich 결과를 지웠다**
+  //    (facility_kapt 는 onConflict: complex_id). updated_at 별 실측:
+  //      08-19  1,662행(enrich)  heat_type 43%
+  //      08-20~23  각 70행(일배치)         0%   ← 손댄 배치마다 정확히 0
+  //    280행이 이미 지워졌고 하루 70곳이면 28일에 전량이다.
+  //
+  //    호출부를 하나하나 고치면 다음에 또 갈린다. **매핑을 서비스 한 군데로 모은다** —
+  //    원본 필드는 그대로 두고 V1 이름 쪽만 채우므로 호출부는 손대지 않아도 된다.
+  .transform((v) => ({
+    ...v,
+    heatType:       v.heatType       ?? v.codeHeatNm ?? null,
+    managementType: v.managementType ?? v.codeMgrNm  ?? null,
+    totalArea:      v.totalArea      ?? v.kaptTarea,
+  }))
 
 export type KaptBasicInfo = z.infer<typeof kaptBasicInfoSchema>
 
@@ -143,6 +186,24 @@ export type KaptBasicInfoOutcome =
   | { ok: true; data: KaptBasicInfo }
   | ({ ok: false } & KaptBasicInfoFailure)
 
+/**
+ * 비2xx 응답의 사유를 사람이 읽을 수 있게 만든다.
+ *
+ * 🔴 예전에는 `throw new Error('K-apt BasicInfo API ' + status)` 로 **상태 코드만** 남기고
+ *    본문을 버렸다. 그래서 2026-08-25 에 API 가 통째로 폐기됐을 때 로그에 남은 것은
+ *    `K-apt BasicInfo API 400` 뿐이었고, 본문에 답이 그대로 실려 있었는데도
+ *    (`NO_OPENAPI_SERVICE_ERROR / 해당 오픈API 서비스가 없거나 폐기됨 / code=12`)
+ *    원인을 찾는 데 별도 조사가 필요했다.
+ *
+ *    이 파일에는 봉투 분류기(`readErrorEnvelope`)가 **이미 있었다.** 다만 HTTP 200 인
+ *    경로에서만 탔다. 진단 정보를 가진 경로와 필요한 경로가 엇갈려 있었던 셈이다.
+ */
+function describeHttpFailure(label: string, status: number, raw: string): string {
+  const envelope = readErrorEnvelope(raw)
+  if (envelope) return `${label} HTTP ${status} — ${envelope}`
+  return `${label} HTTP ${status} — ${raw.slice(0, 160).replace(/\s+/g, ' ')}`
+}
+
 /** data.go.kr 공통 에러 봉투인지 판별한다(JSON·XML 양쪽 형태를 본다). */
 function readErrorEnvelope(raw: string): string | null {
   if (!/OpenAPI_ServiceResponse|cmmMsgHeader|returnReasonCode/.test(raw)) return null
@@ -168,11 +229,12 @@ async function fetchKaptBasicInfoFromUrl(
     headers: { Accept: 'application/json' },
     signal: AbortSignal.timeout(10_000),
   })
-  if (!res.ok) throw new Error(`K-apt BasicInfo API ${res.status}`)
-
   // 본문을 **텍스트로 먼저** 읽는다 — 에러 봉투가 XML 로 오는 경우가 있어 JSON 파싱만
   // 시도하면 그 사실을 잃는다(molit-unsold 에서 같은 함정을 이미 겪었다).
+  // 🔴 비2xx 여도 먼저 읽는다. 사유가 본문에 있다(describeHttpFailure 주석 참조).
   const raw = await res.text()
+
+  if (!res.ok) throw new Error(describeHttpFailure('K-apt BasicInfo API', res.status, raw))
 
   const envelope = readErrorEnvelope(raw)
   if (envelope) return { ok: false, reason: 'error_envelope', hint: envelope }
@@ -217,14 +279,8 @@ export async function fetchKaptBasicInfoDetailed(kaptCode: string): Promise<Kapt
   const apiKey = process.env.KAPT_API_KEY
   if (!apiKey) throw new Error('KAPT_API_KEY is not set')
 
-  // V4 먼저 시도, 500이면 V1으로 fallback
-  try {
-    return await fetchKaptBasicInfoFromUrl(BASIC_INFO_URL_V4, kaptCode, apiKey)
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    if (!msg.includes('500')) throw err
-    return await fetchKaptBasicInfoFromUrl(BASIC_INFO_URL_V1, kaptCode, apiKey)
-  }
+  // 폴백 없음 — V4·V1 은 폐기됐다(BASIC_INFO_URL_V5 주석 참조).
+  return await fetchKaptBasicInfoFromUrl(BASIC_INFO_URL_V5, kaptCode, apiKey)
 }
 
 /** @deprecated 실패 사유를 알 수 없다. 새 코드는 `fetchKaptBasicInfoDetailed` 를 쓸 것. */
@@ -236,7 +292,10 @@ export async function fetchKaptBasicInfo(kaptCode: string): Promise<KaptBasicInf
 // ===== fetchKaptDetailInfo =====
 // V4 상세 정보조회 — 주차·엘리베이터·관리비 등
 // 필드명이 API 버전마다 다를 수 있으므로 optional로 넓게 수신 후 scripts에서 매핑
-const DETAIL_INFO_URL_V4 = 'https://apis.data.go.kr/1613000/AptBasisInfoServiceV4/getAphusDtlInfoV4'
+// 🔴 2026-08-25: V4 폐기(BASIC_INFO_URL_V5 주석 참조). V5 는 현재 읽는 8필드
+//    (kaptCode·kaptName·kaptdEcnt·kaptdPcntu·kaptdPcnt·kaptdCccnt·codeMgr·welfareFacility)를
+//    전부 그대로 준다 — 실측으로 확인했다(V5 응답 필드 36개).
+const DETAIL_INFO_URL_V5 = 'https://apis.data.go.kr/1613000/AptBasisInfoServiceV5/getAphusDtlInfoV5'
 
 export const kaptDetailInfoSchema = z.object({
   kaptCode:    z.string(),
@@ -256,7 +315,7 @@ export async function fetchKaptDetailInfo(kaptCode: string): Promise<{ parsed: K
   const apiKey = process.env.KAPT_API_KEY
   if (!apiKey) throw new Error('KAPT_API_KEY is not set')
 
-  const url = new URL(DETAIL_INFO_URL_V4)
+  const url = new URL(DETAIL_INFO_URL_V5)
   url.searchParams.set('ServiceKey', apiKey)
   url.searchParams.set('kaptCode', kaptCode)
   url.searchParams.set('_type', 'json')
@@ -265,9 +324,10 @@ export async function fetchKaptDetailInfo(kaptCode: string): Promise<{ parsed: K
     headers: { Accept: 'application/json' },
     signal: AbortSignal.timeout(10_000),
   })
-  if (!res.ok) throw new Error(`K-apt DetailInfo API ${res.status}`)
+  const raw = await res.text()
+  if (!res.ok) throw new Error(describeHttpFailure('K-apt DetailInfo API', res.status, raw))
 
-  const json: unknown = await res.json()
+  const json: unknown = JSON.parse(raw)
   const item = (json as { response?: { body?: { item?: unknown } } })?.response?.body?.item
   const parsed = kaptDetailInfoSchema.safeParse(item)
   return { parsed: parsed.success ? parsed.data : null, raw: item }
