@@ -137,3 +137,75 @@ describe('null 필드 처리 — 17개 단지가 계속 스킵되던 원인', ()
     vi.unstubAllGlobals()
   })
 })
+
+/**
+ * 2026-08-25 — 버전별 필드명 폴백이 **서비스 안**에 있는지 잠근다.
+ *
+ * [왜 이 테스트가 있어야 하나]
+ * V1 은 heatType·managementType·totalArea 를, V4/V5 는 codeHeatNm·codeMgrNm·kaptTarea 를
+ * 준다. 이 폴백이 호출부마다 흩어져 있었고 그래서 갈렸다 — `kapt-facility-enrich.ts` 와
+ * `kapt-enrich.ts` 에는 있고 `app/api/cron/daily` 에는 **없었다.**
+ *
+ * 결과는 조용한 데이터 파괴였다. 일배치가 V1 이름만 읽어 null 을 얻고, 그 null 을
+ * facility_kapt 에 upsert(onConflict: complex_id) 해서 enrich 가 채운 값을 지웠다.
+ * updated_at 별 실측:
+ *   2026-08-19  1,662행(enrich)  heat_type 43%
+ *   2026-08-20~23  각 70행(일배치)         0%   ← 손댄 배치마다 정확히 0
+ * 280행이 지워졌고 하루 70곳이면 28일에 전량이었다.
+ *
+ * 폴백이 다시 서비스 밖으로 나가면 같은 일이 반복된다.
+ */
+describe('버전별 필드명 폴백 (2026-08-25 회귀 방지)', () => {
+  it('🔴 V5 이름만 와도 V1 이름으로 읽힌다 — 호출부가 V1 이름을 쓴다', async () => {
+    mockFetchText({ response: { body: { item: {
+      kaptCode: 'A63187201', kaptName: '씨티해오름',
+      codeHeatNm: '개별난방', codeMgrNm: '자치관리', kaptTarea: '22083.63',
+    } } } })
+    const r = await fetchKaptBasicInfoDetailed('A63187201')
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.heatType).toBe('개별난방')
+      expect(r.data.managementType).toBe('자치관리')
+      expect(r.data.totalArea).toBeCloseTo(22083.63)
+    }
+    vi.unstubAllGlobals()
+  })
+
+  it('V1 이름이 오면 그대로 쓰고 V5 이름으로 덮지 않는다', async () => {
+    mockFetchText({ response: { body: { item: {
+      kaptCode: 'A1', kaptName: '가나',
+      heatType: '지역난방', managementType: '위탁관리', totalArea: '100',
+      codeHeatNm: '개별난방', codeMgrNm: '자치관리', kaptTarea: '999',
+    } } } })
+    const r = await fetchKaptBasicInfoDetailed('A1')
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.heatType).toBe('지역난방')
+      expect(r.data.managementType).toBe('위탁관리')
+      expect(r.data.totalArea).toBeCloseTo(100)
+    }
+    vi.unstubAllGlobals()
+  })
+
+  it('양쪽 다 없으면 null 이다 — 없는 값을 지어내지 않는다', async () => {
+    mockFetchText({ response: { body: { item: { kaptCode: 'A1', kaptName: '가나' } } } })
+    const r = await fetchKaptBasicInfoDetailed('A1')
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.data.heatType).toBeNull()
+      expect(r.data.managementType).toBeNull()
+      expect(r.data.totalArea).toBeUndefined()
+    }
+    vi.unstubAllGlobals()
+  })
+
+  it('🔴 비2xx 의 사유가 에러 메시지에 실린다 — 상태 코드만 남기지 않는다', async () => {
+    mockFetchText(JSON.stringify({ OpenAPI_ServiceResponse: { cmmMsgHeader: {
+      errMsg: 'NO_OPENAPI_SERVICE_ERROR',
+      returnAuthMsg: '해당 오픈API 서비스가 없거나 폐기됨',
+      returnReasonCode: '12',
+    } } }), false)
+    await expect(fetchKaptBasicInfoDetailed('A1')).rejects.toThrow(/폐기됨/)
+    vi.unstubAllGlobals()
+  })
+})
