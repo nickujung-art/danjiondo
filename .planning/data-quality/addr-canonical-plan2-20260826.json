@@ -1,0 +1,2931 @@
+{
+  "at": "2026-08-26T06:17:26.119Z",
+  "rows": [
+    {
+      "c": {
+        "id": "07f1d040-ea3f-47f3-bd14-95acbd4f624c",
+        "canonical_name": "을지뷰어빌102동",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.2631351128017,
+        "lng": 128.863777168749,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "삼계동 301-2",
+      "query": "경남 김해시 삼계동 301-2",
+      "geo": {
+        "jibun": "경남 김해시 삼계동 301-2",
+        "road": "경남 김해시 김해대로 1830-2",
+        "dong": "삼계동",
+        "lat": 35.2633135355272,
+        "lng": 128.863760379048
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 20m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 20,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "08ad9c91-1a1d-45af-89f9-55aab143eff4",
+        "canonical_name": "코스마O.T",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.2344187845723,
+        "lng": 128.902351717537,
+        "dong": "어방동",
+        "jibun_address": null
+      },
+      "canonical": "어방동 1099-8",
+      "query": "경남 김해시 어방동 1099-8",
+      "geo": {
+        "jibun": "경남 김해시 어방동 1099-8",
+        "road": "경남 김해시 인제로65번길 22",
+        "dong": "어방동",
+        "lat": 35.2344187845723,
+        "lng": 128.902351717537
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "09bad4db-e44f-4dd7-a7dd-ce6ed2e77c07",
+        "canonical_name": "경남아파트2동3동",
+        "sgg_code": "48127",
+        "status": "active",
+        "lat": 35.2570391181961,
+        "lng": 128.597254057695,
+        "dong": "목동",
+        "jibun_address": "서울 양천구 목동 537-31"
+      },
+      "canonical": "양덕동 5-2",
+      "query": "경남 창원시 마산회원구 양덕동 5-2",
+      "geo": {
+        "jibun": "경남 창원시 마산회원구 양덕동 5-2",
+        "road": "경남 창원시 마산회원구 양덕동16길 22",
+        "dong": "양덕동",
+        "lat": 35.2340918062714,
+        "lng": 128.590976734607
+      },
+      "ok": true,
+      "note": "주소+좌표 교체 (현재 좌표가 2615m 떨어짐)",
+      "moveM": 2615,
+      "replaceCoord": true
+    },
+    {
+      "c": {
+        "id": "0c9272e5-f058-4eb0-8a27-05cb2dcdafb1",
+        "canonical_name": "대동1차황토방",
+        "sgg_code": "48123",
+        "status": "active",
+        "lat": 35.2258357552158,
+        "lng": 128.654088074117,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "대원동 80-1",
+      "query": "경남 창원시 성산구 대원동 80-1",
+      "geo": {
+        "jibun": "경남 창원시 성산구 대원동 80-1",
+        "road": "경남 창원시 성산구 창원대로 538",
+        "dong": "대원동",
+        "lat": 35.2258357552158,
+        "lng": 128.654088074117
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "0e96c974-5df7-4a11-aa98-529a4ec5463d",
+        "canonical_name": "C.K밸리1",
+        "sgg_code": "48127",
+        "status": "active",
+        "lat": 35.2343066146558,
+        "lng": 128.576062473073,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "석전동 239-1",
+      "query": "경남 창원시 마산회원구 석전동 239-1",
+      "geo": {
+        "jibun": "경남 창원시 마산회원구 석전동 239-1",
+        "road": "경남 창원시 마산회원구 석전동14길 47",
+        "dong": "석전동",
+        "lat": 35.2343066146558,
+        "lng": 128.576062473073
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "126ccc57-9b1d-477a-a368-56719955ac9d",
+        "canonical_name": "합포만품으로",
+        "sgg_code": "48125",
+        "status": "active",
+        "lat": 35.2173393767249,
+        "lng": 128.58667563193,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "산호동 14-26",
+      "query": "경남 창원시 마산합포구 산호동 14-26",
+      "geo": {
+        "jibun": "경남 창원시 마산합포구 산호동 14-26",
+        "road": "경남 창원시 마산합포구 산호북4길 7",
+        "dong": "산호동",
+        "lat": 35.2173393767249,
+        "lng": 128.58667563193
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "15397ff9-5b20-40da-a637-0a3842772da5",
+        "canonical_name": "용문지오피",
+        "sgg_code": "48127",
+        "status": "active",
+        "lat": 35.2208434557558,
+        "lng": 128.57692559856,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "회원동 138-13",
+      "query": "경남 창원시 마산회원구 회원동 138-13",
+      "geo": {
+        "jibun": "경남 창원시 마산회원구 회원동 138-13",
+        "road": "경남 창원시 마산회원구 회원동북로 27-1",
+        "dong": "회원동",
+        "lat": 35.2208434557558,
+        "lng": 128.57692559856
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "166ad073-b152-4924-a16a-0638c9b71233",
+        "canonical_name": "대림공작2",
+        "sgg_code": "48125",
+        "status": "active",
+        "lat": 35.2066485756843,
+        "lng": 128.565771907035,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "자산동 14-6",
+      "query": "경남 창원시 마산합포구 자산동 14-6",
+      "geo": {
+        "jibun": "경남 창원시 마산합포구 자산동 14-6",
+        "road": "경남 창원시 마산합포구 자산북4길 8",
+        "dong": "자산동",
+        "lat": 35.2066485756843,
+        "lng": 128.565771907035
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "16ecefcd-caff-4cb5-bdf0-75fe4cbdcdc4",
+        "canonical_name": "미도상가빌라",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2627232596174,
+        "lng": 128.62915759325,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "소답동 142-33",
+      "query": "경남 창원시 의창구 소답동 142-33",
+      "geo": {
+        "jibun": "경남 창원시 의창구 소답동 142-33",
+        "road": "경남 창원시 의창구 읍성로117번길 5",
+        "dong": "소답동",
+        "lat": 35.2627232596174,
+        "lng": 128.62915759325
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "1ada8004-cb96-4e55-8e22-03fae1658677",
+        "canonical_name": "부영국민주택",
+        "sgg_code": "48127",
+        "status": "active",
+        "lat": 35.2374626501909,
+        "lng": 128.578855005996,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "석전동 221-13",
+      "query": "경남 창원시 마산회원구 석전동 221-13",
+      "geo": {
+        "jibun": "경남 창원시 마산회원구 석전동 221-13",
+        "road": "경남 창원시 마산회원구 석전동16길 33-1",
+        "dong": "석전동",
+        "lat": 35.2374626501909,
+        "lng": 128.578855005996
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "1ba254e7-aa6a-4b7f-978c-fb12f95ac3c6",
+        "canonical_name": "라레스빌라",
+        "sgg_code": "48125",
+        "status": "active",
+        "lat": 35.2054751226778,
+        "lng": 128.56111353485,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "자산동 24-7",
+      "query": "경남 창원시 마산합포구 자산동 24-7",
+      "geo": {
+        "jibun": "경남 창원시 마산합포구 자산동 24-7",
+        "road": "경남 창원시 마산합포구 무학로 412",
+        "dong": "자산동",
+        "lat": 35.2054751226778,
+        "lng": 128.56111353485
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "210b1faf-859c-45a7-b1d9-14d76697117f",
+        "canonical_name": "대호상가빌라",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2628968911476,
+        "lng": 128.6248851614,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "소답동 111-8",
+      "query": "경남 창원시 의창구 소답동 111-8",
+      "geo": {
+        "jibun": "경남 창원시 의창구 소답동 111-8",
+        "road": "경남 창원시 의창구 의창대로247번길 13",
+        "dong": "소답동",
+        "lat": 35.2628968911476,
+        "lng": 128.6248851614
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "21115f6b-9c32-4bba-84ac-f4d1accf5a4c",
+        "canonical_name": "숲속마을507-1",
+        "sgg_code": "48127",
+        "status": "active",
+        "lat": 35.2288675201541,
+        "lng": 128.496428611376,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "내서읍 삼계리 507-1",
+      "query": "경남 창원시 마산회원구 내서읍 삼계리 507-1",
+      "geo": {
+        "jibun": "경남 창원시 마산회원구 내서읍 삼계리 507-1",
+        "road": "경남 창원시 마산회원구 내서읍 숲속로 30",
+        "dong": "내서읍 삼계리",
+        "lat": 35.2288666217861,
+        "lng": 128.496428375194
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "22535044-080a-4e75-931d-614e3305d92a",
+        "canonical_name": "국도개나리맨션",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.266381603633,
+        "lng": 128.626980272722,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "소답동 130-2",
+      "query": "경남 창원시 의창구 소답동 130-2",
+      "geo": {
+        "jibun": "경남 창원시 의창구 소답동 130-2",
+        "road": "경남 창원시 의창구 의안로56번길 30",
+        "dong": "소답동",
+        "lat": 35.2663740812381,
+        "lng": 128.626963309787
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 2m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 2,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "225e7c16-3e65-4154-99b8-2da13c82d583",
+        "canonical_name": "한동더푸름",
+        "sgg_code": "48129",
+        "status": "active",
+        "lat": 35.1574313725135,
+        "lng": 128.692210948666,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "경화동 887",
+      "query": "경남 창원시 진해구 경화동 887",
+      "geo": {
+        "jibun": "경남 창원시 진해구 경화동 887",
+        "road": "경남 창원시 진해구 병암로37번길 8-10",
+        "dong": "경화동",
+        "lat": 35.1574313725135,
+        "lng": 128.692210948666
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "268dd348-8529-4542-a42a-5516e2da7640",
+        "canonical_name": "두산함박빌라트1",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.2215032184184,
+        "lng": 128.864873790158,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "흥동 410-3",
+      "query": "경남 김해시 흥동 410-3",
+      "geo": {
+        "jibun": "경남 김해시 흥동 410-3",
+        "road": "경남 김해시 전하로147번길 6-16",
+        "dong": "흥동",
+        "lat": 35.2214665118311,
+        "lng": 128.865127074454
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 23m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 23,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "26d2d3b7-4ef7-44d4-91a9-140ac584814a",
+        "canonical_name": "태인아네트",
+        "sgg_code": "48129",
+        "status": "active",
+        "lat": 35.1522177996495,
+        "lng": 128.658508193717,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "화천동 11-1",
+      "query": "경남 창원시 진해구 화천동 11-1",
+      "geo": {
+        "jibun": "경남 창원시 진해구 화천동 11-1",
+        "road": "경남 창원시 진해구 중원로 83-1",
+        "dong": "화천동",
+        "lat": 35.1522177996495,
+        "lng": 128.658508193717
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "2acae0e7-8abd-460b-b876-ccd960cdbb07",
+        "canonical_name": "성우그랜드빌A",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.2284710989866,
+        "lng": 128.899642719246,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "삼정동 661-12",
+      "query": "경남 김해시 삼정동 661-12",
+      "geo": {
+        "jibun": "경남 김해시 삼정동 661-12",
+        "road": "경남 김해시 김해대로2491번길 6-6",
+        "dong": "삼정동",
+        "lat": 35.2284739429662,
+        "lng": 128.899851900085
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 19m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 19,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "2c154249-1040-4721-b2d6-ae9ad98c442a",
+        "canonical_name": "(189-9)",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": null,
+        "lng": null,
+        "dong": "팔용동",
+        "jibun_address": null
+      },
+      "canonical": "팔용동 189-9",
+      "query": "경남 창원시 의창구 팔용동 189-9",
+      "geo": {
+        "jibun": "경남 창원시 의창구 팔용동 189-9",
+        "road": "경남 창원시 의창구 의창대로156번길 15-15",
+        "dong": "팔용동",
+        "lat": 35.2604542724856,
+        "lng": 128.615588526084
+      },
+      "ok": true,
+      "note": "주소+좌표 교체 (현재 좌표가 없음)",
+      "moveM": null,
+      "replaceCoord": true
+    },
+    {
+      "c": {
+        "id": "2f454069-a189-42cc-9c8f-828ec2c92719",
+        "canonical_name": "대흥오피스텔",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2190432940535,
+        "lng": 128.674987651862,
+        "dong": "소답동",
+        "jibun_address": null
+      },
+      "canonical": "소답동 156-8",
+      "query": "경남 창원시 의창구 소답동 156-8",
+      "geo": {
+        "jibun": "경남 창원시 의창구 소답동 156-8",
+        "road": "경남 창원시 의창구 의창대로289번길 6-13",
+        "dong": "소답동",
+        "lat": 35.2623288870991,
+        "lng": 128.630147519555
+      },
+      "ok": true,
+      "note": "주소+좌표 교체 (현재 좌표가 6305m 떨어짐)",
+      "moveM": 6305,
+      "replaceCoord": true
+    },
+    {
+      "c": {
+        "id": "33341323-fcf0-475f-ae58-a0f95838a955",
+        "canonical_name": "리앤아이테르",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2540496028283,
+        "lng": 128.640104799422,
+        "dong": "북동",
+        "jibun_address": null
+      },
+      "canonical": "북동 143",
+      "query": "경남 창원시 의창구 북동 143",
+      "geo": {
+        "jibun": "경남 창원시 의창구 북동 143",
+        "road": "경남 창원시 의창구 의안로59번길 26",
+        "dong": "북동",
+        "lat": 35.2671161184815,
+        "lng": 128.62123315999
+      },
+      "ok": true,
+      "note": "주소+좌표 교체 (현재 좌표가 2247m 떨어짐)",
+      "moveM": 2247,
+      "replaceCoord": true
+    },
+    {
+      "c": {
+        "id": "3547494a-f4ec-48b4-afe0-95ae309c5f52",
+        "canonical_name": "아느칸빌",
+        "sgg_code": "48129",
+        "status": "active",
+        "lat": 35.144698051486,
+        "lng": 128.701999960003,
+        "dong": "덕산동",
+        "jibun_address": null
+      },
+      "canonical": "덕산동 75-10",
+      "query": "경남 창원시 진해구 덕산동 75-10",
+      "geo": {
+        "jibun": "경남 창원시 진해구 덕산동 75-10",
+        "road": "경남 창원시 진해구 덕산로14번길 23-6",
+        "dong": "덕산동",
+        "lat": 35.144698051486,
+        "lng": 128.701999960003
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "3607bfc2-298f-41a8-8a4a-93316557a972",
+        "canonical_name": "라원아파트",
+        "sgg_code": "48125",
+        "status": "active",
+        "lat": 35.210097883378,
+        "lng": 128.575482489231,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "상남동 218-4",
+      "query": "경남 창원시 마산합포구 상남동 218-4",
+      "geo": {
+        "jibun": "경남 창원시 마산합포구 상남동 218-4",
+        "road": "경남 창원시 마산합포구 합포서9길 10",
+        "dong": "상남동",
+        "lat": 35.210097883378,
+        "lng": 128.575482489231
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "366bb80e-9df7-49ea-93f0-7eb602dfc3ac",
+        "canonical_name": "춘광파크맨션1",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2806687626349,
+        "lng": 128.688945083091,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "동읍 용잠리 207-3",
+      "query": "경남 창원시 의창구 동읍 용잠리 207-3",
+      "geo": {
+        "jibun": "경남 창원시 의창구 동읍 용잠리 207-3",
+        "road": null,
+        "dong": "동읍 용잠리",
+        "lat": 35.2806687626349,
+        "lng": 128.688945083091
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "37c35ec6-8e9b-4dc6-845e-dffda90be40f",
+        "canonical_name": "남성파크A",
+        "sgg_code": "48129",
+        "status": "active",
+        "lat": 35.1590486587758,
+        "lng": 128.680492298481,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "경화동 1501",
+      "query": "경남 창원시 진해구 경화동 1501",
+      "geo": {
+        "jibun": "경남 창원시 진해구 경화동 1501",
+        "road": "경남 창원시 진해구 조천로23번길 39",
+        "dong": "경화동",
+        "lat": 35.1590486587758,
+        "lng": 128.680492298481
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "39a53327-e1b0-4509-bc92-4303af6ee732",
+        "canonical_name": "경성빌라2",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.229419617638,
+        "lng": 128.900943810324,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "삼정동 656-7",
+      "query": "경남 김해시 삼정동 656-7",
+      "geo": {
+        "jibun": "경남 김해시 삼정동 656-7",
+        "road": "경남 김해시 인제로11번길 40",
+        "dong": "삼정동",
+        "lat": 35.229419617638,
+        "lng": 128.900943810324
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "3ad7391b-4097-40e4-a444-7227dd337bb9",
+        "canonical_name": "풍성전기사원",
+        "sgg_code": "48123",
+        "status": "active",
+        "lat": 35.2067009006015,
+        "lng": 128.695989514504,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "가음동 24-6",
+      "query": "경남 창원시 성산구 가음동 24-6",
+      "geo": {
+        "jibun": "경남 창원시 성산구 가음동 24-6",
+        "road": null,
+        "dong": "가음동",
+        "lat": 35.2067009006015,
+        "lng": 128.695989514504
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "3ccbb2e8-ff34-49ec-afe7-e6227fec545a",
+        "canonical_name": "진달래국민주택",
+        "sgg_code": "48125",
+        "status": "active",
+        "lat": 35.1789951303968,
+        "lng": 128.557409609599,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "월영동 534-38",
+      "query": "경남 창원시 마산합포구 월영동 534-38",
+      "geo": {
+        "jibun": "경남 창원시 마산합포구 월영동 534-38",
+        "road": "경남 창원시 마산합포구 월영남1길 15",
+        "dong": "월영동",
+        "lat": 35.1789951303968,
+        "lng": 128.557409609599
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "41c1ed77-5c80-4216-91cd-113f73f15302",
+        "canonical_name": "덕진그린빌B",
+        "sgg_code": "48129",
+        "status": "active",
+        "lat": 35.1569899377552,
+        "lng": 128.694133175465,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "이동 506-8",
+      "query": "경남 창원시 진해구 이동 506-8",
+      "geo": {
+        "jibun": "경남 창원시 진해구 이동 506-8",
+        "road": "경남 창원시 진해구 진해대로728번길 32",
+        "dong": "이동",
+        "lat": 35.1569490402706,
+        "lng": 128.69415120209
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 5m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 5,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "42f64af6-ecf1-4324-a16c-47910e62a2f3",
+        "canonical_name": "한우O/T빌딩",
+        "sgg_code": "48125",
+        "status": "active",
+        "lat": 35.2110069682308,
+        "lng": 128.573687500495,
+        "dong": "상남동",
+        "jibun_address": null
+      },
+      "canonical": "상남동 108-1",
+      "query": "경남 창원시 마산합포구 상남동 108-1",
+      "geo": {
+        "jibun": "경남 창원시 마산합포구 상남동 108-1",
+        "road": "경남 창원시 마산합포구 노산남7길 28",
+        "dong": "상남동",
+        "lat": 35.2110069682308,
+        "lng": 128.573687500495
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "43d32e16-86b0-48d7-b4d7-57c9eee0d7bf",
+        "canonical_name": "중동서원래온빌101동",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2603299612768,
+        "lng": 128.620664384096,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "서상동 651-7",
+      "query": "경남 창원시 의창구 서상동 651-7",
+      "geo": {
+        "jibun": "경남 창원시 의창구 서상동 651-7",
+        "road": "경남 창원시 의창구 의창대로210번길 12",
+        "dong": "서상동",
+        "lat": 35.2603978376753,
+        "lng": 128.620663318484
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 8m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 8,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "447cb8a5-2bb9-408e-89da-136cfd38a303",
+        "canonical_name": "춘광파크맨션2",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2801258470141,
+        "lng": 128.689688951513,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "동읍 용잠리 233-9",
+      "query": "경남 창원시 의창구 동읍 용잠리 233-9",
+      "geo": {
+        "jibun": "경남 창원시 의창구 동읍 용잠리 233-9",
+        "road": "경남 창원시 의창구 동읍 용잠로41번길 17-7",
+        "dong": "동읍 용잠리",
+        "lat": 35.2801258470141,
+        "lng": 128.689688951513
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "459ee336-dc09-473e-be44-ecfbe05a1422",
+        "canonical_name": "두산기계사원",
+        "sgg_code": "48123",
+        "status": "active",
+        "lat": 35.213432055175,
+        "lng": 128.676924765023,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "외동 853-33",
+      "query": "경남 창원시 성산구 외동 853-33",
+      "geo": {
+        "jibun": "경남 창원시 성산구 외동 853-33",
+        "road": "경남 창원시 성산구 창원대로780번길 23",
+        "dong": "외동",
+        "lat": 35.213432055175,
+        "lng": 128.676924765023
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "49923cba-3e87-497d-86ad-9e890be98f3b",
+        "canonical_name": "젤미마을9단지부영그린타운5차",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.1939956300773,
+        "lng": 128.796249997272,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "삼문동 62-10",
+      "query": "경남 김해시 삼문동 62-10",
+      "geo": {
+        "jibun": "경남 김해시 삼문동 62-10",
+        "road": "경남 김해시 대청로210번길 13",
+        "dong": "삼문동",
+        "lat": 35.1941867880956,
+        "lng": 128.795793548466
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 47m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 47,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "4ce1401d-5d01-4630-8729-18894f8ead39",
+        "canonical_name": "보람더좋은큐브",
+        "sgg_code": "48129",
+        "status": "active",
+        "lat": 35.1553982077852,
+        "lng": 128.69227527791,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "경화동 900",
+      "query": "경남 창원시 진해구 경화동 900",
+      "geo": {
+        "jibun": "경남 창원시 진해구 경화동 900",
+        "road": "경남 창원시 진해구 진해대로694번길 24",
+        "dong": "경화동",
+        "lat": 35.1573756556083,
+        "lng": 128.69136075535
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 235m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 235,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "50aa7597-1eaf-4ccc-87e7-cbd21fcdaf1f",
+        "canonical_name": "자산우성빌라",
+        "sgg_code": "48125",
+        "status": "active",
+        "lat": 35.207687660423,
+        "lng": 128.565175948242,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "자산동 12-1",
+      "query": "경남 창원시 마산합포구 자산동 12-1",
+      "geo": {
+        "jibun": "경남 창원시 마산합포구 자산동 12-1",
+        "road": "경남 창원시 마산합포구 문신길 32",
+        "dong": "자산동",
+        "lat": 35.207687660423,
+        "lng": 128.565175948242
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "50cc05ec-1633-4862-b390-3b10bcafe5a9",
+        "canonical_name": "청호아트빌102",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.2231200555999,
+        "lng": 128.869598016567,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "흥동 415-2",
+      "query": "경남 김해시 흥동 415-2",
+      "geo": {
+        "jibun": "경남 김해시 흥동 415-2",
+        "road": "경남 김해시 흥동로 148",
+        "dong": "흥동",
+        "lat": 35.2220008330385,
+        "lng": 128.864705620152
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 462m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 462,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "576be3de-cf82-4141-a931-22564b867b33",
+        "canonical_name": "일양맨션",
+        "sgg_code": "48125",
+        "status": "active",
+        "lat": 35.1904290220797,
+        "lng": 128.564895651709,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "월포동 2-115",
+      "query": "경남 창원시 마산합포구 월포동 2-115",
+      "geo": {
+        "jibun": "경남 창원시 마산합포구 월포동 2-115",
+        "road": "경남 창원시 마산합포구 반월동1길 24",
+        "dong": "월포동",
+        "lat": 35.1904290220797,
+        "lng": 128.564895651709
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "597d0151-522c-4ec9-8091-120df34bc35d",
+        "canonical_name": "씨티빌 B/D",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.2397818250217,
+        "lng": 128.862370383498,
+        "dong": "내동",
+        "jibun_address": null
+      },
+      "canonical": "내동 1121-4",
+      "query": "경남 김해시 내동 1121-4",
+      "geo": {
+        "jibun": "경남 김해시 내동 1121-4",
+        "road": "경남 김해시 경원로55번길 2",
+        "dong": "내동",
+        "lat": 35.2372809810099,
+        "lng": 128.866414905164
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 461m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 461,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "5a67dfad-8e92-4c33-a1ed-367ad0db863e",
+        "canonical_name": "다조맨션",
+        "sgg_code": "48125",
+        "status": "active",
+        "lat": 35.2128746612018,
+        "lng": 128.566261876343,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "교방동 281-2",
+      "query": "경남 창원시 마산합포구 교방동 281-2",
+      "geo": {
+        "jibun": "경남 창원시 마산합포구 교방동 281-2",
+        "road": "경남 창원시 마산합포구 교방동1길 64",
+        "dong": "교방동",
+        "lat": 35.2128746612018,
+        "lng": 128.566261876343
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "5accc368-4459-4712-a964-95ca6869e82e",
+        "canonical_name": "에포스빌",
+        "sgg_code": "48125",
+        "status": "active",
+        "lat": 35.1230877346382,
+        "lng": 128.576778529156,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "구산면 수정리 827-3",
+      "query": "경남 창원시 마산합포구 구산면 수정리 827-3",
+      "geo": {
+        "jibun": "경남 창원시 마산합포구 구산면 수정리 827-3",
+        "road": "경남 창원시 마산합포구 구산면 구산로 605-45",
+        "dong": "구산면 수정리",
+        "lat": 35.1230877346382,
+        "lng": 128.576778529156
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "5e0c87e6-7c09-4332-8df0-dc5b6bbe82e0",
+        "canonical_name": "덕산그린빌",
+        "sgg_code": "48129",
+        "status": "active",
+        "lat": 35.1493836000461,
+        "lng": 128.696707663263,
+        "dong": "덕산동",
+        "jibun_address": null
+      },
+      "canonical": "덕산동 59-19",
+      "query": "경남 창원시 진해구 덕산동 59-19",
+      "geo": {
+        "jibun": "경남 창원시 진해구 덕산동 59-19",
+        "road": "경남 창원시 진해구 충장로491번길 15",
+        "dong": "덕산동",
+        "lat": 35.1457739604072,
+        "lng": 128.702729302784
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 679m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 679,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "614b7d5d-442e-4461-a94d-bdd98f40e48a",
+        "canonical_name": "진보델타",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2676693588719,
+        "lng": 128.626470981888,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "소답동 126-7",
+      "query": "경남 창원시 의창구 소답동 126-7",
+      "geo": {
+        "jibun": "경남 창원시 의창구 소답동 126-7",
+        "road": "경남 창원시 의창구 읍성로79번길 29",
+        "dong": "소답동",
+        "lat": 35.2676693588719,
+        "lng": 128.626470981888
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "623b17cf-d935-480e-96f3-51bf417b9c45",
+        "canonical_name": "하이존텔 3차",
+        "sgg_code": "48129",
+        "status": "active",
+        "lat": 35.1492578620449,
+        "lng": 128.656961972475,
+        "dong": "회현동",
+        "jibun_address": null
+      },
+      "canonical": "회현동 3-1",
+      "query": "경남 창원시 진해구 회현동 3-1",
+      "geo": {
+        "jibun": "경남 창원시 진해구 회현동 3-1",
+        "road": "경남 창원시 진해구 편백로8번길 3-2",
+        "dong": "회현동",
+        "lat": 35.1492542387435,
+        "lng": 128.656976492734
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 1m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 1,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "64b19bfb-f903-470b-b2ee-0d232837f8d6",
+        "canonical_name": "성은상가(성은맨션)",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.3036389348972,
+        "lng": 128.727605337604,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "진영읍 진영리 274-96",
+      "query": "경남 김해시 진영읍 진영리 274-96",
+      "geo": {
+        "jibun": "경남 김해시 진영읍 진영리 274-96",
+        "road": "경남 김해시 진영읍 진영로 133",
+        "dong": "진영읍 진영리",
+        "lat": 35.3036487871642,
+        "lng": 128.727628523342
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 2m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 2,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "6660c3da-79fb-4ddb-a82c-0225293f7195",
+        "canonical_name": "고구려1차주상복합",
+        "sgg_code": "48127",
+        "status": "active",
+        "lat": 35.2344469939457,
+        "lng": 128.577061139664,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "석전동 229-6",
+      "query": "경남 창원시 마산회원구 석전동 229-6",
+      "geo": {
+        "jibun": "경남 창원시 마산회원구 석전동 229-6",
+        "road": "경남 창원시 마산회원구 석전동9길 64",
+        "dong": "석전동",
+        "lat": 35.2344474515618,
+        "lng": 128.577060599297
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "667d892a-0f32-4954-b989-902372d67449",
+        "canonical_name": "그린힐빌라Ⅱ",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.23449180858,
+        "lng": 128.895453340018,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "삼정동 11-6",
+      "query": "경남 김해시 삼정동 11-6",
+      "geo": {
+        "jibun": "경남 김해시 삼정동 11-6",
+        "road": "경남 김해시 가야로405번길 148",
+        "dong": "삼정동",
+        "lat": 35.2353302964716,
+        "lng": 128.892411655088
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 292m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 292,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "66c55366-7e7e-4c0d-a48d-5571d63c5960",
+        "canonical_name": "더-가온 빌딩 the-Gaon Building",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2618956815843,
+        "lng": 128.630434197868,
+        "dong": "소답동",
+        "jibun_address": null
+      },
+      "canonical": "소답동 158-8",
+      "query": "경남 창원시 의창구 소답동 158-8",
+      "geo": {
+        "jibun": "경남 창원시 의창구 소답동 158-8",
+        "road": "경남 창원시 의창구 의창대로299번길 1",
+        "dong": "소답동",
+        "lat": 35.2619237442887,
+        "lng": 128.630404872857
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 4m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 4,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "67ae82bb-152b-42e5-9475-091119f00133",
+        "canonical_name": "석봉마을1단지대동2",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.2046535651455,
+        "lng": 128.80706825624,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "부곡동 1157-1",
+      "query": "경남 김해시 부곡동 1157-1",
+      "geo": {
+        "jibun": "경남 김해시 부곡동 1157-1",
+        "road": "경남 김해시 월산로 82-58",
+        "dong": "부곡동",
+        "lat": 35.2041616546536,
+        "lng": 128.8071973483
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 56m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 56,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "6b27b430-370b-43b3-a560-45224278c63d",
+        "canonical_name": "평화골드맨션",
+        "sgg_code": "48125",
+        "status": "active",
+        "lat": 35.206137068132,
+        "lng": 128.565344056293,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "자산동 19-2",
+      "query": "경남 창원시 마산합포구 자산동 19-2",
+      "geo": {
+        "jibun": "경남 창원시 마산합포구 자산동 19-2",
+        "road": "경남 창원시 마산합포구 자산삼거리로 61",
+        "dong": "자산동",
+        "lat": 35.206137068132,
+        "lng": 128.565344056293
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "6b4be4ba-5d74-402c-8fcf-9e7576115a4d",
+        "canonical_name": "황강빌라A동",
+        "sgg_code": "48127",
+        "status": "active",
+        "lat": 35.2544912062524,
+        "lng": 128.600204174622,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "구암동 1049",
+      "query": "경남 창원시 마산회원구 구암동 1049",
+      "geo": {
+        "jibun": "경남 창원시 마산회원구 구암동 1049",
+        "road": "경남 창원시 마산회원구 구암동1길 120",
+        "dong": "구암동",
+        "lat": 35.2544912062524,
+        "lng": 128.600204174622
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "6d7cd474-d179-4e3c-90ab-bcf6aa688298",
+        "canonical_name": "대림공작1",
+        "sgg_code": "48125",
+        "status": "active",
+        "lat": 35.2074663538419,
+        "lng": 128.56458741588,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "자산동 11-19",
+      "query": "경남 창원시 마산합포구 자산동 11-19",
+      "geo": {
+        "jibun": "경남 창원시 마산합포구 자산동 11-19",
+        "road": "경남 창원시 마산합포구 자산삼거리로 90",
+        "dong": "자산동",
+        "lat": 35.2074663538419,
+        "lng": 128.56458741588
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "751da480-7bb1-46f2-bc3e-16a1c10a5d88",
+        "canonical_name": "성우그랜드빌B",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.2284710989866,
+        "lng": 128.899642719246,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "삼정동 661-1",
+      "query": "경남 김해시 삼정동 661-1",
+      "geo": {
+        "jibun": "경남 김해시 삼정동 661-1",
+        "road": "경남 김해시 김해대로2491번길 6-6",
+        "dong": "삼정동",
+        "lat": 35.2284563418376,
+        "lng": 128.899509262346
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 12m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 12,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "76013e99-994f-483c-9ce1-8c7c2d48faf3",
+        "canonical_name": "성진까치빌라트3",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2755922582518,
+        "lng": 128.70553232881,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "동읍 용정리 20-9",
+      "query": "경남 창원시 의창구 동읍 용정리 20-9",
+      "geo": {
+        "jibun": "경남 창원시 의창구 동읍 용정리 20-9",
+        "road": "경남 창원시 의창구 동읍 용정길46번길 49",
+        "dong": "동읍 용정리",
+        "lat": 35.2745709108656,
+        "lng": 128.70583323517
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 117m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 117,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "7a1fd312-01b9-416e-9145-d296ce1b46c4",
+        "canonical_name": "능포모텔",
+        "sgg_code": "48123",
+        "status": "active",
+        "lat": 35.2275320114533,
+        "lng": 128.678744534768,
+        "dong": "중앙동",
+        "jibun_address": null
+      },
+      "canonical": "중앙동 76-13",
+      "query": "경남 창원시 성산구 중앙동 76-13",
+      "geo": {
+        "jibun": "경남 창원시 성산구 중앙동 76-13",
+        "road": "경남 창원시 성산구 용지로123번길 12-1",
+        "dong": "중앙동",
+        "lat": 35.2275320114533,
+        "lng": 128.678744534768
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "7ab05634-e9e7-4e5c-9e99-adf75ba411f5",
+        "canonical_name": "금강빌라라동",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2661675444019,
+        "lng": 128.628890195549,
+        "dong": "성산동",
+        "jibun_address": "서울 마포구 성산동 50-3"
+      },
+      "canonical": "소답동 153-2",
+      "query": "경남 창원시 의창구 소답동 153-2",
+      "geo": {
+        "jibun": "경남 창원시 의창구 소답동 153-2",
+        "road": "경남 창원시 의창구 의창대로289번길 16-8",
+        "dong": "소답동",
+        "lat": 35.2629315486811,
+        "lng": 128.629745121349
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 368m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 368,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "7c797e2e-86d2-42f5-bf7a-ff6e36a64f62",
+        "canonical_name": "리코그린맨션",
+        "sgg_code": "48125",
+        "status": "active",
+        "lat": 35.2063887826379,
+        "lng": 128.562826098761,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "자산동 23-2",
+      "query": "경남 창원시 마산합포구 자산동 23-2",
+      "geo": {
+        "jibun": "경남 창원시 마산합포구 자산동 23-2",
+        "road": "경남 창원시 마산합포구 무학로 430",
+        "dong": "자산동",
+        "lat": 35.2063887826379,
+        "lng": 128.562826098761
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "865ca25a-d574-4cc1-8574-f7c598328af9",
+        "canonical_name": "골든스위트 104동",
+        "sgg_code": "48125",
+        "status": "active",
+        "lat": 35.1869080218844,
+        "lng": 128.549670733049,
+        "dong": "월영동",
+        "jibun_address": null
+      },
+      "canonical": "월영동 234-1",
+      "query": "경남 창원시 마산합포구 월영동 234-1",
+      "geo": {
+        "jibun": "경남 창원시 마산합포구 월영동 234-1",
+        "road": "경남 창원시 마산합포구 문화서20길 25-3",
+        "dong": "월영동",
+        "lat": 35.1863964925515,
+        "lng": 128.549070736882
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 79m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 79,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "87419bf9-5fd7-46b7-ab05-f9000aeb6a3a",
+        "canonical_name": "블루시티",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": null,
+        "lng": null,
+        "dong": "삼계동",
+        "jibun_address": null
+      },
+      "canonical": "삼계동 1460-3",
+      "query": "경남 김해시 삼계동 1460-3",
+      "geo": {
+        "jibun": "경남 김해시 삼계동 1460-3",
+        "road": "경남 김해시 가야로 163",
+        "dong": "삼계동",
+        "lat": 35.2630493701549,
+        "lng": 128.871996489647
+      },
+      "ok": true,
+      "note": "주소+좌표 교체 (현재 좌표가 없음)",
+      "moveM": null,
+      "replaceCoord": true
+    },
+    {
+      "c": {
+        "id": "87ca95c4-5ff3-4ffe-8a16-760842a071cf",
+        "canonical_name": "희성아트빌A",
+        "sgg_code": "48127",
+        "status": "active",
+        "lat": 35.2531718905031,
+        "lng": 128.522321106216,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "내서읍 호계리 266-4",
+      "query": "경남 창원시 마산회원구 내서읍 호계리 266-4",
+      "geo": {
+        "jibun": "경남 창원시 마산회원구 내서읍 호계리 266-4",
+        "road": "경남 창원시 마산회원구 내서읍 호원로 228-32",
+        "dong": "내서읍 호계리",
+        "lat": 35.2532961395941,
+        "lng": 128.521936797667
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 38m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 38,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "89f40f91-ac67-48ca-82d4-a3fb68a578c6",
+        "canonical_name": "화인아트빌라1",
+        "sgg_code": "48125",
+        "status": "active",
+        "lat": 35.1748131241634,
+        "lng": 128.555029188376,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "월영동 593",
+      "query": "경남 창원시 마산합포구 월영동 593",
+      "geo": {
+        "jibun": "경남 창원시 마산합포구 월영동 593",
+        "road": "경남 창원시 마산합포구 무학로 32",
+        "dong": "월영동",
+        "lat": 35.1762127301663,
+        "lng": 128.55518569939
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 156m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 156,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "8be860e6-7e2a-41f1-8c3e-781585370b86",
+        "canonical_name": "여명",
+        "sgg_code": "48129",
+        "status": "active",
+        "lat": 35.1275515979747,
+        "lng": 128.783355827065,
+        "dong": "마천동",
+        "jibun_address": "서울 송파구 마천동 26-15"
+      },
+      "canonical": "마천동 144-3",
+      "query": "경남 창원시 진해구 마천동 144-3",
+      "geo": {
+        "jibun": "경남 창원시 진해구 마천동 144-3",
+        "road": "경남 창원시 진해구 마천로 35",
+        "dong": "마천동",
+        "lat": 35.1275153149411,
+        "lng": 128.783316642392
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 5m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 5,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "8c79979f-c979-4515-8645-20be3439b6b0",
+        "canonical_name": "송원상가빌라",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2651785309373,
+        "lng": 128.624669309179,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "소답동 106-6",
+      "query": "경남 창원시 의창구 소답동 106-6",
+      "geo": {
+        "jibun": "경남 창원시 의창구 소답동 106-6",
+        "road": "경남 창원시 의창구 읍성로 59",
+        "dong": "소답동",
+        "lat": 35.2651785309373,
+        "lng": 128.624669309179
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "8da11aa2-ab77-4d1b-a495-571bff88e017",
+        "canonical_name": "중동서원래온빌102동",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2603299612768,
+        "lng": 128.620664384096,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "서상동 651-5",
+      "query": "경남 창원시 의창구 서상동 651-5",
+      "geo": {
+        "jibun": "경남 창원시 의창구 서상동 651-5",
+        "road": "경남 창원시 의창구 의창대로210번길 10",
+        "dong": "서상동",
+        "lat": 35.2606289316427,
+        "lng": 128.620681984926
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 33m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 33,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "9120b06c-98f6-45c2-970c-bd4d4c54a7bb",
+        "canonical_name": "청안프리존빌",
+        "sgg_code": "48129",
+        "status": "active",
+        "lat": 35.1195877316508,
+        "lng": 128.791956986085,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "두동 1296-16",
+      "query": "경남 창원시 진해구 두동 1296-16",
+      "geo": {
+        "jibun": "경남 창원시 진해구 두동 1296-16",
+        "road": "경남 창원시 진해구 웅동로 164",
+        "dong": "두동",
+        "lat": 35.1192420564473,
+        "lng": 128.791601385705
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 50m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 50,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "9299ab14-fbf1-44ad-a268-c046dc82f87f",
+        "canonical_name": "젤미마을4단지부영그린타운7차",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.1959690434036,
+        "lng": 128.797418771896,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "삼문동 62-4",
+      "query": "경남 김해시 삼문동 62-4",
+      "geo": {
+        "jibun": "경남 김해시 삼문동 62-4",
+        "road": "경남 김해시 능동로 32",
+        "dong": "삼문동",
+        "lat": 35.1959678966197,
+        "lng": 128.797417099807
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "93e292ab-34d0-41ae-a8cd-c2f9e3006588",
+        "canonical_name": "합성동림맨션가",
+        "sgg_code": "48127",
+        "status": "active",
+        "lat": 35.2386083388741,
+        "lng": 128.586644634544,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "합성동 205-7",
+      "query": "경남 창원시 마산회원구 합성동 205-7",
+      "geo": {
+        "jibun": "경남 창원시 마산회원구 합성동 205-7",
+        "road": "경남 창원시 마산회원구 합성남8길 34",
+        "dong": "합성동",
+        "lat": 35.2386083388741,
+        "lng": 128.586644634544
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "9428b00e-b5b2-4bc4-8544-a556281d1959",
+        "canonical_name": "샛별메이플",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.2326277105854,
+        "lng": 128.899240888736,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "삼정동 643-11",
+      "query": "경남 김해시 삼정동 643-11",
+      "geo": {
+        "jibun": "경남 김해시 삼정동 643-11",
+        "road": "경남 김해시 인제로39번길 54-46",
+        "dong": "삼정동",
+        "lat": 35.2326277105854,
+        "lng": 128.899240888736
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "9638cacf-4cf0-43a7-bb24-c08b4b0128d4",
+        "canonical_name": "유니빌",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2540496028283,
+        "lng": 128.640104799422,
+        "dong": "소답동",
+        "jibun_address": null
+      },
+      "canonical": "소답동 159-22",
+      "query": "경남 창원시 의창구 소답동 159-22",
+      "geo": {
+        "jibun": "경남 창원시 의창구 소답동 159-22",
+        "road": "경남 창원시 의창구 의창대로299번길 6-2",
+        "dong": "소답동",
+        "lat": 35.2621316129358,
+        "lng": 128.630729007708
+      },
+      "ok": true,
+      "note": "주소+좌표 교체 (현재 좌표가 1238m 떨어짐)",
+      "moveM": 1238,
+      "replaceCoord": true
+    },
+    {
+      "c": {
+        "id": "9cf96887-3c26-4d38-8c70-439e7a1460e8",
+        "canonical_name": "금강금화빌라",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2540496028283,
+        "lng": 128.640104799422,
+        "dong": "논현동",
+        "jibun_address": "서울 강남구 논현동 189-3"
+      },
+      "canonical": "소답동 106-2",
+      "query": "경남 창원시 의창구 소답동 106-2",
+      "geo": {
+        "jibun": "경남 창원시 의창구 소답동 106-2",
+        "road": "경남 창원시 의창구 의안로44번길 6-2",
+        "dong": "소답동",
+        "lat": 35.2654040086022,
+        "lng": 128.624616231868
+      },
+      "ok": true,
+      "note": "주소+좌표 교체 (현재 좌표가 1890m 떨어짐)",
+      "moveM": 1890,
+      "replaceCoord": true
+    },
+    {
+      "c": {
+        "id": "9de364ba-f579-4694-b77a-26334f679867",
+        "canonical_name": "리즈트",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2540496028283,
+        "lng": 128.640104799422,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "도계동 396-1",
+      "query": "경남 창원시 의창구 도계동 396-1",
+      "geo": {
+        "jibun": "경남 창원시 의창구 도계동 396-1",
+        "road": "경남 창원시 의창구 도계로73번길 20",
+        "dong": "도계동",
+        "lat": 35.2589816003103,
+        "lng": 128.640512054229
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 550m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 550,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "aae5b274-b4d9-4fde-ac09-a520e35b8238",
+        "canonical_name": "삼계서진",
+        "sgg_code": "48127",
+        "status": "active",
+        "lat": 35.2413085186867,
+        "lng": 128.504493382476,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "내서읍 상곡리 67",
+      "query": "경남 창원시 마산회원구 내서읍 상곡리 67",
+      "geo": {
+        "jibun": "경남 창원시 마산회원구 내서읍 상곡리 67",
+        "road": "경남 창원시 마산회원구 내서읍 경남대로 1019",
+        "dong": "내서읍 상곡리",
+        "lat": 35.2413085186867,
+        "lng": 128.504493382476
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "b204d2e5-f5fd-46ea-97d9-f481f83cf100",
+        "canonical_name": "세방전지(주)사원",
+        "sgg_code": "48123",
+        "status": "active",
+        "lat": 35.2015017045907,
+        "lng": 128.690884975185,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "가음동 24-7",
+      "query": "경남 창원시 성산구 가음동 24-7",
+      "geo": {
+        "jibun": "경남 창원시 성산구 가음동 24-7",
+        "road": null,
+        "dong": "가음동",
+        "lat": 35.2062928336476,
+        "lng": 128.695455179374
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 675m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 675,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "b73f25f8-5dc9-4e21-a1c5-36a64b5e3cfb",
+        "canonical_name": "성진까치빌라트2",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2755922582518,
+        "lng": 128.70553232881,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "동읍 용정리 20-3",
+      "query": "경남 창원시 의창구 동읍 용정리 20-3",
+      "geo": {
+        "jibun": "경남 창원시 의창구 동읍 용정리 20-3",
+        "road": "경남 창원시 의창구 동읍 용정길46번길 35",
+        "dong": "동읍 용정리",
+        "lat": 35.2755934542219,
+        "lng": 128.705530595533
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "b92fdc52-e22f-4589-b6ec-f0ca4afa3b2e",
+        "canonical_name": "한빛빌라4차",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.228565355864,
+        "lng": 128.88936269803,
+        "dong": "신천동",
+        "jibun_address": "경기 시흥시 신천동 819-9"
+      },
+      "canonical": "흥동 418-10",
+      "query": "경남 김해시 흥동 418-10",
+      "geo": {
+        "jibun": "경남 김해시 흥동 418-10",
+        "road": "경남 김해시 흥동로 162",
+        "dong": "흥동",
+        "lat": 35.2220805819679,
+        "lng": 128.866360473135
+      },
+      "ok": true,
+      "note": "주소+좌표 교체 (현재 좌표가 2210m 떨어짐)",
+      "moveM": 2210,
+      "replaceCoord": true
+    },
+    {
+      "c": {
+        "id": "b9eee9e0-8bdf-4299-9569-fcfc00228ab0",
+        "canonical_name": "한아름맨션",
+        "sgg_code": "48125",
+        "status": "active",
+        "lat": 35.1969642422115,
+        "lng": 128.567859050223,
+        "dong": "사당동",
+        "jibun_address": "서울 동작구 사당동 440-9"
+      },
+      "canonical": "문화동 2-2",
+      "query": "경남 창원시 마산합포구 문화동 2-2",
+      "geo": {
+        "jibun": "경남 창원시 마산합포구 문화동 2-2",
+        "road": "경남 창원시 마산합포구 고운로 68",
+        "dong": "문화동",
+        "lat": 35.1885419199274,
+        "lng": 128.558130382817
+      },
+      "ok": true,
+      "note": "주소+좌표 교체 (현재 좌표가 1288m 떨어짐)",
+      "moveM": 1288,
+      "replaceCoord": true
+    },
+    {
+      "c": {
+        "id": "bc64b51b-6bd1-418c-a4ff-9e84f33ab2a8",
+        "canonical_name": "빨마데파트1",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2595736352973,
+        "lng": 128.63467835006,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "도계동 330-2",
+      "query": "경남 창원시 의창구 도계동 330-2",
+      "geo": {
+        "jibun": "경남 창원시 의창구 도계동 330-2",
+        "road": "경남 창원시 의창구 도계로18번길 6",
+        "dong": "도계동",
+        "lat": 35.2595802113365,
+        "lng": 128.634605194612
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 7m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 7,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "bed74fac-e586-4a9b-bae6-f63e01e546ca",
+        "canonical_name": "블루캐슬",
+        "sgg_code": "48125",
+        "status": "active",
+        "lat": 35.2062958784173,
+        "lng": 128.567098505344,
+        "dong": "자산동",
+        "jibun_address": null
+      },
+      "canonical": "자산동 46-32",
+      "query": "경남 창원시 마산합포구 자산동 46-32",
+      "geo": {
+        "jibun": "경남 창원시 마산합포구 자산동 46-32",
+        "road": "경남 창원시 마산합포구 문신길 78",
+        "dong": "자산동",
+        "lat": 35.2062958784173,
+        "lng": 128.567098505344
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "c1d6eb96-80e4-4aee-94cb-bc9e572c7da4",
+        "canonical_name": "리코빌리지",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2611408431178,
+        "lng": 128.63247050656,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "도계동 301-3",
+      "query": "경남 창원시 의창구 도계동 301-3",
+      "geo": {
+        "jibun": "경남 창원시 의창구 도계동 301-3",
+        "road": "경남 창원시 의창구 도계두리길 30",
+        "dong": "도계동",
+        "lat": 35.2611408431178,
+        "lng": 128.63247050656
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "c639a3c7-5a8d-4a24-a3cf-96742d9646dd",
+        "canonical_name": "태평로얄스톤아파트",
+        "sgg_code": "48129",
+        "status": "active",
+        "lat": 35.1458606292732,
+        "lng": 128.660347712739,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "태평동 22-1",
+      "query": "경남 창원시 진해구 태평동 22-1",
+      "geo": {
+        "jibun": "경남 창원시 진해구 태평동 22-1",
+        "road": "경남 창원시 진해구 태평로 10",
+        "dong": "태평동",
+        "lat": 35.1458606292732,
+        "lng": 128.660347712739
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "c69af799-8142-47dc-9c08-da2fc370e5c8",
+        "canonical_name": "더샵신문그리니티1차",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.19916909859,
+        "lng": 128.822722652102,
+        "dong": "신문동",
+        "jibun_address": null
+      },
+      "canonical": "신문동 가-",
+      "query": "경남 김해시 신문동 가-",
+      "geo": null,
+      "ok": false,
+      "note": "지오코딩 실패 — 폐지 지번일 수 있다",
+      "moveM": null,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "c6e1b42e-8969-4b5e-a73b-b551ff867ef0",
+        "canonical_name": "덕진그린빌A",
+        "sgg_code": "48129",
+        "status": "active",
+        "lat": 35.1569317978079,
+        "lng": 128.693785969396,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "이동 506-6",
+      "query": "경남 창원시 진해구 이동 506-6",
+      "geo": {
+        "jibun": "경남 창원시 진해구 이동 506-6",
+        "road": "경남 창원시 진해구 진해대로728번길 32-1",
+        "dong": "이동",
+        "lat": 35.1569317978079,
+        "lng": 128.693785969396
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "c8671c01-b064-4188-be1c-52a5cb7152ee",
+        "canonical_name": "김해 푸르지오 하이엔드 1단지",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.2381427029535,
+        "lng": 128.913247035684,
+        "dong": "안동",
+        "jibun_address": null
+      },
+      "canonical": "안동 BL-2-2",
+      "query": "경남 김해시 안동 BL-2-2",
+      "geo": null,
+      "ok": false,
+      "note": "지오코딩 실패 — 폐지 지번일 수 있다",
+      "moveM": null,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "caa7444b-4f9b-4670-986b-0ae00f093d1a",
+        "canonical_name": "삼성맥스빌7차",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.2316421364757,
+        "lng": 128.903613548848,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "삼정동 640-9",
+      "query": "경남 김해시 삼정동 640-9",
+      "geo": {
+        "jibun": "경남 김해시 삼정동 640-9",
+        "road": "경남 김해시 인제로39번길 36",
+        "dong": "삼정동",
+        "lat": 35.2319412874884,
+        "lng": 128.901248900777
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 217m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 217,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "cab39379-d0cd-4339-be30-ffe613df1c91",
+        "canonical_name": "한빛빌라5차",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.228565355864,
+        "lng": 128.88936269803,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "흥동 418-9",
+      "query": "경남 김해시 흥동 418-9",
+      "geo": {
+        "jibun": "경남 김해시 흥동 418-9",
+        "road": "경남 김해시 흥동로 162",
+        "dong": "흥동",
+        "lat": 35.2220865592613,
+        "lng": 128.8661014321
+      },
+      "ok": true,
+      "note": "주소+좌표 교체 (현재 좌표가 2232m 떨어짐)",
+      "moveM": 2232,
+      "replaceCoord": true
+    },
+    {
+      "c": {
+        "id": "cc74da97-e7b5-45af-8337-38342fbeba69",
+        "canonical_name": "풍성정밀사원",
+        "sgg_code": "48123",
+        "status": "active",
+        "lat": 35.2069215204926,
+        "lng": 128.696175938774,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "가음동 24-1",
+      "query": "경남 창원시 성산구 가음동 24-1",
+      "geo": {
+        "jibun": "경남 창원시 성산구 가음동 24-1",
+        "road": null,
+        "dong": "가음동",
+        "lat": 35.2069215204926,
+        "lng": 128.696175938774
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "ceffe8a5-0a1d-42ab-87b3-00db31acc477",
+        "canonical_name": "경화로얄빌리지",
+        "sgg_code": "48129",
+        "status": "active",
+        "lat": 35.1542537796695,
+        "lng": 128.682062387336,
+        "dong": "경화동",
+        "jibun_address": null
+      },
+      "canonical": "경화동 1167-14",
+      "query": "경남 창원시 진해구 경화동 1167-14",
+      "geo": {
+        "jibun": "경남 창원시 진해구 경화동 1167-14",
+        "road": "경남 창원시 진해구 충장로273번길 4-1",
+        "dong": "경화동",
+        "lat": 35.1542537796695,
+        "lng": 128.682062387336
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "d2ede2b3-d22f-4840-a5b3-26a9cb8ac1de",
+        "canonical_name": "리코가든빌라",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2540496028283,
+        "lng": 128.640104799422,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "도계동 313-35",
+      "query": "경남 창원시 의창구 도계동 313-35",
+      "geo": {
+        "jibun": "경남 창원시 의창구 도계동 313-35",
+        "road": "경남 창원시 의창구 하남천서길15번길 14-6",
+        "dong": "도계동",
+        "lat": 35.2613702022292,
+        "lng": 128.638556566648
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 826m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 826,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "d32199dd-4372-4ccd-bd8e-a1832c101fb3",
+        "canonical_name": "창원중앙역 유탑 바이탈시티 주건축물 제1동",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2391962345655,
+        "lng": 128.697437487789,
+        "dong": "사림동",
+        "jibun_address": null
+      },
+      "canonical": "사림동 163-1",
+      "query": "경남 창원시 의창구 사림동 163-1",
+      "geo": {
+        "jibun": "경남 창원시 의창구 사림동 163-1",
+        "road": "경남 창원시 의창구 용동로57번안길 9-6",
+        "dong": "사림동",
+        "lat": 35.2389981894537,
+        "lng": 128.698577640188
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 106m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 106,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "d3feeb30-1809-4c4f-9b28-c966a2bede20",
+        "canonical_name": "칠호아트빌라",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.2401113471273,
+        "lng": 128.900867662974,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "어방동 502-5",
+      "query": "경남 김해시 어방동 502-5",
+      "geo": {
+        "jibun": "경남 김해시 어방동 502-5",
+        "road": "경남 김해시 활천로202번길 25",
+        "dong": "어방동",
+        "lat": 35.2401029253352,
+        "lng": 128.900858788659
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 1m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 1,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "d874462a-f86b-433d-bbe5-6f26bceb7473",
+        "canonical_name": "화목궁전빌라5차",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.228565355864,
+        "lng": 128.88936269803,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "어방동 721-11",
+      "query": "경남 김해시 어방동 721-11",
+      "geo": {
+        "jibun": "경남 김해시 어방동 721-11",
+        "road": "경남 김해시 활천로208번길 72",
+        "dong": "어방동",
+        "lat": 35.2368678590004,
+        "lng": 128.8983910684
+      },
+      "ok": true,
+      "note": "주소+좌표 교체 (현재 좌표가 1235m 떨어짐)",
+      "moveM": 1235,
+      "replaceCoord": true
+    },
+    {
+      "c": {
+        "id": "dabdf598-93d8-43b3-b009-b45e954ac3c3",
+        "canonical_name": "희가로플러스",
+        "sgg_code": "48125",
+        "status": "active",
+        "lat": 35.1948966512862,
+        "lng": 128.566533559706,
+        "dong": "중앙동2가",
+        "jibun_address": null
+      },
+      "canonical": "중앙동2가 3-6",
+      "query": "경남 창원시 마산합포구 중앙동2가 3-6",
+      "geo": {
+        "jibun": "경남 창원시 마산합포구 중앙동2가 3-6",
+        "road": "경남 창원시 마산합포구 3.15대로 185",
+        "dong": "중앙동2가",
+        "lat": 35.1948966512862,
+        "lng": 128.566533559706
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "df675dad-f8a9-44bf-a68a-000eb4f62ca3",
+        "canonical_name": "팔육국민주택",
+        "sgg_code": "48127",
+        "status": "active",
+        "lat": 35.220851526193,
+        "lng": 128.579713884234,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "회원동 662-6",
+      "query": "경남 창원시 마산회원구 회원동 662-6",
+      "geo": {
+        "jibun": "경남 창원시 마산회원구 회원동 662-6",
+        "road": "경남 창원시 마산회원구 회원북26길 29",
+        "dong": "회원동",
+        "lat": 35.2197891293846,
+        "lng": 128.563327573595
+      },
+      "ok": true,
+      "note": "주소+좌표 교체 (현재 좌표가 1493m 떨어짐)",
+      "moveM": 1493,
+      "replaceCoord": true
+    },
+    {
+      "c": {
+        "id": "e13d5f2e-a2d7-49dd-b43a-173a8443ee6e",
+        "canonical_name": "김해장유삼정그린코아 더베스트",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.2004153702413,
+        "lng": 128.821369310054,
+        "dong": "무계동",
+        "jibun_address": null
+      },
+      "canonical": "무계동 가-",
+      "query": "경남 김해시 무계동 가-",
+      "geo": null,
+      "ok": false,
+      "note": "지오코딩 실패 — 폐지 지번일 수 있다",
+      "moveM": null,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "e19dc7aa-8d33-4dd4-8313-96faef7a7738",
+        "canonical_name": "삼성맥스빌2차",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.2316421364757,
+        "lng": 128.903613548848,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "삼정동 653-15",
+      "query": "경남 김해시 삼정동 653-15",
+      "geo": {
+        "jibun": "경남 김해시 삼정동 653-15",
+        "road": "경남 김해시 분성로512번길 55",
+        "dong": "삼정동",
+        "lat": 35.230457910347,
+        "lng": 128.902678556881
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 157m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 157,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "e35aa5a2-479c-40cd-81ab-030cf81d7118",
+        "canonical_name": "화인아트빌라2",
+        "sgg_code": "48125",
+        "status": "active",
+        "lat": 35.1748131241634,
+        "lng": 128.555029188376,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "월영동 593-2",
+      "query": "경남 창원시 마산합포구 월영동 593-2",
+      "geo": {
+        "jibun": "경남 창원시 마산합포구 월영동 593-2",
+        "road": "경남 창원시 마산합포구 밤밭고개로 371",
+        "dong": "월영동",
+        "lat": 35.1749763034212,
+        "lng": 128.555298692905
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 30m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 30,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "e698cdb9-124f-4650-a970-01b9f3ca9b90",
+        "canonical_name": "김해푸르지오하이엔드2차아파트",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.2379448974485,
+        "lng": 128.911393755033,
+        "dong": "안동",
+        "jibun_address": null
+      },
+      "canonical": "안동 BL-2-2",
+      "query": "경남 김해시 안동 BL-2-2",
+      "geo": null,
+      "ok": false,
+      "note": "지오코딩 실패 — 폐지 지번일 수 있다",
+      "moveM": null,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "e7390b9d-e2a6-4ad5-9d6d-fba6e98fec16",
+        "canonical_name": "반월동르메이에르",
+        "sgg_code": "48125",
+        "status": "active",
+        "lat": 35.1969642422115,
+        "lng": 128.567859050223,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "대성동1가 5-7",
+      "query": "경남 창원시 마산합포구 대성동1가 5-7",
+      "geo": {
+        "jibun": "경남 창원시 마산합포구 대성동1가 5-7",
+        "road": "경남 창원시 마산합포구 반월북5길 49",
+        "dong": "대성동1가",
+        "lat": 35.1925694829866,
+        "lng": 128.561362361515
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 766m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 766,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "e9c78bd0-3347-445a-bcef-2f45c3cb7ba3",
+        "canonical_name": "장유역중흥S-클래스더퍼스트",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.2120082698623,
+        "lng": 128.816339898052,
+        "dong": "내덕동",
+        "jibun_address": null
+      },
+      "canonical": "내덕동 794",
+      "query": "경남 김해시 내덕동 794",
+      "geo": {
+        "jibun": "경남 김해시 내덕동 794",
+        "road": "경남 김해시 외덕로 125",
+        "dong": "내덕동",
+        "lat": 35.2120989421423,
+        "lng": 128.816291076791
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 11m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 11,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "e9f984b5-ea24-47c7-a6cc-d9614e4f9c34",
+        "canonical_name": "풍호빌",
+        "sgg_code": "48129",
+        "status": "active",
+        "lat": 35.13070226096,
+        "lng": 128.709451223103,
+        "dong": "풍호동",
+        "jibun_address": null
+      },
+      "canonical": "풍호동 807",
+      "query": "경남 창원시 진해구 풍호동 807",
+      "geo": {
+        "jibun": "경남 창원시 진해구 풍호동 807",
+        "road": "경남 창원시 진해구 진해대로1047번길 10",
+        "dong": "풍호동",
+        "lat": 35.1358521601251,
+        "lng": 128.709328616403
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 573m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 573,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "ece6155e-5513-4657-a024-8d7ae238e2cc",
+        "canonical_name": "성진까치빌라1",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2540496028283,
+        "lng": 128.640104799422,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "동읍 용정리 19-3",
+      "query": "경남 창원시 의창구 동읍 용정리 19-3",
+      "geo": {
+        "jibun": "경남 창원시 의창구 동읍 용정리 19-3",
+        "road": "경남 창원시 의창구 동읍 단계로 82",
+        "dong": "동읍 용정리",
+        "lat": 35.2770217651772,
+        "lng": 128.705109743304
+      },
+      "ok": true,
+      "note": "주소+좌표 교체 (현재 좌표가 6431m 떨어짐)",
+      "moveM": 6431,
+      "replaceCoord": true
+    },
+    {
+      "c": {
+        "id": "ef086993-e8b7-4b9d-af5f-5f6fac3a1266",
+        "canonical_name": "대우사원",
+        "sgg_code": "48123",
+        "status": "active",
+        "lat": 35.1984113027034,
+        "lng": 128.702788308501,
+        "dong": "공단동",
+        "jibun_address": "경북 구미시 공단동 265-2"
+      },
+      "canonical": "남산동 601-7",
+      "query": "경남 창원시 성산구 남산동 601-7",
+      "geo": {
+        "jibun": "경남 창원시 성산구 남산동 601-7",
+        "road": "경남 창원시 성산구 성주로 147",
+        "dong": "남산동",
+        "lat": 35.2001368778399,
+        "lng": 128.700036640455
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 315m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 315,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "ef1e2446-c821-4d6b-aa91-364706f0cf18",
+        "canonical_name": "중산그린빌라",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2540496028283,
+        "lng": 128.640104799422,
+        "dong": "중산동",
+        "jibun_address": "인천 중구 중산동 1261-1"
+      },
+      "canonical": "소답동 419-2",
+      "query": "경남 창원시 의창구 소답동 419-2",
+      "geo": {
+        "jibun": "경남 창원시 의창구 소답동 419-2",
+        "road": "경남 창원시 의창구 의안로70번길 11",
+        "dong": "소답동",
+        "lat": 35.2679444216566,
+        "lng": 128.62520299082
+      },
+      "ok": true,
+      "note": "주소+좌표 교체 (현재 좌표가 2054m 떨어짐)",
+      "moveM": 2054,
+      "replaceCoord": true
+    },
+    {
+      "c": {
+        "id": "ef5b4a52-bb20-462a-9ffd-27e8294fca7d",
+        "canonical_name": "한일사원",
+        "sgg_code": "48127",
+        "status": "active",
+        "lat": 35.220851526193,
+        "lng": 128.579713884234,
+        "dong": "매포읍",
+        "jibun_address": "충북 단양군 매포읍 평동리 16"
+      },
+      "canonical": "양덕동 57-6",
+      "query": "경남 창원시 마산회원구 양덕동 57-6",
+      "geo": {
+        "jibun": "경남 창원시 마산회원구 양덕동 57-6",
+        "road": "경남 창원시 마산회원구 산호천동길 26",
+        "dong": "양덕동",
+        "lat": 35.2276800230355,
+        "lng": 128.586092639407
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 955m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 955,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "efe11439-8fc7-4c51-9020-86a9e9280c51",
+        "canonical_name": "크라운",
+        "sgg_code": "48127",
+        "status": "active",
+        "lat": 35.2376286568009,
+        "lng": 128.582490996457,
+        "dong": "동천동",
+        "jibun_address": "대구 북구 동천동 909-7"
+      },
+      "canonical": "구암동 1345",
+      "query": "경남 창원시 마산회원구 구암동 1345",
+      "geo": {
+        "jibun": "경남 창원시 마산회원구 구암동 1345",
+        "road": "경남 창원시 마산회원구 구암북12길 49",
+        "dong": "구암동",
+        "lat": 35.2564015638917,
+        "lng": 128.596409370473
+      },
+      "ok": true,
+      "note": "주소+좌표 교체 (현재 좌표가 2440m 떨어짐)",
+      "moveM": 2440,
+      "replaceCoord": true
+    },
+    {
+      "c": {
+        "id": "f0d275f3-9f75-48df-bb22-304fd10a3164",
+        "canonical_name": "한진그룹사원임대",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.2462128972402,
+        "lng": 128.865983362628,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "내동 121-3",
+      "query": "경남 김해시 내동 121-3",
+      "geo": {
+        "jibun": "경남 김해시 내동 121-3",
+        "road": "경남 김해시 평전로 219",
+        "dong": "내동",
+        "lat": 35.2464326588588,
+        "lng": 128.866359705835
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 42m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 42,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "f11f7b5d-7211-49fe-8072-f1ffcec840a0",
+        "canonical_name": "태주실업",
+        "sgg_code": "48123",
+        "status": "active",
+        "lat": 35.1984113027034,
+        "lng": 128.702788308501,
+        "dong": "삼성동",
+        "jibun_address": "서울 강남구 삼성동 114-14"
+      },
+      "canonical": "가음동 20-12",
+      "query": "경남 창원시 성산구 가음동 20-12",
+      "geo": {
+        "jibun": "경남 창원시 성산구 가음동 20-12",
+        "road": "경남 창원시 성산구 대정로 26",
+        "dong": "가음동",
+        "lat": 35.2065347765876,
+        "lng": 128.698498365436
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 984m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 984,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "f1c417e1-f141-4764-8c3d-9ecd40e5190b",
+        "canonical_name": "동원하우스",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.228565355864,
+        "lng": 128.88936269803,
+        "dong": "운서동",
+        "jibun_address": "인천 중구 운서동 2745-1"
+      },
+      "canonical": "지내동 525",
+      "query": "경남 김해시 지내동 525",
+      "geo": {
+        "jibun": "경남 김해시 지내동 525",
+        "road": null,
+        "dong": "지내동",
+        "lat": 35.237055461323,
+        "lng": 128.920719081982
+      },
+      "ok": true,
+      "note": "주소+좌표 교체 (현재 좌표가 3000m 떨어짐)",
+      "moveM": 3000,
+      "replaceCoord": true
+    },
+    {
+      "c": {
+        "id": "f269ac29-5fb8-4207-a73f-17cda3fd0b8b",
+        "canonical_name": "김해센텀Q시티아파트",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.2295219658535,
+        "lng": 128.847072433592,
+        "dong": "주촌면",
+        "jibun_address": null
+      },
+      "canonical": "주촌면 선지리 1476",
+      "query": "경남 김해시 주촌면 선지리 1476",
+      "geo": {
+        "jibun": "경남 김해시 주촌면 선지리 1476",
+        "road": "경남 김해시 주촌면 선지로 85",
+        "dong": "주촌면 선지리",
+        "lat": 35.2293726558587,
+        "lng": 128.847295630598
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 26m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 26,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "f30263cf-4c2d-4c39-9eee-77689a7ea0c9",
+        "canonical_name": "세화A.P.T",
+        "sgg_code": "48127",
+        "status": "active",
+        "lat": 35.220851526193,
+        "lng": 128.579713884234,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "구암동 12-10",
+      "query": "경남 창원시 마산회원구 구암동 12-10",
+      "geo": {
+        "jibun": "경남 창원시 마산회원구 구암동 12-10",
+        "road": "경남 창원시 마산회원구 구암서3길 68",
+        "dong": "구암동",
+        "lat": 35.2488712317054,
+        "lng": 128.592034301804
+      },
+      "ok": true,
+      "note": "주소+좌표 교체 (현재 좌표가 3310m 떨어짐)",
+      "moveM": 3310,
+      "replaceCoord": true
+    },
+    {
+      "c": {
+        "id": "f31cc462-a1b5-4e66-87f9-d6168262a037",
+        "canonical_name": "월산마을7단지주공4차",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.2051018319598,
+        "lng": 128.800936003531,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "부곡동 803-2",
+      "query": "경남 김해시 부곡동 803-2",
+      "geo": {
+        "jibun": "경남 김해시 부곡동 803-2",
+        "road": "경남 김해시 월산로 117",
+        "dong": "부곡동",
+        "lat": 35.2051000956977,
+        "lng": 128.800937612169
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "f40fabb5-e288-4f21-90a3-dcdff88c7cb0",
+        "canonical_name": "신일아트맨션",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.228565355864,
+        "lng": 128.88936269803,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "안동 343",
+      "query": "경남 김해시 안동 343",
+      "geo": {
+        "jibun": "경남 김해시 안동 343",
+        "road": "경남 김해시 삼안로131번길 11",
+        "dong": "안동",
+        "lat": 35.2397505442624,
+        "lng": 128.914508690762
+      },
+      "ok": true,
+      "note": "주소+좌표 교체 (현재 좌표가 2601m 떨어짐)",
+      "moveM": 2601,
+      "replaceCoord": true
+    },
+    {
+      "c": {
+        "id": "f438f9c7-d2c4-4022-8602-fd19a378068e",
+        "canonical_name": "우리빌리지에이",
+        "sgg_code": "48250",
+        "status": "active",
+        "lat": 35.2517587728455,
+        "lng": 128.904039930281,
+        "dong": null,
+        "jibun_address": null
+      },
+      "canonical": "삼방동 571-4",
+      "query": "경남 김해시 삼방동 571-4",
+      "geo": {
+        "jibun": "경남 김해시 삼방동 571-4",
+        "road": "경남 김해시 삼안로 317-1",
+        "dong": "삼방동",
+        "lat": 35.2517178517269,
+        "lng": 128.904034688542
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 5m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 5,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "f8cab266-2304-409c-8af4-c21bd9dcfa57",
+        "canonical_name": "현대위스코",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": null,
+        "lng": null,
+        "dong": "소답동",
+        "jibun_address": null
+      },
+      "canonical": "소답동 156-3",
+      "query": "경남 창원시 의창구 소답동 156-3",
+      "geo": {
+        "jibun": "경남 창원시 의창구 소답동 156-3",
+        "road": "경남 창원시 의창구 읍성로117번길 10",
+        "dong": "소답동",
+        "lat": 35.2624717891389,
+        "lng": 128.629808764222
+      },
+      "ok": true,
+      "note": "주소+좌표 교체 (현재 좌표가 없음)",
+      "moveM": null,
+      "replaceCoord": true
+    },
+    {
+      "c": {
+        "id": "f8ecc7d9-e0ee-4873-812f-09c080fa906d",
+        "canonical_name": "벽송수피아빌딩",
+        "sgg_code": "48129",
+        "status": "active",
+        "lat": 35.1019423892931,
+        "lng": 128.811307508303,
+        "dong": "용원동",
+        "jibun_address": null
+      },
+      "canonical": "용원동 1212-2",
+      "query": "경남 창원시 진해구 용원동 1212-2",
+      "geo": {
+        "jibun": "경남 창원시 진해구 용원동 1212-2",
+        "road": "경남 창원시 진해구 용재로 14",
+        "dong": "용원동",
+        "lat": 35.1019423892931,
+        "lng": 128.811307508303
+      },
+      "ok": true,
+      "note": "주소만 교체 (좌표는 0m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)",
+      "moveM": 0,
+      "replaceCoord": false
+    },
+    {
+      "c": {
+        "id": "f95b7024-ac9c-4864-b699-ca2faf34a735",
+        "canonical_name": "(주)상신기업",
+        "sgg_code": "48125",
+        "status": "active",
+        "lat": 35.1411437409916,
+        "lng": 128.481577895828,
+        "dong": "홍문동",
+        "jibun_address": null
+      },
+      "canonical": "홍문동 12-1",
+      "query": "경남 창원시 마산합포구 홍문동 12-1",
+      "geo": {
+        "jibun": "경남 창원시 마산합포구 홍문동 12-1",
+        "road": "경남 창원시 마산합포구 문화남11길 7",
+        "dong": "홍문동",
+        "lat": 35.183761548304,
+        "lng": 128.559439521415
+      },
+      "ok": true,
+      "note": "주소+좌표 교체 (현재 좌표가 8518m 떨어짐)",
+      "moveM": 8518,
+      "replaceCoord": true
+    },
+    {
+      "c": {
+        "id": "fb3d81d8-5d34-4b2f-a76d-3e7afa86bd0d",
+        "canonical_name": "동산그린빌라",
+        "sgg_code": "48129",
+        "status": "active",
+        "lat": 35.1334297856872,
+        "lng": 128.710188416055,
+        "dong": "성산동",
+        "jibun_address": "서울 마포구 성산동 74-1"
+      },
+      "canonical": "인사동 7-106",
+      "query": "경남 창원시 진해구 인사동 7-106",
+      "geo": {
+        "jibun": "경남 창원시 진해구 인사동 7-106",
+        "road": "경남 창원시 진해구 인사로6번길 6-7",
+        "dong": "인사동",
+        "lat": 35.1500054304541,
+        "lng": 128.667392199943
+      },
+      "ok": true,
+      "note": "주소+좌표 교체 (현재 좌표가 4306m 떨어짐)",
+      "moveM": 4306,
+      "replaceCoord": true
+    },
+    {
+      "c": {
+        "id": "fb8d7522-2987-45f2-91d0-c2f7edb72a2c",
+        "canonical_name": "황제빌라A",
+        "sgg_code": "48121",
+        "status": "active",
+        "lat": 35.2540496028283,
+        "lng": 128.640104799422,
+        "dong": "경안동",
+        "jibun_address": "경기 광주시 경안동 207-2"
+      },
+      "canonical": "도계동 363-4",
+      "query": "경남 창원시 의창구 도계동 363-4",
+      "geo": {
+        "jibun": "경남 창원시 의창구 도계동 363-4",
+        "road": "경남 창원시 의창구 하남천동길 68",
+        "dong": "도계동",
+        "lat": 35.2631473847851,
+        "lng": 128.642293255465
+      },
+      "ok": true,
+      "note": "주소+좌표 교체 (현재 좌표가 1031m 떨어짐)",
+      "moveM": 1031,
+      "replaceCoord": true
+    }
+  ]
+}
