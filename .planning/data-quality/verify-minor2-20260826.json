@@ -1,0 +1,2471 @@
+{
+  "results": [
+    {
+      "id": "bf276057-f139-4537-a171-ebc2d4d2bdca",
+      "name": "토월성원아파트",
+      "sgg": "48123",
+      "tx_total": 5980,
+      "checks": []
+    },
+    {
+      "id": "2c97176e-ba03-47cd-9441-d17af491fb6c",
+      "name": "월영마린애시앙",
+      "sgg": "48125",
+      "tx_total": 2656,
+      "checks": []
+    },
+    {
+      "id": "67542d39-178a-4829-90e9-3dfd8fad37f0",
+      "name": "트리비앙아파트",
+      "sgg": "48123",
+      "tx_total": 2300,
+      "checks": []
+    },
+    {
+      "id": "249d651c-c140-4b39-9972-a1c30dc125a6",
+      "name": "성원남산3차",
+      "sgg": "48123",
+      "tx_total": 2284,
+      "checks": []
+    },
+    {
+      "id": "3caf3427-fbad-49a9-9049-805f665a35dc",
+      "name": "마산메트로시티",
+      "sgg": "48127",
+      "tx_total": 2023,
+      "checks": []
+    },
+    {
+      "id": "d5212f3a-de63-475a-a0da-4c3703035224",
+      "name": "한국2차",
+      "sgg": "48250",
+      "tx_total": 1932,
+      "checks": []
+    },
+    {
+      "id": "b463f437-66a5-4360-89ae-30ed8243a1c2",
+      "name": "노블파크",
+      "sgg": "48123",
+      "tx_total": 1929,
+      "checks": []
+    },
+    {
+      "id": "45f99c3f-aec3-4b58-b8b0-99a7328d3d1f",
+      "name": "은아아파트",
+      "sgg": "48123",
+      "tx_total": 1876,
+      "checks": []
+    },
+    {
+      "id": "d28247d8-e649-49ff-81ec-467d048f6d8b",
+      "name": "피오르빌아파트",
+      "sgg": "48123",
+      "tx_total": 1761,
+      "checks": []
+    },
+    {
+      "id": "468e34fa-00f1-4ae8-83f6-d9655efc4847",
+      "name": "젤미마을1단지부영아파트",
+      "sgg": "48250",
+      "tx_total": 1628,
+      "checks": []
+    },
+    {
+      "id": "889b29b2-8619-4142-9fe3-144ed95070ea",
+      "name": "석봉마을9단지부영아파트",
+      "sgg": "48250",
+      "tx_total": 1593,
+      "checks": []
+    },
+    {
+      "id": "d443d77b-7b15-4f8e-ba6c-3b2e820f8fdc",
+      "name": "용호무학아파트",
+      "sgg": "48123",
+      "tx_total": 1568,
+      "checks": []
+    },
+    {
+      "id": "29028eb3-8ca5-4ed4-a865-492efe3f49bd",
+      "name": "진해3차부영아파트",
+      "sgg": "48129",
+      "tx_total": 1481,
+      "checks": []
+    },
+    {
+      "id": "10727929-c426-40ec-ad76-45ba649285be",
+      "name": "대우유토피아",
+      "sgg": "48250",
+      "tx_total": 1463,
+      "checks": []
+    },
+    {
+      "id": "5f671a9a-f367-4829-9d59-4227e4c24c28",
+      "name": "감계 힐스테이트 4차 아파트",
+      "sgg": "48121",
+      "tx_total": 1432,
+      "checks": []
+    },
+    {
+      "id": "77913ed1-4c94-410f-bfbf-2233723f9db8",
+      "name": "죽림마을한림풀에버7단지",
+      "sgg": "48250",
+      "tx_total": 1404,
+      "checks": []
+    },
+    {
+      "id": "7958e600-cecc-446d-bb17-596bdfbcb974",
+      "name": "풍호우성아파트",
+      "sgg": "48129",
+      "tx_total": 1400,
+      "checks": []
+    },
+    {
+      "id": "f18e91af-96db-4fbe-9fac-d3368d795321",
+      "name": "벽산블루밍아파트B단지",
+      "sgg": "48121",
+      "tx_total": 1386,
+      "checks": []
+    },
+    {
+      "id": "abec6ada-a0bb-43c1-8d77-f33e265d07d8",
+      "name": "포레나대원아파트",
+      "sgg": "48123",
+      "tx_total": 1385,
+      "checks": []
+    },
+    {
+      "id": "970d2583-4f53-4bb4-9e7c-4e652f6a11dd",
+      "name": "율현마을율하e-편한세상아파트",
+      "sgg": "48250",
+      "tx_total": 1381,
+      "checks": [
+        {
+          "jibun": "율하동 1405",
+          "count": 506,
+          "dist_m": 0,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "57317c35-52f7-4aab-89fa-49afe40132ea",
+      "name": "감계아내에코프리미엄2차",
+      "sgg": "48121",
+      "tx_total": 1378,
+      "checks": []
+    },
+    {
+      "id": "af1f5888-ed2c-442e-a560-3e4813256007",
+      "name": "화정마을6단지북부부영6차",
+      "sgg": "48250",
+      "tx_total": 1375,
+      "checks": []
+    },
+    {
+      "id": "4ff8d51e-1557-47af-b2c0-ca12bb443f79",
+      "name": "중흥S클래스진영1단지",
+      "sgg": "48250",
+      "tx_total": 1372,
+      "checks": []
+    },
+    {
+      "id": "72cafce2-e042-452a-9f81-102d8e00e7a3",
+      "name": "개나리1차아파트",
+      "sgg": "48123",
+      "tx_total": 1354,
+      "checks": []
+    },
+    {
+      "id": "9ab59aa0-6a0a-47d0-ab91-c750e421e580",
+      "name": "반림럭키",
+      "sgg": "48123",
+      "tx_total": 1286,
+      "checks": []
+    },
+    {
+      "id": "34ef420a-00c3-450e-85a0-2aa9c69694cf",
+      "name": "김해센텀 두산위브더제니스",
+      "sgg": "48250",
+      "tx_total": 1233,
+      "checks": [
+        {
+          "jibun": "주촌면 선지리 1531",
+          "count": 76,
+          "result": "not_found"
+        },
+        {
+          "jibun": "주촌면 1531",
+          "count": 10,
+          "dist_m": 72,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "4bbc672a-e82c-4c2c-8c27-79638de38c17",
+      "name": "마산가포 사랑으로 부영아파트",
+      "sgg": "48125",
+      "tx_total": 1219,
+      "checks": []
+    },
+    {
+      "id": "269a0acb-71bd-4265-9923-878498f0552c",
+      "name": "한국1차",
+      "sgg": "48250",
+      "tx_total": 1211,
+      "checks": []
+    },
+    {
+      "id": "becbe8e3-3431-4e21-8d48-927f35fc7076",
+      "name": "시티프라디움1차아파트",
+      "sgg": "48129",
+      "tx_total": 1113,
+      "checks": []
+    },
+    {
+      "id": "a3b64a94-f734-4465-a4b8-7dac55ccdd8b",
+      "name": "장천대동다숲",
+      "sgg": "48129",
+      "tx_total": 1098,
+      "checks": []
+    },
+    {
+      "id": "8b761796-4b2c-4ed1-9ac2-262398d17e07",
+      "name": "대동한마음아파트",
+      "sgg": "48250",
+      "tx_total": 1062,
+      "checks": []
+    },
+    {
+      "id": "19aa7989-6ce7-4ecf-848d-f5cd89a0d122",
+      "name": "석동우림필유",
+      "sgg": "48129",
+      "tx_total": 1052,
+      "checks": []
+    },
+    {
+      "id": "ccdfb3e8-1622-4202-86c3-1e50275495f7",
+      "name": "용지아이파크",
+      "sgg": "48123",
+      "tx_total": 1049,
+      "checks": []
+    },
+    {
+      "id": "7f044316-791b-4d25-8af2-7acaf7d12e86",
+      "name": "용지더샵레이크파크아파트",
+      "sgg": "48123",
+      "tx_total": 1044,
+      "checks": []
+    },
+    {
+      "id": "059957f0-fdcd-48e2-a820-ef32f8a0831d",
+      "name": "현대2차아파트",
+      "sgg": "48123",
+      "tx_total": 1044,
+      "checks": []
+    },
+    {
+      "id": "663110ab-9bf6-4b46-a278-611bfefceed3",
+      "name": "창원 센텀 푸르지오",
+      "sgg": "48123",
+      "tx_total": 1034,
+      "checks": []
+    },
+    {
+      "id": "fae600ba-08f3-4dfb-8659-74899b3c889c",
+      "name": "해인로즈빌",
+      "sgg": "48129",
+      "tx_total": 1030,
+      "checks": [
+        {
+          "jibun": "자은동 382-1",
+          "count": 7,
+          "dist_m": 9892,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "f47e6366-9ea7-42a5-a9dd-572471f86b48",
+      "name": "부산신항8단지부영아파트",
+      "sgg": "48129",
+      "tx_total": 996,
+      "checks": []
+    },
+    {
+      "id": "6389abf6-af8c-4261-bb9e-fd94059afaf4",
+      "name": "창원중동유니시티1단지",
+      "sgg": "48121",
+      "tx_total": 994,
+      "checks": []
+    },
+    {
+      "id": "c5d81e96-850b-4cff-9588-0f85ed3e73fd",
+      "name": "대동중앙",
+      "sgg": "48121",
+      "tx_total": 992,
+      "checks": []
+    },
+    {
+      "id": "b52956d6-3644-4bf9-a9f8-f805f5a8a87d",
+      "name": "대방그린빌아파트",
+      "sgg": "48123",
+      "tx_total": 973,
+      "checks": []
+    },
+    {
+      "id": "e6e47378-169a-4b47-8782-fef7e575b67f",
+      "name": "용호일동아파트",
+      "sgg": "48123",
+      "tx_total": 942,
+      "checks": []
+    },
+    {
+      "id": "8c2ddd32-2f26-45d3-9d85-b64d1b767fd7",
+      "name": "극동아파트",
+      "sgg": "48121",
+      "tx_total": 908,
+      "checks": []
+    },
+    {
+      "id": "12ab9b56-2e85-409f-bfff-cb8cf215aee3",
+      "name": "진해성원아파트",
+      "sgg": "48129",
+      "tx_total": 847,
+      "checks": []
+    },
+    {
+      "id": "53b4f3bc-7304-42e9-8aec-10b6cb3399bd",
+      "name": "위드파크아파트",
+      "sgg": "48123",
+      "tx_total": 842,
+      "checks": []
+    },
+    {
+      "id": "77ea5a2f-8477-43da-9d42-1a5b301d76ce",
+      "name": "율현마을동원로얄듀크1차",
+      "sgg": "48250",
+      "tx_total": 828,
+      "checks": []
+    },
+    {
+      "id": "4d906854-ba4a-4898-9dd4-1b56c3e85876",
+      "name": "무동 센텀파라디아아파트",
+      "sgg": "48121",
+      "tx_total": 814,
+      "checks": []
+    },
+    {
+      "id": "f269ac29-5fb8-4207-a73f-17cda3fd0b8b",
+      "name": "김해센텀Q시티아파트",
+      "sgg": "48250",
+      "tx_total": 813,
+      "checks": []
+    },
+    {
+      "id": "7e195f78-b9e8-4203-9bf5-a9eed8babfe4",
+      "name": "대방덕산타운",
+      "sgg": "48123",
+      "tx_total": 809,
+      "checks": []
+    },
+    {
+      "id": "ddc8493b-d273-4db0-b509-9f1b57c9bd2a",
+      "name": "중동유니시티4단지",
+      "sgg": "48121",
+      "tx_total": 796,
+      "checks": []
+    },
+    {
+      "id": "5f4e1c9e-bb8c-4dad-a52d-190727a2f0c7",
+      "name": "STX KAN 더프레스티지1차",
+      "sgg": "48121",
+      "tx_total": 789,
+      "checks": []
+    },
+    {
+      "id": "c49c02cb-c7d9-4ad1-bafe-e4d7046f879d",
+      "name": "양덕우성아파트",
+      "sgg": "48127",
+      "tx_total": 780,
+      "checks": [
+        {
+          "jibun": "석전동 252-1",
+          "count": 13,
+          "dist_m": 568,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "b78e4b24-839c-490e-ab01-a06673981a4c",
+      "name": "내덕서희 스타힐스 아파트",
+      "sgg": "48250",
+      "tx_total": 772,
+      "checks": []
+    },
+    {
+      "id": "5b2e64e6-a71c-4357-9dc8-0abf6b861ef3",
+      "name": "진해남문호반베르디움아파트",
+      "sgg": "48129",
+      "tx_total": 762,
+      "checks": []
+    },
+    {
+      "id": "a4ebf525-ea9a-45b8-bed2-ea1946c45d65",
+      "name": "창원 한신휴플러스 오션파크 아파트",
+      "sgg": "48129",
+      "tx_total": 759,
+      "checks": []
+    },
+    {
+      "id": "6329135d-5328-4daa-8465-62f90118122a",
+      "name": "남양성원2차아파트",
+      "sgg": "48123",
+      "tx_total": 758,
+      "checks": []
+    },
+    {
+      "id": "0994eb26-0c73-4909-a6c5-c1d652444ab0",
+      "name": "모아미래도5단지",
+      "sgg": "48250",
+      "tx_total": 757,
+      "checks": []
+    },
+    {
+      "id": "c7454159-b47b-4f99-8d41-3f8350dbcfd4",
+      "name": "분성마을현대아이",
+      "sgg": "48250",
+      "tx_total": 756,
+      "checks": []
+    },
+    {
+      "id": "e138d838-823f-4c64-8d78-689ff9cbd4bc",
+      "name": "팔용벽산블루밍A단지",
+      "sgg": "48121",
+      "tx_total": 756,
+      "checks": []
+    },
+    {
+      "id": "bcafb662-bb82-4a9d-8232-2a02f937d489",
+      "name": "석봉마을4단지 부영아파트",
+      "sgg": "48250",
+      "tx_total": 736,
+      "checks": []
+    },
+    {
+      "id": "6240c37b-d2fb-46a1-951a-d189b119f6ae",
+      "name": "갑오마을7단지부영아파트(10차)",
+      "sgg": "48250",
+      "tx_total": 735,
+      "checks": []
+    },
+    {
+      "id": "9901e005-4579-430d-ab76-2768764c70e9",
+      "name": "창원중동유니시티3단지",
+      "sgg": "48121",
+      "tx_total": 732,
+      "checks": []
+    },
+    {
+      "id": "af11e441-bc13-4e8e-b45c-5e400c4010b4",
+      "name": "월영동아1차",
+      "sgg": "48125",
+      "tx_total": 725,
+      "checks": []
+    },
+    {
+      "id": "7cfe2ad1-4f47-4982-9c15-b0e95fdb817e",
+      "name": "사파무궁화아파트",
+      "sgg": "48123",
+      "tx_total": 721,
+      "checks": [
+        {
+          "jibun": "가음동 12-7",
+          "count": 2,
+          "result": "not_found"
+        }
+      ]
+    },
+    {
+      "id": "8f623e70-3e4d-47f1-9cd7-2d0644ddcc8e",
+      "name": "대원파크빌",
+      "sgg": "48123",
+      "tx_total": 717,
+      "checks": []
+    },
+    {
+      "id": "3adac360-e1b0-4fd7-8636-18f82ef97c20",
+      "name": "부원역푸르지오",
+      "sgg": "48250",
+      "tx_total": 710,
+      "checks": []
+    },
+    {
+      "id": "f2bde121-3c65-414b-a7e0-99754b1ef921",
+      "name": "석동주공아파트",
+      "sgg": "48129",
+      "tx_total": 710,
+      "checks": []
+    },
+    {
+      "id": "36ff81b8-c9a9-4284-9922-2ec8da05a5fb",
+      "name": "분성마을5단지푸르지오",
+      "sgg": "48250",
+      "tx_total": 699,
+      "checks": []
+    },
+    {
+      "id": "b4eaffe7-14b6-4473-936a-4618dedeeba3",
+      "name": "삼익1차아파트",
+      "sgg": "48123",
+      "tx_total": 694,
+      "checks": []
+    },
+    {
+      "id": "359c3cb9-6f55-4830-87fa-14681995c521",
+      "name": "창원 중동 유니시티 2단지",
+      "sgg": "48121",
+      "tx_total": 690,
+      "checks": []
+    },
+    {
+      "id": "d04cb15c-a0ab-40d4-a0c9-e7858e2fc972",
+      "name": "덕산베스트타운",
+      "sgg": "48250",
+      "tx_total": 690,
+      "checks": []
+    },
+    {
+      "id": "ca1f3664-00bd-4493-81c2-fb4cad9da41c",
+      "name": "홍익그린빌",
+      "sgg": "48250",
+      "tx_total": 680,
+      "checks": [
+        {
+          "jibun": "대성동 413-4",
+          "count": 21,
+          "dist_m": 1366,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "099344e4-aef3-4756-96d8-54d97c2b0801",
+      "name": "사파대동1차아파트",
+      "sgg": "48123",
+      "tx_total": 675,
+      "checks": [
+        {
+          "jibun": "상남동 44-1",
+          "count": 12,
+          "dist_m": 603,
+          "verdict": "ambiguous"
+        },
+        {
+          "jibun": "가음동 24-2",
+          "count": 9,
+          "dist_m": 1674,
+          "verdict": "different_place"
+        },
+        {
+          "jibun": "대방동 358",
+          "count": 9,
+          "dist_m": 1736,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "e93336d8-bbef-465a-8bfc-599b3d6ac830",
+      "name": "프리빌리지아파트",
+      "sgg": "48123",
+      "tx_total": 672,
+      "checks": []
+    },
+    {
+      "id": "e1887de3-6342-4b8e-9f6e-6d0b996895dd",
+      "name": "부산신항13단지 사랑으로 부영아파트",
+      "sgg": "48129",
+      "tx_total": 670,
+      "checks": []
+    },
+    {
+      "id": "ece222a6-43b2-43d6-a245-538547f713db",
+      "name": "대동이미지1단지아파트",
+      "sgg": "48127",
+      "tx_total": 659,
+      "checks": []
+    },
+    {
+      "id": "ab40c4ce-9574-4503-8a58-20f112bdca19",
+      "name": "녹산일신님",
+      "sgg": "48129",
+      "tx_total": 657,
+      "checks": []
+    },
+    {
+      "id": "755d99bf-6053-41b5-ab36-f505d2c08e04",
+      "name": "장유경동리인하이스트",
+      "sgg": "48250",
+      "tx_total": 654,
+      "checks": []
+    },
+    {
+      "id": "d77e7d5e-fc1c-474a-a9a9-56db21594f42",
+      "name": "진영중흥S-클래스에코시티아파트",
+      "sgg": "48250",
+      "tx_total": 638,
+      "checks": []
+    },
+    {
+      "id": "04aed1c9-e6a6-454b-91c0-429108542504",
+      "name": "남문시티프라디움2차",
+      "sgg": "48129",
+      "tx_total": 628,
+      "checks": []
+    },
+    {
+      "id": "0685e147-96f8-4c7a-ac20-11c39206bbc2",
+      "name": "율하자이힐스테이트아파트",
+      "sgg": "48250",
+      "tx_total": 621,
+      "checks": []
+    },
+    {
+      "id": "60677380-a3e8-4629-86c1-ef630fca5b9a",
+      "name": "삼계 한라비발디 센텀시티",
+      "sgg": "48250",
+      "tx_total": 620,
+      "checks": []
+    },
+    {
+      "id": "42249d35-8d7b-4e4e-9d5d-78207151611f",
+      "name": "마산무학자이",
+      "sgg": "48125",
+      "tx_total": 613,
+      "checks": []
+    },
+    {
+      "id": "8531d277-fe8f-41f4-830c-e6e31e73432f",
+      "name": "삼계서희스타힐스아파트",
+      "sgg": "48250",
+      "tx_total": 590,
+      "checks": []
+    },
+    {
+      "id": "f194b9b7-cff0-4712-a3fd-7e5cb2484862",
+      "name": "광남백조",
+      "sgg": "48250",
+      "tx_total": 590,
+      "checks": [
+        {
+          "jibun": "봉황동 459-2",
+          "count": 16,
+          "dist_m": 1369,
+          "verdict": "different_place"
+        },
+        {
+          "jibun": "봉황동 455-2",
+          "count": 10,
+          "dist_m": 1306,
+          "verdict": "different_place"
+        },
+        {
+          "jibun": "봉황동 447-1",
+          "count": 5,
+          "dist_m": 1238,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "2e9775d0-7e72-4942-88d0-a4eee9bcc833",
+      "name": "장유 덕산아내에코캐슬 아파트",
+      "sgg": "48250",
+      "tx_total": 583,
+      "checks": []
+    },
+    {
+      "id": "32d973c9-6eee-467f-99b6-eead5b613397",
+      "name": "진해석동푸르지오",
+      "sgg": "48129",
+      "tx_total": 583,
+      "checks": []
+    },
+    {
+      "id": "75821ba9-12a2-4170-b1b7-2b4611464a7b",
+      "name": "율하 더스카이시티 제니스&프라우",
+      "sgg": "48250",
+      "tx_total": 583,
+      "checks": []
+    },
+    {
+      "id": "05f20f3c-4142-4ab2-b4a0-c25bb3ed8b07",
+      "name": "진영이진캐스빌아파트",
+      "sgg": "48250",
+      "tx_total": 579,
+      "checks": []
+    },
+    {
+      "id": "e181c134-a993-49b2-8183-eb961bb91d1f",
+      "name": "장유 석봉마을8단지",
+      "sgg": "48250",
+      "tx_total": 579,
+      "checks": []
+    },
+    {
+      "id": "4cf03cfb-381e-4143-b298-b4bd7ac9af3b",
+      "name": "남양STX칸아파트",
+      "sgg": "48129",
+      "tx_total": 565,
+      "checks": []
+    },
+    {
+      "id": "7fe17fa3-96b1-4dd3-b968-1ba130d9c334",
+      "name": "휴먼빌1단지",
+      "sgg": "48121",
+      "tx_total": 565,
+      "checks": []
+    },
+    {
+      "id": "b0d55007-83ba-46f5-b4f1-9bca3e275e35",
+      "name": "감계아내에코프리미엄",
+      "sgg": "48121",
+      "tx_total": 564,
+      "checks": []
+    },
+    {
+      "id": "8170a4a0-ad34-45ec-b94e-fb1b891368c5",
+      "name": "중리근로복지아파트",
+      "sgg": "48127",
+      "tx_total": 562,
+      "checks": [
+        {
+          "jibun": "양덕동 154-8",
+          "count": 21,
+          "dist_m": 8460,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "1b050b1c-bef9-499c-b0f6-eaf988741433",
+      "name": "갑오마을4단지부영아파트",
+      "sgg": "48250",
+      "tx_total": 553,
+      "checks": []
+    },
+    {
+      "id": "0b18e15e-d111-4e99-b450-88e81d51d65b",
+      "name": "율상마을모아미래도6단지",
+      "sgg": "48250",
+      "tx_total": 544,
+      "checks": []
+    },
+    {
+      "id": "e8f3f0d0-39de-45ea-a787-5adb0f9673fe",
+      "name": "중동대동다:숲",
+      "sgg": "48121",
+      "tx_total": 531,
+      "checks": []
+    },
+    {
+      "id": "1a135d36-9d44-4b3f-86bc-fbbe1672e07a",
+      "name": "우성아파트",
+      "sgg": "48123",
+      "tx_total": 531,
+      "checks": []
+    },
+    {
+      "id": "3aa36cc2-d5a6-4e39-b9a1-aa5b21c40161",
+      "name": "구지마을3단지푸르지오",
+      "sgg": "48250",
+      "tx_total": 527,
+      "checks": []
+    },
+    {
+      "id": "da969fb3-f604-4583-b4d0-ebda7fdeedb9",
+      "name": "성원아파트",
+      "sgg": "48250",
+      "tx_total": 525,
+      "checks": []
+    },
+    {
+      "id": "25290178-4d1b-45e7-8997-bd980fd9016a",
+      "name": "원메이저 힐스테이트",
+      "sgg": "48250",
+      "tx_total": 517,
+      "checks": []
+    },
+    {
+      "id": "7f0ccc1d-cc9e-4813-9df6-10732ebe2528",
+      "name": "사랑으로부영4단지아파트",
+      "sgg": "48129",
+      "tx_total": 517,
+      "checks": []
+    },
+    {
+      "id": "ccb33b0a-a5ec-42c8-9cd8-947b5bdfeafa",
+      "name": "힐스테이트김해아파트",
+      "sgg": "48250",
+      "tx_total": 511,
+      "checks": []
+    },
+    {
+      "id": "0bf7e449-1199-41dd-b68c-87ccf90f599c",
+      "name": "율하 원메이저 자이",
+      "sgg": "48250",
+      "tx_total": 507,
+      "checks": []
+    },
+    {
+      "id": "fcd7fd72-364f-4004-9789-eacaa0717920",
+      "name": "신장유일동미라주더파크아파트",
+      "sgg": "48250",
+      "tx_total": 486,
+      "checks": []
+    },
+    {
+      "id": "a147f587-52e8-4768-9ec0-e3d110de27ad",
+      "name": "월산마을3단지부영",
+      "sgg": "48250",
+      "tx_total": 476,
+      "checks": []
+    },
+    {
+      "id": "e38d98ff-50a6-4d55-a760-801e92d39b67",
+      "name": "합성무학",
+      "sgg": "48127",
+      "tx_total": 470,
+      "checks": [
+        {
+          "jibun": "양덕동 829-1",
+          "count": 38,
+          "dist_m": 844,
+          "verdict": "ambiguous"
+        },
+        {
+          "jibun": "합성동 131-10",
+          "count": 25,
+          "dist_m": 839,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "e949ff5f-90bf-4053-b7e9-de43ecfb7927",
+      "name": "대동다숲아파트",
+      "sgg": "48127",
+      "tx_total": 470,
+      "checks": [
+        {
+          "jibun": "내서읍 삼계리 37",
+          "count": 222,
+          "dist_m": 0,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "654d8f57-a8b9-4105-a16b-f4341405df4f",
+      "name": "사랑으로부영2단지아파트",
+      "sgg": "48129",
+      "tx_total": 447,
+      "checks": []
+    },
+    {
+      "id": "b3e256ef-3d88-4ec9-976d-980b83b9c5f8",
+      "name": "화정마을 아이파크 가야",
+      "sgg": "48250",
+      "tx_total": 442,
+      "checks": []
+    },
+    {
+      "id": "c9f6b1e8-bbea-4748-a057-dbf79105424e",
+      "name": "진해한림리츠빌",
+      "sgg": "48129",
+      "tx_total": 433,
+      "checks": [
+        {
+          "jibun": "석동 607",
+          "count": 40,
+          "dist_m": 2521,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "4b87e5b0-e384-48fd-ba0e-faff5400d816",
+      "name": "사랑으로부영3단지아파트",
+      "sgg": "48129",
+      "tx_total": 428,
+      "checks": []
+    },
+    {
+      "id": "f31cc462-a1b5-4e66-87f9-d6168262a037",
+      "name": "월산마을7단지주공4차",
+      "sgg": "48250",
+      "tx_total": 420,
+      "checks": []
+    },
+    {
+      "id": "7c5917e5-aeb2-4783-a9fa-a69c23aab0be",
+      "name": "갑오마을6단지부영9차",
+      "sgg": "48250",
+      "tx_total": 415,
+      "checks": []
+    },
+    {
+      "id": "8bd30e01-540a-4961-af76-6543044ff1fb",
+      "name": "성산 반도유보라아이비파크",
+      "sgg": "48123",
+      "tx_total": 414,
+      "checks": []
+    },
+    {
+      "id": "03334aa3-a22f-4b5a-b0da-b0f2071ea923",
+      "name": "장유쌍용예가1차아파트",
+      "sgg": "48250",
+      "tx_total": 400,
+      "checks": []
+    },
+    {
+      "id": "21cb3b61-5643-44b3-bfd3-646162039030",
+      "name": "두산2차 아파트",
+      "sgg": "48125",
+      "tx_total": 393,
+      "checks": []
+    },
+    {
+      "id": "906c774c-b027-4cb1-9fc2-ba2a0c997769",
+      "name": "남명플럼빌리지",
+      "sgg": "48129",
+      "tx_total": 382,
+      "checks": []
+    },
+    {
+      "id": "37ca49e5-b9b1-4d63-8e2e-a763793565d8",
+      "name": "율하시티프라디움아파트",
+      "sgg": "48250",
+      "tx_total": 376,
+      "checks": []
+    },
+    {
+      "id": "3a2b6802-7039-4130-bb5f-997457362031",
+      "name": "LH피닉스포레",
+      "sgg": "48121",
+      "tx_total": 375,
+      "checks": []
+    },
+    {
+      "id": "4a8d127e-6775-47bb-adc0-759fbe07829e",
+      "name": "부산신항 사랑으로 부영6단지",
+      "sgg": "48129",
+      "tx_total": 369,
+      "checks": []
+    },
+    {
+      "id": "4f6ac43a-d194-440d-bf47-6eff33d1a965",
+      "name": "김해구산4주공",
+      "sgg": "48250",
+      "tx_total": 365,
+      "checks": []
+    },
+    {
+      "id": "380783da-1392-46e9-ad1c-672e9e809370",
+      "name": "창원 자은 에일린의 뜰 아파트",
+      "sgg": "48129",
+      "tx_total": 349,
+      "checks": []
+    },
+    {
+      "id": "53f630f7-de6f-41fc-84fb-15c45005ebeb",
+      "name": "진해자이아파트",
+      "sgg": "48129",
+      "tx_total": 349,
+      "checks": []
+    },
+    {
+      "id": "4f6b6047-e673-453b-9a07-a7a17bc273a7",
+      "name": "김해외동협성엘리시안아파트",
+      "sgg": "48250",
+      "tx_total": 339,
+      "checks": []
+    },
+    {
+      "id": "5c29939a-3d6c-4002-b53c-6c00495c8023",
+      "name": "원메이저푸르지오아파트",
+      "sgg": "48250",
+      "tx_total": 339,
+      "checks": []
+    },
+    {
+      "id": "13b25c0b-0068-4e47-9a54-ce74efa96998",
+      "name": "양지마을동원아파트",
+      "sgg": "48250",
+      "tx_total": 334,
+      "checks": []
+    },
+    {
+      "id": "f0d275f3-9f75-48df-bb22-304fd10a3164",
+      "name": "한진그룹사원임대",
+      "sgg": "48250",
+      "tx_total": 332,
+      "checks": []
+    },
+    {
+      "id": "25e362bb-2027-4f67-af6e-6bffefb4a93c",
+      "name": "진영한림풀에버아파트",
+      "sgg": "48250",
+      "tx_total": 325,
+      "checks": [
+        {
+          "jibun": "진영읍 진영리 1885",
+          "count": 132,
+          "dist_m": 131,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "68bf8969-2d95-4639-9907-612768ea8411",
+      "name": "율하리슈빌더스테이아파트",
+      "sgg": "48250",
+      "tx_total": 322,
+      "checks": []
+    },
+    {
+      "id": "ef3f5b18-73b2-4801-9e6c-70c5582baa81",
+      "name": "백로",
+      "sgg": "48127",
+      "tx_total": 316,
+      "checks": []
+    },
+    {
+      "id": "df1e1001-ab3a-4e9f-b6e5-8a3de9b5b616",
+      "name": "창원롯데캐슬센텀골드",
+      "sgg": "48127",
+      "tx_total": 299,
+      "checks": [
+        {
+          "jibun": "양덕동 166-44",
+          "count": 80,
+          "result": "not_found"
+        }
+      ]
+    },
+    {
+      "id": "90bad7bc-3e72-493b-9738-62cf88f0c410",
+      "name": "월산마을4단지19차부영아파트",
+      "sgg": "48250",
+      "tx_total": 292,
+      "checks": []
+    },
+    {
+      "id": "6235b3ea-8579-40e1-b71c-001e57a2d274",
+      "name": "장유팔판4단지푸르지오(6차)",
+      "sgg": "48250",
+      "tx_total": 291,
+      "checks": []
+    },
+    {
+      "id": "088bd4ba-4b6e-48c0-9ec5-9a7addb52fd1",
+      "name": "서광2차",
+      "sgg": "48127",
+      "tx_total": 289,
+      "checks": [
+        {
+          "jibun": "회원동 642-5",
+          "count": 12,
+          "dist_m": 5751,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "a081b83a-7177-43cc-abd4-4113b203a9c5",
+      "name": "김해진영마루애주상복합아파트",
+      "sgg": "48250",
+      "tx_total": 288,
+      "checks": []
+    },
+    {
+      "id": "4d4fe51d-d87b-45e7-b82c-7863debe4142",
+      "name": "진해남문리젠시빌란트",
+      "sgg": "48129",
+      "tx_total": 282,
+      "checks": []
+    },
+    {
+      "id": "0129ae12-a76b-417d-a82c-3261effae05f",
+      "name": "자은동더샵아파트",
+      "sgg": "48129",
+      "tx_total": 273,
+      "checks": []
+    },
+    {
+      "id": "11d6e807-cd79-41b3-b538-8094c550e692",
+      "name": "연지공원푸르지오아파트",
+      "sgg": "48250",
+      "tx_total": 273,
+      "checks": []
+    },
+    {
+      "id": "4d9c86a6-7c2b-47c5-8092-1e0bfc2d332c",
+      "name": "부원역 그린코아 더센텀 아파트",
+      "sgg": "48250",
+      "tx_total": 268,
+      "checks": []
+    },
+    {
+      "id": "91036b91-f9d9-48ff-b024-70c3e79a47e5",
+      "name": "월산마을12단지부영아파트",
+      "sgg": "48250",
+      "tx_total": 257,
+      "checks": []
+    },
+    {
+      "id": "59d21043-d712-450c-93dd-01132f096e95",
+      "name": "창원자은3센트럴빌리지",
+      "sgg": "48129",
+      "tx_total": 253,
+      "checks": []
+    },
+    {
+      "id": "49923cba-3e87-497d-86ad-9e890be98f3b",
+      "name": "젤미마을9단지부영그린타운5차",
+      "sgg": "48250",
+      "tx_total": 244,
+      "checks": []
+    },
+    {
+      "id": "c3bb4734-e3db-47df-8178-252d123239f5",
+      "name": "연지마을현대1차",
+      "sgg": "48250",
+      "tx_total": 240,
+      "checks": []
+    },
+    {
+      "id": "e74f3be6-85c5-4d52-b978-66a2144d957f",
+      "name": "김해주촌두산위브더제니스",
+      "sgg": "48250",
+      "tx_total": 234,
+      "checks": []
+    },
+    {
+      "id": "22bbf56e-d022-4424-9e21-78f727f14f04",
+      "name": "석봉마을5단지대동",
+      "sgg": "48250",
+      "tx_total": 232,
+      "checks": []
+    },
+    {
+      "id": "a5e67551-2d0e-4775-8108-6b71e1b37d5a",
+      "name": "가음정한림풀에버",
+      "sgg": "48123",
+      "tx_total": 230,
+      "checks": []
+    },
+    {
+      "id": "715201e2-2275-4f1a-b6e1-ce8f7aac0c63",
+      "name": "부산신항사랑으로부영5단지",
+      "sgg": "48129",
+      "tx_total": 221,
+      "checks": []
+    },
+    {
+      "id": "5622617b-1b94-4ab5-ac23-8ad1258a9823",
+      "name": "세일",
+      "sgg": "48250",
+      "tx_total": 213,
+      "checks": []
+    },
+    {
+      "id": "3b245975-dc17-4680-ab3d-77dacfe59426",
+      "name": "이안센트럴포레장유1단지",
+      "sgg": "48250",
+      "tx_total": 212,
+      "checks": []
+    },
+    {
+      "id": "790e155d-2550-4e18-87b8-5d5747ca8011",
+      "name": "우방아이유쉘아파트",
+      "sgg": "48129",
+      "tx_total": 212,
+      "checks": []
+    },
+    {
+      "id": "e186b42f-3ead-4dc8-8697-89d1437dd03f",
+      "name": "창원의봄 아파트",
+      "sgg": "48121",
+      "tx_total": 207,
+      "checks": []
+    },
+    {
+      "id": "c9ea1392-8a8c-4920-a694-340300a63e25",
+      "name": "미래리움",
+      "sgg": "48121",
+      "tx_total": 199,
+      "checks": [
+        {
+          "jibun": "사림동 162-5",
+          "count": 55,
+          "dist_m": 265,
+          "verdict": "same_site"
+        },
+        {
+          "jibun": "용동 162-5",
+          "count": 2,
+          "result": "not_found"
+        }
+      ]
+    },
+    {
+      "id": "dd71795c-43ea-4eb2-af86-051aac0ba5f9",
+      "name": "김해 무계 남명 더라우 아파트 1단지",
+      "sgg": "48250",
+      "tx_total": 187,
+      "checks": []
+    },
+    {
+      "id": "913f6241-98dd-425a-962d-106d87921b10",
+      "name": "율현마을주공13단지",
+      "sgg": "48250",
+      "tx_total": 184,
+      "checks": []
+    },
+    {
+      "id": "23296036-fe28-4e43-bc48-b9608f4119cd",
+      "name": "동부산아이존빌",
+      "sgg": "48123",
+      "tx_total": 182,
+      "checks": [
+        {
+          "jibun": "신촌동 34-2",
+          "count": 13,
+          "dist_m": 5817,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "d329f6d4-b451-40d6-9cbe-f48ad50f3fa6",
+      "name": "남흥아파트",
+      "sgg": "48129",
+      "tx_total": 178,
+      "checks": []
+    },
+    {
+      "id": "c5ec811e-c2ab-4724-a488-f02e6827ae69",
+      "name": "김해내외2차동아",
+      "sgg": "48250",
+      "tx_total": 169,
+      "checks": []
+    },
+    {
+      "id": "88e25922-d3e7-431a-b221-857ce289ee95",
+      "name": "대동씨코아",
+      "sgg": "48125",
+      "tx_total": 164,
+      "checks": []
+    },
+    {
+      "id": "9c433e29-d49e-4b8e-ad3f-7b99fcf0a37a",
+      "name": "봉림휴먼시아2단지",
+      "sgg": "48121",
+      "tx_total": 158,
+      "checks": []
+    },
+    {
+      "id": "c56305ab-d273-48dc-8b6d-aed6bfe7fe6e",
+      "name": "무계서희스타힐스",
+      "sgg": "48250",
+      "tx_total": 158,
+      "checks": []
+    },
+    {
+      "id": "6cbb942b-fbe6-49e2-979b-d397511482ea",
+      "name": "장유포스코더샵아파트",
+      "sgg": "48250",
+      "tx_total": 156,
+      "checks": []
+    },
+    {
+      "id": "4c1df44f-b807-4360-980b-4d01c84b162a",
+      "name": "이안센트럴포레 장유 2단지",
+      "sgg": "48250",
+      "tx_total": 150,
+      "checks": []
+    },
+    {
+      "id": "f9edb937-69cb-437b-93d4-9f05b41bf003",
+      "name": "동아그린",
+      "sgg": "48250",
+      "tx_total": 150,
+      "checks": [
+        {
+          "jibun": "삼정동 41-24",
+          "count": 1,
+          "dist_m": 2371,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "05478987-b21b-4437-a099-d1bee2377c47",
+      "name": "율곡마을주공2단지",
+      "sgg": "48250",
+      "tx_total": 140,
+      "checks": []
+    },
+    {
+      "id": "e1410c56-4282-40e0-82b9-fb73e57de93b",
+      "name": "진영중흥S-클래스3단지",
+      "sgg": "48250",
+      "tx_total": 140,
+      "checks": []
+    },
+    {
+      "id": "cf1bc0a5-2da3-4f24-996c-314be148b54f",
+      "name": "삼계삼정그린코아 더베스트 아파트",
+      "sgg": "48250",
+      "tx_total": 136,
+      "checks": []
+    },
+    {
+      "id": "3f0ceeaf-5874-4337-9852-37268e5df156",
+      "name": "화인태양",
+      "sgg": "48127",
+      "tx_total": 134,
+      "checks": [
+        {
+          "jibun": "양덕동 95-21",
+          "count": 22,
+          "dist_m": 6553,
+          "verdict": "different_place"
+        },
+        {
+          "jibun": "합성동 62-32",
+          "count": 2,
+          "result": "not_found"
+        }
+      ]
+    },
+    {
+      "id": "8ce19514-a397-456a-84dd-ce6ef1c4b73e",
+      "name": "창원무동 동원로얄듀크",
+      "sgg": "48121",
+      "tx_total": 131,
+      "checks": []
+    },
+    {
+      "id": "4b30479f-acb0-4de2-b33d-760b50bcaef1",
+      "name": "신우아파트",
+      "sgg": "48127",
+      "tx_total": 127,
+      "checks": [
+        {
+          "jibun": "내서읍 호계리 9",
+          "count": 42,
+          "dist_m": 7056,
+          "verdict": "different_place"
+        },
+        {
+          "jibun": "석전동 48-6",
+          "count": 3,
+          "dist_m": 4284,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "93c04c25-2eb3-4c11-8602-2cf5737af787",
+      "name": "대청천 경동리인뷰",
+      "sgg": "48250",
+      "tx_total": 126,
+      "checks": []
+    },
+    {
+      "id": "af775bd0-6b77-4546-83c6-19d7bc259434",
+      "name": "신촌동원로얄듀크",
+      "sgg": "48123",
+      "tx_total": 123,
+      "checks": []
+    },
+    {
+      "id": "01692306-706f-4ea5-b537-06e41abec317",
+      "name": "코리아타코마사원아파트",
+      "sgg": "48127",
+      "tx_total": 122,
+      "checks": [
+        {
+          "jibun": "양덕동 158-7",
+          "count": 1,
+          "dist_m": 2344,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "cf8254fd-98e1-42f8-82f1-327321d430c9",
+      "name": "김해주촌 서희스타힐스",
+      "sgg": "48250",
+      "tx_total": 122,
+      "checks": []
+    },
+    {
+      "id": "42979f10-fc3f-4a87-aab8-9bbacce18081",
+      "name": "뉴중앙하이츠",
+      "sgg": "48129",
+      "tx_total": 117,
+      "checks": [
+        {
+          "jibun": "화천동 8-1",
+          "count": 21,
+          "dist_m": 3235,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "d0155213-84e5-46c3-bbdd-161751f0b7ba",
+      "name": "동원에코빌",
+      "sgg": "48127",
+      "tx_total": 114,
+      "checks": []
+    },
+    {
+      "id": "be2290e8-e48c-424f-bbb5-b1b63b728660",
+      "name": "창원포레힐스데시앙",
+      "sgg": "48121",
+      "tx_total": 113,
+      "checks": []
+    },
+    {
+      "id": "dc63c6c6-8039-41af-bcb6-75320c2ce264",
+      "name": "새회현",
+      "sgg": "48250",
+      "tx_total": 113,
+      "checks": [
+        {
+          "jibun": "봉황동 18-4",
+          "count": 33,
+          "dist_m": 112,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "95c48fe5-2bf2-4b6d-a60d-3686489f5dda",
+      "name": "대성마마",
+      "sgg": "48250",
+      "tx_total": 111,
+      "checks": [
+        {
+          "jibun": "동상동 1035",
+          "count": 27,
+          "dist_m": 0,
+          "verdict": "same_site"
+        },
+        {
+          "jibun": "대성동 411-7",
+          "count": 22,
+          "dist_m": 841,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "bbaa06a4-61b0-4793-a62b-9b5f5fd1cf4e",
+      "name": "진해청안해오름",
+      "sgg": "48129",
+      "tx_total": 109,
+      "checks": []
+    },
+    {
+      "id": "8b91d052-7b24-439f-8842-f7aa551553b3",
+      "name": "백송",
+      "sgg": "48250",
+      "tx_total": 103,
+      "checks": [
+        {
+          "jibun": "삼정동 210-22",
+          "count": 13,
+          "dist_m": 1895,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "3f3b78f4-8351-46d5-81cf-be68882d026b",
+      "name": "무학서문마을 아파트",
+      "sgg": "48121",
+      "tx_total": 99,
+      "checks": []
+    },
+    {
+      "id": "c62c5d63-5e7f-4b2f-8d17-36d8cb98854b",
+      "name": "대호타워아파트",
+      "sgg": "48123",
+      "tx_total": 97,
+      "checks": []
+    },
+    {
+      "id": "d77f0c5d-ad83-4805-bb33-e4c3e565c48b",
+      "name": "남아그린타워",
+      "sgg": "48121",
+      "tx_total": 95,
+      "checks": []
+    },
+    {
+      "id": "e13d5f2e-a2d7-49dd-b43a-173a8443ee6e",
+      "name": "김해장유삼정그린코아 더베스트",
+      "sgg": "48250",
+      "tx_total": 94,
+      "checks": []
+    },
+    {
+      "id": "50164191-618e-4d5b-828c-af23ff3926b2",
+      "name": "창원센트럴파크에일린의뜰",
+      "sgg": "48123",
+      "tx_total": 93,
+      "checks": [
+        {
+          "jibun": "대원동 7-3",
+          "count": 6,
+          "dist_m": 9,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "de1e1db0-7283-4f71-8dd5-8c602ffc1d61",
+      "name": "엔에이치에프창원대산1단지",
+      "sgg": "48121",
+      "tx_total": 89,
+      "checks": []
+    },
+    {
+      "id": "28d7dd6a-cf3a-48f9-a553-e5066e465bdf",
+      "name": "진해 남문 리젠시 빌란트 더웰 아파트",
+      "sgg": "48129",
+      "tx_total": 83,
+      "checks": []
+    },
+    {
+      "id": "ac2d5514-3073-4044-810b-d4c42e9ace24",
+      "name": "캐슬아리스타궁",
+      "sgg": "48250",
+      "tx_total": 77,
+      "checks": []
+    },
+    {
+      "id": "499d6c01-5264-42e3-bf9a-77fe52e8493e",
+      "name": "김해진영휴먼시아6단지",
+      "sgg": "48250",
+      "tx_total": 76,
+      "checks": []
+    },
+    {
+      "id": "eac454f7-31db-4f5d-8f47-31528278519d",
+      "name": "서광맨션",
+      "sgg": "48127",
+      "tx_total": 75,
+      "checks": [
+        {
+          "jibun": "석전동 137-73",
+          "count": 5,
+          "result": "not_found"
+        },
+        {
+          "jibun": "석전동 137-71",
+          "count": 3,
+          "result": "not_found"
+        }
+      ]
+    },
+    {
+      "id": "e9db59f9-b1d5-4130-a376-e21d1ded7d46",
+      "name": "동남타운",
+      "sgg": "48127",
+      "tx_total": 74,
+      "checks": [
+        {
+          "jibun": "양덕동 51-1",
+          "count": 1,
+          "dist_m": 7555,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "719acb7c-91a3-43f4-8edb-e7a95ad3897c",
+      "name": "남문동일스위트 The Ocean 1단지",
+      "sgg": "48129",
+      "tx_total": 70,
+      "checks": []
+    },
+    {
+      "id": "9a6668df-e223-4989-9111-39d3aa30aab7",
+      "name": "거북",
+      "sgg": "48127",
+      "tx_total": 70,
+      "checks": [
+        {
+          "jibun": "회원동 667-2",
+          "count": 4,
+          "dist_m": 2744,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "c8982c59-3244-4bfd-b01e-706bb37e746f",
+      "name": "한효국화맨션",
+      "sgg": "48127",
+      "tx_total": 69,
+      "checks": [
+        {
+          "jibun": "양덕동 72-15",
+          "count": 14,
+          "dist_m": 1957,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "bfe039b9-1f06-4f01-bf16-b9f0c75560f5",
+      "name": "장유자이더파크",
+      "sgg": "48250",
+      "tx_total": 67,
+      "checks": []
+    },
+    {
+      "id": "38488f34-263b-4777-ad14-4b9a446f2aac",
+      "name": "성우유니빌",
+      "sgg": "48125",
+      "tx_total": 65,
+      "checks": [
+        {
+          "jibun": "산호동 36-5",
+          "count": 19,
+          "dist_m": 4167,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "c69af799-8142-47dc-9c08-da2fc370e5c8",
+      "name": "더샵신문그리니티1차",
+      "sgg": "48250",
+      "tx_total": 64,
+      "checks": []
+    },
+    {
+      "id": "e698cdb9-124f-4650-a970-01b9f3ca9b90",
+      "name": "김해푸르지오하이엔드2차아파트",
+      "sgg": "48250",
+      "tx_total": 63,
+      "checks": [
+        {
+          "jibun": "안동 BL-2-1",
+          "count": 3,
+          "result": "not_found"
+        }
+      ]
+    },
+    {
+      "id": "f2531074-e368-4a2b-89dc-857e39037ac2",
+      "name": "진영휴먼시아",
+      "sgg": "48250",
+      "tx_total": 62,
+      "checks": []
+    },
+    {
+      "id": "3ac0c0a8-db48-4f59-b34e-f442f97b887a",
+      "name": "대광품안애",
+      "sgg": "48125",
+      "tx_total": 61,
+      "checks": [
+        {
+          "jibun": "교방동 359-5",
+          "count": 3,
+          "dist_m": 2408,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "8312ee2f-3a95-42ff-9ba0-d9ef48c5666b",
+      "name": "e편한세상 주촌 더프리미어",
+      "sgg": "48250",
+      "tx_total": 61,
+      "checks": []
+    },
+    {
+      "id": "9477a068-6ff7-4941-acff-a6d91367c780",
+      "name": "한효무궁화",
+      "sgg": "48127",
+      "tx_total": 61,
+      "checks": []
+    },
+    {
+      "id": "eec18dad-d006-4830-8420-3f9a9dbddfc2",
+      "name": "한빛빌라",
+      "sgg": "48250",
+      "tx_total": 60,
+      "checks": [
+        {
+          "jibun": "삼방동 577-12",
+          "count": 3,
+          "dist_m": 231,
+          "verdict": "same_site"
+        },
+        {
+          "jibun": "삼정동 42-8",
+          "count": 2,
+          "dist_m": 2118,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "7782c9d4-8a66-48e1-90ae-646184325e11",
+      "name": "성우아파트",
+      "sgg": "48250",
+      "tx_total": 57,
+      "checks": [
+        {
+          "jibun": "어방동 843",
+          "count": 12,
+          "dist_m": 13849,
+          "verdict": "different_place"
+        },
+        {
+          "jibun": "삼정동 660-10",
+          "count": 5,
+          "dist_m": 13901,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "6619276a-b84f-403f-bff0-974a7c8ced80",
+      "name": "삼미특수강",
+      "sgg": "48123",
+      "tx_total": 55,
+      "checks": []
+    },
+    {
+      "id": "e9c78bd0-3347-445a-bcef-2f45c3cb7ba3",
+      "name": "장유역중흥S-클래스더퍼스트",
+      "sgg": "48250",
+      "tx_total": 53,
+      "checks": []
+    },
+    {
+      "id": "7a3f6eee-92b3-4736-9c9b-f965a8174a21",
+      "name": "SG이너스",
+      "sgg": "48250",
+      "tx_total": 53,
+      "checks": []
+    },
+    {
+      "id": "3b231292-8629-4878-9597-a51cd19d696b",
+      "name": "금화골든파크",
+      "sgg": "48129",
+      "tx_total": 52,
+      "checks": []
+    },
+    {
+      "id": "459ee336-dc09-473e-be44-ecfbe05a1422",
+      "name": "두산기계사원",
+      "sgg": "48123",
+      "tx_total": 52,
+      "checks": []
+    },
+    {
+      "id": "59161049-3cc8-4d16-9f60-ad08ce4e572f",
+      "name": "에일린의뜰1단지",
+      "sgg": "48123",
+      "tx_total": 52,
+      "checks": []
+    },
+    {
+      "id": "130aa6e3-95fc-4d59-81b6-f2c8f2dfe86a",
+      "name": "상강",
+      "sgg": "48125",
+      "tx_total": 51,
+      "checks": [
+        {
+          "jibun": "산호동 45-4",
+          "count": 17,
+          "dist_m": 3005,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "3ff92290-ecc3-4dec-9231-a35eb8d9808e",
+      "name": "한효이화맨션",
+      "sgg": "48127",
+      "tx_total": 51,
+      "checks": [
+        {
+          "jibun": "석전동 247-7",
+          "count": 1,
+          "dist_m": 2076,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "8e2e1cd9-ec0b-478c-bba8-7e8a10949b14",
+      "name": "건우만복",
+      "sgg": "48127",
+      "tx_total": 50,
+      "checks": []
+    },
+    {
+      "id": "d406d1d1-5e6f-4a70-ba84-5f6a1fb93c6c",
+      "name": "대한맨션",
+      "sgg": "48121",
+      "tx_total": 48,
+      "checks": [
+        {
+          "jibun": "소답동 146-10",
+          "count": 16,
+          "dist_m": 1539,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "51238e3c-eb01-4124-8a26-c2f36df5e93f",
+      "name": "힐스테이트마크로엔",
+      "sgg": "48123",
+      "tx_total": 47,
+      "checks": [
+        {
+          "jibun": "대원동 116",
+          "count": 14,
+          "dist_m": 94,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "ca4b5695-23f7-4f74-bd72-542e9b119531",
+      "name": "롯데캐슬포레스트2단지",
+      "sgg": "48121",
+      "tx_total": 46,
+      "checks": [
+        {
+          "jibun": "사화동 670-2",
+          "count": 1,
+          "dist_m": 176,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "8b600848-4bd5-4a55-a348-5cf445b17b2f",
+      "name": "녹수빌라",
+      "sgg": "48129",
+      "tx_total": 40,
+      "checks": []
+    },
+    {
+      "id": "4d9f6ebb-b76e-4bde-9894-046deb48c8b9",
+      "name": "성진",
+      "sgg": "48127",
+      "tx_total": 39,
+      "checks": [
+        {
+          "jibun": "석전동 278-10",
+          "count": 2,
+          "dist_m": 2093,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "9813652a-d307-4959-b91b-1ffb21624ea7",
+      "name": "창원가포 안단테",
+      "sgg": "48125",
+      "tx_total": 35,
+      "checks": []
+    },
+    {
+      "id": "8ab05ee9-4b4a-486e-b2c2-fa7b16aa43df",
+      "name": "대림자동차 사원아파트",
+      "sgg": "48129",
+      "tx_total": 33,
+      "checks": []
+    },
+    {
+      "id": "fc007492-1dad-4a25-bb8c-50355d5c88af",
+      "name": "동호그린코아",
+      "sgg": "48250",
+      "tx_total": 31,
+      "checks": []
+    },
+    {
+      "id": "00d3955b-7040-4a92-9e95-7dcc9f09fe62",
+      "name": "창원자이시그니처",
+      "sgg": "48123",
+      "tx_total": 31,
+      "checks": []
+    },
+    {
+      "id": "7f1da69b-8458-4982-ad66-8d52a0a3983f",
+      "name": "남문동일스위트The Ocean 2단지",
+      "sgg": "48129",
+      "tx_total": 29,
+      "checks": []
+    },
+    {
+      "id": "6db6cfe4-c24c-4696-9598-a2f4951aa9c5",
+      "name": "신동우빌라",
+      "sgg": "48121",
+      "tx_total": 28,
+      "checks": [
+        {
+          "jibun": "소답동 111-1",
+          "count": 1,
+          "dist_m": 1112,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "aaecc7a7-8e3d-4bfc-861d-3bc44311be20",
+      "name": "동원오피스텔",
+      "sgg": "48125",
+      "tx_total": 28,
+      "checks": []
+    },
+    {
+      "id": "66c55366-7e7e-4c0d-a48d-5571d63c5960",
+      "name": "더-가온 빌딩 the-Gaon Building",
+      "sgg": "48121",
+      "tx_total": 27,
+      "checks": [
+        {
+          "jibun": "서상동 687-3",
+          "count": 10,
+          "dist_m": 825,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "e201acad-7296-4c42-bfc7-3e7f8fbed739",
+      "name": "리코팔레스",
+      "sgg": "48121",
+      "tx_total": 27,
+      "checks": []
+    },
+    {
+      "id": "594d2c6e-dabb-4d2e-b5b4-9d0dd51b70de",
+      "name": "신우빌라",
+      "sgg": "48121",
+      "tx_total": 26,
+      "checks": [
+        {
+          "jibun": "소답동 146-1",
+          "count": 9,
+          "dist_m": 1531,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "825df6eb-10c5-4cdf-9804-ad3a3ccd71e8",
+      "name": "평화빌라트",
+      "sgg": "48129",
+      "tx_total": 26,
+      "checks": [
+        {
+          "jibun": "풍호동 483-13",
+          "count": 3,
+          "dist_m": 4170,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "b4d98f7e-81f5-4b29-940c-7494f3cebdd8",
+      "name": "형제빌딩",
+      "sgg": "48121",
+      "tx_total": 26,
+      "checks": [
+        {
+          "jibun": "도계동 408-1",
+          "count": 6,
+          "dist_m": 1583,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "b1f7cc69-7b96-417c-9f52-a0b15827817b",
+      "name": "김해장유역한라비발디센트로",
+      "sgg": "48250",
+      "tx_total": 25,
+      "checks": []
+    },
+    {
+      "id": "f0a082d6-3287-4f97-9d43-350f6349060f",
+      "name": "진보그린빌라",
+      "sgg": "48121",
+      "tx_total": 25,
+      "checks": [
+        {
+          "jibun": "소답동 128-3",
+          "count": 7,
+          "dist_m": 1634,
+          "verdict": "different_place"
+        },
+        {
+          "jibun": "도계동 413-5",
+          "count": 5,
+          "dist_m": 4,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "184fdbec-28c6-40f2-93e6-1dd693a4bd73",
+      "name": "연화빌라",
+      "sgg": "48250",
+      "tx_total": 24,
+      "checks": [
+        {
+          "jibun": "삼정동 589-12",
+          "count": 1,
+          "dist_m": 189,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "6d674556-0c14-4265-adce-17499f9b0944",
+      "name": "전원파크맨션",
+      "sgg": "48127",
+      "tx_total": 24,
+      "checks": []
+    },
+    {
+      "id": "dd2fa460-04d0-4ed7-836e-b91a96be8c10",
+      "name": "금화빌라",
+      "sgg": "48129",
+      "tx_total": 24,
+      "checks": []
+    },
+    {
+      "id": "13de75ca-41d7-45dc-b823-6f79877e27d3",
+      "name": "명보그린빌",
+      "sgg": "48250",
+      "tx_total": 23,
+      "checks": []
+    },
+    {
+      "id": "5c3555a1-8f8c-45a9-9a39-7311cce2c240",
+      "name": "신우빌라",
+      "sgg": "48125",
+      "tx_total": 22,
+      "checks": [
+        {
+          "jibun": "신월동 33-15",
+          "count": 1,
+          "dist_m": 2335,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "2a97d8a6-3d03-4de8-83fb-245e9148c09a",
+      "name": "로얄팰리스",
+      "sgg": "48250",
+      "tx_total": 21,
+      "checks": [
+        {
+          "jibun": "삼정동 210-66",
+          "count": 2,
+          "dist_m": 851,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "81622c17-8068-4352-940c-b408e019a8d9",
+      "name": "금강영지",
+      "sgg": "48129",
+      "tx_total": 20,
+      "checks": [
+        {
+          "jibun": "충무동 28-190",
+          "count": 2,
+          "dist_m": 519,
+          "verdict": "ambiguous"
+        },
+        {
+          "jibun": "충무동 28-88",
+          "count": 2,
+          "dist_m": 490,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "987647ca-e4a8-4298-9c40-5d882df96fd3",
+      "name": "고려화이트빌",
+      "sgg": "48127",
+      "tx_total": 20,
+      "checks": [
+        {
+          "jibun": "석전동 280-12",
+          "count": 1,
+          "dist_m": 745,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "be2ea4dc-ab31-4713-8254-684661d5c53b",
+      "name": "삼덕빌라",
+      "sgg": "48250",
+      "tx_total": 20,
+      "checks": [
+        {
+          "jibun": "삼정동 660-5",
+          "count": 3,
+          "dist_m": 12,
+          "verdict": "same_site"
+        },
+        {
+          "jibun": "삼정동 660-2",
+          "count": 3,
+          "dist_m": 1,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "2e5bfe82-ef08-430d-b15f-c17e4afa7e35",
+      "name": "동방빌라",
+      "sgg": "48127",
+      "tx_total": 19,
+      "checks": [
+        {
+          "jibun": "회원동 248-12",
+          "count": 2,
+          "dist_m": 3765,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "52ad0759-9204-40e4-8276-b454b6f7e584",
+      "name": "동신쉐르빌",
+      "sgg": "48250",
+      "tx_total": 17,
+      "checks": [
+        {
+          "jibun": "동상동 639-9",
+          "count": 6,
+          "dist_m": 1213,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "59cbf477-0f09-4601-8953-550ca2dfa23b",
+      "name": "대화빌라",
+      "sgg": "48121",
+      "tx_total": 17,
+      "checks": [
+        {
+          "jibun": "소답동 111-3",
+          "count": 6,
+          "dist_m": 1076,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "0b0fbe38-ac96-4c59-9449-57527ddd91fc",
+      "name": "장미빌라",
+      "sgg": "48129",
+      "tx_total": 16,
+      "checks": [
+        {
+          "jibun": "경화동 1168-2",
+          "count": 4,
+          "dist_m": 2056,
+          "verdict": "different_place"
+        },
+        {
+          "jibun": "여좌동 8-3",
+          "count": 1,
+          "dist_m": 160,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "3843f281-0d0d-47da-a41c-2f1ff0b47032",
+      "name": "동명빌라",
+      "sgg": "48127",
+      "tx_total": 15,
+      "checks": [
+        {
+          "jibun": "구암동 83-11",
+          "count": 2,
+          "dist_m": 7071,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "95794186-a867-4b54-9d57-b3824a8b5356",
+      "name": "대건빌라트101동",
+      "sgg": "48250",
+      "tx_total": 15,
+      "checks": [
+        {
+          "jibun": "진영읍 진영리 345-6",
+          "count": 7,
+          "dist_m": 2292,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "0343913c-52e8-47be-aac7-1188ae34216e",
+      "name": "명보하이츠빌",
+      "sgg": "48250",
+      "tx_total": 13,
+      "checks": [
+        {
+          "jibun": "동상동 1033-1",
+          "count": 3,
+          "dist_m": 2,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "1c36bc95-c2d1-4ebf-ab62-ddedf7db0898",
+      "name": "일산",
+      "sgg": "48127",
+      "tx_total": 13,
+      "checks": []
+    },
+    {
+      "id": "5f7f4838-9a96-43fc-bd38-51d3abd16d8e",
+      "name": "극동빌라",
+      "sgg": "48250",
+      "tx_total": 13,
+      "checks": []
+    },
+    {
+      "id": "9b404de2-08fb-42e3-9b46-71f9f714bd3f",
+      "name": "가든빌라",
+      "sgg": "48129",
+      "tx_total": 13,
+      "checks": [
+        {
+          "jibun": "경화동 1173-40",
+          "count": 1,
+          "dist_m": 1706,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "229287c3-3588-4e69-bc75-31d954073ed8",
+      "name": "수진빌라",
+      "sgg": "48129",
+      "tx_total": 12,
+      "checks": []
+    },
+    {
+      "id": "b7269286-93d4-4a59-96e2-668fe137a6a2",
+      "name": "신성빌라(9차)",
+      "sgg": "48250",
+      "tx_total": 12,
+      "checks": []
+    },
+    {
+      "id": "ccd00b52-a5bf-4e1d-abce-1a0961fc98e8",
+      "name": "우성빌라",
+      "sgg": "48129",
+      "tx_total": 12,
+      "checks": [
+        {
+          "jibun": "석동 396",
+          "count": 5,
+          "dist_m": 899,
+          "verdict": "ambiguous"
+        },
+        {
+          "jibun": "이동 399-1",
+          "count": 1,
+          "dist_m": 13,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "24561e05-57d9-4519-9af8-c6bd12ee5c40",
+      "name": "동일궁전빌라",
+      "sgg": "48250",
+      "tx_total": 11,
+      "checks": [
+        {
+          "jibun": "삼정동 640-3",
+          "count": 2,
+          "dist_m": 214,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "6ac11d7e-d2fc-47fa-b9f1-5dafcb00310e",
+      "name": "신안빌라",
+      "sgg": "48125",
+      "tx_total": 11,
+      "checks": []
+    },
+    {
+      "id": "f7f8f3e6-0e8d-4516-ad81-e9a609f5b7ff",
+      "name": "대건빌라트102동",
+      "sgg": "48250",
+      "tx_total": 11,
+      "checks": [
+        {
+          "jibun": "진영읍 진영리 345-10",
+          "count": 4,
+          "dist_m": 2267,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "3342e95d-b436-48f4-b2bf-1d0e4e064ac8",
+      "name": "석동빌라",
+      "sgg": "48129",
+      "tx_total": 10,
+      "checks": []
+    },
+    {
+      "id": "3ab8461f-664e-4d7f-a7ba-360e0c8e14cb",
+      "name": "대창빌라",
+      "sgg": "48129",
+      "tx_total": 10,
+      "checks": [
+        {
+          "jibun": "경화동 846-15",
+          "count": 1,
+          "dist_m": 39,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "81f9c2ef-de0b-487a-b42b-c5e1e41a7f87",
+      "name": "남일빌라2차",
+      "sgg": "48129",
+      "tx_total": 10,
+      "checks": [
+        {
+          "jibun": "이동 21-1",
+          "count": 1,
+          "dist_m": 864,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "80e2bc55-35b6-4040-bf8b-c79b73643474",
+      "name": "경운엔즈빌",
+      "sgg": "48250",
+      "tx_total": 9,
+      "checks": []
+    },
+    {
+      "id": "46fd4e80-afaf-4c4a-9de0-4e30454f41d2",
+      "name": "서원래온빌2차",
+      "sgg": "48250",
+      "tx_total": 8,
+      "checks": []
+    },
+    {
+      "id": "bd236c8f-ba97-4085-acbd-8dd192ef4280",
+      "name": "남도빌라",
+      "sgg": "48121",
+      "tx_total": 7,
+      "checks": [
+        {
+          "jibun": "소답동 154-1",
+          "count": 3,
+          "dist_m": 618,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "c0651853-1fb8-47da-ac2d-40daa80cd632",
+      "name": "대광목화빌라",
+      "sgg": "48121",
+      "tx_total": 7,
+      "checks": [
+        {
+          "jibun": "소계동 718-29",
+          "count": 2,
+          "dist_m": 3732,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "43d32e16-86b0-48d7-b4d7-57c9eee0d7bf",
+      "name": "중동서원래온빌101동",
+      "sgg": "48121",
+      "tx_total": 6,
+      "checks": [
+        {
+          "jibun": "중동 651-7",
+          "count": 1,
+          "result": "not_found"
+        }
+      ]
+    },
+    {
+      "id": "92a1bcfc-c991-436b-9506-7e8fd9004861",
+      "name": "참조은빌라트",
+      "sgg": "48125",
+      "tx_total": 6,
+      "checks": []
+    },
+    {
+      "id": "3e2efa74-ca04-49f6-b8b9-ae3e99345c82",
+      "name": "롯데2단지",
+      "sgg": "48123",
+      "tx_total": 5,
+      "checks": []
+    },
+    {
+      "id": "0375c265-fba2-42c2-acbd-0c0619bb2f3e",
+      "name": "롯데1단지아파트",
+      "sgg": "48123",
+      "tx_total": 3,
+      "checks": []
+    }
+  ],
+  "lookups": 87,
+  "halted": false
+}

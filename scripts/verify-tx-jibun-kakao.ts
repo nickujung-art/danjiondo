@@ -26,6 +26,7 @@
  * 실행:
  *   npx tsx scripts/verify-tx-jibun-kakao.ts --in=audit-core-20260821.json
  *   npx tsx scripts/verify-tx-jibun-kakao.ts --in=... --max=40 --json=out.json
+ *   npx tsx scripts/verify-tx-jibun-kakao.ts --in=... --with-minor --max=80 --json=out.json
  *
  * 동 불일치 모드(2026-08-26) — audit-complex-address-match.ts 의 dong_mismatch 를 먹는다:
  *   npx tsx scripts/verify-tx-jibun-kakao.ts --in-dong=addr-match.json --max=130 --json=v.json
@@ -68,6 +69,11 @@ interface Finding {
   jibun_top: [string, number][]
   verdict: string
   note: string
+}
+
+/** 불리언 플래그. 이 파일에는 없어서 --with-minor 추가 시 함께 넣었다(2026-08-26). */
+function has(name: string): boolean {
+  return process.argv.includes(`--${name}`)
 }
 
 function arg(name: string): string | undefined {
@@ -253,7 +259,11 @@ async function main(): Promise<void> {
 
   const audit = JSON.parse(readFileSync(inPath, 'utf8')) as { findings: Finding[] }
   const targets = audit.findings
-    .filter((f) => f.verdict === 'contaminated' || f.verdict === 'merge_suspect')
+    // 🔴 minor_dong 을 기본에 넣지 않는다 — 265곳 중 실제 처리 대상은 61묶음뿐이고
+    //    나머지는 지번이 (null) 인 거래다(2026-08-26 실측: 타 동 1,118건 중 595건이 null).
+    //    --with-minor 로 명시할 때만 포함한다.
+    .filter((f) => f.verdict === 'contaminated' || f.verdict === 'merge_suspect'
+      || (has('with-minor') && f.verdict === 'minor_dong'))
     .sort((a, b) => b.tx_total - a.tx_total)
   console.log(`대상 ${targets.length}곳 (contaminated + merge_suspect) / 호출 상한 ${maxLookups}`)
 
