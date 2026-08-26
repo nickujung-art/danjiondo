@@ -83,3 +83,4 @@ scripts/.busan-backfill-logs/
 scripts/.core-gap-logs/
 scripts/.jibun-backfill-logs/
 scripts/.jibun-offi-driver.log
+tsconfig.scripts.tsbuildinfo

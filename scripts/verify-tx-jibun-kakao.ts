@@ -27,6 +27,14 @@
  *   npx tsx scripts/verify-tx-jibun-kakao.ts --in=audit-core-20260821.json
  *   npx tsx scripts/verify-tx-jibun-kakao.ts --in=... --max=40 --json=out.json
  *
+ * 동 불일치 모드(2026-08-26) — audit-complex-address-match.ts 의 dong_mismatch 를 먹는다:
+ *   npx tsx scripts/verify-tx-jibun-kakao.ts --in-dong=addr-match.json --max=130 --json=v.json
+ *
+ *   🔴 원래 모드(--in)는 **최다 지번을 빼고 나머지**를 본다. dong_mismatch 는 정반대로
+ *      **최다가 남의 것**이라 그 방식으로는 자기 거래를 검사하게 되어 아무것도 안 나온다.
+ *      여기서는 **등록 동이 아닌 (동,지번) 묶음 전부**를 본다.
+ *      출력 모양은 원래 모드와 같게 맞춘다 — relink-verified.ts --in-minor 가 그대로 먹는다.
+ *
  * 전건 오연결 모드(2026-08-24) — audit-wholesale-mislink.ts 산출물을 그대로 먹는다:
  *   npx tsx scripts/verify-tx-jibun-kakao.ts --in-wholesale=wholesale-mislink-20260824.json --max=20 --json=v.json
  *   npx tsx scripts/verify-tx-jibun-kakao.ts --in-wholesale=... --verdict=판정불가
@@ -65,6 +73,9 @@ interface Finding {
 function arg(name: string): string | undefined {
   return process.argv.find((a) => a.startsWith(`--${name}=`))?.split('=')[1]
 }
+
+/** 공백을 지운다 — 동 이름 비교용("내서읍 삼계리" vs "내서읍삼계리"). */
+const squash = (x: string | null | undefined): string => (x ?? '').replace(/\s/g, '')
 
 function haversineM(a: [number, number], b: [number, number]): number {
   const R = 6371000
@@ -173,8 +184,72 @@ async function main(): Promise<void> {
     return
   }
 
+  // ── 입력 모드 3: 동 불일치 (2026-08-26) ────────────────────────────────────
+  //
+  // dong_mismatch 는 **최다 지번이 남의 것**이다. 원래 모드는 최다를 빼고 보므로
+  // 여기서는 자기 거래를 검사하게 되어 아무것도 안 나온다. 등록 동이 아닌 묶음을 전부 본다.
+  // 지번이 (null) 인 묶음은 지오코딩할 수 없고 relink 의 (동,지번) 매칭에도 안 걸려 건너뛴다.
+  const dongPath = arg('in-dong')
+  if (dongPath) {
+    const audit = JSON.parse(readFileSync(dongPath, 'utf8')) as { findings: Finding[] }
+    const targets = audit.findings
+      .filter((f) => f.verdict === 'dong_mismatch')
+      .sort((a, b) => b.tx_total - a.tx_total)
+    console.log(`대상 ${targets.length}곳 (dong_mismatch) / 호출 상한 ${maxLookups}`)
+
+    const results: Record<string, unknown>[] = []
+    let skippedNull = 0
+    for (const f of targets) {
+      if (halted || lookups >= maxLookups) {
+        console.log(`
+⏸ 호출 상한(${maxLookups}) 도달 또는 중단 — 남은 ${targets.length - results.length}곳은 다음 실행으로`)
+        break
+      }
+      const { data: cx } = await sb.from('complexes').select('lat,lng').eq('id', f.id).single()
+      if (!cx?.lat || !cx?.lng) continue
+      const home: [number, number] = [cx.lat as number, cx.lng as number]
+      const reg = squash(f.registered_dong)
+
+      const foreign = f.jibun_top.filter(([k]) => {
+        if (k.includes('(null)')) { skippedNull++; return false }
+        const dong = squash(k.slice(0, k.lastIndexOf(' ')))
+        if (!dong || !reg) return false
+        return dong !== reg && !dong.includes(reg) && !reg.includes(dong)
+      })
+      if (!foreign.length) continue
+
+      const checks: Record<string, unknown>[] = []
+      for (const [jibunKey, cnt] of foreign) {
+        if (halted || lookups >= maxLookups) break
+        const pos = await geocode(`${SGG_PREFIX[f.sgg_code] ?? ''} ${jibunKey}`.trim(), kakaoKey)
+        if (!pos) { checks.push({ jibun: jibunKey, count: cnt, result: 'not_found' }); continue }
+        const dist = Math.round(haversineM(home, pos))
+        checks.push({
+          jibun: jibunKey, count: cnt, dist_m: dist,
+          verdict: dist < NEAR_M ? 'same_site' : dist >= FAR_M ? 'different_place' : 'ambiguous',
+        })
+      }
+      if (!checks.length) continue
+      results.push({ id: f.id, name: f.name, sgg: f.sgg_code, tx_total: f.tx_total, checks })
+      console.log(`  ${f.sgg_code} ${f.name}(등록 ${f.registered_dong}): ` + checks.map((c) =>
+        c.dist_m === undefined ? `${c.jibun}(${c.count}) 미검출`
+          : `${c.jibun}(${c.count}) ${c.dist_m}m ${c.verdict}`).join(' | '))
+    }
+
+    const flat = results.flatMap((r) => (r.checks as { verdict?: string; count: number }[]))
+    const conf = flat.filter((c) => c.verdict === 'different_place')
+    console.log(`
+판정: 오연결 확정 ${conf.length}묶음 / ${conf.reduce((s, c) => s + c.count, 0)}건`)
+    console.log(`      같은 부지 ${flat.filter((c) => c.verdict === 'same_site').length} · 애매 ${flat.filter((c) => c.verdict === 'ambiguous').length} · 미검출 ${flat.filter((c) => !c.verdict).length}`)
+    console.log(`      지번 없어 건너뜀 ${skippedNull}묶음`)
+    console.log(`카카오 호출 ${lookups}회${halted ? ' (중단됨)' : ''}`)
+    const out = arg('json')
+    if (out) { writeFileSync(out, JSON.stringify({ mode: 'dong_mismatch', results, lookups, halted }, null, 2)); console.log(`📄 ${out}`) }
+    return
+  }
+
   const inPath = arg('in')
-  if (!inPath) throw new Error('--in=<audit json> 또는 --in-wholesale=<wholesale json> 필요')
+  if (!inPath) throw new Error('--in=<audit json> / --in-wholesale=<...> / --in-dong=<...> 중 하나 필요')
 
   const audit = JSON.parse(readFileSync(inPath, 'utf8')) as { findings: Finding[] }
   const targets = audit.findings

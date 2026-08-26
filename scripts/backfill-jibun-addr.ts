@@ -158,6 +158,7 @@ async function main(): Promise<void> {
   let notFound = 0, apiFail = 0
   for (let i = 0; i < targets.length; i++) {
     const c = targets[i]
+    if (!c) continue
     process.stdout.write(`\r[${i + 1}/${targets.length}] ${c.canonical_name.slice(0, 24).padEnd(25)}`)
 
     let outcome: Awaited<ReturnType<typeof fetchKaptBasicInfoDetailed>>

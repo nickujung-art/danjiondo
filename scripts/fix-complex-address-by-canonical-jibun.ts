@@ -243,7 +243,7 @@ async function main(): Promise<void> {
       // 🔴 되돌아온 주소가 **우리가 물어본 그 필지**인지 확인한다. 카카오는 정확히 못 찾으면
       //    비슷한 것을 돌려주는데, 그걸 그대로 쓰면 새 오답을 만든다.
       const exact = squash(geo.jibun).endsWith(squash(canonical))
-      const sggTokens = squash(SGG_PREFIX[c.sgg_code].split(' ').slice(1).join(''))
+      const sggTokens = squash((SGG_PREFIX[c.sgg_code] ?? '').split(' ').slice(1).join(''))
       const inSgg = squash(geo.jibun).includes(sggTokens)
       if (!exact) note = `🔴 다른 필지를 돌려줬다: 요청 ${canonical} vs 응답 ${geo.jibun}`
       else if (!inSgg) note = `🔴 시군구가 다르다: ${geo.jibun}`

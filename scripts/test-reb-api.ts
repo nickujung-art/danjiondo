@@ -1,3 +1,8 @@
+// 🔴 이 파일에는 import/export 가 없어 **모듈이 아니라 전역 스크립트**로 취급된다.
+//    그러면 top-level 선언이 전역에 올라가 다른 스크립트의 같은 이름(main 등)과 충돌한다
+//    (TS2393 Duplicate function implementation). 빈 export 로 모듈로 만든다.
+export {}
+
 /**
  * 한국부동산원 R-ONE API 탐색 스크립트
  * npx tsx --env-file=.env.local scripts/test-reb-api.ts

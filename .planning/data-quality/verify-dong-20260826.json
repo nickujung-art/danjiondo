@@ -1,0 +1,1521 @@
+{
+  "mode": "dong_mismatch",
+  "results": [
+    {
+      "id": "d89b2322-5746-44f3-8e56-3d7225dc7044",
+      "name": "석봉마을대동아파트",
+      "sgg": "48250",
+      "tx_total": 917,
+      "checks": [
+        {
+          "jibun": "무계동 156-5",
+          "count": 916,
+          "dist_m": 603,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "b496cdf1-f0e0-4a82-a2c5-338051e73100",
+      "name": "내동주공1단지",
+      "sgg": "48123",
+      "tx_total": 426,
+      "checks": [
+        {
+          "jibun": "신월동 90",
+          "count": 221,
+          "dist_m": 2668,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "b11a5fa7-0fce-46a5-9ca5-09656b0097b7",
+      "name": "목연오피스텔",
+      "sgg": "48250",
+      "tx_total": 217,
+      "checks": [
+        {
+          "jibun": "어방동 531-7",
+          "count": 72,
+          "dist_m": 302,
+          "verdict": "ambiguous"
+        },
+        {
+          "jibun": "어방동 530-3",
+          "count": 51,
+          "dist_m": 371,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "eff79fa2-2512-4a50-911e-00ca095bb7d3",
+      "name": "동성",
+      "sgg": "48125",
+      "tx_total": 130,
+      "checks": [
+        {
+          "jibun": "창포동1가 1",
+          "count": 97,
+          "dist_m": 743,
+          "verdict": "ambiguous"
+        },
+        {
+          "jibun": "자산동 331-1",
+          "count": 33,
+          "dist_m": 1226,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "9521022e-ed9c-4e66-b819-2cf183402a79",
+      "name": "경남",
+      "sgg": "48125",
+      "tx_total": 125,
+      "checks": [
+        {
+          "jibun": "창포동2가 2",
+          "count": 121,
+          "dist_m": 12041,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "09bad4db-e44f-4dd7-a7dd-ce6ed2e77c07",
+      "name": "경남아파트2동3동",
+      "sgg": "48127",
+      "tx_total": 110,
+      "checks": [
+        {
+          "jibun": "양덕동 5-2",
+          "count": 110,
+          "dist_m": 2615,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "f11f7b5d-7211-49fe-8072-f1ffcec840a0",
+      "name": "태주실업",
+      "sgg": "48123",
+      "tx_total": 94,
+      "checks": [
+        {
+          "jibun": "가음동 20-12",
+          "count": 94,
+          "dist_m": 984,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "ef086993-e8b7-4b9d-af5f-5f6fac3a1266",
+      "name": "대우사원",
+      "sgg": "48123",
+      "tx_total": 90,
+      "checks": [
+        {
+          "jibun": "남산동 601-7",
+          "count": 90,
+          "dist_m": 315,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "43866429-ea18-405a-9507-fc11ed036259",
+      "name": "신한2",
+      "sgg": "48121",
+      "tx_total": 85,
+      "checks": [
+        {
+          "jibun": "북면 신촌리 960-1",
+          "count": 85,
+          "dist_m": 16600,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "efe11439-8fc7-4c51-9020-86a9e9280c51",
+      "name": "크라운",
+      "sgg": "48127",
+      "tx_total": 82,
+      "checks": [
+        {
+          "jibun": "구암동 1345",
+          "count": 82,
+          "dist_m": 2440,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "26cb9800-f59f-4371-82c9-c1c89b0c2b55",
+      "name": "건우맨션",
+      "sgg": "48125",
+      "tx_total": 79,
+      "checks": [
+        {
+          "jibun": "진동면 사동리 292",
+          "count": 79,
+          "dist_m": 14916,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "23b06f33-11e7-423f-b80b-8c1518a6d204",
+      "name": "편한세상",
+      "sgg": "48250",
+      "tx_total": 72,
+      "checks": [
+        {
+          "jibun": "율하동 1370",
+          "count": 29,
+          "dist_m": 7825,
+          "verdict": "different_place"
+        },
+        {
+          "jibun": "부원동 601-22",
+          "count": 23,
+          "dist_m": 4200,
+          "verdict": "different_place"
+        },
+        {
+          "jibun": "삼정동 649-10",
+          "count": 14,
+          "dist_m": 5874,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "42bf8c3c-b651-4882-b82c-75de01a1031b",
+      "name": "한백",
+      "sgg": "48125",
+      "tx_total": 70,
+      "checks": [
+        {
+          "jibun": "월영동 180",
+          "count": 70,
+          "dist_m": 926,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "fef838c4-1efe-4765-aa27-a4f3ca507fd4",
+      "name": "서광2",
+      "sgg": "48125",
+      "tx_total": 66,
+      "checks": [
+        {
+          "jibun": "완월동 146-3",
+          "count": 66,
+          "dist_m": 7395,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "97a1c0a2-1ada-4fdf-9e14-fa8e24aa2ecf",
+      "name": "대성",
+      "sgg": "48125",
+      "tx_total": 65,
+      "checks": [
+        {
+          "jibun": "자산동 24-4",
+          "count": 33,
+          "dist_m": 1440,
+          "verdict": "different_place"
+        },
+        {
+          "jibun": "상남동 30-2",
+          "count": 32,
+          "dist_m": 1365,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "03e32c01-417b-42f3-b16a-1d25d97eb1fa",
+      "name": "초원빌라",
+      "sgg": "48121",
+      "tx_total": 62,
+      "checks": [
+        {
+          "jibun": "도계동 319-2",
+          "count": 33,
+          "dist_m": 4012,
+          "verdict": "different_place"
+        },
+        {
+          "jibun": "도계동 321-11",
+          "count": 12,
+          "dist_m": 4312,
+          "verdict": "different_place"
+        },
+        {
+          "jibun": "도계동 360-3",
+          "count": 12,
+          "dist_m": 4170,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "d3537cf7-e9e0-41e2-bc83-70ae89b3c8f8",
+      "name": "국제",
+      "sgg": "48250",
+      "tx_total": 60,
+      "checks": [
+        {
+          "jibun": "삼방동 179-1",
+          "count": 60,
+          "dist_m": 7180,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "7fa5c476-a895-4d48-8f8a-6f0626671c0c",
+      "name": "화성",
+      "sgg": "48250",
+      "tx_total": 58,
+      "checks": [
+        {
+          "jibun": "부원동 69-5",
+          "count": 58,
+          "dist_m": 10031,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "d1398757-d521-4fce-b9b3-2cf7daa342d6",
+      "name": "창동스카이아파트",
+      "sgg": "48125",
+      "tx_total": 51,
+      "checks": [
+        {
+          "jibun": "중성동 34-6",
+          "count": 51,
+          "dist_m": 784,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "3d4631c5-e487-4ab7-a0bf-6e5e4c04847c",
+      "name": "영남1",
+      "sgg": "48121",
+      "tx_total": 50,
+      "checks": [
+        {
+          "jibun": "도계동 396-3",
+          "count": 50,
+          "dist_m": 0,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "99bea5a0-3cbb-42c6-a17d-c87508545a0a",
+      "name": "진성빌라",
+      "sgg": "48250",
+      "tx_total": 45,
+      "checks": [
+        {
+          "jibun": "삼정동 77-3",
+          "count": 6,
+          "dist_m": 1952,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "e29feed9-a34d-4994-8872-2274aa4e990e",
+      "name": "기공",
+      "sgg": "48125",
+      "tx_total": 45,
+      "checks": [
+        {
+          "jibun": "완월동 116-12",
+          "count": 45,
+          "dist_m": 9925,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "e6d2c8e6-d64f-4228-aaf7-003cb1b8a8a6",
+      "name": "신포경남",
+      "sgg": "48125",
+      "tx_total": 44,
+      "checks": [
+        {
+          "jibun": "신포동2가 105-1",
+          "count": 44,
+          "dist_m": 510,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "24fdb7b3-99e8-463f-ad25-220f5c3a1cb4",
+      "name": "서상",
+      "sgg": "48121",
+      "tx_total": 38,
+      "checks": [
+        {
+          "jibun": "서상동 352-2",
+          "count": 37,
+          "dist_m": 276,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "1f89ab43-c0b3-4a55-84e4-8b72352e2166",
+      "name": "태성빌라",
+      "sgg": "48129",
+      "tx_total": 36,
+      "checks": [
+        {
+          "jibun": "인사동 7-159",
+          "count": 5,
+          "dist_m": 995,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "fd7db4fc-83a3-49aa-9b2c-5f64f2d75550",
+      "name": "삼우",
+      "sgg": "48121",
+      "tx_total": 34,
+      "checks": [
+        {
+          "jibun": "북면 화천리 807",
+          "count": 34,
+          "dist_m": 6776,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "ad4d2442-7d9b-48fe-b415-60c336a2f85d",
+      "name": "부림",
+      "sgg": "48250",
+      "tx_total": 32,
+      "checks": [
+        {
+          "jibun": "대성동 411-6",
+          "count": 32,
+          "dist_m": 9779,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "9daa9b35-1c7b-478e-809e-044dceb73dae",
+      "name": "태화",
+      "sgg": "48127",
+      "tx_total": 31,
+      "checks": [
+        {
+          "jibun": "구암동 24-7",
+          "count": 31,
+          "dist_m": 7980,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "ea6970d0-e8f7-4f97-a4d4-c5e79cbd04e8",
+      "name": "중앙아파트",
+      "sgg": "48129",
+      "tx_total": 31,
+      "checks": [
+        {
+          "jibun": "경화동 1171-2",
+          "count": 2,
+          "dist_m": 1758,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "285cc330-ae36-4a71-8aa3-b9e4f1ac9c5c",
+      "name": "경동빌라태백동1차",
+      "sgg": "48129",
+      "tx_total": 30,
+      "checks": [
+        {
+          "jibun": "경화동 1473-3",
+          "count": 3,
+          "dist_m": 658,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "84483d5d-406a-4d9e-b187-4df4603cabce",
+      "name": "삼성플러스",
+      "sgg": "48250",
+      "tx_total": 30,
+      "checks": [
+        {
+          "jibun": "어방동 501-8",
+          "count": 4,
+          "dist_m": 1438,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "b7ff6b97-5d7f-4049-aca5-42d1f677df52",
+      "name": "태백산빌라2",
+      "sgg": "48121",
+      "tx_total": 30,
+      "checks": [
+        {
+          "jibun": "소답동 152-19",
+          "count": 13,
+          "dist_m": 595,
+          "verdict": "ambiguous"
+        },
+        {
+          "jibun": "도계동 402-1",
+          "count": 10,
+          "dist_m": 620,
+          "verdict": "ambiguous"
+        },
+        {
+          "jibun": "도계동 315-4",
+          "count": 7,
+          "dist_m": 1,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "1beeae16-3dd6-41f1-b368-d2137a1e1930",
+      "name": "세종빌라",
+      "sgg": "48250",
+      "tx_total": 29,
+      "checks": [
+        {
+          "jibun": "삼방동 24-7",
+          "count": 2,
+          "dist_m": 2187,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "b1f6b0cc-0a81-47ab-b2d2-fe40afeba416",
+      "name": "금강빌라",
+      "sgg": "48121",
+      "tx_total": 29,
+      "checks": [
+        {
+          "jibun": "도계동 305-5",
+          "count": 16,
+          "dist_m": 846,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "d2d39ef5-b3ed-4a3c-aaac-7ae8225162d7",
+      "name": "목화빌라",
+      "sgg": "48250",
+      "tx_total": 29,
+      "checks": [
+        {
+          "jibun": "삼방동 232-7",
+          "count": 8,
+          "dist_m": 2330,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "17b4ce0c-8861-432f-b824-39596c02f250",
+      "name": "삼성빌라",
+      "sgg": "48123",
+      "tx_total": 28,
+      "checks": [
+        {
+          "jibun": "신촌동 27-3",
+          "count": 28,
+          "dist_m": 8263,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "95b9c634-5746-4589-9d38-49bbf7bed242",
+      "name": "효성빌라",
+      "sgg": "48250",
+      "tx_total": 28,
+      "checks": [
+        {
+          "jibun": "어방동 352-8",
+          "count": 5,
+          "dist_m": 1349,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "c1b10a72-c26b-4ab0-830f-a1a21aa8ae6b",
+      "name": "송학빌라",
+      "sgg": "48250",
+      "tx_total": 28,
+      "checks": [
+        {
+          "jibun": "어방동 1101-1",
+          "count": 14,
+          "dist_m": 307,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "17394fc9-c876-4aeb-9f29-045d0d565850",
+      "name": "삼환",
+      "sgg": "48123",
+      "tx_total": 27,
+      "checks": [
+        {
+          "jibun": "가음동 24-10",
+          "count": 27,
+          "dist_m": 4301,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "436a48d1-afc5-4590-a6e1-4ce0958115af",
+      "name": "일신",
+      "sgg": "48127",
+      "tx_total": 27,
+      "checks": [
+        {
+          "jibun": "석전동 221-10",
+          "count": 27,
+          "dist_m": 2558,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "949c65fc-652d-490b-9002-8729139c4561",
+      "name": "덕천파크",
+      "sgg": "48127",
+      "tx_total": 27,
+      "checks": [
+        {
+          "jibun": "회성동 81-3",
+          "count": 27,
+          "dist_m": 2483,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "dd2fa460-04d0-4ed7-836e-b91a96be8c10",
+      "name": "금화빌라",
+      "sgg": "48129",
+      "tx_total": 26,
+      "checks": [
+        {
+          "jibun": "자은동 960-3",
+          "count": 2,
+          "dist_m": 4608,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "4c770e30-9731-4415-b34e-c26b204b8c46",
+      "name": "삼성리치빌",
+      "sgg": "48250",
+      "tx_total": 25,
+      "checks": [
+        {
+          "jibun": "봉황동 442-8",
+          "count": 5,
+          "dist_m": 1703,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "79f888a8-cd05-495e-a649-60befdabd632",
+      "name": "한빛스위트빌",
+      "sgg": "48250",
+      "tx_total": 23,
+      "checks": [
+        {
+          "jibun": "부원동 8-18",
+          "count": 1,
+          "dist_m": 2613,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "cc901795-e1e1-48e3-9198-70991b1d67c9",
+      "name": "영신빌라",
+      "sgg": "48121",
+      "tx_total": 23,
+      "checks": [
+        {
+          "jibun": "북면 내곡리 35",
+          "count": 16,
+          "dist_m": 9664,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "5306a2a4-8c1e-457d-a324-abd8b46be6b0",
+      "name": "에이케이",
+      "sgg": "48250",
+      "tx_total": 22,
+      "checks": [
+        {
+          "jibun": "어방동 1058-9",
+          "count": 16,
+          "dist_m": 936,
+          "verdict": "ambiguous"
+        },
+        {
+          "jibun": "삼정동 108-16",
+          "count": 1,
+          "dist_m": 34,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "7f84d35e-67d6-43a4-a8c8-33111265e6ef",
+      "name": "금오",
+      "sgg": "48250",
+      "tx_total": 22,
+      "checks": [
+        {
+          "jibun": "진영읍 여래리 437",
+          "count": 22,
+          "dist_m": 17733,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "a180445c-0c1f-42f2-8608-402a377c931d",
+      "name": "남산빌라",
+      "sgg": "48121",
+      "tx_total": 22,
+      "checks": [
+        {
+          "jibun": "중동 447-1",
+          "count": 12,
+          "dist_m": 949,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "41028781-35bb-4b9a-91cf-e449aec64c7a",
+      "name": "정원빌라",
+      "sgg": "48250",
+      "tx_total": 21,
+      "checks": [
+        {
+          "jibun": "삼계동 1484-14",
+          "count": 3,
+          "dist_m": 2835,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "70057b29-0efe-4beb-ade9-00de0667408f",
+      "name": "성우메르빌",
+      "sgg": "48250",
+      "tx_total": 21,
+      "checks": [
+        {
+          "jibun": "삼정동 648-8",
+          "count": 12,
+          "dist_m": 1078,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "5fae1346-bdd1-4e9b-a3c1-04fc054d65bb",
+      "name": "우림파크빌",
+      "sgg": "48250",
+      "tx_total": 20,
+      "checks": [
+        {
+          "jibun": "외동 1334",
+          "count": 10,
+          "dist_m": 1355,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "ae9da332-2d26-4da4-be4e-ffa9a513df40",
+      "name": "대지빌라",
+      "sgg": "48127",
+      "tx_total": 20,
+      "checks": [
+        {
+          "jibun": "구암동 268-8",
+          "count": 3,
+          "dist_m": 4165,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "ef5b4a52-bb20-462a-9ffd-27e8294fca7d",
+      "name": "한일사원",
+      "sgg": "48127",
+      "tx_total": 20,
+      "checks": [
+        {
+          "jibun": "양덕동 57-6",
+          "count": 20,
+          "dist_m": 955,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "1fa2b132-b589-4855-aae7-27997a1315e0",
+      "name": "금아",
+      "sgg": "48121",
+      "tx_total": 19,
+      "checks": [
+        {
+          "jibun": "도계동 340-2",
+          "count": 19,
+          "dist_m": 2622,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "962d371d-eba0-4094-a2e0-cf91fbe6a792",
+      "name": "덕산빌라3차",
+      "sgg": "48121",
+      "tx_total": 19,
+      "checks": [
+        {
+          "jibun": "서상동 464",
+          "count": 13,
+          "dist_m": 543,
+          "verdict": "ambiguous"
+        },
+        {
+          "jibun": "동읍 용잠리 249-1",
+          "count": 1,
+          "dist_m": 6113,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "7ab05634-e9e7-4e5c-9e99-adf75ba411f5",
+      "name": "금강빌라라동",
+      "sgg": "48121",
+      "tx_total": 18,
+      "checks": [
+        {
+          "jibun": "소답동 153-2",
+          "count": 18,
+          "dist_m": 368,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "e02b15f2-0973-444a-854c-1ca3550a09f1",
+      "name": "삼성골드빌라",
+      "sgg": "48250",
+      "tx_total": 18,
+      "checks": [
+        {
+          "jibun": "삼방동 22-21",
+          "count": 1,
+          "dist_m": 75,
+          "verdict": "same_site"
+        },
+        {
+          "jibun": "삼방동 24-10",
+          "count": 1,
+          "dist_m": 87,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "2803772d-756f-4537-9cc1-eb0ae4a71153",
+      "name": "영남2",
+      "sgg": "48121",
+      "tx_total": 17,
+      "checks": [
+        {
+          "jibun": "도계동 396-6",
+          "count": 17,
+          "dist_m": 0,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "f6d16876-4f63-45c6-9a09-07756ba41720",
+      "name": "삼양프라자5차",
+      "sgg": "48129",
+      "tx_total": 17,
+      "checks": [
+        {
+          "jibun": "경화동 1144-2",
+          "count": 3,
+          "dist_m": 2240,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "636a690a-4c6b-4f42-a6b0-e6c5b4b77aa8",
+      "name": "삼영빌라",
+      "sgg": "48250",
+      "tx_total": 16,
+      "checks": [
+        {
+          "jibun": "삼방동 578-9",
+          "count": 3,
+          "dist_m": 2261,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "8806bf83-513a-4337-9b5e-3ef2fff96b97",
+      "name": "청해",
+      "sgg": "48250",
+      "tx_total": 16,
+      "checks": [
+        {
+          "jibun": "삼정동 80-2",
+          "count": 16,
+          "dist_m": 6023,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "b9eee9e0-8bdf-4299-9569-fcfc00228ab0",
+      "name": "한아름맨션",
+      "sgg": "48125",
+      "tx_total": 15,
+      "checks": [
+        {
+          "jibun": "문화동 2-2",
+          "count": 15,
+          "dist_m": 1288,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "6ea16a82-3e2a-4156-8398-aef5ee0f9a90",
+      "name": "행운빌라트",
+      "sgg": "48250",
+      "tx_total": 14,
+      "checks": [
+        {
+          "jibun": "어방동 501-4",
+          "count": 3,
+          "dist_m": 1087,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "81f50d44-e88b-4018-8d7a-d84b713af2c5",
+      "name": "서원",
+      "sgg": "48125",
+      "tx_total": 14,
+      "checks": [
+        {
+          "jibun": "교방동 184-11",
+          "count": 14,
+          "dist_m": 18570,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "84163c51-ff33-472f-ba1e-40486e76e51a",
+      "name": "신성",
+      "sgg": "48127",
+      "tx_total": 14,
+      "checks": [
+        {
+          "jibun": "구암동 19-12",
+          "count": 2,
+          "dist_m": 865,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "b94edb55-2523-4dc7-91a3-86acbbf6dab0",
+      "name": "무학",
+      "sgg": "48125",
+      "tx_total": 14,
+      "checks": [
+        {
+          "jibun": "자산동 203-34",
+          "count": 3,
+          "dist_m": 1022,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "229287c3-3588-4e69-bc75-31d954073ed8",
+      "name": "수진빌라",
+      "sgg": "48129",
+      "tx_total": 13,
+      "checks": [
+        {
+          "jibun": "여좌동 305-3",
+          "count": 1,
+          "dist_m": 1850,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "92ca0e24-fa81-4df4-8404-9135448d518f",
+      "name": "미소DREAM",
+      "sgg": "48250",
+      "tx_total": 13,
+      "checks": [
+        {
+          "jibun": "불암동 62",
+          "count": 13,
+          "dist_m": 4420,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "28692a4e-8565-4498-815e-3cf341028797",
+      "name": "성창빌라",
+      "sgg": "48121",
+      "tx_total": 12,
+      "checks": [
+        {
+          "jibun": "도계동 359-7",
+          "count": 7,
+          "dist_m": 1592,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "704a0345-6b76-41a3-9120-19638f5e5925",
+      "name": "삼영",
+      "sgg": "48121",
+      "tx_total": 12,
+      "checks": [
+        {
+          "jibun": "도계동 321-8",
+          "count": 12,
+          "dist_m": 10461,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "d4021b01-0b32-4486-8e3f-4c7e1e743ab7",
+      "name": "대경",
+      "sgg": "48121",
+      "tx_total": 12,
+      "checks": [
+        {
+          "jibun": "도계동 421-1",
+          "count": 11,
+          "dist_m": 1453,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "80e2bc55-35b6-4040-bf8b-c79b73643474",
+      "name": "경운엔즈빌",
+      "sgg": "48250",
+      "tx_total": 11,
+      "checks": [
+        {
+          "jibun": "내동 656",
+          "count": 2,
+          "dist_m": 2906,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "98444c16-fad9-4bdc-a0c8-c0a3c31eae5e",
+      "name": "신안하이빌",
+      "sgg": "48125",
+      "tx_total": 11,
+      "checks": [
+        {
+          "jibun": "대성동2가 4-5",
+          "count": 11,
+          "dist_m": 0,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "8dd72d95-dde6-4c1b-8e80-00ad96d0b561",
+      "name": "성산빌라1",
+      "sgg": "48121",
+      "tx_total": 10,
+      "checks": [
+        {
+          "jibun": "도계동 348-2",
+          "count": 10,
+          "dist_m": 0,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "b92fdc52-e22f-4589-b6ec-f0ca4afa3b2e",
+      "name": "한빛빌라4차",
+      "sgg": "48250",
+      "tx_total": 10,
+      "checks": [
+        {
+          "jibun": "흥동 418-10",
+          "count": 10,
+          "dist_m": 2210,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "ef1e2446-c821-4d6b-aa91-364706f0cf18",
+      "name": "중산그린빌라",
+      "sgg": "48121",
+      "tx_total": 10,
+      "checks": [
+        {
+          "jibun": "소답동 419-2",
+          "count": 10,
+          "dist_m": 2054,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "f1c417e1-f141-4764-8c3d-9ecd40e5190b",
+      "name": "동원하우스",
+      "sgg": "48250",
+      "tx_total": 10,
+      "checks": [
+        {
+          "jibun": "지내동 525",
+          "count": 10,
+          "dist_m": 3000,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "c6ff5ebf-506f-41f6-9d83-28397de36a5b",
+      "name": "제일",
+      "sgg": "48127",
+      "tx_total": 9,
+      "checks": [
+        {
+          "jibun": "구암동 262-5",
+          "count": 1,
+          "dist_m": 6655,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "fb8d7522-2987-45f2-91d0-c2f7edb72a2c",
+      "name": "황제빌라A",
+      "sgg": "48121",
+      "tx_total": 9,
+      "checks": [
+        {
+          "jibun": "도계동 363-4",
+          "count": 9,
+          "dist_m": 1031,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "349a2138-4840-4a37-852b-21312e809926",
+      "name": "금강빌라다동",
+      "sgg": "48121",
+      "tx_total": 8,
+      "checks": [
+        {
+          "jibun": "소답동 148-4",
+          "count": 8,
+          "dist_m": 160,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "36a1fe1a-e75b-4240-acd6-69722ae8d223",
+      "name": "금강빌라가동",
+      "sgg": "48121",
+      "tx_total": 8,
+      "checks": [
+        {
+          "jibun": "소답동 146-6",
+          "count": 8,
+          "dist_m": 70,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "6622df56-93d3-4e86-b8cf-7aea8a4b9c11",
+      "name": "대림",
+      "sgg": "48125",
+      "tx_total": 8,
+      "checks": [
+        {
+          "jibun": "산호동 38-6",
+          "count": 8,
+          "dist_m": 11914,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "809727e7-1ca9-401e-bd8e-097b9657206c",
+      "name": "대우빌라",
+      "sgg": "48129",
+      "tx_total": 8,
+      "checks": [
+        {
+          "jibun": "이동 62-185",
+          "count": 1,
+          "dist_m": 1480,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "2308e624-6474-45e5-9438-5b0d0a282fbf",
+      "name": "하이츠빌라",
+      "sgg": "48127",
+      "tx_total": 7,
+      "checks": [
+        {
+          "jibun": "석전동 239-19",
+          "count": 2,
+          "dist_m": 971,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "4191f221-d71e-4ae0-8457-f342db7f59bd",
+      "name": "경남리더빌",
+      "sgg": "48250",
+      "tx_total": 7,
+      "checks": [
+        {
+          "jibun": "삼정동 596-5",
+          "count": 7,
+          "dist_m": 16403,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "77caee21-cf6b-4b76-9c8e-e85f6a70f358",
+      "name": "경성",
+      "sgg": "48250",
+      "tx_total": 7,
+      "checks": [
+        {
+          "jibun": "삼방동 579-6",
+          "count": 7,
+          "dist_m": 9933,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "ea7ed0b6-cb24-450d-8860-af8f9aceb10b",
+      "name": "대림빌라맨션",
+      "sgg": "48121",
+      "tx_total": 7,
+      "checks": [
+        {
+          "jibun": "소답동 126-1",
+          "count": 7,
+          "dist_m": 7260,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "9cf96887-3c26-4d38-8c70-439e7a1460e8",
+      "name": "금강금화빌라",
+      "sgg": "48121",
+      "tx_total": 6,
+      "checks": [
+        {
+          "jibun": "소답동 106-2",
+          "count": 6,
+          "dist_m": 1890,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "c0504106-6f76-4475-9720-c004b85c54d5",
+      "name": "미성화이트빌",
+      "sgg": "48129",
+      "tx_total": 6,
+      "checks": [
+        {
+          "jibun": "경화동 948-13",
+          "count": 4,
+          "dist_m": 825,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "fb3d81d8-5d34-4b2f-a76d-3e7afa86bd0d",
+      "name": "동산그린빌라",
+      "sgg": "48129",
+      "tx_total": 5,
+      "checks": [
+        {
+          "jibun": "인사동 7-106",
+          "count": 5,
+          "dist_m": 4306,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "029359a7-9fbc-414f-b03a-22d73a799c81",
+      "name": "한양",
+      "sgg": "48127",
+      "tx_total": 5,
+      "checks": [
+        {
+          "jibun": "봉암동 454-24",
+          "count": 1,
+          "dist_m": 2464,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "60ac9cc2-2548-4f3f-8c60-fc57030e93a8",
+      "name": "성진빌라트3차",
+      "sgg": "48121",
+      "tx_total": 4,
+      "checks": [
+        {
+          "jibun": "소답동 154-2",
+          "count": 4,
+          "dist_m": 6911,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "63bcea11-915b-435a-85a4-eccf5f7350cb",
+      "name": "서진아트빌라",
+      "sgg": "48121",
+      "tx_total": 4,
+      "checks": [
+        {
+          "jibun": "도계동 317-3",
+          "count": 4,
+          "dist_m": 0,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "7c42ae04-8e7c-4cfe-9118-ce65e0e2b9b7",
+      "name": "명진",
+      "sgg": "48127",
+      "tx_total": 4,
+      "checks": [
+        {
+          "jibun": "회원동 649-2",
+          "count": 4,
+          "dist_m": 3414,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "7f6d7c59-28de-4873-959a-317563b443a7",
+      "name": "목화",
+      "sgg": "48125",
+      "tx_total": 4,
+      "checks": [
+        {
+          "jibun": "중앙동3가 4-348",
+          "count": 4,
+          "dist_m": 1836,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "96bc7d33-6f40-41dd-88b6-4ae0d7e90044",
+      "name": "대진",
+      "sgg": "48129",
+      "tx_total": 4,
+      "checks": [
+        {
+          "jibun": "여좌동 119-10",
+          "count": 4,
+          "dist_m": 3402,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "bd12f506-15a8-4227-93b7-74c1ff594835",
+      "name": "의창빌라",
+      "sgg": "48121",
+      "tx_total": 4,
+      "checks": [
+        {
+          "jibun": "서상동 453",
+          "count": 4,
+          "dist_m": 991,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "15c9f650-b10e-4567-b8de-56fab4832759",
+      "name": "금강무궁화빌라",
+      "sgg": "48121",
+      "tx_total": 3,
+      "checks": [
+        {
+          "jibun": "도계동 331-3",
+          "count": 3,
+          "dist_m": 0,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "d14f9b0d-903b-4d11-831f-679d6100f0c0",
+      "name": "진흥빌라B동",
+      "sgg": "48127",
+      "tx_total": 3,
+      "checks": [
+        {
+          "jibun": "합성동 131-40",
+          "count": 3,
+          "dist_m": 2561,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "28f3c36a-71e7-4b24-a685-aa6bd49120c3",
+      "name": "중동이조빌라",
+      "sgg": "48121",
+      "tx_total": 2,
+      "checks": [
+        {
+          "jibun": "중동 767-3",
+          "count": 2,
+          "dist_m": 501,
+          "verdict": "ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "b8a82969-9603-47db-8547-c9e2a66a9f6c",
+      "name": "청담",
+      "sgg": "48250",
+      "tx_total": 2,
+      "checks": [
+        {
+          "jibun": "풍유동 36-6",
+          "count": 2,
+          "dist_m": 15336,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "2463ed9e-4ade-48c1-acca-ada26440a47f",
+      "name": "화인프라자",
+      "sgg": "48125",
+      "tx_total": 1,
+      "checks": [
+        {
+          "jibun": "서성동 83-12",
+          "count": 1,
+          "dist_m": 0,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "ce2d1a8d-66c6-496e-b91d-0a69e7f51d5b",
+      "name": "대산빌라",
+      "sgg": "48125",
+      "tx_total": 1,
+      "checks": [
+        {
+          "jibun": "유록동 7-1",
+          "count": 1,
+          "dist_m": 6158,
+          "verdict": "different_place"
+        }
+      ]
+    }
+  ],
+  "lookups": 115,
+  "halted": false
+}
