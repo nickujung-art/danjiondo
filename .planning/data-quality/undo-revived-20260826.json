@@ -1,0 +1,27 @@
+{
+  "at": "2026-08-26T07:20:01.738Z",
+  "note": "끊은 뒤 재수집으로 되살아난 3건. 제외 목록 적용 후 다시 끊는다.",
+  "before": [
+    {
+      "id": 1570929,
+      "complex_id": "5fc6d910-ed2d-40d3-b8a9-20868f5b1276",
+      "umd_nm": "당리동",
+      "jibun": "329-4",
+      "raw_complex_name": "대영"
+    },
+    {
+      "id": 2722587,
+      "complex_id": "d7e97f86-18fa-4279-955b-3e97d47272c7",
+      "umd_nm": "하단동",
+      "jibun": "497-36",
+      "raw_complex_name": "더휴"
+    },
+    {
+      "id": 2729747,
+      "complex_id": "a84622b6-312b-458b-b4fc-94c24588e1e0",
+      "umd_nm": "정관읍 모전리",
+      "jibun": "735",
+      "raw_complex_name": "이지더원2차"
+    }
+  ]
+}
