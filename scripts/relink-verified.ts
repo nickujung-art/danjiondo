@@ -23,6 +23,13 @@
  *   npx tsx scripts/relink-verified.ts --in=kakao-busan-mislink-20260824.json
  *   npx tsx scripts/relink-verified.ts --in=a.json --in2=b.json --target=<from>:<to> --apply --backup=b.json
  *
+ * 소수 오염 모드(2026-08-26) — verify-tx-jibun-kakao.ts 의 **원래 모드**(--in=<addr-match json>)
+ * 산출물을 먹는다. 그쪽은 단지당 여러 (동,지번) 묶음을 검사하므로 출력 모양이 다르다:
+ *   { results: [{ id, name, sgg, checks: [{ jibun, count, dist_m, verdict }] }] }
+ * 확정된 묶음만 골라 평평하게 편다. 판정 기준(NEAR_M/FAR_M)은 그쪽에 있고 여기서는
+ * **다시 판정하지 않는다** — 판정과 실행을 분리한다는 이 스크립트의 원칙 그대로다.
+ *   npx tsx scripts/relink-verified.ts --in-minor=verify-minor-20260826.json --apply --backup=b.json
+ *
  * --target 은 이동 목표를 명시한다(여러 번 지정 가능, 쉼표 구분). 없으면 끊기다.
  */
 import dotenv from 'dotenv'
@@ -60,6 +67,27 @@ function parseTargets(): Map<string, string> {
     if (from && to) m.set(from.trim(), to.trim())
   }
   return m
+}
+
+/** verify-tx-jibun-kakao 의 원래 모드 출력(단지당 checks[]) 을 Verified 목록으로 편다. */
+function loadMinor(paths: string[]): Verified[] {
+  const out: Verified[] = []
+  for (const p of paths) {
+    interface Check { jibun: string; count: number; dist_m?: number; verdict?: string }
+    interface Row { id: string; name: string; sgg: string; checks?: Check[] }
+    const j = JSON.parse(readFileSync(p, 'utf8')) as { results?: Row[] }
+    for (const r of j.results ?? []) {
+      for (const c of r.checks ?? []) {
+        if (c.verdict !== 'different_place') continue
+        out.push({
+          complex_id: r.id, name: r.name, sgg_code: r.sgg,
+          canonical: c.jibun, tx_count: c.count,
+          kakao_verdict: 'different_place', dist_m: c.dist_m,
+        })
+      }
+    }
+  }
+  return out
 }
 
 async function loadVerified(paths: string[]): Promise<Verified[]> {
@@ -125,14 +153,15 @@ async function main(): Promise<void> {
   const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
 
   const paths = [arg('in'), arg('in2'), arg('in3')].filter((x): x is string => !!x)
-  if (!paths.length) throw new Error('--in=<kakao 검증 json> 필요')
+  const minorPaths = [arg('in-minor'), arg('in-minor2')].filter((x): x is string => !!x)
+  if (!paths.length && !minorPaths.length) throw new Error('--in=<kakao 검증 json> 또는 --in-minor=<소수 오염 json> 필요')
   const apply = has('apply')
   const targets = parseTargets()
 
   console.log(`🔗 ${url} / 모드: ${apply ? '🔴 APPLY' : 'dry-run'}`)
-  console.log(`입력 ${paths.length}개 / 이동 목표 지정 ${targets.size}건`)
+  console.log(`입력 ${paths.length + minorPaths.length}개 / 이동 목표 지정 ${targets.size}건`)
 
-  const verified = await loadVerified(paths)
+  const verified = [...(paths.length ? await loadVerified(paths) : []), ...loadMinor(minorPaths)]
   console.log(`카카오 different_place 확정 ${verified.length}곳`)
 
   const ops: Op[] = []
