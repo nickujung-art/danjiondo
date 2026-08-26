@@ -1,0 +1,147 @@
+{
+  "results": [
+    {
+      "id": "9ab59aa0-6a0a-47d0-ab91-c750e421e580",
+      "name": "반림럭키",
+      "sgg": "48123",
+      "tx_total": 1336,
+      "checks": [
+        {
+          "jibun": "가음동 14-5",
+          "count": 50,
+          "dist_m": 3918,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "34ef420a-00c3-450e-85a0-2aa9c69694cf",
+      "name": "김해센텀 두산위브더제니스",
+      "sgg": "48250",
+      "tx_total": 1233,
+      "checks": [
+        {
+          "jibun": "주촌면 선지리 1531",
+          "count": 76,
+          "result": "not_found"
+        },
+        {
+          "jibun": "주촌면 1531",
+          "count": 10,
+          "dist_m": 72,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "f194b9b7-cff0-4712-a3fd-7e5cb2484862",
+      "name": "광남백조",
+      "sgg": "48250",
+      "tx_total": 673,
+      "checks": [
+        {
+          "jibun": "봉황동 447",
+          "count": 35,
+          "dist_m": 1162,
+          "verdict": "different_place"
+        },
+        {
+          "jibun": "봉황동 454-1",
+          "count": 30,
+          "dist_m": 1267,
+          "verdict": "different_place"
+        },
+        {
+          "jibun": "동상동 835",
+          "count": 18,
+          "dist_m": 1160,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "c95dfe8f-6244-49ed-b010-9aea7a7e85d2",
+      "name": "한우아파트11.12동",
+      "sgg": "48125",
+      "tx_total": 648,
+      "checks": [
+        {
+          "jibun": "창포동3가 1-1",
+          "count": 62,
+          "dist_m": 2220,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "ed435644-aecf-47db-9931-3cfdb7bceede",
+      "name": "구산주공3단지",
+      "sgg": "48250",
+      "tx_total": 596,
+      "checks": [
+        {
+          "jibun": "외동 705",
+          "count": 84,
+          "dist_m": 2819,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "e949ff5f-90bf-4053-b7e9-de43ecfb7927",
+      "name": "대동다숲아파트",
+      "sgg": "48127",
+      "tx_total": 470,
+      "checks": [
+        {
+          "jibun": "내서읍 삼계리 37",
+          "count": 222,
+          "dist_m": 0,
+          "verdict": "same_site"
+        }
+      ]
+    },
+    {
+      "id": "e563e674-265f-496a-b898-0c7a88a9a978",
+      "name": "배진",
+      "sgg": "48127",
+      "tx_total": 92,
+      "checks": [
+        {
+          "jibun": "구암동 1323-1",
+          "count": 31,
+          "dist_m": 3426,
+          "verdict": "different_place"
+        },
+        {
+          "jibun": "합성동 129-10",
+          "count": 22,
+          "dist_m": 2321,
+          "verdict": "different_place"
+        }
+      ]
+    },
+    {
+      "id": "eec18dad-d006-4830-8420-3f9a9dbddfc2",
+      "name": "한빛빌라",
+      "sgg": "48250",
+      "tx_total": 66,
+      "checks": [
+        {
+          "jibun": "어방동 345-2",
+          "count": 6,
+          "dist_m": 1581,
+          "verdict": "different_place"
+        },
+        {
+          "jibun": "삼방동 577-12",
+          "count": 3,
+          "dist_m": 231,
+          "verdict": "same_site"
+        }
+      ]
+    }
+  ],
+  "lookups": 13,
+  "halted": false
+}
