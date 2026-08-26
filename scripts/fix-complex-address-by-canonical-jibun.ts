@@ -48,6 +48,18 @@
  * 실행:
  *   npx tsx scripts/fix-complex-address-by-canonical-jibun.ts --max=700 --backup=plan.json
  *   npx tsx scripts/fix-complex-address-by-canonical-jibun.ts --from-plan=plan.json --apply
+ *
+ * [검증된 지번 모드(2026-08-26) — --from-verified]
+ * verify-tx-jibun-kakao.ts 가 `same_site` 로 판정한 (동,지번) 을 지번 출처로 쓴다.
+ * `same_site` 는 **거래 지번이 단지 좌표에서 300m 안**이라는 뜻이다 — 거래가 맞고
+ * 단지 주소가 틀린 경우다. 확정 지번이 없어(다수결 미달) 기본 모드가 못 보는 건들이다.
+ *
+ * 🔴 **다수 비중 가드**가 있다. 검증된 묶음이 그 단지 거래에서 차지하는 비중이
+ *    MIN_SHARE 미만이면 적용하지 않는다. 2026-08-26 실측에서 이게 4묶음을 걸렀다:
+ *      태백산빌라2 7/30(23%) · 에이케이 1/22(5%) · 삼성골드빌라 1/18 ×2(11%)
+ *    1~2건으로 단지 주소 전체를 바꾸면 안 된다.
+ *
+ *   npx tsx scripts/fix-complex-address-by-canonical-jibun.ts --from-verified=v.json --backup=p.json
  *   npx tsx scripts/fix-complex-address-by-canonical-jibun.ts --busan
  */
 import dotenv from 'dotenv'
@@ -79,6 +91,9 @@ const PROVINCE_ALIASES: Record<string, string[]> = {
   '48': ['경남', '경상남도'],
   '26': ['부산', '부산광역시'],
 }
+
+/** --from-verified: 검증된 묶음이 단지 거래에서 차지해야 할 최소 비중. */
+const MIN_SHARE = 0.5
 
 /** 현재 좌표가 새 좌표에서 이만큼 넘게 떨어져 있으면 좌표도 틀린 것으로 보고 덮는다. */
 const COORD_REPLACE_M = 1_000
@@ -208,6 +223,36 @@ async function main(): Promise<void> {
   const canons = await loadAll<Canon>(sb, 'complex_canonical_jibun',
     'complex_id,umd_nm,jibun', scope, 'complex_id')
   const canonBy = new Map(canons.map((c) => [c.complex_id, c]))
+
+  // --from-verified: 지번 출처를 확정 지번이 아니라 **카카오가 same_site 로 판정한 묶음**으로 바꾼다.
+  const fromVerified = arg('from-verified')
+  if (fromVerified) {
+    interface VCheck { jibun: string; count: number; dist_m?: number; verdict?: string }
+    interface VRow { id: string; name: string; sgg: string; checks?: VCheck[] }
+    const vj = JSON.parse(readFileSync(fromVerified, 'utf8')) as { results?: VRow[] }
+    const byId = new Map(cxs.map((c) => [c.id, c]))
+    for (const r of vj.results ?? []) {
+      for (const ck of r.checks ?? []) {
+        if (ck.verdict !== 'same_site') continue
+        const c = byId.get(r.id)
+        if (!c || c.status !== 'active') continue
+        const { count: total } = await sb.from('transactions').select('id', { count: 'exact', head: true })
+          .eq('complex_id', r.id).is('cancel_date', null).is('superseded_by', null)
+        const share = (total ?? 0) > 0 ? ck.count / (total ?? 1) : 0
+        if (share < MIN_SHARE) {
+          console.log(`  ⏭ ${c.canonical_name}: 검증 ${ck.count}/${total}건(${Math.round(share * 100)}%) — 비중 미달로 제외`)
+          continue
+        }
+        canonBy.set(c.id, {
+          complex_id: c.id,
+          umd_nm: ck.jibun.slice(0, ck.jibun.lastIndexOf(' ')),
+          jibun: ck.jibun.slice(ck.jibun.lastIndexOf(' ') + 1),
+        })
+        onlyIds.push(c.id)
+      }
+    }
+    console.log(`--from-verified: 비중 가드 통과 ${onlyIds.length}곳`)
+  }
 
   const suspect = cxs
     .filter((c) => c.status === 'active')
