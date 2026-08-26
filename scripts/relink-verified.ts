@@ -30,6 +30,19 @@
  * **다시 판정하지 않는다** — 판정과 실행을 분리한다는 이 스크립트의 원칙 그대로다.
  *   npx tsx scripts/relink-verified.ts --in-minor=verify-minor-20260826.json --apply --backup=b.json
  *
+ * 사람 판정 모드(2026-08-26) — 카카오 거리로 못 가르는 건을 다른 근거로 결정했을 때.
+ *   npx tsx scripts/relink-verified.ts --in-decided=decided.json --apply --backup=b.json
+ *
+ *   카카오는 300~1000m 를 `ambiguous` 로 남긴다. 그 구간에도 **다른 근거가 결정적인**
+ *   경우가 있다 — 세대수 대비 거래량, 목표 단지의 등록 주소가 그 지번과 정확히 같음,
+ *   목표의 거래가 0건임 등. 그런 판단을 카카오 판정으로 위장하지 않고 따로 받는다.
+ *
+ *   { "decided": [{ "complex_id": "...", "name": "...", "sgg_code": "48250",
+ *                   "canonical": "무계동 156-5", "tx_count": 916,
+ *                   "basis": "왜 그렇게 판단했는지 — 필수" }] }
+ *
+ *   🔴 `basis` 가 비어 있으면 거부한다. 근거 없는 이동·끊기를 막는다.
+ *
  * --target 은 이동 목표를 명시한다(여러 번 지정 가능, 쉼표 구분). 없으면 끊기다.
  */
 import dotenv from 'dotenv'
@@ -67,6 +80,33 @@ function parseTargets(): Map<string, string> {
     if (from && to) m.set(from.trim(), to.trim())
   }
   return m
+}
+
+/**
+ * 사람이 다른 근거로 결정한 목록을 읽는다. `basis` 를 필수로 요구한다 —
+ * 카카오가 `ambiguous` 로 남긴 구간을 근거 없이 밀어붙이지 못하게 한다.
+ */
+function loadDecided(paths: string[]): Verified[] {
+  const out: Verified[] = []
+  for (const p of paths) {
+    interface D {
+      complex_id: string; name: string; sgg_code: string
+      canonical: string; tx_count: number; basis?: string
+    }
+    const j = JSON.parse(readFileSync(p, 'utf8')) as { decided?: D[] }
+    for (const d of j.decided ?? []) {
+      if (!d.basis || !d.basis.trim()) {
+        throw new Error(`basis 가 비어 있다: ${d.name} (${d.canonical}) — 근거 없이는 처리하지 않는다`)
+      }
+      console.log(`  📌 ${d.name} ${d.canonical} (${d.tx_count}건)`)
+      console.log(`     근거: ${d.basis}`)
+      out.push({
+        complex_id: d.complex_id, name: d.name, sgg_code: d.sgg_code,
+        canonical: d.canonical, tx_count: d.tx_count, kakao_verdict: 'decided',
+      })
+    }
+  }
+  return out
 }
 
 /** verify-tx-jibun-kakao 의 원래 모드 출력(단지당 checks[]) 을 Verified 목록으로 편다. */
@@ -154,14 +194,21 @@ async function main(): Promise<void> {
 
   const paths = [arg('in'), arg('in2'), arg('in3')].filter((x): x is string => !!x)
   const minorPaths = [arg('in-minor'), arg('in-minor2')].filter((x): x is string => !!x)
-  if (!paths.length && !minorPaths.length) throw new Error('--in=<kakao 검증 json> 또는 --in-minor=<소수 오염 json> 필요')
+  const decidedPaths = [arg('in-decided')].filter((x): x is string => !!x)
+  if (!paths.length && !minorPaths.length && !decidedPaths.length) {
+    throw new Error('--in=<kakao 검증 json> / --in-minor=<소수 오염 json> / --in-decided=<사람 판정 json> 중 하나 필요')
+  }
   const apply = has('apply')
   const targets = parseTargets()
 
   console.log(`🔗 ${url} / 모드: ${apply ? '🔴 APPLY' : 'dry-run'}`)
   console.log(`입력 ${paths.length + minorPaths.length}개 / 이동 목표 지정 ${targets.size}건`)
 
-  const verified = [...(paths.length ? await loadVerified(paths) : []), ...loadMinor(minorPaths)]
+  const verified = [
+    ...(paths.length ? await loadVerified(paths) : []),
+    ...loadMinor(minorPaths),
+    ...loadDecided(decidedPaths),
+  ]
   console.log(`카카오 different_place 확정 ${verified.length}곳`)
 
   const ops: Op[] = []
