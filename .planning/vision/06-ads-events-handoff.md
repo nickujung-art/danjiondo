@@ -119,26 +119,37 @@ anon click      → cdcd84fc-…   ✅
 
 ---
 
-## 6. 🔶 미처리 — placement 원장 drift
+## 6. ✅ placement 원장 drift — 해결됨 (2026-08-26)
 
-이 캠페인의 `placement` 는 `home_feed_banner` 인데, bds 마이그레이션 원장의 제약은
-`('banner_top','sidebar','in_feed','map_popup')` 이다(20260527000001). 실측 결과
-제약 자체는 살아 있고(임의값 `__bogus__` 는 23514 로 거부) `home_feed_banner` 만
-통과한다 — **제약이 마이그레이션 밖에서 확장됐다.**
+realtrade-story 가 광고 등록에서 `ad_campaigns_placement_check` 위반으로 거절당해
+**SQL Editor 로 먼저 제약을 확장**했다. 실물에는 반영됐지만 마이그레이션 원장에는
+없어서, `db reset` 시 값이 사라져 광고 적재가 통째로 깨질 상태였다.
 
-`db reset` 을 하면 이 값이 사라져 realtrade-story 캠페인 적재가 깨진다.
-원장에 기록해야 한다. Supabase SQL 편집기에서 현재 정의를 먼저 읽고:
+`supabase db dump --linked` 로 **실물 정의를 받아 그대로** 원장에 남겼다
+(`20260826150000_ad_campaigns_placement_realtrade_story.sql`). 추측으로 쓰지 않은
+이유는 빠뜨린 값이 있으면 그 지면의 광고가 통째로 막히기 때문이다.
 
-```sql
-select pg_get_constraintdef(oid)
-from pg_constraint
-where conname = 'ad_campaigns_placement_check';
+```
+banner_top · sidebar · in_feed · map_popup              ← danjiondo (유지)
+complex_detail_presale_banner · complex_detail_agent_block · home_feed_banner
+                                                        ← realtrade-story
 ```
 
-그 결과 그대로를 bds 에 마이그레이션으로 남긴다(추측으로 쓰지 말 것 —
-빠뜨린 값이 있으면 그 placement 광고가 통째로 막힌다).
+### 검증
 
----
+```
+적용 전/후 pg_dump 정의 동일   원장만 채웠고 실물은 안 건드렸다
+7개 값 전부 실제 INSERT 통과
+임의값(__bogus__)은 여전히 23514 로 거부
+기존 danjiondo 행 UPDATE 정상 — CHECK 재평가에서 거절되지 않는다
+임시 캠페인 7건 삭제, ad_campaigns 10건 원복
+```
+
+### 🔴 다음에 지면을 추가할 때
+
+**SQL Editor 로 끝내지 말 것.** 같은 drift 가 반복된다. 위 마이그레이션 파일에 값을
+더하는 마이그레이션을 남긴다. realtrade-story 쪽은 `src/lib/ads/placements.ts` 주석에
+"DB CHECK 제약이 진짜 권위자" 라고 적어 뒀다 — 그 파일을 고칠 때 bds 요청을 함께 낸다.
 
 ## 7. 참고 — 현재 캠페인 상태
 
