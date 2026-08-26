@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
+import { SITE_ID } from '@/lib/data/site'
 
 export type AdCampaign = Database['public']['Tables']['ad_campaigns']['Row']
 
@@ -64,6 +65,10 @@ export async function getActiveAds(
   let query = supabase
     .from('ad_campaigns')
     .select('*')
+    // CRITICAL: ad_campaigns 는 danjiondo·realtrade-story·changbuletter 가 한 Supabase
+    // 프로젝트에서 공유한다. 사이트 분리는 RLS 가 아니라 이 필터가 한다 — 빠뜨리면
+    // 남의 사이트 광고가 이 사이트 화면에 그대로 노출된다 (src/lib/data/site.ts).
+    .eq('site_id', SITE_ID)
     .eq('placement', placement)
     .eq('status', 'approved')
     .lte('starts_at', now)
