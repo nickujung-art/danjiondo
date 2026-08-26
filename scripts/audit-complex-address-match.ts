@@ -27,7 +27,7 @@
  *   npx tsx scripts/audit-complex-address-match.ts                 # 운영권역
  *   npx tsx scripts/audit-complex-address-match.ts --busan         # 부산
  *   npx tsx scripts/audit-complex-address-match.ts --all           # 전 활성 지역
- *   npx tsx scripts/audit-complex-address-match.ts --json out.json # 기계 판독 출력
+ *   npx tsx scripts/audit-complex-address-match.ts --json=out.json # 기계 판독 출력 (🔴 = 필수)
  *
  * 환경변수: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
  *
