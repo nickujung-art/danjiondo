@@ -1,0 +1,15 @@
+{
+  "//": "scripts/ 전용 타입 검사 설정.",
+  "//why": [
+    "루트 tsconfig 의 exclude 에 scripts 가 들어 있어 npm run lint(= next lint && tsc --noEmit)가",
+    "이 디렉터리를 한 번도 검사하지 않았다. 프로덕션 데이터를 만지는 도구 83개가 그 상태였다.",
+    "2026-08-26 최초 측정: 오류 78건 / 24개 파일.",
+    "",
+    "🔴 아직 npm run lint 에 엮지 않는다 — 지금 엮으면 lint 가 즉시 빨간불이 되어 다른 작업이",
+    "   전부 막힌다. 78건을 정리한 뒤 lint 에 넣는다.",
+    "실행: npm run typecheck:scripts"
+  ],
+  "extends": "./tsconfig.json",
+  "include": ["scripts/**/*.ts"],
+  "exclude": ["node_modules"]
+}

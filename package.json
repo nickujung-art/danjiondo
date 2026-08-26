@@ -15,7 +15,8 @@
     "db:push": "supabase db push",
     "db:seed": "tsx scripts/seed.ts",
     "db:reset": "supabase db reset --local",
-    "postinstall": "node scripts/copy-fonts.mjs"
+    "postinstall": "node scripts/copy-fonts.mjs",
+    "typecheck:scripts": "node scripts/typecheck-scripts-ratchet.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.1",
