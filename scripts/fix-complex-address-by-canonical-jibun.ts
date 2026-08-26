@@ -60,6 +60,7 @@
  *    1~2건으로 단지 주소 전체를 바꾸면 안 된다.
  *
  *   npx tsx scripts/fix-complex-address-by-canonical-jibun.ts --from-verified=v.json --backup=p.json
+ *   npx tsx scripts/fix-complex-address-by-canonical-jibun.ts --ids=a,b --force-coord --backup=p.json
  *   npx tsx scripts/fix-complex-address-by-canonical-jibun.ts --busan
  */
 import dotenv from 'dotenv'
@@ -225,6 +226,7 @@ async function main(): Promise<void> {
   const canonBy = new Map(canons.map((c) => [c.complex_id, c]))
 
   // --from-verified: 지번 출처를 확정 지번이 아니라 **카카오가 same_site 로 판정한 묶음**으로 바꾼다.
+  const forceCoord = has('force-coord')
   const fromVerified = arg('from-verified')
   if (fromVerified) {
     interface VCheck { jibun: string; count: number; dist_m?: number; verdict?: string }
@@ -295,7 +297,14 @@ async function main(): Promise<void> {
       else {
         ok = true
         moveM = c.lat != null && c.lng != null ? metres([c.lat, c.lng], [geo.lat, geo.lng]) : null
-        replaceCoord = moveM == null || moveM > COORD_REPLACE_M
+        // --force-coord: 좌표가 가까워도 무조건 교체한다.
+        // 🔴 왜 필요한가 — 기본 규칙("가까우면 그대로 둔다")은 **좌표가 독립 근거일 때만**
+        //    옳다. 등록 주소에서 지오코딩된 좌표라면 주소가 틀린 순간 좌표도 같이 틀렸고,
+        //    "가깝다" 는 두 틀린 주소가 서로 가깝다는 뜻일 뿐이다.
+        //    판별법: 좌표를 역지오코딩해 등록 주소가 그대로 나오면 파생 좌표다.
+        //    2026-08-26 실측 — 신포경남·창동스카이아파트가 정확히 그 경우였다
+        //    (역조회 결과가 등록 주소와 글자 그대로 일치, 거래는 0건이 그 주소를 지지).
+        replaceCoord = forceCoord || moveM == null || moveM > COORD_REPLACE_M
         note = replaceCoord
           ? `주소+좌표 교체 (현재 좌표가 ${moveM == null ? '없음' : `${moveM}m 떨어짐`})`
           : `주소만 교체 (좌표는 ${moveM}m 로 이미 제자리 — 도로 기준점으로 바꾸지 않는다)`
