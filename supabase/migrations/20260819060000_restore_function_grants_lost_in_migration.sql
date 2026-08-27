@@ -46,7 +46,12 @@ REVOKE EXECUTE ON FUNCTION public.assign_area_types()                        FRO
 REVOKE EXECUTE ON FUNCTION public.award_comment_points()                     FROM anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.award_favorite_points()                    FROM anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.award_review_points()                      FROM anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.complex_integrity_counts(text[])           FROM anon, authenticated;
+-- 🔴 complex_integrity_counts 의 REVOKE 는 여기서 뺐다 (2026-08-27).
+--    이 시점(08-19)에 그 함수는 **프로덕션에만 있었고 원장에는 없었다** — 파일화는
+--    20260821140000 이 나중에 했다. 그래서 프로덕션에서는 통과했지만 빈 DB 에서
+--    처음부터 재생하면 42883 으로 죽어, db reset 과 db diff 의 섀도 빌드가 여기서 멈췄다.
+--    같은 권한 상태를 **함수가 생긴 뒤에** 20260827000000 이 확정한다(그쪽이 public 까지
+--    회수하므로 더 엄격하다). 프로덕션 결과는 동일하다.
 REVOKE EXECUTE ON FUNCTION public.compute_gap_stats(integer)                 FROM anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.handle_new_user()                          FROM anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.refresh_complex_gap_stats(integer)         FROM anon, authenticated;
