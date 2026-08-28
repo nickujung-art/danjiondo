@@ -44,6 +44,7 @@ export async function markCronSuccess(supabase: Client, sourceId: string): Promi
     last_synced_at: new Date().toISOString(),
     last_status: 'success',
     consecutive_failures: 0,
+    error_message: null,
   })
 }
 
