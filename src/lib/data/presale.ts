@@ -164,6 +164,7 @@ export async function getNewBuiltComplexes(
 export interface EnrichedPresaleListing {
   id:          string
   name:        string
+  newListingId: string | null
   sggCode:     string | null
   address:     string | null
   sourceUrl:   string | null
@@ -183,7 +184,7 @@ export async function getEnrichedPresaleItems(
 ): Promise<EnrichedPresaleListing[]> {
   const { data } = await supabase
     .from('presale_enriched')
-    .select('id, name, sgg_code, address, source_url, builder, total_units, move_in_date, summary, unit_types, community, sale_status, crawled_at')
+    .select('id, name, new_listing_id, sgg_code, address, source_url, builder, total_units, move_in_date, summary, unit_types, community, sale_status, crawled_at')
     .eq('is_active', true)
     .order('created_at', { ascending: false })
     .limit(limit)
@@ -192,6 +193,7 @@ export async function getEnrichedPresaleItems(
   return (data as Record<string, unknown>[]).map(r => ({
     id:         r['id'] as string,
     name:       r['name'] as string,
+    newListingId: (r['new_listing_id'] as string | null) ?? null,
     sggCode:    (r['sgg_code'] as string | null) ?? null,
     address:    (r['address'] as string | null) ?? null,
     sourceUrl:  (r['source_url'] as string | null) ?? null,

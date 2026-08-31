@@ -275,6 +275,56 @@ export async function GET(request: Request): Promise<Response> {
     errors.push(`expired deactivation: ${describeError(err)}`)
   }
 
+  // ── presale_enriched 자동 동기화 ──────────────────────────────────────────
+  // 활성 new_listings 중 presale_enriched에 대응 행이 없는 것을 skeleton INSERT 한다.
+  let presaleEnrichedSynced = 0
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supa = supabase as any
+    const { data: activeListings } = await supa
+      .from('new_listings')
+      .select('id, name, pblanc_nm, hssply_adres, supply_count')
+      .eq('is_active', true)
+
+    if (activeListings?.length) {
+      const { data: linked } = await supa
+        .from('presale_enriched')
+        .select('new_listing_id')
+        .not('new_listing_id', 'is', null)
+
+      const linkedIds = new Set((linked ?? []).map((r: { new_listing_id: string }) => r.new_listing_id))
+
+      for (const listing of activeListings as { id: string; name: string; pblanc_nm: string | null; hssply_adres: string | null; supply_count: number | null }[]) {
+        if (linkedIds.has(listing.id)) continue
+
+        const enrichedName = listing.pblanc_nm ?? listing.name
+        const { data: existing } = await supa
+          .from('presale_enriched')
+          .select('id')
+          .eq('name', enrichedName)
+          .is('new_listing_id', null)
+          .limit(1)
+          .maybeSingle()
+
+        if (existing) {
+          await supa.from('presale_enriched').update({ new_listing_id: listing.id }).eq('id', existing.id)
+          presaleEnrichedSynced++
+        } else {
+          const { error: insErr } = await supa.from('presale_enriched').insert({
+            name: enrichedName,
+            new_listing_id: listing.id,
+            address: listing.hssply_adres,
+            total_units: listing.supply_count,
+            source_type: 'listing_sync',
+          })
+          if (!insErr) presaleEnrichedSynced++
+        }
+      }
+    }
+  } catch (err) {
+    errors.push(`presale_enriched sync: ${describeError(err)}`)
+  }
+
   // ── 오피스텔 실거래 전월+당월 수집 (OFFI-01) ──────────────────────────────
   //
   // 🔴 **전월을 반드시 함께 훑는다.** MOLIT 은 계약 후 신고까지 시차가 있어 M 월 거래가
@@ -467,6 +517,7 @@ export async function GET(request: Request): Promise<Response> {
     remndrUpserted,
     competitionUpdated,
     expiredDeactivated,
+    presaleEnrichedSynced,
     offiUpserted,
     errors,
   })
