@@ -2067,6 +2067,7 @@ export type Database = {
           is_active: boolean
           move_in_date: string | null
           name: string
+          new_listing_id: string | null
           sale_status: string
           sgg_code: string | null
           source_type: string
@@ -2087,6 +2088,7 @@ export type Database = {
           is_active?: boolean
           move_in_date?: string | null
           name: string
+          new_listing_id?: string | null
           sale_status?: string
           sgg_code?: string | null
           source_type?: string
@@ -2107,6 +2109,7 @@ export type Database = {
           is_active?: boolean
           move_in_date?: string | null
           name?: string
+          new_listing_id?: string | null
           sale_status?: string
           sgg_code?: string | null
           source_type?: string
@@ -2116,7 +2119,15 @@ export type Database = {
           unit_types?: Json | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "presale_enriched_new_listing_id_fkey"
+            columns: ["new_listing_id"]
+            isOneToOne: false
+            referencedRelation: "new_listings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       presale_transactions: {
         Row: {

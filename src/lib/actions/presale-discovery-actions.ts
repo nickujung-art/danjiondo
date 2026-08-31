@@ -72,7 +72,7 @@ export async function confirmDiscovery(id: string): Promise<{ error?: string }> 
       lat: row.lat,
       lng: row.lng,
       source_code: 'news_crawl',
-      total_supply_count: archHubData?.totHoCnt ?? null,
+      supply_count: archHubData?.totHoCnt ?? null,
       pblanc_no: null,
     } as any)
     .select('id')
