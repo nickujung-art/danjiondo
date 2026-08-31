@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import type { Database } from '@/types/database'
+import { SITE_ID } from '@/lib/data/site'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
@@ -68,6 +69,7 @@ async function updateStatus(
     .from('ad_campaigns')
     .update({ status })
     .eq('id', id)
+    .eq('site_id', SITE_ID)
 
   if (dbErr) return { error: dbErr.message }
   revalidatePath('/admin/ads')
@@ -96,6 +98,7 @@ export async function deleteAdCampaign(id: string): Promise<{ error: string | nu
     .from('ad_campaigns')
     .delete()
     .eq('id', id)
+    .eq('site_id', SITE_ID)
 
   if (dbErr) return { error: dbErr.message }
   revalidatePath('/admin/ads')
@@ -157,6 +160,7 @@ export async function createAdCampaign(
   const resolvedImageUrl = typeof imageUrl === 'string' && imageUrl.trim() ? imageUrl.trim() : null
 
   const { error: dbErr } = await admin.from('ad_campaigns').insert({
+    site_id: SITE_ID,
     title: title.trim(),
     advertiser_name: advertiserName.trim(),
     placement: placement.trim(),
@@ -243,7 +247,7 @@ export async function updateAdCampaign(
     target_sgg_code: typeof targetSggCode === 'string' && targetSggCode.trim() ? targetSggCode.trim() : null,
     target_lat: typeof targetLatRaw === 'string' && targetLatRaw.trim() ? parseFloat(targetLatRaw.trim()) || null : null,
     target_lng: typeof targetLngRaw === 'string' && targetLngRaw.trim() ? parseFloat(targetLngRaw.trim()) || null : null,
-  }).eq('id', id)
+  }).eq('id', id).eq('site_id', SITE_ID)
 
   if (dbErr) return { error: dbErr.message }
   revalidatePath('/admin/ads')

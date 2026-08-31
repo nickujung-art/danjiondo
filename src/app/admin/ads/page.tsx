@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/types/database'
-import { getAdRoiStats } from '@/lib/data/ads'
+import { getAdRoiStats, getAllAdCampaigns } from '@/lib/data/ads'
+import { SITE_ID } from '@/lib/data/site'
 import { AdminCampaignActions } from '@/components/ads/AdminCampaignActions'
 import { AdRoiTable } from '@/components/admin/AdRoiTable'
 
@@ -43,31 +44,12 @@ export default async function AdminAdsPage({
 
   const adminClient = createSupabaseAdminClient()
 
-  let adsQuery = adminClient
-    .from('ad_campaigns')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  if (status) {
-    adsQuery = adsQuery.eq('status', status)
-  }
-
-  const [{ data: campaigns, error: adsError }, roiStats] = await Promise.all([
-    adsQuery,
-    getAdRoiStats(adminClient),
+  const [allCampaigns, roiStats] = await Promise.all([
+    getAllAdCampaigns(adminClient, 'all'),
+    getAdRoiStats(adminClient, SITE_ID),
   ])
 
-  if (adsError) {
-    return (
-      <div className="admin-page-content">
-        <div className="card" style={{ padding: 40, textAlign: 'center', font: '500 14px/1.6 var(--font-sans)', color: 'var(--fg-negative)' }}>
-          광고 데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.
-        </div>
-      </div>
-    )
-  }
-
-  const rows = campaigns ?? []
+  const rows = status ? allCampaigns.filter(c => c.status === status) : allCampaigns
 
   return (
     <div className="admin-page-content">
@@ -140,7 +122,7 @@ export default async function AdminAdsPage({
                     background: 'var(--bg-surface-2)',
                   }}
                 >
-                  {['광고명', '광고주', '지면', '기간', '상태', '액션'].map(h => (
+                  {['광고명', '광고주', '사이트', '지면', '기간', '상태', '액션'].map(h => (
                     <th
                       key={h}
                       style={{
@@ -171,6 +153,9 @@ export default async function AdminAdsPage({
                       {c.advertiser_name}
                     </td>
                     <td style={{ padding: '12px 16px' }}>
+                      <span className="chip sm">{c.site_id}</span>
+                    </td>
+                    <td style={{ padding: '12px 16px' }}>
                       <span className="chip sm">{c.placement}</span>
                     </td>
                     <td
@@ -199,22 +184,26 @@ export default async function AdminAdsPage({
                     </td>
                     <td style={{ padding: '12px 16px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <AdminCampaignActions id={c.id} status={c.status} />
-                        <Link
-                          href={`/admin/ads/${c.id}/edit`}
-                          style={{
-                            padding: '4px 10px',
-                            borderRadius: 5,
-                            font: '600 11px/1 var(--font-sans)',
-                            color: 'var(--fg-sec)',
-                            border: '1px solid var(--line-default)',
-                            background: 'var(--bg-surface-2)',
-                            textDecoration: 'none',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          수정
-                        </Link>
+                        {c.site_id === SITE_ID && (
+                          <>
+                            <AdminCampaignActions id={c.id} status={c.status} />
+                            <Link
+                              href={`/admin/ads/${c.id}/edit`}
+                              style={{
+                                padding: '4px 10px',
+                                borderRadius: 5,
+                                font: '600 11px/1 var(--font-sans)',
+                                color: 'var(--fg-sec)',
+                                border: '1px solid var(--line-default)',
+                                background: 'var(--bg-surface-2)',
+                                textDecoration: 'none',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              수정
+                            </Link>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -1,11 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
-import { SITE_ID } from '@/lib/data/site'
+import { SITE_ID, type SiteIdFilter } from '@/lib/data/site'
 
 export type AdCampaign = Database['public']['Tables']['ad_campaigns']['Row']
 
 export interface AdRoiRow {
   campaignId: string
+  siteId: string
   title: string
   impressions: number
   clicks: number
@@ -22,11 +23,14 @@ export interface AdRoiRow {
  */
 export async function getAdRoiStats(
   adminClient: SupabaseClient<Database>,
+  siteId: SiteIdFilter,
 ): Promise<AdRoiRow[]> {
-  const { data: campaigns } = await adminClient
+  let query = adminClient
     .from('ad_campaigns')
-    .select('id, title')
+    .select('id, title, site_id')
     .order('created_at', { ascending: false })
+  if (siteId !== 'all') query = query.eq('site_id', siteId)
+  const { data: campaigns } = await query
 
   if (!campaigns || campaigns.length === 0) return []
 
@@ -51,7 +55,7 @@ export async function getAdRoiStats(
     const conversions = ev.filter(e => e.event_type === 'conversion').length
     const anomaly     = ev.some(e => e.is_anomaly)
     const ctr         = clicks > 0 ? (conversions / clicks) * 100 : null
-    return { campaignId: c.id, title: c.title, impressions, clicks, conversions, ctr, anomaly }
+    return { campaignId: c.id, siteId: c.site_id, title: c.title, impressions, clicks, conversions, ctr, anomaly }
   })
 }
 
@@ -92,21 +96,26 @@ export async function getActiveAds(
 export async function getAdCampaignById(
   id: string,
   supabase: SupabaseClient<Database>,
+  siteId: SiteIdFilter,
 ): Promise<AdCampaign | null> {
-  const { data } = await supabase
+  let query = supabase
     .from('ad_campaigns')
     .select('*')
     .eq('id', id)
-    .maybeSingle()
+  if (siteId !== 'all') query = query.eq('site_id', siteId)
+  const { data } = await query.maybeSingle()
   return data ?? null
 }
 
 export async function getAllAdCampaigns(
   supabase: SupabaseClient<Database>,
+  siteId: SiteIdFilter,
 ): Promise<AdCampaign[]> {
-  const { data } = await supabase
+  let query = supabase
     .from('ad_campaigns')
     .select('*')
     .order('created_at', { ascending: false })
+  if (siteId !== 'all') query = query.eq('site_id', siteId)
+  const { data } = await query
   return data ?? []
 }

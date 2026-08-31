@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
+import { SITE_ID } from '@/lib/data/site'
 import { AdminSidebar } from '@/components/admin/AdminSidebar'
 import { AdminSidebarDrawer } from '@/components/admin/AdminSidebarDrawer'
 
@@ -36,7 +37,8 @@ export default async function AdminLayout({
     adminClient
       .from('ad_campaigns')
       .select('*', { count: 'exact', head: true })
-      .eq('status', 'pending'),
+      .eq('status', 'pending')
+      .eq('site_id', SITE_ID),
     adminClient
       .from('gps_verification_requests')
       .select('*', { count: 'exact', head: true })

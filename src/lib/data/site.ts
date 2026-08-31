@@ -15,3 +15,10 @@
  * 새로 favorites 를 건드리는 코드를 쓸 때는 이 상수를 반드시 함께 쓴다.
  */
 export const SITE_ID = 'danjiondo'
+
+/**
+ * 어드민 함수의 site_id 필터 파라미터.
+ * 기본값 없는 필수 인자로 쓴다 — 빠뜨렸을 때 전체가 나오는 것과,
+ * 'all' 을 명시해서 전체를 받는 것은 다른 설계다.
+ */
+export type SiteIdFilter = 'danjiondo' | 'realtrade-story' | 'changbuletter' | 'all'

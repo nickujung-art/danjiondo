@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
+import { SITE_ID } from '@/lib/data/site'
 
 export const revalidate = 0
 export const metadata: Metadata = { title: '관리자 · 시스템 상태' }
@@ -222,7 +223,8 @@ export default async function AdminStatusPage() {
     adminClient
       .from('ad_campaigns')
       .select('*', { count: 'exact', head: true })
-      .eq('status', 'approved'),
+      .eq('status', 'approved')
+      .eq('site_id', SITE_ID),
     adminClient
       .from('data_sources')
       .select('id, ui_label, cadence, expected_freshness_hours, last_synced_at, last_status, consecutive_failures, error_message')
@@ -234,7 +236,8 @@ export default async function AdminStatusPage() {
     adminClient
       .from('ad_campaigns')
       .select('*', { count: 'exact', head: true })
-      .eq('status', 'pending'),
+      .eq('status', 'pending')
+      .eq('site_id', SITE_ID),
     adminClient
       .from('profiles')
       .select('*', { count: 'exact', head: true })

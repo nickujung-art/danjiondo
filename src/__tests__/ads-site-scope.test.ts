@@ -15,7 +15,7 @@
 import { describe, it, expect } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
-import { getActiveAds } from '@/lib/data/ads'
+import { getActiveAds, getAllAdCampaigns, getAdCampaignById, getAdRoiStats } from '@/lib/data/ads'
 import { SITE_ID } from '@/lib/data/site'
 
 interface Call { method: string; args: unknown[] }
@@ -26,7 +26,7 @@ function makeRecorder(rows: unknown[] = []) {
   const chain: Record<string, unknown> = {}
   // 🔴 getActiveAds 가 쓰는 체인 메서드는 전부 넣는다 — 빠지면 "is not a function" 으로
   //    터진다(오답노트 #001: 목이 화이트리스트 방식이다).
-  for (const m of ['select', 'eq', 'lte', 'gte', 'order', 'or', 'not', 'in', 'is', 'limit']) {
+  for (const m of ['select', 'eq', 'lte', 'gte', 'order', 'or', 'not', 'in', 'is', 'limit', 'maybeSingle']) {
     chain[m] = (...args: unknown[]) => { calls.push({ method: m, args }); return chain }
   }
   chain.then = (ok: (v: unknown) => unknown, err?: (e: unknown) => unknown) =>
@@ -99,5 +99,48 @@ describe('getActiveAds — 쿼리 불변식', () => {
     expect(called(calls, 'eq', 'site_id', SITE_ID)).toBe(true)
     expect(called(calls, 'eq', 'status', 'approved')).toBe(true)
     expect(called(calls, 'eq', 'placement', 'sidebar')).toBe(true)
+  })
+})
+
+describe('getAllAdCampaigns — siteId 파라미터', () => {
+  it('siteId=danjiondo → .eq(site_id, danjiondo) 적용', async () => {
+    const { client, calls } = makeRecorder()
+    await getAllAdCampaigns(client, 'danjiondo')
+    expect(called(calls, 'eq', 'site_id', 'danjiondo')).toBe(true)
+  })
+
+  it('siteId=all → site_id 필터 없음', async () => {
+    const { client, calls } = makeRecorder()
+    await getAllAdCampaigns(client, 'all')
+    expect(calls.some(c => c.method === 'eq' && c.args[0] === 'site_id')).toBe(false)
+  })
+})
+
+describe('getAdCampaignById — siteId 파라미터', () => {
+  it('siteId=danjiondo → .eq(site_id, danjiondo) 적용', async () => {
+    const { client, calls } = makeRecorder()
+    await getAdCampaignById('test-id', client, 'danjiondo')
+    expect(called(calls, 'eq', 'id', 'test-id')).toBe(true)
+    expect(called(calls, 'eq', 'site_id', 'danjiondo')).toBe(true)
+  })
+
+  it('siteId=all → site_id 필터 없음', async () => {
+    const { client, calls } = makeRecorder()
+    await getAdCampaignById('test-id', client, 'all')
+    expect(calls.some(c => c.method === 'eq' && c.args[0] === 'site_id')).toBe(false)
+  })
+})
+
+describe('getAdRoiStats — siteId 파라미터', () => {
+  it('siteId=danjiondo → .eq(site_id, danjiondo) 적용', async () => {
+    const { client, calls } = makeRecorder()
+    await getAdRoiStats(client, 'danjiondo')
+    expect(called(calls, 'eq', 'site_id', 'danjiondo')).toBe(true)
+  })
+
+  it('siteId=all → site_id 필터 없음', async () => {
+    const { client, calls } = makeRecorder()
+    await getAdRoiStats(client, 'all')
+    expect(calls.some(c => c.method === 'eq' && c.args[0] === 'site_id')).toBe(false)
   })
 })

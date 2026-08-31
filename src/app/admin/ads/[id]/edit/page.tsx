@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { getAdCampaignById } from '@/lib/data/ads'
+import { SITE_ID } from '@/lib/data/site'
 import { AdEditForm } from '@/components/admin/AdEditForm'
 
 export const revalidate = 0
@@ -14,7 +15,7 @@ export default async function AdminAdEditPage({
   const { id } = await params
 
   const adminClient = createSupabaseAdminClient()
-  const campaign = await getAdCampaignById(id, adminClient)
+  const campaign = await getAdCampaignById(id, adminClient, SITE_ID)
   if (!campaign) notFound()
 
   return (
