@@ -95,6 +95,19 @@ export async function confirmDiscovery(id: string): Promise<{ error?: string }> 
     return { error: (updateError as { message?: string }).message }
   }
 
+  // presale_enriched skeleton 행도 함께 생성 (new_listing_id FK 연결)
+  const listingId = (newListing as { id: string }).id
+  await adminClient
+    .from('presale_enriched')
+    .insert({
+      name: row.name,
+      new_listing_id: listingId,
+      address: row.hssply_adres,
+      total_units: archHubData?.totHoCnt ?? null,
+      source_type: 'listing_sync',
+    } as any)
+  // 실패해도 confirm 자체는 성공으로 처리 (enriched 는 보조 데이터)
+
   revalidatePath('/admin/presale-discoveries')
   return {}
 }
