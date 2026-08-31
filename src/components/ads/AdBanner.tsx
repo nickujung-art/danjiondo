@@ -57,12 +57,14 @@ export function AdBanner({ ad }: Props) {
         >
           광고
         </span>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={ad.image_url}
-          alt={ad.title}
-          style={{ width: '100%', display: 'block', objectFit: 'cover' }}
-        />
+        {ad.image_url ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={ad.image_url}
+            alt={ad.title}
+            style={{ width: '100%', display: 'block', objectFit: 'cover' }}
+          />
+        ) : null}
         <div style={{ padding: '10px 12px' }}>
           <div
             style={{

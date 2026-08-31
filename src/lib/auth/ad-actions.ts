@@ -124,14 +124,12 @@ export async function createAdCampaign(
     typeof title !== 'string' ||
     typeof advertiserName !== 'string' ||
     typeof placement !== 'string' ||
-    typeof imageUrl !== 'string' ||
     typeof linkUrl !== 'string' ||
     typeof startsAt !== 'string' ||
     typeof endsAt !== 'string' ||
     !title.trim() ||
     !advertiserName.trim() ||
     !placement.trim() ||
-    !imageUrl.trim() ||
     !linkUrl.trim() ||
     !startsAt.trim() ||
     !endsAt.trim()
@@ -156,11 +154,13 @@ export async function createAdCampaign(
     return { error: '종료일은 시작일보다 이후여야 합니다.' }
   }
 
+  const resolvedImageUrl = typeof imageUrl === 'string' && imageUrl.trim() ? imageUrl.trim() : null
+
   const { error: dbErr } = await admin.from('ad_campaigns').insert({
     title: title.trim(),
     advertiser_name: advertiserName.trim(),
     placement: placement.trim(),
-    image_url: imageUrl.trim(),
+    image_url: resolvedImageUrl,
     link_url: linkUrl.trim(),
     starts_at: startsAt.trim(),
     ends_at: endsAt.trim(),
@@ -205,7 +205,6 @@ export async function updateAdCampaign(
     typeof title !== 'string' || !title.trim() ||
     typeof advertiserName !== 'string' || !advertiserName.trim() ||
     typeof placement !== 'string' || !placement.trim() ||
-    typeof imageUrl !== 'string' || !imageUrl.trim() ||
     typeof linkUrl !== 'string' || !linkUrl.trim() ||
     typeof startsAt !== 'string' || !startsAt.trim() ||
     typeof endsAt !== 'string' || !endsAt.trim()
@@ -230,11 +229,13 @@ export async function updateAdCampaign(
     return { error: '종료일은 시작일보다 이후여야 합니다.' }
   }
 
+  const resolvedImageUrl = typeof imageUrl === 'string' && imageUrl.trim() ? imageUrl.trim() : null
+
   const { error: dbErr } = await admin.from('ad_campaigns').update({
     title: title.trim(),
     advertiser_name: advertiserName.trim(),
     placement: placement.trim(),
-    image_url: imageUrl.trim(),
+    image_url: resolvedImageUrl,
     link_url: linkUrl.trim(),
     starts_at: startsAt.trim(),
     ends_at: endsAt.trim(),

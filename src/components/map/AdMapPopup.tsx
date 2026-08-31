@@ -87,12 +87,14 @@ export function AdMapPopup({ ad }: Props) {
             }}>
               광고
             </div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={ad.image_url}
-              alt={ad.title}
-              style={{ width: '100%', display: 'block', maxHeight: 100, objectFit: 'cover' }}
-            />
+            {ad.image_url ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={ad.image_url}
+                alt={ad.title}
+                style={{ width: '100%', display: 'block', maxHeight: 100, objectFit: 'cover' }}
+              />
+            ) : null}
             <div style={{ padding: '8px 10px' }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: '#111827', marginBottom: 2, lineHeight: 1.3 }}>
                 {ad.title}

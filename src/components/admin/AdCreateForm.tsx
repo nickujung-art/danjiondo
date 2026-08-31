@@ -109,11 +109,7 @@ export function AdCreateForm() {
   }
 
   async function handleSubmit(formData: FormData) {
-    if (!imageUrl) {
-      setSubmitError('이미지를 업로드하세요.')
-      return
-    }
-    formData.set('image_url', imageUrl)
+    if (imageUrl) formData.set('image_url', imageUrl)
     setIsSubmitting(true)
     setSubmitError(null)
     try {

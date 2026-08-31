@@ -73,7 +73,7 @@ export function AdEditForm({ campaign }: { campaign: AdCampaign }) {
   const router = useRouter()
   const [copyText,       setCopyText]       = useState('')
   const [placement,      setPlacement]      = useState(campaign.placement)
-  const [imageUrl,       setImageUrl]       = useState(campaign.image_url)
+  const [imageUrl,       setImageUrl]       = useState(campaign.image_url ?? '')
   const [imagePreview,   setImagePreview]   = useState('')
   const [uploadError,    setUploadError]    = useState<string | null>(null)
   const [isUploading,    setIsUploading]    = useState(false)
@@ -123,7 +123,7 @@ export function AdEditForm({ campaign }: { campaign: AdCampaign }) {
   }
 
   async function handleSubmit(formData: FormData) {
-    formData.set('image_url', imageUrl)
+    if (imageUrl) formData.set('image_url', imageUrl)
     formData.set('status', status)
     formData.delete('copy')
     setIsSubmitting(true)

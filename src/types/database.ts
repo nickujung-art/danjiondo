@@ -54,7 +54,7 @@ export type Database = {
           created_at: string
           ends_at: string
           id: string
-          image_url: string
+          image_url: string | null
           link_url: string
           placement: string
           site_id: string
@@ -73,7 +73,7 @@ export type Database = {
           created_at?: string
           ends_at: string
           id?: string
-          image_url: string
+          image_url?: string | null
           link_url: string
           placement: string
           site_id?: string
@@ -92,7 +92,7 @@ export type Database = {
           created_at?: string
           ends_at?: string
           id?: string
-          image_url?: string
+          image_url?: string | null
           link_url?: string
           placement?: string
           site_id?: string
