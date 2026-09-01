@@ -99,7 +99,7 @@ QA 실패 시 반드시 기록. STEP 2·3에서 항상 참조.
 ## 스택
 Next.js 15 App Router · TypeScript strict · Tailwind 3.4 · Supabase (Postgres+PostGIS+RLS) · Supabase Auth (Naver OAuth + Email OTP) · Serwist PWA · Recharts · react-kakao-maps-sdk · Vitest + Playwright · Vercel Hobby + GitHub Actions CI
 
-## 현재 구현 단계 (2026-06-24 기준)
+## 현재 구현 단계 (2026-09-01 기준)
 
 ### 완료된 주요 기능
 | 기능 | 상태 |
@@ -121,6 +121,8 @@ Next.js 15 App Router · TypeScript strict · Tailwind 3.4 · Supabase (Postgres
 | 인스타 카드뉴스 생성기 (Puppeteer·주간 PNG 자동화·창원부동산랩) | 🔄 |
 
 ### 진행 중 / 예정
+- 광고: site_id 스코핑 완료(09-01) — 읽기 감독+쓰기 격리+정적 감사(site-id-audit.ts), image_url nullable
+- 분양: presale_enriched↔new_listings FK 연결(09-01), HMPG_ADRES 배관(09-01), fetchModelPrices 통합, 크롤러 주2회 자동실행
 - 11월: 학교 진학률 데이터 갱신 (`scrape-school-advancement.ts` 중/고 재실행)
 
 ## 아키텍처 규칙
