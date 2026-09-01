@@ -1,0 +1,30 @@
+name: crawl-presale
+
+on:
+  schedule:
+    # 일배치(04:00 KST = 19:00 UTC)가 source_url을 채운 뒤 실행.
+    # 화·목 06:00 KST = 21:00 UTC (주 2회 — 분양 사이트 변경 주기 감안)
+    - cron: '0 21 * * 2,4'
+  workflow_dispatch:
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - run: npx tsx scripts/crawl-presale.ts
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
