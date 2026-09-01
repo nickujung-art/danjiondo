@@ -306,15 +306,22 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   // ── 청약홈 만료 공고 비활성화 (RESEARCH Pitfall 3, T-13-07) ──────────────────
+  // ⑫(a) 접수는 끝났지만 입주 예정이 남은 단지는 살려둔다.
+  //   mvn_prearnge_ym >= 현재월이면 아직 입주 전 — 화면에서 사라지면 안 된다.
   try {
     const today = new Date().toISOString().slice(0, 10)  // YYYY-MM-DD
+    const currentYm = today.slice(0, 4) + today.slice(5, 7) // YYYYMM
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: expired, error } = await (supabase as any)
+    const supa = supabase as any
+
+    // 접수 마감 + 입주 예정 지남 (또는 입주 예정 없음) → 비활성화
+    const { data: expired, error } = await supa
       .from('new_listings')
       .update({ is_active: false })
       .lt('rcept_endde', today)
       .not('pblanc_no', 'is', null)
       .eq('is_active', true)
+      .or(`mvn_prearnge_ym.is.null,mvn_prearnge_ym.lt.${currentYm}`)
       .select('id')
     if (!error) expiredDeactivated = (expired as { id: string }[] | null)?.length ?? 0
     else errors.push(`expired deactivation: ${error.message}`)
@@ -386,6 +393,49 @@ export async function GET(request: Request): Promise<Response> {
     }
   } catch (err) {
     errors.push(`presale_enriched sync: ${describeError(err)}`)
+  }
+
+  // ── presale_enriched source_url 백필 ──────────────────────────────────────
+  // ⑫(b) 이미 연결된 행이라도 source_url이 null이면 채운다.
+  // 동기화 루프는 linkedIds에 있으면 continue하므로, 별도 패스가 필요하다.
+  let presaleUrlBackfilled = 0
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supa = supabase as any
+    const { data: needUrl } = await supa
+      .from('presale_enriched')
+      .select('id, new_listing_id')
+      .is('source_url', null)
+      .not('new_listing_id', 'is', null)
+
+    if (needUrl?.length) {
+      // new_listing_id → pblanc_no 조회
+      const listingIds = (needUrl as { id: string; new_listing_id: string }[]).map(r => r.new_listing_id)
+      const { data: listings } = await supa
+        .from('new_listings')
+        .select('id, pblanc_no')
+        .in('id', listingIds)
+
+      const idToPblanc = new Map<string, string>()
+      for (const l of (listings ?? []) as { id: string; pblanc_no: string | null }[]) {
+        if (l.pblanc_no) idToPblanc.set(l.id, l.pblanc_no)
+      }
+
+      for (const row of needUrl as { id: string; new_listing_id: string }[]) {
+        const pblancNo = idToPblanc.get(row.new_listing_id)
+        if (!pblancNo) continue
+        const extra = cheongyakExtra.get(pblancNo)
+        const url = isUsablePresaleUrl(extra?.hmpgAdres)
+        if (!url) continue
+
+        const patch: Record<string, unknown> = { source_url: url }
+        if (extra?.builder) patch.builder = extra.builder
+        await supa.from('presale_enriched').update(patch).eq('id', row.id)
+        presaleUrlBackfilled++
+      }
+    }
+  } catch (err) {
+    errors.push(`presale_enriched url backfill: ${describeError(err)}`)
   }
 
   // ── 오피스텔 실거래 전월+당월 수집 (OFFI-01) ──────────────────────────────
@@ -582,6 +632,7 @@ export async function GET(request: Request): Promise<Response> {
     pricesUpdated,
     expiredDeactivated,
     presaleEnrichedSynced,
+    presaleUrlBackfilled,
     offiUpserted,
     errors,
   })
