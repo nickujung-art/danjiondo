@@ -28,5 +28,8 @@ export function normalizeLhItem(
     price_min:           null,
     price_max:           null,
     source_code:         'lh',
+    hmpg_adres:          null,
+    cnstrct_entrps_nm:   null,
+    bsns_mby_nm:         null,
   }
 }

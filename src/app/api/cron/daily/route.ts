@@ -164,10 +164,13 @@ export async function GET(request: Request): Promise<Response> {
   // fetchCheongyakList 내부에서 경남 전체 조회 후 regions 기반 동적 도시명으로 필터링
   const activeCityNames = await getActiveCityNames(supabase)
   const cheongyakPblancNos: string[] = []
+  // 청약홈이 주는 분양 홈페이지·시공사를 presale_enriched skeleton INSERT에 전달하기 위한 맵
+  const cheongyakExtra = new Map<string, { hmpgAdres: string | null; builder: string | null }>()
   try {
     const items = await fetchCheongyakList(activeCityNames)
     for (const item of items) {
       const row = normalizeCheongyakItem(item)
+      cheongyakExtra.set(row.pblanc_no, { hmpgAdres: row.hmpg_adres, builder: row.cnstrct_entrps_nm })
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('new_listings')
@@ -283,7 +286,7 @@ export async function GET(request: Request): Promise<Response> {
     const supa = supabase as any
     const { data: activeListings } = await supa
       .from('new_listings')
-      .select('id, name, pblanc_nm, hssply_adres, supply_count')
+      .select('id, name, pblanc_no, pblanc_nm, hssply_adres, supply_count')
       .eq('is_active', true)
 
     if (activeListings?.length) {
@@ -294,7 +297,7 @@ export async function GET(request: Request): Promise<Response> {
 
       const linkedIds = new Set((linked ?? []).map((r: { new_listing_id: string }) => r.new_listing_id))
 
-      for (const listing of activeListings as { id: string; name: string; pblanc_nm: string | null; hssply_adres: string | null; supply_count: number | null }[]) {
+      for (const listing of activeListings as { id: string; name: string; pblanc_no: string | null; pblanc_nm: string | null; hssply_adres: string | null; supply_count: number | null }[]) {
         if (linkedIds.has(listing.id)) continue
 
         const enrichedName = listing.pblanc_nm ?? listing.name
@@ -307,15 +310,22 @@ export async function GET(request: Request): Promise<Response> {
           .maybeSingle()
 
         if (existing) {
-          await supa.from('presale_enriched').update({ new_listing_id: listing.id }).eq('id', existing.id)
+          const extra = listing.pblanc_no ? cheongyakExtra.get(listing.pblanc_no) : undefined
+          const patch: Record<string, unknown> = { new_listing_id: listing.id }
+          if (extra?.hmpgAdres) patch.source_url = extra.hmpgAdres
+          if (extra?.builder) patch.builder = extra.builder
+          await supa.from('presale_enriched').update(patch).eq('id', existing.id)
           presaleEnrichedSynced++
         } else {
+          const extra = listing.pblanc_no ? cheongyakExtra.get(listing.pblanc_no) : undefined
           const { error: insErr } = await supa.from('presale_enriched').insert({
             name: enrichedName,
             new_listing_id: listing.id,
             address: listing.hssply_adres,
             total_units: listing.supply_count,
             source_type: 'listing_sync',
+            source_url: extra?.hmpgAdres ?? null,
+            builder: extra?.builder ?? null,
           })
           if (!insErr) presaleEnrichedSynced++
         }

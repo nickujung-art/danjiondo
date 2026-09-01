@@ -20,6 +20,11 @@ export const CheongyakItemSchema = z.object({
   MVN_PREARNGE_YM:        z.string().optional(),             // 입주예정월 (YYYYMM)
   HOUSE_SECD:             z.string().optional(),             // 주택구분 (01=아파트)
   SUBSCRPT_AREA_CODE:     z.string().optional(),             // 지역코드 (예: '621' = 경남)
+  HMPG_ADRES:             z.string().optional(),             // 분양 공식 홈페이지 URL
+  PBLANC_URL:             z.string().optional(),             // 청약홈 공고 상세 페이지
+  CNSTRCT_ENTRPS_NM:      z.string().optional(),             // 시공사
+  BSNS_MBY_NM:            z.string().optional(),             // 시행사
+  MDHS_TELNO:             z.string().optional(),             // 분양문의 전화
 })
 
 export type CheongyakItem = z.infer<typeof CheongyakItemSchema>
@@ -91,4 +96,7 @@ export interface NewListingCheongyakRow {
   price_min:           number | null // 분양가 최저 (만원, 평형별 집계)
   price_max:           number | null // 분양가 최고 (만원, 평형별 집계)
   source_code:         string | null // 출처: 'cheongyak' | 'lh'
+  hmpg_adres:          string | null // 분양 공식 홈페이지 URL (청약홈 HMPG_ADRES)
+  cnstrct_entrps_nm:   string | null // 시공사 (청약홈 CNSTRCT_ENTRPS_NM)
+  bsns_mby_nm:         string | null // 시행사 (청약홈 BSNS_MBY_NM)
 }

@@ -30,6 +30,9 @@ export function normalizeCheongyakItem(
     price_min:           prices?.min ?? null,
     price_max:           prices?.max ?? null,
     source_code:         'cheongyak',
+    hmpg_adres:          item.HMPG_ADRES?.trim() || null,
+    cnstrct_entrps_nm:   item.CNSTRCT_ENTRPS_NM?.trim() || null,
+    bsns_mby_nm:         item.BSNS_MBY_NM?.trim() || null,
   }
 }
 
@@ -67,5 +70,8 @@ export function normalizeRemndrItem(item: CheongyakRemndrItem): NewListingCheong
     price_min:           null,
     price_max:           null,
     source_code:         'cheongyak',
+    hmpg_adres:          null,
+    cnstrct_entrps_nm:   null,
+    bsns_mby_nm:         null,
   }
 }
