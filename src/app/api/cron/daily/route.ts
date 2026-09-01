@@ -30,6 +30,31 @@ const MAX_PAGES = 20
 
 type KaptTarget = { id: string; kapt_code: string }
 
+/** 포털 루트 URL(경로가 '/'뿐)은 source_url로 쓰면 안 된다 — 크롤도 안 되고 외부 링크로 노출됨 */
+function isUsablePresaleUrl(url: string | null | undefined): string | null {
+  if (!url) return null
+  try {
+    const u = new URL(url)
+    return u.pathname.replace(/\/+$/, '').length > 0 ? url : null
+  } catch {
+    return null
+  }
+}
+
+/** hssply_adres에서 5자리 시군구코드 추출 (new_listings.sgg_code '621'은 청약홈 지역코드라 사용 불가) */
+const ADDRESS_SGG: [RegExp, string][] = [
+  [/창원시\s*의창구/, '48121'], [/창원시\s*성산구/, '48123'],
+  [/창원시\s*마산합포구/, '48125'], [/창원시\s*마산회원구/, '48127'],
+  [/창원시\s*진해구/, '48129'], [/김해시/, '48250'],
+  [/진주시/, '48170'], [/통영시/, '48220'], [/사천시/, '48240'],
+  [/밀양시/, '48270'], [/거제시/, '48310'], [/양산시/, '48330'],
+]
+function extractSggFromAddress(addr: string | null): string | null {
+  if (!addr) return null
+  for (const [re, code] of ADDRESS_SGG) { if (re.test(addr)) return code }
+  return null
+}
+
 /**
  * PostgREST의 1,000행 캡을 넘어 전체 행을 가져온다.
  * (Phase 34에서 같은 캡에 걸린 전례가 있어 페이지네이션을 명시적으로 쓴다)
@@ -299,6 +324,9 @@ export async function GET(request: Request): Promise<Response> {
 
   // ── presale_enriched 자동 동기화 ──────────────────────────────────────────
   // 활성 new_listings 중 presale_enriched에 대응 행이 없는 것을 skeleton INSERT 한다.
+  // ⑨ sgg_code: new_listings.sgg_code('621')는 청약홈 지역코드이므로 복사하지 않는다.
+  //    대신 hssply_adres에서 5자리 시군구코드를 추출한다.
+  // ⑩ 포털 루트 URL(경로가 '/'뿐)은 source_url로 쓰지 않는다.
   let presaleEnrichedSynced = 0
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -330,21 +358,27 @@ export async function GET(request: Request): Promise<Response> {
 
         if (existing) {
           const extra = listing.pblanc_no ? cheongyakExtra.get(listing.pblanc_no) : undefined
+          const url = isUsablePresaleUrl(extra?.hmpgAdres)
+          const sgg = extractSggFromAddress(listing.hssply_adres)
           const patch: Record<string, unknown> = { new_listing_id: listing.id }
-          if (extra?.hmpgAdres) patch.source_url = extra.hmpgAdres
+          if (url) patch.source_url = url
           if (extra?.builder) patch.builder = extra.builder
+          if (sgg) patch.sgg_code = sgg
           await supa.from('presale_enriched').update(patch).eq('id', existing.id)
           presaleEnrichedSynced++
         } else {
           const extra = listing.pblanc_no ? cheongyakExtra.get(listing.pblanc_no) : undefined
+          const url = isUsablePresaleUrl(extra?.hmpgAdres)
+          const sgg = extractSggFromAddress(listing.hssply_adres)
           const { error: insErr } = await supa.from('presale_enriched').insert({
             name: enrichedName,
             new_listing_id: listing.id,
             address: listing.hssply_adres,
             total_units: listing.supply_count,
             source_type: 'listing_sync',
-            source_url: extra?.hmpgAdres ?? null,
+            source_url: url,
             builder: extra?.builder ?? null,
+            sgg_code: sgg,
           })
           if (!insErr) presaleEnrichedSynced++
         }
