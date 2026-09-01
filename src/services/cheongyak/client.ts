@@ -142,6 +142,8 @@ export async function fetchCheongyakList(
   const all: CheongyakItem[] = []
   const first = await fetchListPage(1)
   all.push(...first.items)
+  // odcloud totalCount 는 필터 이전 전체 건수(~2,859)를 주므로 페이지 수 계산에 쓰면
+  // 빈 페이지를 수십 회 더 때린다. items 수가 ROWS_PER_PAGE 미만이면 마지막 페이지.
   const totalPages = Math.min(
     MAX_PAGES,
     Math.ceil(first.totalCount / ROWS_PER_PAGE),
@@ -149,6 +151,7 @@ export async function fetchCheongyakList(
   for (let page = 2; page <= totalPages; page++) {
     const result = await fetchListPage(page)
     all.push(...result.items)
+    if (result.items.length < ROWS_PER_PAGE) break
   }
   return all.filter(item =>
     cities.some(city => item.HSSPLY_ADRES?.includes(city)),
@@ -209,6 +212,7 @@ export async function fetchRemndrList(
   for (let page = 2; page <= totalPages; page++) {
     const result = await fetchRemndrPage(page)
     all.push(...result.items)
+    if (result.items.length < ROWS_PER_PAGE) break
   }
   return all.filter(item =>
     cities.some(city => item.HSSPLY_ADRES?.includes(city)),
