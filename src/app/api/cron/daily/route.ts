@@ -10,7 +10,7 @@ import {
   currentYearMonth,
   previousYearMonth,
 } from '@/services/molit-presale'
-import { fetchCheongyakList, fetchRemndrList, fetchCompetitionRate } from '@/services/cheongyak/client'
+import { fetchCheongyakList, fetchRemndrList, fetchCompetitionRate, fetchModelPrices } from '@/services/cheongyak/client'
 import { normalizeCheongyakItem, normalizeRemndrItem } from '@/services/cheongyak/normalize'
 import { ingestOffiMonth } from '@/lib/data/realprice-officetel'
 import { upsertMolitListing } from '@/lib/data/new-listings-molit'
@@ -259,6 +259,25 @@ export async function GET(request: Request): Promise<Response> {
     } catch (err) {
       errors.push(`competition pblanc_no=${pblancNo}: ${describeError(err)}`)
     }
+  }
+
+  // ── 청약홈 평형별 분양가 병합 ───────────────────────────────────────────────
+  // fetchModelPrices 는 이미 client.ts 에 있었으나 크론이 호출하지 않아
+  // price_min/price_max 가 항상 NULL 이었다.
+  let pricesUpdated = 0
+  try {
+    const priceMap = await fetchModelPrices(cheongyakPblancNos)
+    for (const [pblancNo, prices] of priceMap) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from('new_listings')
+        .update({ price_min: prices.min, price_max: prices.max })
+        .eq('pblanc_no', pblancNo)
+      if (!error) pricesUpdated++
+      else errors.push(`model prices pblanc_no=${pblancNo}: ${error.message}`)
+    }
+  } catch (err) {
+    errors.push(`model prices: ${describeError(err)}`)
   }
 
   // ── 청약홈 만료 공고 비활성화 (RESEARCH Pitfall 3, T-13-07) ──────────────────
@@ -526,6 +545,7 @@ export async function GET(request: Request): Promise<Response> {
     cheongyakUpserted,
     remndrUpserted,
     competitionUpdated,
+    pricesUpdated,
     expiredDeactivated,
     presaleEnrichedSynced,
     offiUpserted,
