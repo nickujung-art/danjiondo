@@ -208,10 +208,10 @@ async function main(): Promise<void> {
   let generate: (prompt: string) => Promise<string>
   if (groqKey) {
     const groq = new Groq({ apiKey: groqKey })
-    console.log('[INFO] Groq (llama-3.1-8b-instant) 사용')
+    console.log('[INFO] Groq (qwen/qwen3.8-27b) 사용')
     generate = async (prompt: string) => {
       const res = await groq.chat.completions.create({
-        model:       'llama-3.1-8b-instant',
+        model:       'qwen/qwen3.8-27b',
         messages:    [
           { role: 'system', content: '정확히 2문장만 출력하세요. 불필요한 서두나 반복 없이 바로 분석 내용만 작성하세요.' },
           { role: 'user',   content: prompt },

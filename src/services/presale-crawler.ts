@@ -41,8 +41,8 @@ function extractText(html: string, maxChars = 8000): string {
 }
 
 /** Groq 무료 티어 모델 — generate-regional-commentary.ts 와 같은 모델을 쓴다 */
-const GROQ_MODEL = 'llama-3.1-8b-instant'
-const GEMINI_MODEL = 'gemini-2.0-flash'
+const GROQ_MODEL = 'qwen/qwen3.8-27b'
+const GEMINI_MODEL = 'gemini-3.6-flash'
 
 /**
  * 분양 사이트 URL에서 사업 개요·평형 타입·커뮤니티 정보를 추출.

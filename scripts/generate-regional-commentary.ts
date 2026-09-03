@@ -55,7 +55,7 @@ const REGIONS: { sggCode: string; label: string; shortLabel: string }[] = [
   { sggCode: '48250', label: '김해시', shortLabel: '김해시' },
 ]
 
-const GROQ_MODEL = 'llama-3.1-8b-instant'
+const GROQ_MODEL = 'qwen/qwen3.8-27b'
 const GEMINI_MODEL = 'gemini-2.5-flash'
 /** 이 건수 미만이면 코멘트를 만들지 않는다 — 2~3건으로 "시장 동향"을 서술하면 과잉 해석이 된다 */
 const MIN_TX_FOR_COMMENTARY = 5
