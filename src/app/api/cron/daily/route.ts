@@ -329,6 +329,28 @@ export async function GET(request: Request): Promise<Response> {
     errors.push(`expired deactivation: ${describeError(err)}`)
   }
 
+  // ── ⑯ 입주 전 단지 되살리기 ──────────────────────────────────────────────
+  // 비활성화 가드는 "끌 것"만 거르지 "켤 것"은 안 고른다.
+  // 이미 꺼진 행 중 입주 예정이 아직 남은 것을 일괄 복구한다.
+  let presaleReactivated = 0
+  try {
+    const today = new Date().toISOString().slice(0, 10)
+    const currentYm = today.slice(0, 4) + today.slice(5, 7)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supa = supabase as any
+    const { data: reactivated, error } = await supa
+      .from('new_listings')
+      .update({ is_active: true })
+      .eq('is_active', false)
+      .not('pblanc_no', 'is', null)
+      .gte('mvn_prearnge_ym', currentYm)
+      .select('id')
+    if (!error) presaleReactivated = (reactivated as { id: string }[] | null)?.length ?? 0
+    else errors.push(`presale reactivation: ${error.message}`)
+  } catch (err) {
+    errors.push(`presale reactivation: ${describeError(err)}`)
+  }
+
   // ── presale_enriched 자동 동기화 ──────────────────────────────────────────
   // 활성 new_listings 중 presale_enriched에 대응 행이 없는 것을 skeleton INSERT 한다.
   // ⑨ sgg_code: new_listings.sgg_code('621')는 청약홈 지역코드이므로 복사하지 않는다.
@@ -631,6 +653,7 @@ export async function GET(request: Request): Promise<Response> {
     competitionUpdated,
     pricesUpdated,
     expiredDeactivated,
+    presaleReactivated,
     presaleEnrichedSynced,
     presaleUrlBackfilled,
     offiUpserted,

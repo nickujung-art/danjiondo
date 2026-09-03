@@ -6,6 +6,7 @@
  * 있는지 소스를 전수 검사한다.
  */
 import { describe, it, expect } from 'vitest'
+import fs from 'fs'
 import path from 'path'
 import { collectSharedTableSites, findUnguarded, ALLOWED_EXCEPTIONS } from './site-id-audit'
 
@@ -32,7 +33,6 @@ describe('site-id-audit — 공유 테이블 site_id 필터 전수 검사', () =
   })
 
   it('ALLOWED_EXCEPTIONS 의 파일이 실제로 존재한다', () => {
-    const fs = require('fs')
     for (const file of Object.keys(ALLOWED_EXCEPTIONS)) {
       const full = path.join(ROOT, file)
       expect(fs.existsSync(full), `예외 파일 없음: ${file}`).toBe(true)

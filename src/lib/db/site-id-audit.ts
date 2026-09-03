@@ -12,7 +12,7 @@
 import fs from 'fs'
 import path from 'path'
 
-const SHARED_TABLES = ['ad_campaigns', 'ad_events', 'favorites'] as const
+export const SHARED_TABLES = ['ad_campaigns', 'ad_events', 'favorites'] as const
 
 export interface SharedTableSite {
   file: string
@@ -33,7 +33,7 @@ export const ALLOWED_EXCEPTIONS: Record<string, string> = {
   'src/lib/data/ads.ts': 'getAdRoiStats .from(ad_events): siteId 필터는 campaigns 쿼리에서 적용',
 }
 
-const FROM_RE = /\.from\(\s*['"`](ad_campaigns|ad_events|favorites)['"`]\s*\)/
+const FROM_RE = new RegExp(`\\.from\\(\\s*['"\`](${SHARED_TABLES.join('|')})['"\`]\\s*\\)`)
 // .eq('site_id', …) 또는 .in('site_id', …) 또는 INSERT 페이로드의 site_id: …
 const SITE_ID_RE = /(?:\.(?:eq|in)\(\s*['"`]site_id['"`]|site_id\s*:\s*)/
 
