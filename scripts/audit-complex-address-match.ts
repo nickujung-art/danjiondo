@@ -173,7 +173,7 @@ async function main(): Promise<void> {
       jibunDist[j] = (jibunDist[j] ?? 0) + 1
     }
     const sorted = Object.entries(dongDist).sort((a, b) => b[1] - a[1])
-    const [topDong, topCount] = sorted[0]
+    const [topDong, topCount] = sorted[0]!
     const minorityCount = tx.length - topCount
     const jibunTop = Object.entries(jibunDist).sort((a, b) => b[1] - a[1]).slice(0, 4) as [string, number][]
 

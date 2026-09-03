@@ -19,7 +19,7 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
 
 const isDryRun = process.argv.includes('--dry-run')
 const limitArg = process.argv.find(a => a.startsWith('--limit='))
-const LIMIT    = limitArg ? parseInt(limitArg.split('=')[1], 10) : Infinity
+const LIMIT    = limitArg ? parseInt(limitArg.split('=')[1]!, 10) : Infinity
 
 // ── 설정 ─────────────────────────────────────────────────────────────────────
 const WORKERS     = 4      // 병렬 탭 수
@@ -87,7 +87,7 @@ async function buildContext(browser: import('playwright').Browser) {
   if (rawCookie) {
     const cookies = rawCookie.split(';').map(c => c.trim()).filter(Boolean).map(c => {
       const [name, ...rest] = c.split('=')
-      return { name: name.trim(), value: rest.join('=').trim(), domain: '.naver.com', path: '/' }
+      return { name: name!.trim(), value: rest.join('=').trim(), domain: '.naver.com', path: '/' }
     })
     await ctx.addCookies(cookies)
   }

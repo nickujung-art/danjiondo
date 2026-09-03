@@ -34,7 +34,7 @@ const API_WAIT_MS     = 3_000   // API 응답 대기 최대 시간 (ms)
 
 const isDryRun = process.argv.includes('--dry-run')
 const limitArg = process.argv.find(a => a.startsWith('--limit='))
-const LIMIT    = limitArg ? parseInt(limitArg.split('=')[1], 10) : Infinity
+const LIMIT    = limitArg ? parseInt(limitArg.split('=')[1]!, 10) : Infinity
 
 // ─── 한국어 금액 파서 ──────────────────────────────────────────────────────────
 // anti_bot_scraper parse_kr_money_to_won() TypeScript 포팅
@@ -58,25 +58,25 @@ function parseKrMoneyToMan(raw: string): number | null {
   // ① 억 파싱 (소수점 지원: "7.5억")
   const eokMatch = t.match(/(\d+(?:\.\d+)?)억/)
   if (eokMatch) {
-    totalMan += parseFloat(eokMatch[1]) * 10_000  // 1억 = 10000만
+    totalMan += parseFloat(eokMatch[1]!) * 10_000  // 1억 = 10000만
 
     // 억 뒤 남은 숫자: "3억8000만" or "3억8000"
     const afterEok = t.slice(t.indexOf('억') + 1)
     const manSfx   = afterEok.match(/^(\d+)만/)
     const rawSfx   = afterEok.match(/^(\d+)$/)
-    if (manSfx)      totalMan += parseInt(manSfx[1])
-    else if (rawSfx) totalMan += parseInt(rawSfx[1])
+    if (manSfx)      totalMan += parseInt(manSfx[1]!)
+    else if (rawSfx) totalMan += parseInt(rawSfx[1]!)
   } else {
     // ② 억 없음
     const manMatch   = t.match(/(\d+)만/)
     const plainMatch = t.match(/^(\d+)$/)
     if (manMatch) {
-      totalMan = parseInt(manMatch[1])
+      totalMan = parseInt(manMatch[1]!)
     } else if (plainMatch) {
       // 원 단위이면 만원으로 환산, 아니면 그대로 만원 단위
       totalMan = hasWon
-        ? Math.round(parseInt(plainMatch[1]) / 10_000)
-        : parseInt(plainMatch[1])
+        ? Math.round(parseInt(plainMatch[1]!) / 10_000)
+        : parseInt(plainMatch[1]!)
     }
   }
 
@@ -88,7 +88,7 @@ function median(arr: number[]): number {
   if (arr.length === 0) return 0
   const s = [...arr].sort((a, b) => a - b)
   const m = Math.floor(s.length / 2)
-  return s.length % 2 !== 0 ? s[m] : Math.round((s[m - 1] + s[m]) / 2)
+  return s.length % 2 !== 0 ? s[m]! : Math.round((s[m - 1]! + s[m]!) / 2)
 }
 
 // ─── 평당가 배열 변환 ──────────────────────────────────────────────────────────
@@ -123,7 +123,7 @@ async function buildContext(browser: import('playwright').Browser): Promise<Brow
   if (rawCookie) {
     const cookies = rawCookie.split(';').map(c => c.trim()).filter(Boolean).map(c => {
       const [name, ...rest] = c.split('=')
-      return { name: name.trim(), value: rest.join('=').trim(), domain: '.naver.com', path: '/' }
+      return { name: name!.trim(), value: rest.join('=').trim(), domain: '.naver.com', path: '/' }
     })
     await ctx.addCookies(cookies)
     console.log(`쿠키 주입: ${cookies.map(c => c.name).join(', ')}`)

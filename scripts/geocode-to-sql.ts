@@ -32,7 +32,7 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 async function fetchSggLabels(): Promise<Record<string, string>> {
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/regions?select=sgg_code,si,gu&is_active=is.true`,
-    { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } },
+    { headers: { apikey: SUPABASE_ANON_KEY!, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } },
   )
   if (!res.ok) throw new Error(`regions fetch failed: ${res.statusText}`)
   const rows = await res.json() as Array<{ sgg_code: string; si: string; gu: string | null }>
@@ -53,7 +53,7 @@ async function fetchComplexes(): Promise<Complex[]> {
   while (true) {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/complexes?select=id,canonical_name,sgg_code&lat=is.null&order=sgg_code,id&limit=${pageSize}&offset=${offset}`,
-      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } },
+      { headers: { apikey: SUPABASE_ANON_KEY!, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } },
     )
     if (!res.ok) throw new Error(`Supabase fetch failed: ${res.statusText}`)
     const page = await res.json() as Complex[]

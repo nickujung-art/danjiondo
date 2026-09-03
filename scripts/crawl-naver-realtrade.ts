@@ -25,7 +25,7 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
 const isDryRun   = process.argv.includes('--dry-run')
 const abOnly     = process.argv.includes('--ab-only')
 const limitArg   = process.argv.find(a => a.startsWith('--limit='))
-const LIMIT      = limitArg ? parseInt(limitArg.split('=')[1], 10) : Infinity
+const LIMIT      = limitArg ? parseInt(limitArg.split('=')[1]!, 10) : Infinity
 
 const DETAIL_WORKERS  = 3
 const PAGE_TIMEOUT_MS = 18_000
@@ -75,7 +75,7 @@ async function buildContext(browser: import('playwright').Browser) {
   if (rawCookie) {
     const cookies = rawCookie.split(';').map(c => c.trim()).filter(Boolean).map(c => {
       const [name, ...rest] = c.split('=')
-      return { name: name.trim(), value: rest.join('=').trim(), domain: '.naver.com', path: '/' }
+      return { name: name!.trim(), value: rest.join('=').trim(), domain: '.naver.com', path: '/' }
     })
     await ctx.addCookies(cookies)
   }
@@ -219,8 +219,9 @@ async function tryDomParse(page: Page): Promise<RealTrade[]> {
 }
 
 // ── area_type_id 재매핑 ─────────────────────────────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function remapAreaTypes(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof createClient<any>>,
   complexId: string,
   complexName: string,
   trades: RealTrade[],
@@ -261,11 +262,11 @@ async function remapAreaTypes(
 
     if (!matched?.length) { skip++; continue }
 
-    for (const txn of matched) {
+    for (const txn of matched as { id: string; area_type_id: string | null }[]) {
       if (txn.area_type_id === areaTypeId) continue
       const { error } = await supabase
         .from('transactions')
-        .update({ area_type_id: areaTypeId })
+        .update({ area_type_id: areaTypeId } as never)
         .eq('id', txn.id)
       if (!error) updated++
     }
@@ -288,7 +289,11 @@ async function main() {
 
   if (abOnly) {
     // A/B 유형 있는 단지 (complex_area_types에 동일 전용면적 중복 있는 단지)
-    const { data: abComplexIds } = await supabase.rpc('get_ab_type_complex_ids').catch(() => ({ data: null }))
+    let abComplexIds: string[] | null = null
+    try {
+      const { data } = await supabase.rpc('get_ab_type_complex_ids' as never)
+      abComplexIds = data as string[] | null
+    } catch { /* RPC 없으면 무시 */ }
     if (abComplexIds?.length) {
       complexQuery = complexQuery.in('id', abComplexIds)
     }

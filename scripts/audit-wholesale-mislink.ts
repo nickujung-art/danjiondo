@@ -209,7 +209,7 @@ function candidatesInDong(byDong: Map<string, Cx[]>, sgg: string, umd: string | 
   const out: Cx[] = []
   for (const [k, list] of byDong) {
     const [s, d] = k.split('|')
-    if (s === sgg && dongMatches(d, want)) out.push(...list)
+    if (s === sgg && dongMatches(d!, want)) out.push(...list)
   }
   return out
 }

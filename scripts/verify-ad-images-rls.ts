@@ -105,7 +105,7 @@ async function main(): Promise<void> {
       if (baselineFiles.length === 0) {
         record(2, 'anon 기존 파일 읽기 [positive control]', '바이트 길이 > 0', 'baseline 파일 0개 — 검증 불가', false)
       } else {
-        const target = baselineFiles[0].name
+        const target = baselineFiles[0]!.name
         const { data, error } = await anon.storage.from(BUCKET).download(target)
         const len = data ? data.size : 0
         record(

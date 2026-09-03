@@ -98,7 +98,7 @@ function parseSpecialClassCount(lines: string[]): number | null {
   const line = lines.find(l => /^특수학급 : \d/.test(l))
   if (!line) return null
   const m = line.match(/특수학급 : (\d+)/)
-  return m ? parseInt(m[1]) : null
+  return m ? parseInt(m[1]!) : null
 }
 
 async function main() {

@@ -277,7 +277,6 @@ async function classifyByLLM(
       messages:    [{ role: 'user', content: buildClassifyPrompt(name, realm, crse, snippet) }],
       max_tokens:  120,
       temperature: 0.2,
-      // @ts-expect-error cerebras supports json_object but openai types may differ
       response_format: { type: 'json_object' },
     })
     const parsed = JSON.parse(res.choices[0]?.message?.content ?? '{}') as {

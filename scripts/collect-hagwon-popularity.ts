@@ -86,6 +86,7 @@ async function main() {
 
       for (let i = 0; i < rows!.length; i++) {
         const row = rows![i]
+        if (!row) continue
         const count = await getBlogCount(row.name)
         counts.push({ id: row.id, count })
 

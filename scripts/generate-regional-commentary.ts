@@ -23,7 +23,10 @@
  *   npx tsx scripts/generate-regional-commentary.ts --dry-run       # DB 쓰지 않고 출력만
  *   npx tsx scripts/generate-regional-commentary.ts --week-start=2026-07-20
  */
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ScriptSupabase = SupabaseClient<any, 'public', any>
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import Groq from 'groq-sdk'
 import {
@@ -117,7 +120,7 @@ function toFacts(s: WeeklyStats): CommentaryFacts {
 }
 
 async function fetchWeeklyStats(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ScriptSupabase,
   region: { sggCode: string; label: string; shortLabel: string },
   periodStart: string,
   periodEnd: string,

@@ -13,7 +13,10 @@
  */
 
 import { chromium, type Page } from 'playwright'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ScriptSupabase = SupabaseClient<any, 'public', any>
 import * as dotenv from 'dotenv'
 import path from 'path'
 import fs from 'fs'
@@ -103,7 +106,8 @@ async function fetchGradData(page: Page, school: School): Promise<string | null>
 
   await page.evaluate((p) => {
     return new Promise<void>((resolve) => {
-      const $ = (window as Window & { jQuery: typeof import('jquery') }).jQuery
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const $ = (window as unknown as Window & { jQuery: any }).jQuery
       if (!$) { resolve(); return }
 
       let box = document.getElementById('gongsiInfo06')
@@ -168,7 +172,7 @@ function parseHigh(text: string): HighGradData | null {
 
 // ─── DB 저장: 중학교 ──────────────────────────────────────────────────────────
 async function saveMiddle(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ScriptSupabase,
   school: School,
   data: MiddleGradData,
 ): Promise<boolean> {
@@ -192,7 +196,7 @@ async function saveMiddle(
 
 // ─── DB 저장: 고등학교 ────────────────────────────────────────────────────────
 async function saveHigh(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ScriptSupabase,
   school: School,
   data: HighGradData,
 ): Promise<boolean> {

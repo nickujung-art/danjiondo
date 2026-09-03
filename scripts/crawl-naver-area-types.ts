@@ -24,7 +24,7 @@ const MIN_PROCESSED_FOR_HEALTH_CHECK = 10
 const isDryRun   = process.argv.includes('--dry-run')
 const skipAssign = process.argv.includes('--skip-assign')
 const limitArg   = process.argv.find(a => a.startsWith('--limit='))
-const LIMIT      = limitArg ? parseInt(limitArg.split('=')[1], 10) : Infinity
+const LIMIT      = limitArg ? parseInt(limitArg.split('=')[1]!, 10) : Infinity
 
 // ─── 네이버 pyeong 타입 ────────────────────────────────────────────────────────
 interface NaverPyeong {
@@ -53,7 +53,7 @@ async function buildContext(browser: import('playwright').Browser) {
   if (rawCookie) {
     const cookies = rawCookie.split(';').map(c => c.trim()).filter(Boolean).map(c => {
       const [name, ...rest] = c.split('=')
-      return { name: name.trim(), value: rest.join('=').trim(), domain: '.naver.com', path: '/' }
+      return { name: name!.trim(), value: rest.join('=').trim(), domain: '.naver.com', path: '/' }
     })
     await ctx.addCookies(cookies)
   }

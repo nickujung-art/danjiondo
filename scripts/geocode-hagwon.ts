@@ -78,6 +78,7 @@ async function main() {
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i]
+    if (!row) continue
     // 도로명주소 우선, 없으면 상세주소 포함
     const addr = row.address
       ? (row.address_detail ? `${row.address} ${row.address_detail}` : row.address)

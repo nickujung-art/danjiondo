@@ -76,7 +76,7 @@ const toCoord = (it: NaverItem): [number, number] => [Number(it.mapy) / 1e7, Num
 function dongOf(addr: string): string {
   const parts = addr.trim().split(/\s+/)
   const tail = parts.filter((p) => /[동리가읍면]$/.test(p) && !/^(창원시|김해시)$/.test(p))
-  return tail.length ? tail[tail.length - 1] : ''
+  return tail.length ? tail[tail.length - 1]! : ''
 }
 
 /** 확정 지번 문자열("가음동 22-4")에서 동만. 동에 공백이 있을 수 있다. */
@@ -97,7 +97,7 @@ function canonDong(canonical: string): string {
 function trimJibunAddr(addr: string): string {
   const p = addr.trim().split(/\s+/)
   let di = -1
-  for (let i = 0; i < p.length; i++) if (/[동리가]$/.test(p[i]) && !/^(창원시|김해시)$/.test(p[i])) di = i
+  for (let i = 0; i < p.length; i++) if (/[동리가]$/.test(p[i]!) && !/^(창원시|김해시)$/.test(p[i]!)) di = i
   return di >= 0 && di + 1 < p.length ? p.slice(0, di + 2).join(' ') : addr
 }
 
@@ -178,7 +178,7 @@ async function main(): Promise<void> {
     if (!pick) {
       const seen = inRegion.slice(0, 2).map((it) => `${stripTag(it.title)}@${dongOf(it.address)}`).join(', ')
       rows.push({ t, query, agree: false, note: inRegion.length ? `확정 지번(${t.canonical})과 맞는 결과 없음 — 본 것: ${seen}` : '그 시군구 결과 없음' })
-      console.log(`  ⚠️ ${t.name}[${t.sgg_code}] ← ${t.canonical}: ${rows[rows.length - 1].note}`)
+      console.log(`  ⚠️ ${t.name}[${t.sgg_code}] ← ${t.canonical}: ${rows[rows.length - 1]!.note}`)
       continue
     }
     const hit = { title: stripTag(pick.title), address: pick.address, road: pick.roadAddress, coord: toCoord(pick) }

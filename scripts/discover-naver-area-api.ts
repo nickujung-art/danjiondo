@@ -25,7 +25,7 @@ async function main() {
   if (rawCookie) {
     const cookies = rawCookie.split(';').map(c => c.trim()).filter(Boolean).map(c => {
       const [name, ...rest] = c.split('=')
-      return { name: name.trim(), value: rest.join('=').trim(), domain: '.naver.com', path: '/' }
+      return { name: name!.trim(), value: rest.join('=').trim(), domain: '.naver.com', path: '/' }
     })
     await ctx.addCookies(cookies)
   }

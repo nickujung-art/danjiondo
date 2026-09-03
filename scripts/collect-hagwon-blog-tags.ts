@@ -201,6 +201,7 @@ async function main() {
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i]
+    if (!row) continue
     const region = extractRegion(row.address, row.admst_zone_nm)
 
     const { snippets } = await fetchBlogSnippets(row.name, region)

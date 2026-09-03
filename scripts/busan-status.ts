@@ -20,7 +20,10 @@ import dotenv from 'dotenv'
 import path from 'path'
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
 
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ScriptSupabase = SupabaseClient<any, 'public', any>
 
 // src/app/admin/region-expansion/page.tsx NEW_CODES 와 동일 집합.
 const BUSAN_SGG_CODES = [
@@ -95,7 +98,7 @@ interface Metrics {
 }
 
 async function collectMetrics(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ScriptSupabase,
 ): Promise<Metrics> {
   // ── regions ─────────────────────────────────────────────────────────────
   const { count: regionsBusanActive, error: eRegionsBusan } = await supabase
@@ -138,7 +141,7 @@ async function collectMetrics(
     BUSAN_SGG_CODES.map((code) => [code, 0]),
   )
   for (const r of complexRows) {
-    if (r.sgg_code in complexesByGu) complexesByGu[r.sgg_code] += 1
+    if (r.sgg_code in complexesByGu) complexesByGu[r.sgg_code] = (complexesByGu[r.sgg_code] ?? 0) + 1
   }
   const complexesCoordCoveragePct =
     complexesBusanTotal > 0 ? (complexesCoordNotNull / complexesBusanTotal) * 100 : 0
@@ -167,7 +170,8 @@ async function collectMetrics(
   let ingestRowsUpsertedSum = 0
   for (const r of ingestRows) {
     ingestBySource[r.source_id] ??= {}
-    ingestBySource[r.source_id][r.status] = (ingestBySource[r.source_id][r.status] ?? 0) + 1
+    const bucket = ingestBySource[r.source_id]!
+    bucket[r.status] = (bucket[r.status] ?? 0) + 1
     ingestRowsUpsertedSum += r.rows_upserted ?? 0
   }
 

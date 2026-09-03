@@ -24,7 +24,7 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
 
 const isDryRun = process.argv.includes('--dry-run')
 const limitArg = process.argv.find(a => a.startsWith('--limit='))
-const LIMIT    = limitArg ? parseInt(limitArg.split('=')[1], 10) : Infinity
+const LIMIT    = limitArg ? parseInt(limitArg.split('=')[1]!, 10) : Infinity
 // 창원/김해 존은 이미 거의 다 매핑됨 — 남은 target은 대부분 duplicate-key로 영구 실패하는
 // Golden Record 중복 행이라, 재시작마다 앞쪽 존을 다시 훑느라 시간을 낭비함. 새 지역만
 // 훑고 싶을 때 사용
@@ -100,7 +100,7 @@ async function readZoomFromUrl(page: Page): Promise<number | null> {
   try {
     const ms = new URL(page.url()).searchParams.get('ms')
     if (!ms) return null
-    const z = parseFloat(ms.split(',')[2])
+    const z = parseFloat(ms.split(',')[2]!)
     return isNaN(z) ? null : z
   } catch { return null }
 }
@@ -305,7 +305,7 @@ async function main() {
   if (naverCookie) {
     const cookies = naverCookie.split(';').map(c => c.trim()).filter(Boolean).map(c => {
       const [name, ...rest] = c.split('=')
-      return { name: name.trim(), value: rest.join('=').trim(), domain: '.naver.com', path: '/' }
+      return { name: name!.trim(), value: rest.join('=').trim(), domain: '.naver.com', path: '/' }
     })
     await context.addCookies(cookies)
     console.log(`쿠키 주입: ${cookies.map(c => c.name).join(', ')}`)
@@ -349,7 +349,7 @@ async function main() {
   })
 
   // ⑤ 초기 진입: new.land.naver.com/complexes (anti_bot_scraper 동일 URL 형식)
-  const first = centers[0]
+  const first = centers[0]!
   const initUrl = `https://new.land.naver.com/complexes?ms=${first.lat},${first.lng},${ZOOM}&a=APT&b=A1`
   console.log(`[초기 진입] ${initUrl}`)
 
@@ -419,7 +419,7 @@ async function main() {
 
   // ⑥ 각 중심점 탐색: goto() → state 초기화 → humanLikeRecenter → gridSweep
   for (let i = 0; i < centers.length; i++) {
-    const { name, lat, lng } = centers[i]
+    const { name, lat, lng } = centers[i]!
 
     // 중심점이 2번째 이후면 goto()로 이동 (16개 중심점은 major navigation)
     if (i > 0) {
@@ -447,7 +447,7 @@ async function main() {
     // 진행분은 이미 DB에 저장되어 있음 (재실행 시 매칭된 단지는 자동으로 대상에서 빠짐).
     // 존 하나가 큰 경우(예: 김해) 경계까지 오래 걸려 유실 위험이 커서 5개 단위로도 강제 flush
     const isLastCenter = i === centers.length - 1
-    const isZoneBoundary = !isLastCenter && centers[i + 1].name !== name
+    const isZoneBoundary = !isLastCenter && centers[i + 1]!.name !== name
     const isEveryFive = (i + 1) % 5 === 0
     if (isZoneBoundary || isLastCenter || isEveryFive) {
       await flushMatches(name)

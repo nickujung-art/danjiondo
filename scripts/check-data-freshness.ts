@@ -27,7 +27,10 @@ import dotenv from 'dotenv'
 import path from 'path'
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
 
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ScriptSupabase = SupabaseClient<any, 'public', any>
 
 const warnOnly = process.argv.includes('--warn-only')
 
@@ -143,7 +146,7 @@ const CHECKS: Check[] = [
  * 배치는 여기에 안 잡힌다. 두 층을 같이 둔다.
  */
 async function checkFailedJobs(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ScriptSupabase,
   violations: string[],
 ): Promise<void> {
   const { data, error } = await supabase

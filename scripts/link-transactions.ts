@@ -9,7 +9,10 @@
  * supabase.rpc('match_complex_by_admin') 직접 호출 금지 — ADMIN_CONFIDENCE_CAP 우회 방지
  */
 import { loadEnvConfig } from '@next/env'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ScriptSupabase = SupabaseClient<any, 'public', any>
 import * as fs from 'fs'
 import * as path from 'path'
 
@@ -126,7 +129,7 @@ async function matchByJibun(
 let SGG_LABEL: Record<string, string> = {}
 let SGG_CITY_SHORT: Record<string, string> = {}
 
-async function loadRegionMaps(supabase: ReturnType<typeof createClient>): Promise<void> {
+async function loadRegionMaps(supabase: ScriptSupabase): Promise<void> {
   const { data, error } = await supabase.from('regions').select('sgg_code, si, gu').eq('is_active', true)
   if (error) throw new Error(`regions 조회 실패: ${error.message}`)
   const rows = (data ?? []) as Array<{ sgg_code: string; si: string; gu: string | null }>

@@ -141,7 +141,7 @@ function isKinGroup(members: Cx[]): boolean {
   for (let i = 0; i < members.length; i++) {
     for (let j = i + 1; j < members.length; j++) {
       pairs++
-      if (nameSim(members[i].canonical_name, members[j].canonical_name) >= KIN_NAME_SIM) kin++
+      if (nameSim(members[i]!.canonical_name, members[j]!.canonical_name) >= KIN_NAME_SIM) kin++
     }
   }
   return pairs > 0 && kin / pairs >= 0.5
