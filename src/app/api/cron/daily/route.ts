@@ -190,7 +190,7 @@ export async function GET(request: Request): Promise<Response> {
   const activeCityNames = await getActiveCityNames(supabase)
   const cheongyakPblancNos: string[] = []
   // 청약홈이 주는 분양 홈페이지·시공사를 presale_enriched skeleton INSERT에 전달하기 위한 맵
-  const cheongyakExtra = new Map<string, { hmpgAdres: string | null; builder: string | null }>()
+  const cheongyakExtra = new Map<string, { hmpgAdres: string | null; builder: string | null; unitTypes?: Array<{ type: string; area_m2: number | null; units: number | null; price_wan: number | null }> }>()
   try {
     const items = await fetchCheongyakList(activeCityNames)
     for (const item of items) {
@@ -292,14 +292,19 @@ export async function GET(request: Request): Promise<Response> {
   let pricesUpdated = 0
   try {
     const priceMap = await fetchModelPrices(cheongyakPblancNos)
-    for (const [pblancNo, prices] of priceMap) {
+    for (const [pblancNo, data] of priceMap) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('new_listings')
-        .update({ price_min: prices.min, price_max: prices.max })
+        .update({ price_min: data.min, price_max: data.max })
         .eq('pblanc_no', pblancNo)
       if (!error) pricesUpdated++
       else errors.push(`model prices pblanc_no=${pblancNo}: ${error.message}`)
+      // ⑳ 평형 데이터를 cheongyakExtra에 병합 — presale_enriched 동기화에서 사용
+      if (data.unitTypes.length > 0) {
+        const existing = cheongyakExtra.get(pblancNo)
+        if (existing) existing.unitTypes = data.unitTypes
+      }
     }
   } catch (err) {
     errors.push(`model prices: ${describeError(err)}`)
@@ -393,6 +398,7 @@ export async function GET(request: Request): Promise<Response> {
           if (url) patch.source_url = url
           if (extra?.builder) patch.builder = extra.builder
           if (sgg) patch.sgg_code = sgg
+          if (extra?.unitTypes?.length) patch.unit_types = extra.unitTypes
           await supa.from('presale_enriched').update(patch).eq('id', existing.id)
           presaleEnrichedSynced++
         } else {
@@ -408,6 +414,7 @@ export async function GET(request: Request): Promise<Response> {
             source_url: url,
             builder: extra?.builder ?? null,
             sgg_code: sgg,
+            unit_types: extra?.unitTypes?.length ? extra.unitTypes : null,
           })
           if (!insErr) presaleEnrichedSynced++
         }
@@ -417,22 +424,23 @@ export async function GET(request: Request): Promise<Response> {
     errors.push(`presale_enriched sync: ${describeError(err)}`)
   }
 
-  // ── presale_enriched source_url 백필 ──────────────────────────────────────
-  // ⑫(b) 이미 연결된 행이라도 source_url이 null이면 채운다.
+  // ── presale_enriched source_url + unit_types 백필 ─────────────────────────
+  // ⑫(b) 이미 연결된 행이라도 source_url/unit_types가 null이면 채운다.
   // 동기화 루프는 linkedIds에 있으면 continue하므로, 별도 패스가 필요하다.
   let presaleUrlBackfilled = 0
+  let presaleUnitTypesBackfilled = 0
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supa = supabase as any
-    const { data: needUrl } = await supa
+    // source_url이 NULL이거나 unit_types가 비어 있는(NULL 또는 []) 행
+    const { data: needBackfill } = await supa
       .from('presale_enriched')
-      .select('id, new_listing_id')
-      .is('source_url', null)
+      .select('id, new_listing_id, source_url, unit_types')
       .not('new_listing_id', 'is', null)
+      .or('source_url.is.null,unit_types.is.null,unit_types.eq.[]')
 
-    if (needUrl?.length) {
-      // new_listing_id → pblanc_no 조회
-      const listingIds = (needUrl as { id: string; new_listing_id: string }[]).map(r => r.new_listing_id)
+    if (needBackfill?.length) {
+      const listingIds = (needBackfill as { id: string; new_listing_id: string }[]).map(r => r.new_listing_id)
       const { data: listings } = await supa
         .from('new_listings')
         .select('id, pblanc_no')
@@ -443,21 +451,29 @@ export async function GET(request: Request): Promise<Response> {
         if (l.pblanc_no) idToPblanc.set(l.id, l.pblanc_no)
       }
 
-      for (const row of needUrl as { id: string; new_listing_id: string }[]) {
+      for (const row of needBackfill as { id: string; new_listing_id: string; source_url: string | null; unit_types: unknown }[]) {
         const pblancNo = idToPblanc.get(row.new_listing_id)
         if (!pblancNo) continue
         const extra = cheongyakExtra.get(pblancNo)
-        const url = isUsablePresaleUrl(extra?.hmpgAdres)
-        if (!url) continue
+        if (!extra) continue
 
-        const patch: Record<string, unknown> = { source_url: url }
-        if (extra?.builder) patch.builder = extra.builder
-        await supa.from('presale_enriched').update(patch).eq('id', row.id)
-        presaleUrlBackfilled++
+        const patch: Record<string, unknown> = {}
+        if (!row.source_url) {
+          const url = isUsablePresaleUrl(extra.hmpgAdres)
+          if (url) { patch.source_url = url; presaleUrlBackfilled++ }
+          if (extra.builder) patch.builder = extra.builder
+        }
+        if ((!row.unit_types || (Array.isArray(row.unit_types) && (row.unit_types as unknown[]).length === 0)) && extra.unitTypes?.length) {
+          patch.unit_types = extra.unitTypes
+          presaleUnitTypesBackfilled++
+        }
+        if (Object.keys(patch).length > 0) {
+          await supa.from('presale_enriched').update(patch).eq('id', row.id)
+        }
       }
     }
   } catch (err) {
-    errors.push(`presale_enriched url backfill: ${describeError(err)}`)
+    errors.push(`presale_enriched backfill: ${describeError(err)}`)
   }
 
   // ── 오피스텔 실거래 전월+당월 수집 (OFFI-01) ──────────────────────────────
@@ -656,6 +672,7 @@ export async function GET(request: Request): Promise<Response> {
     presaleReactivated,
     presaleEnrichedSynced,
     presaleUrlBackfilled,
+    presaleUnitTypesBackfilled,
     offiUpserted,
     errors,
   })

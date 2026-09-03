@@ -80,23 +80,30 @@ async function fetchListPage(
   })
 }
 
+/** 평형별 분양가 + 평형 정보를 함께 반환하는 타입 */
+export interface ModelPriceData {
+  min: number
+  max: number
+  unitTypes: Array<{ type: string; area_m2: number | null; units: number | null; price_wan: number | null }>
+}
+
 /**
- * 공고번호 목록의 평형별 분양가를 조회해 { pblancNo → { min, max } } 맵 반환.
- * LTTOT_TOP_AMOUNT(만원) 기준으로 공고별 min/max 집계.
+ * 공고번호 목록의 평형별 분양가를 조회해 { pblancNo → ModelPriceData } 맵 반환.
+ * LTTOT_TOP_AMOUNT(만원) 기준으로 공고별 min/max 집계 + 평형 목록(unit_types) 파싱.
+ * ⑳ getAPTLttotPblancMdl 은 분양가와 같은 응답에 HOUSE_TY·SUPLY_AR·SUPLY_HSHLDCO 를 준다.
  */
 export async function fetchModelPrices(
   pblancNos: string[],
-): Promise<Map<string, { min: number; max: number }>> {
+): Promise<Map<string, ModelPriceData>> {
   if (pblancNos.length === 0) return new Map()
   const apiKey = process.env.MOLIT_API_KEY
   if (!apiKey) throw new Error('MOLIT_API_KEY not set')
 
-  const result = new Map<string, { min: number; max: number }>()
+  const result = new Map<string, ModelPriceData>()
   const BATCH = 100
   for (let offset = 0; offset < pblancNos.length; offset += BATCH) {
     const batch = pblancNos.slice(offset, offset + BATCH)
 
-    // 공고번호 IN 조건으로 한 번에 조회 (단건씩 N회 호출 방지)
     for (const pblanc of batch) {
       const url = new URL(BASE_MODEL_URL)
       url.searchParams.set('serviceKey', apiKey)
@@ -114,14 +121,23 @@ export async function fetchModelPrices(
         const json: unknown = await res.json()
         const rawItems = normalizeData(json)
         const prices: number[] = []
+        const unitTypes: ModelPriceData['unitTypes'] = []
         for (const raw of rawItems) {
           const parsed = CheongyakModelItemSchema.safeParse(raw)
-          if (parsed.success && parsed.data.LTTOT_TOP_AMOUNT) {
-            prices.push(parsed.data.LTTOT_TOP_AMOUNT)
+          if (!parsed.success) continue
+          const d = parsed.data
+          if (d.LTTOT_TOP_AMOUNT) prices.push(d.LTTOT_TOP_AMOUNT)
+          if (d.HOUSE_TY) {
+            unitTypes.push({
+              type: d.HOUSE_TY,
+              area_m2: d.SUPLY_AR ?? null,
+              units: d.SUPLY_HSHLDCO ?? null,
+              price_wan: d.LTTOT_TOP_AMOUNT ?? null,
+            })
           }
         }
         if (prices.length > 0) {
-          result.set(pblanc, { min: Math.min(...prices), max: Math.max(...prices) })
+          result.set(pblanc, { min: Math.min(...prices), max: Math.max(...prices), unitTypes })
         }
       } catch {
         // 개별 실패는 조용히 스킵
