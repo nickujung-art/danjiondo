@@ -34,6 +34,7 @@ async function main() {
 
     const updatePayload: Record<string, unknown> = {
       crawled_at: new Date().toISOString(),
+      source_type: 'crawl',
     }
     if (data.builder    != null) updatePayload.builder     = data.builder
     if (data.contractor != null) updatePayload.contractor  = data.contractor
