@@ -14,7 +14,7 @@ const supabase = createClient(
 async function main() {
   const { data: sources, error } = await supabase
     .from('presale_enriched')
-    .select('id, name, source_url')
+    .select('id, name, source_url, summary, unit_types, community')
     .eq('is_active', true)
     .not('source_url', 'is', null)
 
@@ -41,9 +41,36 @@ async function main() {
     if (data.totalUnits != null) updatePayload.total_units = data.totalUnits
     if (data.moveInDate != null) updatePayload.move_in_date = data.moveInDate
     if (data.address    != null) updatePayload.address     = data.address
-    if (data.summary    != null) updatePayload.summary     = data.summary
-    if (data.unitTypes  != null) updatePayload.unit_types  = data.unitTypes
-    if (data.community  != null) updatePayload.community   = data.community
+
+    // ㉔ summary — 키 단위 merge. 크롤러가 못 찾은 키(null)는 기존 값 유지.
+    // 크롤러가 모르는 키(generalUnits·note 등 수동 입력분)도 보존.
+    if (data.summary != null) {
+      const existing = (source as Record<string, unknown>).summary as Record<string, unknown> | null
+      const merged = { ...(existing ?? {}) }
+      for (const [k, v] of Object.entries(data.summary)) {
+        if (v != null) merged[k] = v  // 크롤 값이 있으면 덮어씀
+      }
+      updatePayload.summary = merged
+    }
+
+    // ㉔ unit_types — 크롤 결과가 비거나 기존보다 정보가 적으면 덮지 않는다.
+    // API 평형에는 price_wan이 있는데 크롤 평형에는 없으므로, 크롤로 갈아치우면 분양가가 사라진다.
+    if (data.unitTypes != null && data.unitTypes.length > 0) {
+      const existingTypes = (source as Record<string, unknown>).unit_types as unknown[] | null
+      if (!existingTypes?.length || existingTypes.length === 0) {
+        updatePayload.unit_types = data.unitTypes
+      }
+      // 기존에 이미 있으면 덮지 않는다 (API 출처가 price_wan 포함으로 더 풍부)
+    }
+
+    // ㉔ community — 빈 객체/빈 facilities면 덮지 않는다.
+    if (data.community != null && data.community.facilities && data.community.facilities.length > 0) {
+      const existingComm = (source as Record<string, unknown>).community as { facilities?: string[] } | null
+      // 기존보다 풍부하면 덮어씀
+      if (!existingComm?.facilities?.length || data.community.facilities.length >= existingComm.facilities.length) {
+        updatePayload.community = data.community
+      }
+    }
 
     const { error: updateError } = await supabase
       .from('presale_enriched')
