@@ -299,6 +299,9 @@ function printProgress(
 
 // ── 메인 로직 ───────────────────────────────────────────────────
 async function main(): Promise<void> {
+  // --sgg-prefix=26 → 부산만 실행
+  const sggPrefix = process.argv.find(a => a.startsWith('--sgg-prefix='))?.split('=')[1] ?? null
+
   const supabase = createSupabaseClient()
   await loadRegionMaps(supabase)
 
@@ -306,15 +309,18 @@ async function main(): Promise<void> {
   console.log(`임계값: AUTO_THRESHOLD=${AUTO_THRESHOLD}, QUEUE_LOW_CONFIDENCE=${QUEUE_LOW_CONFIDENCE}`)
   console.log(`배치 크기: ${BATCH_SIZE}`)
   console.log(`미매칭 로그: ${LOG_PATH}`)
+  if (sggPrefix) console.log(`sgg_code 필터: ${sggPrefix}xxx`)
   console.log()
 
   // 1. 총 COUNT 조회 (WHERE complex_id IS NULL AND cancel_date IS NULL AND superseded_by IS NULL)
-  const { count, error: countError } = await supabase
+  let countQuery = supabase
     .from('transactions')
     .select('id', { count: 'exact', head: true })
     .is('complex_id', null)
     .is('cancel_date', null)
     .is('superseded_by', null)
+  if (sggPrefix) countQuery = countQuery.like('sgg_code', `${sggPrefix}%`)
+  const { count, error: countError } = await countQuery
 
   if (countError) {
     console.error(`COUNT 조회 실패: ${countError.message}`)
@@ -338,12 +344,14 @@ async function main(): Promise<void> {
   for (let batchNum = 1; batchNum <= totalBatches; batchNum++) {
     const offset = (batchNum - 1) * BATCH_SIZE
 
-    const { data: rows, error: fetchError } = await supabase
+    let fetchQuery = supabase
       .from('transactions')
       .select('id, sgg_code, raw_complex_name, umd_nm, jibun')
       .is('complex_id', null)
       .is('cancel_date', null)
       .is('superseded_by', null)
+    if (sggPrefix) fetchQuery = fetchQuery.like('sgg_code', `${sggPrefix}%`)
+    const { data: rows, error: fetchError } = await fetchQuery
       .range(offset, offset + BATCH_SIZE - 1)
 
     if (fetchError) {
