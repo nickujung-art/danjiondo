@@ -99,9 +99,10 @@ function pricePerPyeong(price: number, areaM2: number): number {
  * 두 번 돌렸을 때 방향이 서로 반대로 나옴). 실거래 사이트에서 수치 방향이 뒤집히는 건
  * 치명적이라, 산술은 전부 코드가 하고 모델은 문장만 만든다.
  */
-function toFacts(s: WeeklyStats): CommentaryFacts {
+function toFacts(s: WeeklyStats, periodLabel: string): CommentaryFacts {
   return {
     shortLabel: s.shortLabel,
+    periodLabel,
     txCount: s.txCount,
     txDiff: s.txCount - s.prevTxCount,
     // avgPricePerPyeong 은 일부러 넘기지 않는다 — input_snapshot 에는 추적용으로 남기되
@@ -296,7 +297,14 @@ async function main() {
   const periodStart = weekStartArg ?? daysAgo(now, dayOfWeek - 1 + 7)
   const periodEnd = daysAgo(new Date(periodStart), -6)
 
-  console.log(`[regional-commentary] 대상 기간: ${periodStart} ~ ${periodEnd}${dryRun ? ' (dry-run)' : ''}`)
+  // "8월 25~31일" 형태의 절대 날짜 라벨 — "지난주" 상대 표현 대신 사용
+  const ps = new Date(periodStart)
+  const pe = new Date(periodEnd)
+  const periodLabel = ps.getMonth() === pe.getMonth()
+    ? `${ps.getMonth() + 1}월 ${ps.getDate()}~${pe.getDate()}일`
+    : `${ps.getMonth() + 1}월 ${ps.getDate()}일~${pe.getMonth() + 1}월 ${pe.getDate()}일`
+
+  console.log(`[regional-commentary] 대상 기간: ${periodStart} ~ ${periodEnd} (${periodLabel})${dryRun ? ' (dry-run)' : ''}`)
 
   const supabase = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -321,7 +329,7 @@ async function main() {
       continue
     }
 
-    const facts = toFacts(stats)
+    const facts = toFacts(stats, periodLabel)
     const seed = rotationSeed(periodStart, regionIndex)
 
     // 모델 출력이 규칙(숫자 일치·해요체·금지 표현·개시부 중복)을 어기면 슬롯을 바꿔 다시 굴린다.
@@ -405,9 +413,11 @@ async function main() {
   // 문장 품질이 이 배치의 존재 이유이므로 조용히 넘어가지 않는다.
   if (ok > 0 && fellBack === ok) {
     console.error(
-      `[regional-commentary] ⚠ ${ok}개 지역이 전부 템플릿으로 나갔습니다 — 모델 호출이 한 번도 성공하지 못했습니다. ` +
+      `[regional-commentary] 🔴 ${ok}개 지역이 전부 템플릿으로 나갔습니다 — 모델 호출이 한 번도 성공하지 못했습니다. ` +
         `GROQ_API_KEY / GEMINI_API_KEY 등록 상태와 위 호출 에러를 확인하세요.`,
     )
+    // ㉗ 조용한 폴백은 폴백이 아니라 손실 — CI가 실패하도록 exit 1
+    process.exit(1)
   }
 
   if (failed > 0) process.exit(1)

@@ -14,6 +14,7 @@ import {
 
 const BASE: CommentaryFacts = {
   shortLabel: '의창구',
+  periodLabel: '7월 20~26일',
   txCount: 42,
   txDiff: 5,
   topDeal: { complexName: '유니시티1단지', price: 92000, pyeong: 34, floor: 12 },
@@ -23,7 +24,7 @@ const BASE: CommentaryFacts = {
 
 /** 검증을 통과하는 기준 문장 — 개별 테스트는 여기서 한 군데씩만 망가뜨린다 */
 const GOOD =
-  '지난주 의창구에서는 아파트 42건이 거래돼 직전 주보다 5건 늘었어요. 가장 비싼 거래는 유니시티1단지 34평 12층 9억 2,000만원이었어요. 최근 30일 변동률 기준으로는 상승 단지 18곳, 하락 단지 12곳이에요.'
+  '7월 20~26일 의창구에서는 아파트 42건이 거래돼 직전 주보다 5건 늘었어요. 가장 비싼 거래는 유니시티1단지 34평 12층 9억 2,000만원이었어요. 최근 30일 변동률 기준으로는 상승 단지 18곳, 하락 단지 12곳이에요.'
 
 describe('rotationSeed', () => {
   it('같은 주·같은 지역이면 항상 같은 시드를 준다', () => {
@@ -203,7 +204,7 @@ describe('validateCommentary', () => {
   })
 
   it('날짜를 그대로 쓰면 반려한다', () => {
-    const text = GOOD.replace('지난주', '2026-07-20 주')
+    const text = GOOD.replace('7월 20~26일', '2026-07-20 주')
     expect(validateCommentary(text, BASE).violations.join()).toContain('날짜 표기')
   })
 

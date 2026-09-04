@@ -28,6 +28,8 @@
 export interface CommentaryFacts {
   /** 문장에 쓰는 짧은 지역명. "창원시 성산구"가 아니라 "성산구" — 라벨 표기 흔들림 방지 */
   shortLabel: string
+  /** 절대 날짜 기간 라벨. "8월 25~31일" — 밀려도 틀리지 않도록 상대 표현("지난주") 대신 사용 */
+  periodLabel: string
   txCount: number
   /** 직전 주 대비 증감(부호 있음). 모델에게 뺄셈을 시키지 않으려고 코드가 계산해 넘긴다 */
   txDiff: number
@@ -74,13 +76,13 @@ const OPENERS: {
   {
     id: 'volume',
     requires: () => true,
-    lead: (f) => `지난주 ${f.shortLabel}에서는`,
+    lead: (f) => `${f.periodLabel} ${f.shortLabel}에서는`,
     instruction: '거래 건수와 증감으로 첫 문장을 시작하세요.',
   },
   {
     id: 'volume',
     requires: () => true,
-    lead: (f) => `${f.shortLabel}의 지난주 아파트 거래는`,
+    lead: (f) => `${f.shortLabel}의 ${f.periodLabel} 아파트 거래는`,
     instruction: '거래 건수와 증감으로 첫 문장을 시작하세요.',
   },
   {
@@ -92,7 +94,7 @@ const OPENERS: {
   {
     id: 'top_deal',
     requires: (f) => f.topDeal != null,
-    lead: (f) => `${f.shortLabel}에서 지난주 가장 높은 값에 팔린 곳은`,
+    lead: (f) => `${f.shortLabel}에서 ${f.periodLabel} 가장 높은 값에 팔린 곳은`,
     instruction: '가장 비싼 거래로 첫 문장을 시작하세요. 거래 건수와 증감은 그 다음 문장에 쓰세요.',
   },
   {
@@ -219,11 +221,11 @@ ${lines.join('\n')}
 7. 투자 권유·전망·조언 표현 절대 금지("사기 좋은", "지금이 기회", "오를 것으로 보인다", "주목할 만한", "강세", "관망세" 등). 이미 일어난 일만 서술하세요.
 8. 데이터에 없는 평가를 붙이지 마세요("머물렀어요", "활발했어요", "부진했어요" 등 금지).
 9. "N건의 매매 거래가 있었어요" 같은 번역투 대신 "N건이 거래됐어요"처럼 동사로 쓰세요.
-10. 줄바꿈 없이 한 문단, 2~3문장. 날짜(2026-07-20 같은 형식)는 쓰지 말고 "지난주"로만 쓰세요.
+10. 줄바꿈 없이 한 문단, 2~3문장. ISO 날짜(2026-07-20)는 쓰지 마세요. 기간은 첫 문장 개시부에 이미 들어 있으니 반복하지 마세요.
 11. "${f.shortLabel}", "${f.txCount}건"${top ? `, 단지 이름 "${f.topDeal!.complexName}"` : ''}은 반드시 그대로 넣으세요. 빠뜨리거나 줄여 쓰면 안 돼요.
 
 좋은 예시(숫자는 예시일 뿐이니 절대 가져다 쓰지 마세요):
-지난주 ○○구에서는 아파트 999건이 거래돼 직전 주보다 999건 늘었어요. 가장 비싼 거래는 △△아파트 999평 999층 999억원이었어요. 최근 30일 변동률 기준으로는 상승 단지 999곳, 하락 단지 999곳이에요.`
+${f.periodLabel} ○○구에서는 아파트 999건이 거래돼 직전 주보다 999건 늘었어요. 가장 비싼 거래는 △△아파트 999평 999층 999억원이었어요. 최근 30일 변동률 기준으로는 상승 단지 999곳, 하락 단지 999곳이에요.`
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -373,6 +375,8 @@ function extractNumbers(text: string): number[] {
  */
 export function allowedNumbers(f: CommentaryFacts): Set<number> {
   const set = new Set<number>([f.txCount, Math.abs(f.txDiff), f.upComplexes, f.downComplexes, 30])
+  // periodLabel("8월 25~31일")에 포함된 숫자를 허용
+  for (const n of extractNumbers(f.periodLabel)) set.add(n)
   if (f.topDeal) {
     set.add(f.topDeal.price)
     set.add(Math.floor(f.topDeal.price / 10000))
@@ -419,8 +423,8 @@ export function fallbackCommentary(f: CommentaryFacts, slots: CommentarySlots): 
   // 어구마다 뒤에 붙는 어미가 달라야 말이 된다("…거래는 32건으로" vs "…에서는 아파트 32건이 거래돼")
   const volume =
     leads('volume') === 1
-      ? `${f.shortLabel}의 지난주 아파트 거래는 ${f.txCount}건으로, ${slots.volumePhrase}.`
-      : `지난주 ${f.shortLabel}에서는 아파트 ${f.txCount}건이 거래돼 ${slots.volumePhrase}.`
+      ? `${f.shortLabel}의 ${f.periodLabel} 아파트 거래는 ${f.txCount}건으로, ${slots.volumePhrase}.`
+      : `${f.periodLabel} ${f.shortLabel}에서는 아파트 ${f.txCount}건이 거래돼 ${slots.volumePhrase}.`
   const breadth =
     leads('breadth') === 1
       ? `최근 30일 변동률로 보면 ${slots.breadthPhrase}.`
@@ -429,7 +433,7 @@ export function fallbackCommentary(f: CommentaryFacts, slots: CommentarySlots): 
   const topSentence = !top
     ? null
     : leads('top_deal') === 1
-      ? `${f.shortLabel}에서 지난주 가장 높은 값에 팔린 곳은 ${top}이에요.`
+      ? `${f.shortLabel}에서 ${f.periodLabel} 가장 높은 값에 팔린 곳은 ${top}이에요.`
       : `가장 비싼 거래는 ${top}이었어요.`
 
   const ordered =
