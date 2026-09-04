@@ -99,7 +99,7 @@ QA 실패 시 반드시 기록. STEP 2·3에서 항상 참조.
 ## 스택
 Next.js 15 App Router · TypeScript strict · Tailwind 3.4 · Supabase (Postgres+PostGIS+RLS) · Supabase Auth (Naver OAuth + Email OTP) · Serwist PWA · Recharts · react-kakao-maps-sdk · Vitest + Playwright · Vercel Hobby + GitHub Actions CI
 
-## 현재 구현 단계 (2026-09-01 기준)
+## 현재 구현 단계 (2026-09-04 기준)
 
 ### 완료된 주요 기능
 | 기능 | 상태 |
@@ -111,7 +111,7 @@ Next.js 15 App Router · TypeScript strict · Tailwind 3.4 · Supabase (Postgres
 | 광고 시스템 (분양+중개·어드민 검수) | ✅ |
 | 학군 (학교알리미·진학률·순위·연락처) | ✅ |
 | 관리비 (K-apt) | ✅ |
-| 분양 정보 (crawl-presale·Gemini 파서) | ✅ |
+| 분양 정보 (crawl-presale·Groq/Gemini 파서) | ✅ |
 | AI 코멘트 (Chronos 12개월 예측 + Groq) | ✅ |
 | 투자 분석 (Gap 분석·사분면·지역 인구) | ✅ |
 | 단지 비교 | ✅ |
@@ -121,8 +121,10 @@ Next.js 15 App Router · TypeScript strict · Tailwind 3.4 · Supabase (Postgres
 | 인스타 카드뉴스 생성기 (Puppeteer·주간 PNG 자동화·창원부동산랩) | 🔄 |
 
 ### 진행 중 / 예정
-- 광고: site_id 스코핑 완료(09-01) — 읽기 감독+쓰기 격리+정적 감사(site-id-audit.ts), image_url nullable
-- 분양: presale_enriched↔new_listings FK 연결(09-01), HMPG_ADRES 배관(09-01), fetchModelPrices 통합, 크롤러 주2회 자동실행
+- 광고: site_id 스코핑 완료(09-01) — 읽기 감독+쓰기 격리+정적 감사
+- 분양: FK 연결·fetchModelPrices·unit_types API 파싱 완료(09-03), 크롤러 merge 가드(09-04), 크롤러 주2회 자동실행
+- 주간 코멘트: qwen3.8-27b 모델 교체(09-03), 절대 날짜(09-04), 진행 중인 주 차단(09-04), 폴백 시 exit(1)
+- 부산 매칭: 별칭 추가(SK/LG, 09-04), name_normalized 갱신, --sgg-prefix 필터 — 네이버 스크래핑 미실행
 - 11월: 학교 진학률 데이터 갱신 (`scrape-school-advancement.ts` 중/고 재실행)
 
 ## 아키텍처 규칙
