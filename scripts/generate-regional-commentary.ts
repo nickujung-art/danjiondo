@@ -304,6 +304,15 @@ async function main() {
     ? `${ps.getMonth() + 1}월 ${ps.getDate()}~${pe.getDate()}일`
     : `${ps.getMonth() + 1}월 ${ps.getDate()}일~${pe.getMonth() + 1}월 ${pe.getDate()}일`
 
+  // ㉘ 완료된 주만 생성 — 진행 중인 주는 거래 자료가 불완전해 "항상 줄었다"가 나온다.
+  // --week-start 로 명시적으로 지정한 경우는 강제 실행(과거 주 보충용).
+  const todayStr = now.toISOString().slice(0, 10)
+  if (!weekStartArg && periodEnd >= todayStr) {
+    console.log(`[regional-commentary] ⚠ 대상 주(${periodStart} ~ ${periodEnd})가 아직 끝나지 않았다 — 건너뜀`)
+    console.log(`  오늘: ${todayStr}, 주 종료: ${periodEnd}. 완료 주만 생성하는 정책(㉘).`)
+    return
+  }
+
   console.log(`[regional-commentary] 대상 기간: ${periodStart} ~ ${periodEnd} (${periodLabel})${dryRun ? ' (dry-run)' : ''}`)
 
   const supabase = createClient(supabaseUrl, serviceKey, {
