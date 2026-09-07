@@ -39,6 +39,7 @@ import {
   validateCommentary,
   type CommentaryFacts,
 } from '../src/lib/ai/regional-commentary-style'
+import { markCronStatus } from '../src/lib/data/cron-status'
 
 /**
  * realtrade-story 운영 권역과 동일 — 창원 5구 + 김해.
@@ -414,6 +415,14 @@ async function main() {
   console.log(
     `[regional-commentary] 완료 — 성공 ${ok}(템플릿 대체 ${fellBack}) / 건너뜀 ${skipped} / 실패 ${failed}`,
   )
+
+  // ㉛ data_sources 상태 보고
+  if (!dryRun) {
+    const status = ok === 0 ? 'failed' : failed > 0 ? 'partial' : 'success'
+    const errMsg = failed > 0 ? `성공 ${ok} / 실패 ${failed}` : undefined
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await markCronStatus(supabase as any, 'regional-commentary', status, errMsg)
+  }
 
   // **전부 템플릿이면 모델에 아예 닿지 못한 것으로 본다.**
   // 이 배치는 모델 호출이 다 실패해도 폴백 덕에 "성공"으로 끝나 데이터까지 갱신된다.

@@ -5,6 +5,7 @@
  */
 import { createClient } from '@supabase/supabase-js'
 import { crawlPresaleSource } from '../src/services/presale-crawler'
+import { markCronStatus } from '../src/lib/data/cron-status'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
@@ -85,6 +86,13 @@ async function main() {
   }
 
   console.log('\n크롤링 완료')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await markCronStatus(supabase as any, 'presale-crawl', 'success')
 }
 
-main().catch(e => { console.error(e); process.exit(1) })
+main().catch(async (e) => {
+  console.error(e)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await markCronStatus(supabase as any, 'presale-crawl', 'failed', String(e)).catch(() => {})
+  process.exit(1)
+})
