@@ -73,6 +73,14 @@ async function main() {
       }
     }
 
+    // crawled_at은 실제 데이터를 얻었을 때만 찍는다 — 빈 크롤이 타임스탬프를 남기면
+    // "언제 자료를 얻었나"가 아니라 "언제 시도했나"가 된다(㉔).
+    const substantiveKeys = Object.keys(updatePayload).filter(k => k !== 'crawled_at' && k !== 'source_type')
+    if (substantiveKeys.length === 0) {
+      console.log('  → 크롤은 응답했으나 유효한 데이터 없음 (스킵)')
+      continue
+    }
+
     const { error: updateError } = await supabase
       .from('presale_enriched')
       .update(updatePayload)

@@ -293,9 +293,14 @@ async function main() {
   }
 
   // 기본값: 지난주 월요일 ~ 일요일. 크론이 월요일에 돌므로 "직전 완결 주"를 대상으로 한다.
+  // ㉟ KST(UTC+9) 기준으로 주 경계를 잡는다.
+  // 크론이 일 21:00 UTC(= 월 06:00 KST)에 돌 때 UTC 요일은 아직 일요일(0)이라
+  // "직전 완결 주"가 한 주 더 밀렸다(6회 연속 실측).
   const now = new Date()
-  const dayOfWeek = now.getDay() === 0 ? 7 : now.getDay() // 월=1 … 일=7
-  const periodStart = weekStartArg ?? daysAgo(now, dayOfWeek - 1 + 7)
+  const KST_MS = 9 * 3600_000
+  const kstNow = new Date(now.getTime() + KST_MS)
+  const dayOfWeek = kstNow.getUTCDay() === 0 ? 7 : kstNow.getUTCDay() // 월=1 … 일=7
+  const periodStart = weekStartArg ?? daysAgo(kstNow, dayOfWeek - 1 + 7)
   const periodEnd = daysAgo(new Date(periodStart), -6)
 
   // "8월 25~31일" 형태의 절대 날짜 라벨 — "지난주" 상대 표현 대신 사용
@@ -307,7 +312,7 @@ async function main() {
 
   // ㉘ 완료된 주만 생성 — 진행 중인 주는 거래 자료가 불완전해 "항상 줄었다"가 나온다.
   // --week-start 로 명시적으로 지정한 경우는 강제 실행(과거 주 보충용).
-  const todayStr = now.toISOString().slice(0, 10)
+  const todayStr = kstNow.toISOString().slice(0, 10)
   if (!weekStartArg && periodEnd >= todayStr) {
     console.log(`[regional-commentary] ⚠ 대상 주(${periodStart} ~ ${periodEnd})가 아직 끝나지 않았다 — 건너뜀`)
     console.log(`  오늘: ${todayStr}, 주 종료: ${periodEnd}. 완료 주만 생성하는 정책(㉘).`)
