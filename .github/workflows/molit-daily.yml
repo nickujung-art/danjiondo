@@ -79,6 +79,23 @@ jobs:
     steps:
       # 3회 모두 차단이면 **빨간불로 남긴다**. 조용히 넘어가면 08-02 처럼 0건 적재하고도
       # 초록불이라 아무도 모르는 상황이 다시 생긴다.
+      - name: 전부 차단 — data_sources 실패 보고
+        if: needs.attempt3.outputs.blocked == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          for src in molit_trade molit_villa_trade; do
+            curl -sf -X PATCH \
+              "$SUPABASE_URL/rest/v1/data_sources?id=eq.$src" \
+              -H "apikey: $SUPABASE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_KEY" \
+              -H "Content-Type: application/json" \
+              -H "Prefer: return=minimal" \
+              -d "{\"last_status\":\"failed\",\"error_message\":\"3회 연속 IP 차단 ($NOW)\"}"
+            echo "  → $src failed 보고 완료"
+          done
       - name: 3회 모두 차단이면 실패 처리
         if: needs.attempt3.outputs.blocked == 'true'
         run: |
