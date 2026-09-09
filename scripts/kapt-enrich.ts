@@ -211,6 +211,7 @@ async function main(): Promise<void> {
           gu,
           dong,
           road_address: info.doroJuso ?? null,
+          jibun_address: info.kaptAddr ?? null,
           household_count: info.kaptdaCnt ?? null,
           built_year: builtYear,
           heat_type: heatType,
