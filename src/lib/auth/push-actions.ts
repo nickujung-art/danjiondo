@@ -14,10 +14,11 @@ export async function registerPushSubscription(sub: PushSub): Promise<{ error: s
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: '로그인이 필요합니다.' }
 
-  const { error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
     .from('push_subscriptions')
     .upsert(
-      { user_id: user.id, endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
+      { user_id: user.id, endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth, is_valid: true },
       { onConflict: 'endpoint' },
     )
 

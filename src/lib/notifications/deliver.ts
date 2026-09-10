@@ -33,18 +33,33 @@ async function sendPushToUser(
   userId: string,
   payload: string,
 ): Promise<void> {
-  const { data: subs } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: subs } = await (supabase as any)
     .from('push_subscriptions')
     .select('endpoint, p256dh, auth')
     .eq('user_id', userId)
+    .eq('is_valid', true)
 
   for (const sub of subs ?? []) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const s = sub as any
-    await webpush.sendNotification(
-      { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-      payload,
-    )
+    try {
+      await webpush.sendNotification(
+        { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+        payload,
+      )
+    } catch (err: unknown) {
+      const statusCode = (err as { statusCode?: number })?.statusCode
+      if (statusCode === 410 || statusCode === 404) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from('push_subscriptions')
+          .update({ is_valid: false })
+          .eq('endpoint', s.endpoint)
+        continue
+      }
+      throw err
+    }
   }
 }
 
@@ -57,7 +72,7 @@ export async function deliverPendingNotifications(
 
   const { data: pending } = await supabase
     .from('notifications')
-    .select('id, user_id, title, body, type, created_at')
+    .select('id, user_id, title, body, type, data, created_at')
     .eq('status', 'pending')
     .order('created_at')
     .limit(BATCH_SIZE)
@@ -77,22 +92,25 @@ export async function deliverPendingNotifications(
         new Date(notif.created_at as string),
       )
       if (!canSend) continue
-      // 이메일 주소: auth.admin API로 조회
-      // service role 클라이언트는 auth.admin을 지원하지만 타입에 없어서 캐스팅
+
+      if (pushReady) {
+        const pushData: Record<string, unknown> = {
+          title: notif.title,
+          body:  notif.body,
+        }
+        const complexId = (notif.data as Record<string, unknown> | null)?.complex_id
+        if (typeof complexId === 'string') {
+          pushData.url = `/complexes/${complexId}`
+        }
+        await sendPushToUser(supabase, notif.user_id as string, JSON.stringify(pushData))
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: authUser } = await (supabase as any).auth.admin.getUserById(notif.user_id)
       const email = authUser?.user?.email as string | undefined
 
       if (resend && email) {
         await sendEmail(resend, email, notif.title as string, notif.body as string)
-      }
-
-      if (pushReady) {
-        const payload = JSON.stringify({
-          title: notif.title,
-          body:  notif.body,
-        })
-        await sendPushToUser(supabase, notif.user_id as string, payload)
       }
 
       await supabase
