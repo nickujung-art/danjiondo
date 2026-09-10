@@ -21,7 +21,7 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
 
 const isDryRun = process.argv.includes('--dry-run')
 const CONCURRENCY = 1           // 네이버 rate limit 방지 — 직렬 처리
-const SLEEP_MS    = 3000        // 요청 간 3초 대기 (1.5초에서 증가)
+const SLEEP_MS    = 5000        // 요청 간 5초 대기 (rate limit 대비 증가)
 const EXACT_DIST_M   = 200      // 200m 이내 → exact match
 const FUZZY_DIST_M   = 500      // 200~500m → fuzzy (skip, 로그만)
 
@@ -128,33 +128,41 @@ async function main() {
   console.log(`처리 대상: ${total}개`)
 
   const stats = { exact: 0, fuzzy: 0, miss: 0, error: 0 }
-  let rateLimited = false
+  let processed = 0
 
   await processInChunks(
     (complexes ?? []) as ComplexRow[],
     async (row) => {
-      if (rateLimited) return
-      try {
-        const result = await mapComplex(row)
-        stats[result]++
-      } catch (e) {
-        if (e instanceof NaverRateLimitError) {
-          console.error('[RATE-LIMIT] 네이버 API 429 — 중단. 5~30분 후 재실행하세요.')
-          rateLimited = true
+      processed++
+      if (processed % 50 === 0) {
+        console.log(`[진행] ${processed}/${total} (exact: ${stats.exact}, miss: ${stats.miss}, error: ${stats.error})`)
+      }
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          const result = await mapComplex(row)
+          stats[result]++
+          return
+        } catch (e) {
+          if (e instanceof NaverRateLimitError) {
+            const wait = Math.min(60_000 * Math.pow(2, attempt), 600_000)
+            console.error(`[RATE-LIMIT] 429 — ${Math.round(wait / 1000)}초 대기 후 재시도 (${attempt + 1}/5)`)
+            await sleep(wait)
+            continue
+          }
+          console.error(`[ERROR] ${row.canonical_name}: ${e instanceof Error ? e.message : e}`)
+          stats.error++
           return
         }
-        console.error(`[ERROR] ${row.canonical_name}: ${e instanceof Error ? e.message : e}`)
-        stats.error++
       }
+      console.error(`[RATE-LIMIT-GIVEUP] ${row.canonical_name} — 5회 재시도 실패`)
+      stats.error++
     },
     CONCURRENCY,
   )
 
   console.log(`\n=== 결과 ===`)
   console.log(`exact: ${stats.exact} / fuzzy(skip): ${stats.fuzzy} / miss: ${stats.miss} / error: ${stats.error}`)
-  if (rateLimited) {
-    console.log('⚠ Rate limit으로 조기 중단됨. 5~30분 후 재실행 필요.')
-  } else if (total > 0) {
+  if (total > 0) {
     console.log(`매핑률: ${((stats.exact / total) * 100).toFixed(1)}%`)
   } else {
     console.log(`매핑률: 0.0% (처리 대상 없음)`)

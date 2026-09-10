@@ -29,6 +29,8 @@ const LIMIT    = limitArg ? parseInt(limitArg.split('=')[1]!, 10) : Infinity
 // Golden Record 중복 행이라, 재시작마다 앞쪽 존을 다시 훑느라 시간을 낭비함. 새 지역만
 // 훑고 싶을 때 사용
 const newOnly = process.argv.includes('--new-only')
+const zonePrefixArg = process.argv.find(a => a.startsWith('--zone-prefix='))
+const ZONE_PREFIX   = zonePrefixArg ? zonePrefixArg.split('=')[1]! : ''
 const OLD_ZONE_NAMES = new Set(['창원북부', '마산', '진해', '창원남부', '김해'])
 // 미매핑 target마다 이름 무관 최근접 마커를 찾아 "이름 불일치 / 지오코딩 오차 / 커버리지 밖"을
 // 구분하는 진단 리포트를 scratchpad에 남김 — DB 변경 없음, 순수 사후 분석
@@ -67,6 +69,16 @@ const BBOXES = [
   { name: '함양',    latMin: 35.50, latMax: 35.54, lngMin: 127.71, lngMax: 127.75 },
   { name: '거창',    latMin: 35.66, latMax: 35.71, lngMin: 127.88, lngMax: 127.94 },
   { name: '합천',    latMin: 35.55, latMax: 35.59, lngMin: 128.14, lngMax: 128.18 },
+  // 부산 16개 구·군 (2026-09-09 추가, complexes.lat/lng 실측 min/max + 0.01 패딩)
+  { name: '부산서부', latMin: 35.06, latMax: 35.15, lngMin: 128.95, lngMax: 129.08 },  // 중구+서구+동구
+  { name: '부산남부', latMin: 35.06, latMax: 35.16, lngMin: 129.03, lngMax: 129.13 },  // 영도+남구
+  { name: '부산중부', latMin: 35.11, latMax: 35.21, lngMin: 128.96, lngMax: 129.12 },  // 부산진+연제+사상
+  { name: '부산동래', latMin: 35.13, latMax: 35.29, lngMin: 129.04, lngMax: 129.14 },  // 동래+수영+금정
+  { name: '부산사하', latMin: 35.04, latMax: 35.13, lngMin: 128.95, lngMax: 129.04 },  // 사하
+  { name: '부산북구', latMin: 35.18, latMax: 35.28, lngMin: 128.98, lngMax: 129.05 },  // 북구
+  { name: '부산해운대', latMin: 35.14, latMax: 35.24, lngMin: 129.11, lngMax: 129.22 },  // 해운대
+  { name: '부산강서', latMin: 35.07, latMax: 35.19, lngMin: 128.82, lngMax: 128.97 },  // 강서
+  { name: '부산기장', latMin: 35.19, latMax: 35.35, lngMin: 129.15, lngMax: 129.29 },  // 기장
 ]
 const CENTER_STEP = 0.06  // 중심점 간격 (도)
 
@@ -266,7 +278,11 @@ async function main() {
   if (targets.length === 0) { console.log('매핑할 단지 없음'); return }
 
   // ② 중심점 격자 생성 (0.06° 간격)
-  const activeBboxes = newOnly ? BBOXES.filter(b => !OLD_ZONE_NAMES.has(b.name)) : BBOXES
+  let activeBboxes = newOnly ? BBOXES.filter(b => !OLD_ZONE_NAMES.has(b.name)) : BBOXES
+  if (ZONE_PREFIX) {
+    activeBboxes = activeBboxes.filter(b => b.name.startsWith(ZONE_PREFIX))
+    console.log(`--zone-prefix=${ZONE_PREFIX}: ${activeBboxes.length}개 존만 탐색\n`)
+  }
   if (newOnly) console.log(`--new-only: 창원/김해 제외, ${activeBboxes.length}개 존만 탐색\n`)
   const centers: { name: string; lat: number; lng: number }[] = []
   for (const bbox of activeBboxes) {

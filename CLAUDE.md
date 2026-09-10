@@ -153,6 +153,11 @@ Next.js 15 App Router · TypeScript strict · Tailwind 3.4 · Supabase (Postgres
 - Server Action 우선 (폼·mutation). REST Route는 외부 노출 필요 시만
 - 디렉토리: 컴포넌트 `src/components/` · 도메인 `src/lib/` · 어댑터 `src/services/` · 타입 `src/types/`
 
+## 운영권역 시군구 코드
+`48121`(의창) · `48123`(성산) · `48125`(마산합포) · `48127`(마산회원) · `48129`(진해) · **`48250`(김해)**
+- 정본: `src/lib/data/rankings-page.ts` SGG_TABS / `src/lib/data/kapt-address.ts` SGG_ADDRESS_PREFIX
+- ⚠️ `48170`은 **진주시**(운영권역 아님). 혼동 사고 있었음(2026-09-09)
+
 ## 개발
 - TDD: 테스트 먼저 작성 후 구현
 - 커밋: `feat(scope): 설명` / `fix:` / `refactor:` / `docs:` / `chore:`
