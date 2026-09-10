@@ -100,7 +100,7 @@ export async function deliverPendingNotifications(
         }
         const complexId = (notif.data as Record<string, unknown> | null)?.complex_id
         if (typeof complexId === 'string') {
-          pushData.url = `/complexes/${complexId}`
+          pushData.url = `/complex/${complexId}`
         }
         await sendPushToUser(supabase, notif.user_id as string, JSON.stringify(pushData))
       }
