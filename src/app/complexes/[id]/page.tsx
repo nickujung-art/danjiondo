@@ -273,8 +273,8 @@ export default async function ComplexDetailPage({ params, searchParams }: Props)
       .limit(1)
       .maybeSingle(),
     getRedevelopmentProject(id, supabase).catch(() => null),
-    complex.si && complex.gu
-      ? getQuadrantData(id, complex.si, complex.gu, supabase).catch(() => null)
+    complex.sgg_code
+      ? getQuadrantData(id, complex.sgg_code, `${complex.si ?? ''} ${complex.gu ?? ''}`.trim(), supabase).catch(() => null)
       : Promise.resolve(null),
     // 갭 라벨 (오류 시 null로 fallback)
     getGapLabelData(id, supabase).catch(() => ({

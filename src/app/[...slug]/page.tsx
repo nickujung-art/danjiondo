@@ -376,8 +376,8 @@ async function ComplexDetailPage({
       .limit(1)
       .maybeSingle(),
     getRedevelopmentProject(id, supabase).catch(() => null),
-    complex.si && complex.gu
-      ? getQuadrantData(id, complex.si, complex.gu, supabase).catch(() => null)
+    complex.sgg_code
+      ? getQuadrantData(id, complex.sgg_code, `${complex.si ?? ''} ${complex.gu ?? ''}`.trim(), supabase).catch(() => null)
       : Promise.resolve(null),
     getGapLabelData(id, supabase).catch(() => ({
       listingPricePerPy: null,

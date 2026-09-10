@@ -29,17 +29,13 @@ function median(values: number[]): number {
 
 export async function getQuadrantData(
   targetComplexId: string,
-  si: string,
-  gu: string,
+  sggCode: string,
+  regionLabel: string,
   supabase: SupabaseClient<Database>,
 ): Promise<QuadrantData> {
-  const regionLabel = `${si} ${gu}`
-
-  // SQL RPC에서 시/구 단지별 평당가를 서버사이드 집계 (기존: 80K 행 JS 계산)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any).rpc('get_quadrant_data', {
-    p_si: si,
-    p_gu: gu,
+    p_sgg_code: sggCode,
   })
 
   if (error) throw new Error(`get_quadrant_data RPC failed: ${error.message}`)
