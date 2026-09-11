@@ -340,19 +340,20 @@ async function main(): Promise<void> {
   let totalQueuedLow = 0
   let totalUnmatched = 0
 
-  // 2. 배치 페이지네이션 처리
+  // 2. cursor 기반 페이지네이션 (offset 대신 id > lastCursor)
+  let lastCursor = ''
   for (let batchNum = 1; batchNum <= totalBatches; batchNum++) {
-    const offset = (batchNum - 1) * BATCH_SIZE
-
     let fetchQuery = supabase
       .from('transactions')
       .select('id, sgg_code, raw_complex_name, umd_nm, jibun')
       .is('complex_id', null)
       .is('cancel_date', null)
       .is('superseded_by', null)
+      .order('id')
+      .limit(BATCH_SIZE)
     if (sggPrefix) fetchQuery = fetchQuery.like('sgg_code', `${sggPrefix}%`)
+    if (lastCursor) fetchQuery = fetchQuery.gt('id', lastCursor)
     const { data: rows, error: fetchError } = await fetchQuery
-      .range(offset, offset + BATCH_SIZE - 1)
 
     if (fetchError) {
       console.error(`\n배치 ${batchNum} 조회 실패: ${fetchError.message}`)
@@ -360,6 +361,7 @@ async function main(): Promise<void> {
     }
 
     if (!rows || rows.length === 0) break
+    lastCursor = (rows[rows.length - 1] as { id: string }).id
 
     const linkedPairs: Array<{ id: string; complexId: string }> = []
 
