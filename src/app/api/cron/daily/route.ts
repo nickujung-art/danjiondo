@@ -140,6 +140,7 @@ export async function GET(request: Request): Promise<Response> {
   // ── MOLIT 분양권전매 UPSERT (DATA-02) ────────────────────────────────
   const dealYmd = currentYearMonth()
   let presaleUpserted = 0
+  let presaleErrors = 0
 
   for (const lawdCd of activeSggCodes) {
     try {
@@ -177,7 +178,18 @@ export async function GET(request: Request): Promise<Response> {
             },
             { onConflict: 'listing_id,deal_date,area,floor', ignoreDuplicates: true },
           )
-        if (!error) presaleUpserted++
+        // 예전에는 error를 확인하지 않고 카운터만 올렸다 — 실패하면 아무 흔적 없이
+        // presaleUpserted가 안 오를 뿐이었다. 바로 위 148~150행이 upsertMolitListing에서
+        // 겪은 것과 똑같은 구조이며, presale_transactions가 0행인데도 아무도 몰랐다
+        // (2026-09-17 daily-batch partial 진단 중 발견). 표본만 남긴다.
+        if (error) {
+          if (presaleErrors < 3) {
+            errors.push(`presale_transactions listing=${listingId} ${dealDate}: ${error.message}`)
+          }
+          presaleErrors++
+          continue
+        }
+        presaleUpserted++
       }
     } catch (err) {
       errors.push(`presale lawdCd=${lawdCd}: ${describeError(err)}`)
@@ -653,7 +665,20 @@ export async function GET(request: Request): Promise<Response> {
     errors.push('markCronStatus(kapt) 갱신 실패 — 로그 확인')
   }
 
-  await markCronStatus(supabase, 'daily-batch', errors.length === 0 ? 'success' : 'partial')
+  // 사유를 반드시 남긴다 — 648행 kapt에서 이미 한 번 겪은 실수인데 이 줄만 빠져 있었다.
+  // 그래서 daily-batch는 last_status='partial' + error_message=null 이었고,
+  // 하위 소스(kapt·molit_*·gap-stats·price-stats)가 전부 success라 무엇이 실패했는지
+  // 알 길이 없었다(2026-09-17 ax-sub 감시견이 "최소 4일째 partial"로 올려 발견).
+  //
+  // errors에는 **자기 data_sources 행이 없는 단계**도 들어온다 —
+  // 청약홈·분양(presale/cheongyak/remndr/competition/model prices)·presale_enriched 등.
+  // 그 단계들의 실패는 오직 이 우산 상태에서만 드러나므로 사유가 더욱 필요하다.
+  const batchStatus = errors.length === 0 ? 'success' : 'partial'
+  const batchReason = batchStatus === 'success'
+    ? undefined
+    // 앞쪽 몇 건이면 원인 파악에 충분하다. 전체 건수를 함께 남겨 표본임을 알린다.
+    : `${errors.length}건 중 앞 5건: ${errors.slice(0, 5).join('; ')}`.slice(0, 1000)
+  await markCronStatus(supabase, 'daily-batch', batchStatus, batchReason)
 
   return Response.json({
     ok: errors.length === 0,
@@ -664,6 +689,7 @@ export async function GET(request: Request): Promise<Response> {
     kaptNotFound,
     kaptBudgetExceeded,
     presaleUpserted,
+    presaleErrors,
     cheongyakUpserted,
     remndrUpserted,
     competitionUpdated,
