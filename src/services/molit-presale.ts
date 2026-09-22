@@ -17,6 +17,29 @@ const PresaleTradeSchema = z.object({
 
 export type PresaleTrade = z.infer<typeof PresaleTradeSchema>
 
+/**
+ * MOLIT(공공데이터포털) API 실패. 상태 코드와 본문의 errMsg 를 함께 들고 있다.
+ *
+ * `isAccountLevel` 은 **지역을 바꿔도 결과가 같은 실패**를 뜻한다. 서비스키가
+ * 그 API 에 등록되지 않은 경우가 대표적이며(returnReasonCode=30), 이때 38개
+ * 지역을 모두 두드리면 똑같은 오류 38건과 낭비된 요청만 남는다.
+ */
+export class MolitApiError extends Error {
+  readonly status: number
+  readonly errCode?: string
+
+  constructor(message: string, status: number, errCode?: string) {
+    super(message)
+    this.name = 'MolitApiError'
+    this.status = status
+    this.errCode = errCode
+  }
+
+  get isAccountLevel(): boolean {
+    return this.status === 403 || this.errCode === 'SERVICE_KEY_IS_NOT_REGISTERED_ERROR'
+  }
+}
+
 function parseXmlItems(xml: string): unknown[] {
   // Node.js 내장 방식으로 XML에서 <item> 블록 추출
   // fast-xml-parser 없이 구현
@@ -55,7 +78,20 @@ export async function fetchPresaleTrades(
     headers: { Accept: 'application/xml' },
     signal: AbortSignal.timeout(15_000),
   })
-  if (!res.ok) throw new Error(`MOLIT API ${res.status}`)
+  if (!res.ok) {
+    // 상태 코드만 던지면 원인을 알 수 없다. 2026-09-17~22에 daily-batch 가
+    // "MOLIT API 403" 38건만 남겨, 키가 막힌 것인지 지역이 잘못된 것인지
+    // 구분할 수 없었다. data.go.kr 은 사유를 본문에 담아 준다 — 그걸 올린다.
+    const body = await res.text().catch(() => '')
+    const errCode = body.match(/<errMsg>(.*?)<\/errMsg>/)?.[1]
+    const authMsg = body.match(/<returnAuthMsg>(.*?)<\/returnAuthMsg>/)?.[1]
+    const detail = [errCode, authMsg].filter(Boolean).join(' / ')
+    throw new MolitApiError(
+      `MOLIT API ${res.status}${detail ? ` — ${detail}` : ''}`,
+      res.status,
+      errCode,
+    )
+  }
 
   const xml = await res.text()
   const items = parseXmlItems(xml)

@@ -9,6 +9,7 @@ import {
   parseAmount,
   currentYearMonth,
   previousYearMonth,
+  MolitApiError,
 } from '@/services/molit-presale'
 import { fetchCheongyakList, fetchRemndrList, fetchCompetitionRate, fetchModelPrices } from '@/services/cheongyak/client'
 import { normalizeCheongyakItem, normalizeRemndrItem } from '@/services/cheongyak/normalize'
@@ -193,6 +194,12 @@ export async function GET(request: Request): Promise<Response> {
       }
     } catch (err) {
       errors.push(`presale lawdCd=${lawdCd}: ${describeError(err)}`)
+      // 키/계정 수준 실패는 지역을 바꿔도 같은 결과다. 남은 지역을 마저 두드리면
+      // 똑같은 오류만 쌓이고(2026-09-22 실측 38건) 시간예산도 먹는다.
+      if (err instanceof MolitApiError && err.isAccountLevel) {
+        errors.push(`presale: 계정 수준 실패 — 남은 ${activeSggCodes.length - activeSggCodes.indexOf(lawdCd) - 1}개 지역 건너뜀`)
+        break
+      }
     }
   }
   totalUpserted += presaleUpserted
