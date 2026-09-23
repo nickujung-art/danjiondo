@@ -378,8 +378,26 @@ export function validateCommentary(
     if (!/요[.!?]$/.test(sentence.trim())) violations.push(`해요체 아님: "${sentence.trim().slice(-12)}"`)
   }
 
+  /*
+    🔴 **코드가 준 어구는 금지어 검사에서 뺀다**(2026-09-23).
+
+    `날짜 표기` 규칙 `/d+월s*d+일/` 이 **달을 넘는 기간 라벨**에 걸렸다.
+
+      8월 24~30일      → 안 걸린다 ("N월 N일" 꼴이 안 나온다)
+      8월 31일~9월 6일 → **걸린다**
+
+    그런데 그 라벨은 프롬프트가 *"첫 문장을 반드시 이걸로 시작하라"* 고 지시한 개시부다.
+    모델은 시킨 대로 쓰고 검증은 시킨 대로 쓴 것을 반려한다 → 3회 모두 반려 → 템플릿.
+    **달을 넘는 주는 구조적으로 AI 문장이 나올 수 없었다.** 1년 52주 중 12주(23%)다.
+
+    금지어가 막으려는 건 **모델이 지어낸 날짜**이지 우리가 넘긴 라벨이 아니다.
+    그래서 라벨을 지운 뒤 검사한다 — 모델이 딴 날짜를 쓰면 그건 그대로 걸린다.
+  */
+  const textForBanCheck = facts.periodLabel
+    ? text.split(facts.periodLabel).join('')
+    : text
   for (const [re, label] of BANNED_PATTERNS) {
-    if (re.test(text)) violations.push(`금지 표현(${label})`)
+    if (re.test(textForBanCheck)) violations.push(`금지 표현(${label})`)
   }
 
   const thirtyDayMentions = text.split('최근 30일').length - 1

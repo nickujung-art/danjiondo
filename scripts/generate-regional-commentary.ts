@@ -442,6 +442,21 @@ async function main() {
       accepted = { text, model: 'fallback-template', signature: check.openingSignature }
       fellBack++
       console.warn(`  ! ${region.label}: ${MAX_ATTEMPTS}회 모두 반려(${lastViolations.join(' / ')}) — 템플릿으로 대체`)
+      /*
+        🔴 **폴백도 검증 결과를 버리지 않는다**(2026-09-23).
+
+        전에는 `check` 를 만들어 `openingSignature` 만 꺼내 쓰고 `check.ok` 는 보지 않았다.
+        그래서 폴백이 규칙을 어겨도 **조용히 채택**됐고 카드는 멀쩡해 보였다.
+        §42(달 넘는 주가 항상 템플릿으로 가던 건)가 2개월간 숨어 있던 이유가 이것이다.
+
+        여전히 채택은 한다 — 폴백은 최후 방어선이고 카드를 비우는 게 더 나쁘다.
+        다만 **말은 하고 넘어간다.** 조용한 폴백은 폴백이 아니라 손실이다.
+      */
+      if (!check.ok) {
+        console.error(
+          `  🔴 ${region.label}: 폴백 문장도 규칙을 어겼습니다 — ${check.violations.join(' / ')}`,
+        )
+      }
     }
 
     seenOpenings.add(accepted.signature)
@@ -485,6 +500,20 @@ async function main() {
   console.log(
     `[regional-commentary] 완료 — 성공 ${ok}(템플릿 대체 ${fellBack}) / 건너뜀 ${skipped} / 실패 ${failed}`,
   )
+
+  /*
+    **폴백 비율을 눈에 보이게 한다**(2026-09-23).
+
+    아래 "전부 템플릿" 경보는 `fellBack === ok` 일 때만 울린다. 그래서 6곳 중 4곳이
+    템플릿으로 가도 조용했다 — §42 가 정확히 그 틈으로 2개월을 숨었다.
+    폴백이 절반을 넘으면 그건 성공이 아니라 **신호**다.
+  */
+  if (ok > 0 && fellBack > ok / 2 && fellBack !== ok) {
+    console.warn(
+      `[regional-commentary] ⚠ ${ok}곳 중 ${fellBack}곳이 템플릿으로 나갔습니다(절반 초과) — ` +
+        `위 반려 사유가 특정 규칙에 몰려 있지 않은지 보세요.`,
+    )
+  }
 
   // ㉛ data_sources 상태 보고
   if (!dryRun) {

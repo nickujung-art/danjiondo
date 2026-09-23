@@ -405,3 +405,45 @@ describe('상대 시점 표현 금지 — 발표가 2주 이상 늦어서 "이�
     expect(prompt).toContain(f.periodLabel)
   })
 })
+
+describe('§42 달을 넘는 주 — 코드가 준 기간 라벨은 금지어에 걸리지 않는다', () => {
+  /*
+    `날짜 표기` 규칙이 "8월 31일~9월 6일" 같은 달 넘는 라벨에 걸려서,
+    프롬프트가 "이 라벨로 시작하라"고 시킨 개시부를 검증이 반려했다.
+    3회 모두 반려되면 템플릿으로 가므로 **달 넘는 주는 AI 문장이 구조적으로 불가능**했다.
+  */
+  const crossMonth: CommentaryFacts = { ...BASE, periodLabel: '8월 31일~9월 6일' }
+  const sameMonth: CommentaryFacts = { ...BASE, periodLabel: '8월 24~30일' }
+
+  const bodyFor = (f: CommentaryFacts) =>
+    `${f.periodLabel} 의창구에서는 아파트 42건이 거래돼 직전 주보다 5건 늘었어요. ` +
+    '가장 비싼 거래는 유니시티1단지 34평 12층 9억 2,000만원이었어요. ' +
+    '최근 30일 변동률 기준으로는 상승 단지 18곳, 하락 단지 12곳이에요.'
+
+  it('달을 넘는 기간 라벨로 시작해도 통과한다', () => {
+    expect(validateCommentary(bodyFor(crossMonth), crossMonth, new Set()).violations).toEqual([])
+  })
+
+  it('같은 달 라벨도 물론 통과한다 — 두 경우가 갈리지 않아야 한다', () => {
+    expect(validateCommentary(bodyFor(sameMonth), sameMonth, new Set()).violations).toEqual([])
+  })
+
+  it('🔴 모델이 지어낸 딴 날짜는 여전히 걸린다', () => {
+    // 라벨을 빼주는 것이지 날짜 금지를 푸는 게 아니다
+    const invented = bodyFor(crossMonth).replace('가장 비싼 거래는', '9월 15일 가장 비싼 거래는')
+    const check = validateCommentary(invented, crossMonth, new Set())
+    expect(check.violations.join()).toMatch(/날짜 표기/)
+  })
+
+  it('ISO 날짜도 여전히 걸린다', () => {
+    const iso = bodyFor(crossMonth).replace('가장 비싼 거래는', '2026-09-15 기준 가장 비싼 거래는')
+    expect(validateCommentary(iso, crossMonth, new Set()).violations.join()).toMatch(/날짜 표기/)
+  })
+
+  it('폴백 문장은 달 넘는 주에도 모든 시드에서 자기 검증을 통과한다', () => {
+    for (let seed = 0; seed < 12; seed++) {
+      const text = fallbackCommentary(crossMonth, pickSlots(crossMonth, seed))
+      expect(validateCommentary(text, crossMonth, new Set()).violations).toEqual([])
+    }
+  })
+})
