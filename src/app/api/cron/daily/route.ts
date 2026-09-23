@@ -20,8 +20,23 @@ import { describeError } from '@/lib/api/describe-error'
 
 export const runtime = 'nodejs'
 
-/** K-apt 1회 실행당 처리할 단지 수. 2,922건 ÷ 70 ≈ 42일 순환 (SLA 45일 충족) */
-const KAPT_BATCH_SIZE = 70
+/**
+ * K-apt 1회 실행당 처리할 단지 수.
+ *
+ * 원래 70이었고 주석은 "2,922건 ÷ 70 ≈ 42일 순환 (SLA 45일 충족)"이라고 적혀 있었다.
+ * **그 계산은 70건이 예산 안에 들어간다는 전제였는데 들어가지 않는다.**
+ * 2026-09-23 실측: 대상 70 · 적재 35 · 미조회 34 — 호출이 ~1.7초라 70건이면 119초인데
+ * 예산은 60초다. 즉 매일 절반에서 끊기면서 `partial`을 찍고 있었다.
+ *
+ * 커버리지는 이제 **GitHub Actions의 `kapt-facility-refresh.yml`이 책임진다**
+ * (매일 `--missing-only`, 달이 바뀌면 전수). 이 일배치의 kapt 단계는 보조 top-up이며
+ * `data_sources.kapt`의 신선도를 매일 갱신하는 역할이 더 크다.
+ *
+ * 그래서 **예산 안에 확실히 들어가는 크기**로 줄인다(25 × 1.7초 ≈ 42초).
+ * 이렇게 해야 `kaptBudgetExceeded`가 다시 의미를 가진다 — 25건도 못 끝냈다면
+ * 그것은 정상 순환이 아니라 **API가 느려졌다는 신호**다. (2026-08-06 판단의 취지 유지)
+ */
+const KAPT_BATCH_SIZE = 25
 /** K-apt 루프 시간 예산. 초과 시 중단하고 나머지는 다음 실행으로 넘긴다 */
 const KAPT_TIME_BUDGET_MS = 60_000
 /** PostgREST 기본 1,000행 캡을 넘기기 위한 페이지 크기 */
