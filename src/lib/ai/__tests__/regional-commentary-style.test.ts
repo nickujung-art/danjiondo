@@ -175,7 +175,7 @@ describe('validateCommentary', () => {
 
   it('번역투 "N건의 거래가 있었어요"를 반려한다', () => {
     const text =
-      '지난주 의창구에서는 아파트 42건의 매매 거래가 있었어요. 직전 주보다 5건 늘었어요. 최근 30일 변동률 기준으로는 상승 단지 18곳, 하락 단지 12곳이에요.'
+      '7월 20~26일 의창구에서는 아파트 42건의 매매 거래가 있었어요. 직전 주보다 5건 늘었어요. 최근 30일 변동률 기준으로는 상승 단지 18곳, 하락 단지 12곳이에요.'
     expect(validateCommentary(text, BASE).violations.join()).toContain('번역투')
   })
 
@@ -234,14 +234,14 @@ describe('validateCommentary', () => {
       topDeal: { complexName: '신리마을중앙하이츠8단지', price: 52500, pyeong: 39, floor: 6 },
     }
     const text =
-      '지난주 의창구에서는 아파트 42건이 거래돼 직전 주보다 5건 늘었어요. 가장 비싼 거래는 신리마을중앙하이츠8단지 39평 6층 6억 2,500만원이었어요. 최근 30일 변동률 기준으로는 상승 단지 18곳, 하락 단지 12곳이에요.'
+      '7월 20~26일 의창구에서는 아파트 42건이 거래돼 직전 주보다 5건 늘었어요. 가장 비싼 거래는 신리마을중앙하이츠8단지 39평 6층 6억 2,500만원이었어요. 최근 30일 변동률 기준으로는 상승 단지 18곳, 하락 단지 12곳이에요.'
     expect(validateCommentary(text, sixFloor).violations.join()).toContain('최고가 금액 불일치')
   })
 
   it('최고가 거래 자체가 없으면 단지명을 요구하지 않는다', () => {
     const noTop = { ...BASE, topDeal: null }
     const text =
-      '지난주 의창구에서는 아파트 42건이 거래돼 직전 주보다 5건 늘었어요. 최근 30일 변동률 기준으로는 상승 단지 18곳, 하락 단지 12곳이에요.'
+      '7월 20~26일 의창구에서는 아파트 42건이 거래돼 직전 주보다 5건 늘었어요. 최근 30일 변동률 기준으로는 상승 단지 18곳, 하락 단지 12곳이에요.'
     expect(validateCommentary(text, noTop).violations).toEqual([])
   })
 
@@ -376,5 +376,32 @@ describe('MIN_MEANINGFUL_TX_DIFF — 신고 지연 잡음 범위의 증감은 �
         expect(validateCommentary(text, f, new Set()).violations).toEqual([])
       }
     }
+  })
+})
+
+describe('상대 시점 표현 금지 — 발표가 2주 이상 늦어서 "이번 주"가 틀린 말이 된다', () => {
+  for (const bad of ['이번 주', '이번주', '금주', '지난주', '지난 주', '요즘']) {
+    it(`"${bad}"를 쓰면 반려한다`, () => {
+      const text = GOOD.replace('7월 20~26일 의창구에서는', `${bad} 의창구에서는`)
+      const check = validateCommentary(text, BASE, new Set())
+      expect(check.violations.join()).toMatch(/상대 시점 표현/)
+    })
+  }
+
+  it('비교 대상을 가리키는 "직전 주"는 걸리지 않는다', () => {
+    expect(validateCommentary(GOOD, BASE, new Set()).violations).toEqual([])
+  })
+
+  it('문턱 미만일 때 쓰는 "직전 주와 비슷한 수준"도 걸리지 않는다', () => {
+    const f: CommentaryFacts = { ...BASE, txDiff: 2 }
+    const text = fallbackCommentary(f, pickSlots(f, 3))
+    expect(validateCommentary(text, f, new Set()).violations).toEqual([])
+  })
+
+  it('프롬프트가 모델에게도 같은 규칙을 알려준다', () => {
+    const f: CommentaryFacts = { ...BASE }
+    const prompt = buildCommentaryPrompt(f, pickSlots(f, 0))
+    expect(prompt).toMatch(/상대 시점 표현은 절대 쓰지 마세요/)
+    expect(prompt).toContain(f.periodLabel)
   })
 })
