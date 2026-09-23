@@ -124,7 +124,43 @@ const VOLUME_FORMS = {
     (n: number) => `직전 주보다 ${n}건 적었어요`,
   ],
   same: [() => `직전 주와 같았어요`, () => `직전 주와 같은 건수예요`, () => `직전 주와 같은 수준이에요`],
+  /**
+   * **증감 폭이 잡음보다 작을 때** 쓰는 표현. 숫자도 방향도 말하지 않는다.
+   * `same`(정확히 0건)과 달리 이쪽은 "차이가 있긴 한데 말할 만큼 믿을 수 없다"는 뜻이다.
+   */
+  flat: [
+    () => `직전 주와 비슷한 수준이에요`,
+    () => `직전 주와 크게 다르지 않아요`,
+    () => `직전 주와 비슷한 흐름이에요`,
+  ],
 } as const
+
+/**
+ * **이 건수 미만의 증감은 방향을 말하지 않는다.**
+ *
+ * 실거래 신고는 최대 30일이 걸려서, 주 종료 15일 뒤(현재 배치 시점)에도 4~9%가 아직 안 들어온다.
+ * 남은 결측이 어느 주에 몰릴지는 무작위라, 증감 폭이 작을수록 방향이 뒤집힐 확률이 높다.
+ *
+ * 2026-06-01~08-17 창원 5구+김해 72표본을 주 종료 15일 시점으로 재현해 확정 자료와 대조한 결과:
+ *
+ * | 말하는 최소 증감 | 말한 횟수 | 그중 방향 오류 |
+ * |---|---|---|
+ * | 0 (문턱 없음) | 72 | **8 (11%)** |
+ * | 3 | 60 | 3 (5%) |
+ * | **5 (현재)** | **51** | **0** |
+ * | 8 | 34 | 0 |
+ *
+ * 5에서 오류가 0이 되면서도 71%는 여전히 증감을 말한다. 2026-08-21 대형 백필(2015~2016년
+ * 과거분)의 영향을 배제한 부분표본(42표본)에서도 문턱 5의 오류는 0이었다.
+ *
+ * 원칙 5 — 모르는 것을 아는 척하지 않는다. 틀린 방향을 말하느니 "비슷한 수준"이라고 말한다.
+ */
+export const MIN_MEANINGFUL_TX_DIFF = 5
+
+/** 증감 폭이 신고 지연 잡음을 넘어서 방향을 말해도 되는지 */
+export function isTxDiffMeaningful(f: CommentaryFacts): boolean {
+  return Math.abs(f.txDiff) >= MIN_MEANINGFUL_TX_DIFF
+}
 
 /** 상승/하락 단지 수 표현. 첫 형태는 대칭 병렬이라 회전 없이 쓰면 AI 티가 난다 */
 const BREADTH_FORMS: ((up: number, down: number) => string)[] = [
@@ -149,8 +185,13 @@ export function pickSlots(facts: CommentaryFacts, seed: number, attempt = 0): Co
   const available = OPENERS.filter((o) => o.requires(facts))
   const opener = available[mod(s, available.length)]!
 
-  const volumeBucket =
-    facts.txDiff > 0 ? VOLUME_FORMS.up : facts.txDiff < 0 ? VOLUME_FORMS.down : VOLUME_FORMS.same
+  const volumeBucket = !isTxDiffMeaningful(facts)
+    ? facts.txDiff === 0
+      ? VOLUME_FORMS.same
+      : VOLUME_FORMS.flat
+    : facts.txDiff > 0
+      ? VOLUME_FORMS.up
+      : VOLUME_FORMS.down
   const volumePhrase = volumeBucket[mod(s + 1, volumeBucket.length)]!(Math.abs(facts.txDiff))
 
   const breadthPhrase = BREADTH_FORMS[mod(s + 2, BREADTH_FORMS.length)]!(
@@ -358,6 +399,12 @@ export function validateCommentary(
   // 방향 어휘를 코드가 준 것과 반대로 쓰지 않았는지 — 숫자 검사로는 안 잡히는 실수다
   if (facts.txDiff > 0 && /줄었|감소|적었|덜\s*거래/.test(text)) violations.push('증감 방향 반전(증가인데 감소로 서술)')
   if (facts.txDiff < 0 && /늘었|증가|많아|더\s*거래/.test(text)) violations.push('증감 방향 반전(감소인데 증가로 서술)')
+  // 증감 폭이 문턱 미만이면 **어느 방향이든** 말하면 안 된다. 코드가 준 어구는 "비슷한 수준"인데
+  // 모델이 제 판단으로 방향을 붙이는 일이 있어, 위 두 줄과 별개로 막는다.
+  if (!isTxDiffMeaningful(facts) && /늘었|증가|많아|더[ ]*거래|줄었|감소|적었|덜[ ]*거래/.test(text))
+    violations.push(
+      `증감 ${Math.abs(facts.txDiff)}건은 신고 지연 잡음 범위(<${MIN_MEANINGFUL_TX_DIFF}건)라 방향 서술 금지`,
+    )
 
   if (seenOpenings.has(openingSignature)) violations.push(`앞 지역과 개시부 동일: "${openingSignature}"`)
 
@@ -374,7 +421,10 @@ function extractNumbers(text: string): number[] {
  * 금액은 "N억 M만원" 형태로 쪼개져 나오므로 억/만 단위도 함께 허용한다.
  */
 export function allowedNumbers(f: CommentaryFacts): Set<number> {
-  const set = new Set<number>([f.txCount, Math.abs(f.txDiff), f.upComplexes, f.downComplexes, 30])
+  // 증감을 말하지 않기로 한 주(MIN_MEANINGFUL_TX_DIFF 미만)에는 그 숫자를 허용 목록에서 뺀다 —
+  // 안 그러면 모델이 "3건 줄었어요"를 슬쩍 끼워 넣어도 숫자 검사를 통과한다.
+  const set = new Set<number>([f.txCount, f.upComplexes, f.downComplexes, 30])
+  if (isTxDiffMeaningful(f)) set.add(Math.abs(f.txDiff))
   // periodLabel("8월 25~31일")에 포함된 숫자를 허용
   for (const n of extractNumbers(f.periodLabel)) set.add(n)
   if (f.topDeal) {

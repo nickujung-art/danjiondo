@@ -19,7 +19,7 @@
  * 필요 환경변수: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, (GROQ_API_KEY | GEMINI_API_KEY)
  *
  * 사용:
- *   npx tsx scripts/generate-regional-commentary.ts                 # 지난주, 운영 6개 지역
+ *   npx tsx scripts/generate-regional-commentary.ts                 # 3주 전 완결 주, 운영 6개 지역
  *   npx tsx scripts/generate-regional-commentary.ts --dry-run       # DB 쓰지 않고 출력만
  *   npx tsx scripts/generate-regional-commentary.ts --week-start=2026-07-20
  */
@@ -31,6 +31,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import Groq from 'groq-sdk'
 import {
   applySpellFixes,
+  MIN_MEANINGFUL_TX_DIFF,
   buildCommentaryPrompt,
   fallbackCommentary,
   normalizeWhitespace,
@@ -65,6 +66,50 @@ const MIN_TX_FOR_COMMENTARY = 5
  * 3회로 잡은 건 지역 6개 × 최대 3회 = 18콜이라 무료 티어 rate limit 안에 들어오기 때문이다.
  */
 const MAX_ATTEMPTS = 3
+/**
+ * **대상 주를 몇 주 뒤에 발표하는가.**
+ *
+ * 실거래 신고는 계약일로부터 최대 30일이 걸린다. 그래서 `deal_date` 기준 한 주의 건수는
+ * 고정된 값이 아니라 **시간이 지나며 불어나는 값**이다. 2026-06~08 창원 5구+김해 실측:
+ *
+ * | 주 종료 후 | 최종 대비 적재율 |
+ * |---|---|
+ * | D+1  | 42~73% (평균 60%) |
+ * | D+8  | 82~87% |
+ * | D+15 | 91~96% |
+ * | D+22 | 96~100% |
+ * | D+29 | 100% |
+ *
+ * 문제는 편향이 아니라 **결측 자체**였다. D+1에 대상 주를 집계하면 그 주는 60%만 찬 상태인데
+ * 직전 주는 이미 85%가 차 있어, 증감이 구조적으로 마이너스로 나온다.
+ * 2026-06-29~08-24 9주 × 6지역 54표본을 재현한 결과:
+ *
+ * | LAG | 발표 시점 | 주간 증감 **방향**이 틀린 비율 | 평균 편향 |
+ * |---|---|---|---|
+ * | 1 (2026-09-23 이전) | D+1 | **39%** | −12.7건 |
+ * | 2 | D+8  | 21% | −3.8건 |
+ * | **3 (현재)** | **D+15** | 11% | −1.8건 |
+ * | 4 | D+22 | 4% | −0.6건 |
+ * | 5 | D+29 | 1% | 0.0건 |
+ *
+ * (LAG=N 이면 월요일 크론 기준 발표 시점은 D+(7N−6) 이다.)
+ *
+ * 실제로 D+1 방식은 54번 중 47번(87%) "줄었어요"라고 썼는데, 확정 자료로는 그중 절반이 증가였다.
+ * 2026-08-21 대형 백필(2015~2016년 과거분)의 영향을 배제한 부분표본(42표본)에서도
+ * 40/24/14/5/2%로 같은 곡선이 나와, 이 수치는 백필 artifact가 아니다.
+ *
+ * ⚠️ **"같은 성숙도끼리 비교"(직전 주도 D+1 시점으로 잘라서 비교)는 답이 아니었다** —
+ * 편향은 −12.5 → −0.8로 사라지지만 방향 오류는 37% → 35%로 거의 그대로다.
+ * 빠진 40%가 어느 주에 몰릴지가 무작위라, 편향을 지워도 잡음이 신호보다 크다.
+ * **기다리는 것 말고는 방법이 없다.**
+ *
+ * **3으로 잡은 이유 — 신선도와 정확도를 둘 다 얻기 위해서다.**
+ * 4(D+22)면 오류가 4%로 더 낮지만 3주 지난 주를 다루게 돼 주간 콘텐츠로는 너무 늦다.
+ * 3(D+15)의 잔여 오류 11%는 `MIN_MEANINGFUL_TX_DIFF`(증감 5건 미만이면 방향을 말하지 않음)가
+ * 따로 막는다 — 그 문턱까지 적용하면 같은 72표본에서 **방향 오류가 0**이 된다.
+ * 즉 이 상수는 편향을, 저 문턱은 잡음을 담당한다. 둘 다 있어야 한다.
+ */
+const REPORTING_LAG_WEEKS = 3
 
 interface WeeklyStats {
   sggCode: string
@@ -292,7 +337,9 @@ async function main() {
     process.exit(1)
   }
 
-  // 기본값: 지난주 월요일 ~ 일요일. 크론이 월요일에 돌므로 "직전 완결 주"를 대상으로 한다.
+  // 기본값: REPORTING_LAG_WEEKS 주 전의 월요일 ~ 일요일.
+  // 크론은 월요일에 돌지만 **직전 완결 주가 아니라 신고가 다 들어온 주**를 대상으로 한다 —
+  // 이유와 실측은 REPORTING_LAG_WEEKS 주석 참고.
   // ㉟ KST(UTC+9) 기준으로 주 경계를 잡는다.
   // 크론이 일 21:00 UTC(= 월 06:00 KST)에 돌 때 UTC 요일은 아직 일요일(0)이라
   // "직전 완결 주"가 한 주 더 밀렸다(6회 연속 실측).
@@ -300,7 +347,7 @@ async function main() {
   const KST_MS = 9 * 3600_000
   const kstNow = new Date(now.getTime() + KST_MS)
   const dayOfWeek = kstNow.getUTCDay() === 0 ? 7 : kstNow.getUTCDay() // 월=1 … 일=7
-  const periodStart = weekStartArg ?? daysAgo(kstNow, dayOfWeek - 1 + 7)
+  const periodStart = weekStartArg ?? daysAgo(kstNow, dayOfWeek - 1 + 7 * REPORTING_LAG_WEEKS)
   const periodEnd = daysAgo(new Date(periodStart), -6)
 
   // "8월 25~31일" 형태의 절대 날짜 라벨 — "지난주" 상대 표현 대신 사용
@@ -311,6 +358,9 @@ async function main() {
     : `${ps.getMonth() + 1}월 ${ps.getDate()}일~${pe.getMonth() + 1}월 ${pe.getDate()}일`
 
   // ㉘ 완료된 주만 생성 — 진행 중인 주는 거래 자료가 불완전해 "항상 줄었다"가 나온다.
+  // ⚠️ 2026-09-23: 이 가드만으로는 부족했다. **달력상 끝난 주 ≠ 신고가 끝난 주**다.
+  // 끝난 지 하루 된 주는 60%만 차 있어 "항상 줄었다"가 그대로 재현됐다(방향 오류 39%).
+  // 진짜 해결은 REPORTING_LAG_WEEKS 이고, 이 가드는 그 뒤의 안전망으로 남긴다.
   // --week-start 로 명시적으로 지정한 경우는 강제 실행(과거 주 보충용).
   const todayStr = kstNow.toISOString().slice(0, 10)
   if (!weekStartArg && periodEnd >= todayStr) {
@@ -319,7 +369,13 @@ async function main() {
     return
   }
 
+  const lagDays = Math.round((Date.parse(todayStr) - Date.parse(periodEnd)) / 86_400_000)
   console.log(`[regional-commentary] 대상 기간: ${periodStart} ~ ${periodEnd} (${periodLabel})${dryRun ? ' (dry-run)' : ''}`)
+  console.log(`  주 종료 후 ${lagDays}일 경과 — 신고 지연 보정 ${REPORTING_LAG_WEEKS}주 + 증감 문턱 ${MIN_MEANINGFUL_TX_DIFF}건`)
+  // 원칙 5 — 보정이 무력화된 채로 조용히 돌지 않게 한다.
+  if (lagDays < 15) {
+    console.warn(`  ⚠ 경과일 ${lagDays}일은 15일 미만이라 거래량 증감 방향이 10% 이상 틀릴 수 있다.`)
+  }
 
   const supabase = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },

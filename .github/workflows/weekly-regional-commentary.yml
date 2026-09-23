@@ -1,8 +1,13 @@
 name: Weekly Regional Commentary
 
 # 지역별 주간 실거래 AI 코멘트 생성 → regional_commentary 테이블 upsert.
-# realtrade-story 홈 피드가 이 결과를 읽어 "이번 주 OO 실거래 요약"으로 노출한다
+# realtrade-story 홈 피드가 이 결과를 읽어 지역별 실거래 요약 카드로 노출한다
 # (그쪽 저장소는 외부 AI API를 직접 호출하지 않는 아키텍처라 생성은 여기서 한다).
+#
+# ⚠️ 2026-09-23: 대상 주가 "직전 완결 주"에서 "3주 전 완결 주"로 바뀌었다.
+# 실거래 신고가 최대 30일 걸려서 갓 끝난 주는 60%만 차 있고, 그 상태로 증감을 계산하면
+# 주간 증감 방향이 39% 확률로 반대로 나왔다(54표본 실측). 상세는 스크립트의
+# REPORTING_LAG_WEEKS 주석 참고. 카드 제목이 "이번 주"라면 그쪽도 같이 고쳐야 한다.
 #
 # 구조는 monthly-ai-commentary.yml 을 그대로 따랐고 주기만 주간으로 바꿨다.
 
@@ -14,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       week_start:
-        description: '집계 시작일 YYYY-MM-DD (비우면 직전 완결 주)'
+        description: '집계 시작일 YYYY-MM-DD (비우면 3주 전 완결 주 — REPORTING_LAG_WEEKS)'
         default: ''
       dry_run:
         description: 'DB 쓰지 않고 출력만 (true/false)'

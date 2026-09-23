@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   allowedNumbers,
+  isTxDiffMeaningful,
+  MIN_MEANINGFUL_TX_DIFF,
   applySpellFixes,
   buildCommentaryPrompt,
   fallbackCommentary,
@@ -314,6 +316,65 @@ describe('fallbackCommentary', () => {
       const text = fallbackCommentary(BASE, pickSlots(BASE, seed))
       expect(text).not.toMatch(/거래는 아파트/)
       expect(text).not.toMatch(/아파트 거래는 \d+건이 거래돼/)
+    }
+  })
+})
+
+describe('MIN_MEANINGFUL_TX_DIFF — 신고 지연 잡음 범위의 증감은 방향을 말하지 않는다', () => {
+  const withDiff = (txDiff: number): CommentaryFacts => ({ ...BASE, txDiff })
+  const DIRECTION = /늘었|증가|많아|더 거래|줄었|감소|적었|덜 거래/
+
+  it('문턱 미만이면 방향도 숫자도 쓰지 않는다', () => {
+    for (const d of [1, 2, 3, 4, -1, -2, -3, -4]) {
+      const f = withDiff(d)
+      const text = fallbackCommentary(f, pickSlots(f, 7))
+      expect(isTxDiffMeaningful(f)).toBe(false)
+      expect(text).toMatch(/직전 주와/)
+      expect(text).not.toMatch(DIRECTION)
+      // "42건"이 "2건"을 포함하므로 부분 문자열이 아니라 "직전 주보다 N" 꼴로 확인한다
+      expect(text).not.toMatch(/직전 주보다s*d/)
+    }
+  })
+
+  it('문턱 이상이면 지금까지처럼 방향과 숫자를 쓴다', () => {
+    for (const d of [MIN_MEANINGFUL_TX_DIFF, -MIN_MEANINGFUL_TX_DIFF, 34, -34]) {
+      const f = withDiff(d)
+      const text = fallbackCommentary(f, pickSlots(f, 7))
+      expect(isTxDiffMeaningful(f)).toBe(true)
+      expect(text).toMatch(DIRECTION)
+      expect(text).toContain(`${Math.abs(d)}건`)
+    }
+  })
+
+  it('정확히 0건은 "비슷한"이 아니라 "같은"으로 말한다 — 모르는 것과 같은 것은 다르다', () => {
+    const f = withDiff(0)
+    const text = fallbackCommentary(f, pickSlots(f, 7))
+    expect(text).toMatch(/직전 주와 같/)
+    expect(text).not.toMatch(/비슷|크게 다르지/)
+  })
+
+  it('문턱 미만인데 모델이 방향을 붙이면 반려한다', () => {
+    const f = withDiff(3)
+    const sneaky =
+      '7월 20~26일 의창구에서는 아파트 42건이 거래돼 직전 주보다 늘었어요. 가장 비싼 거래는 유니시티1단지 34평 12층 9억 2,000만원이었어요. 최근 30일 변동률 기준으로는 상승 단지 18곳, 하락 단지 12곳이에요.'
+    const check = validateCommentary(sneaky, f, new Set())
+    expect(check.ok).toBe(false)
+    expect(check.violations.join()).toMatch(/방향 서술 금지/)
+  })
+
+  it('문턱 미만이면 증감 숫자를 허용 목록에서 뺀다', () => {
+    // 7은 다른 사실(건수·평·층·금액)과 겹치지 않는 값이라 증감에서만 올 수 있다
+    expect(allowedNumbers(withDiff(7)).has(7)).toBe(true)
+    expect(allowedNumbers({ ...withDiff(3), periodLabel: '7월 20~26일' }).has(3)).toBe(false)
+  })
+
+  it('폴백 문장은 문턱 미만에서도 모든 시드에서 자기 검증을 통과한다', () => {
+    for (const d of [0, 1, -2, 3, -4]) {
+      const f = withDiff(d)
+      for (let seed = 0; seed < 12; seed++) {
+        const text = fallbackCommentary(f, pickSlots(f, seed))
+        expect(validateCommentary(text, f, new Set()).violations).toEqual([])
+      }
     }
   })
 })
