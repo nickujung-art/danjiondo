@@ -19,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       week_start:
-        description: '집계 시작일 YYYY-MM-DD (비우면 3주 전 완결 주 — REPORTING_LAG_WEEKS)'
+        description: '집계 시작일 YYYY-MM-DD (비우면 3주 전 완결 주). 끝난 지 15일 안 된 주는 거부됩니다'
         default: ''
       dry_run:
         description: 'DB 쓰지 않고 출력만 (true/false)'

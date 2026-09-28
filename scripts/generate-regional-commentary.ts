@@ -21,7 +21,10 @@
  * 사용:
  *   npx tsx scripts/generate-regional-commentary.ts                 # 3주 전 완결 주, 운영 6개 지역
  *   npx tsx scripts/generate-regional-commentary.ts --dry-run       # DB 쓰지 않고 출력만
- *   npx tsx scripts/generate-regional-commentary.ts --week-start=2026-07-20
+ *   npx tsx scripts/generate-regional-commentary.ts --week-start=2026-07-20   # 과거 주 보충
+ *
+ * ⚠️ 주 종료 후 MIN_LAG_DAYS(=15일) 이 안 지난 주는 **거부**합니다. 덜 찬 자료로 증감을
+ *    계산하면 방향이 39% 틀립니다. 그래도 필요하면 --force-immature 를 붙이세요.
  */
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
@@ -119,6 +122,14 @@ const MAX_ATTEMPTS = 3
  * 매핑: 월요일 크론 기준 그쪽 `weeksAgo` 는 이 값과 같아진다.
  */
 const REPORTING_LAG_WEEKS = 3
+
+/**
+ * **이 일수보다 덜 익은 주는 만들지 않는다.**
+ *
+ * `REPORTING_LAG_WEEKS` 에서 파생한다 — 월요일 크론이 대상 주 종료 후 며칠째에 도는지다.
+ * LAG=3 이면 15일. 상수를 바꾸면 이 값도 같이 움직이므로 두 숫자가 어긋날 일이 없다.
+ */
+const MIN_LAG_DAYS = 7 * (REPORTING_LAG_WEEKS - 1) + 1
 
 interface WeeklyStats {
   sggCode: string
@@ -334,6 +345,12 @@ async function main() {
   const args = process.argv.slice(2)
   const dryRun = args.includes('--dry-run')
   const weekStartArg = args.find((a) => a.startsWith('--week-start='))?.split('=')[1]
+  /**
+   * 덜 익은 주를 **일부러** 만들 때만 붙인다. 아래 게이트 참고.
+   * ⚠️ workflow_dispatch 입력으로 노출하지 않는다 — UI 에서 한 번의 실수로 넘길 수 있으면
+   * 게이트가 아니다. 이 플래그는 로컬에서 의도를 갖고 칠 때만 들어간다.
+   */
+  const forceImmature = args.includes('--force-immature')
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -381,9 +398,37 @@ async function main() {
   const lagDays = Math.round((Date.parse(todayStr) - Date.parse(periodEnd)) / 86_400_000)
   console.log(`[regional-commentary] 대상 기간: ${periodStart} ~ ${periodEnd} (${periodLabel})${dryRun ? ' (dry-run)' : ''}`)
   console.log(`  주 종료 후 ${lagDays}일 경과 — 신고 지연 보정 ${REPORTING_LAG_WEEKS}주 + 증감 문턱 ${MIN_MEANINGFUL_TX_DIFF}건`)
-  // 원칙 5 — 보정이 무력화된 채로 조용히 돌지 않게 한다.
-  if (lagDays < 15) {
-    console.warn(`  ⚠ 경과일 ${lagDays}일은 15일 미만이라 거래량 증감 방향이 10% 이상 틀릴 수 있다.`)
+
+  /*
+    🔴 **덜 익은 주는 거부한다**(2026-09-23 도입, 09-28 경고 → 거부로 승격).
+
+    위 ㉘ 가드는 `--week-start` 가 붙으면 **통째로 건너뛴다**(과거 주 보충에 필요해서다).
+    그래서 workflow_dispatch UI 에 최근 주를 입력하면 D+1 상태로 생성돼 §41 버그가
+    그대로 재발했다. 신고가 60%만 찬 주를 85% 찬 직전 주와 비교하는 그 버그다.
+
+    처음엔 경고 로그 한 줄만 찍었는데, **CI 로그 한 줄은 아무도 안 본다**는 걸
+    §42 에서 이미 배웠다(달 넘는 주가 2개월간 전부 템플릿으로 나간 것을 아무도 몰랐다).
+    그래서 로그가 아니라 **빨간 X** 로 만든다 — 실패는 눈에 띈다.
+
+    과거 주 보충(`lagDays >= MIN_LAG_DAYS`)은 그대로 통과하므로 정상 용도는 막지 않는다.
+  */
+  if (lagDays < MIN_LAG_DAYS) {
+    if (!forceImmature) {
+      console.error(
+        `[regional-commentary] 🔴 거부 — 대상 주가 끝난 지 ${lagDays}일뿐입니다(최소 ${MIN_LAG_DAYS}일).`,
+      )
+      console.error(
+        `  실거래 신고는 최대 30일 걸립니다. 지금 만들면 이 주는 약 60%만 찬 상태로` +
+          ` 이미 85% 찬 직전 주와 비교돼, 주간 증감 방향이 39% 확률로 반대로 나옵니다.`,
+      )
+      console.error(`  이 주는 ${MIN_LAG_DAYS - lagDays}일 뒤에 정상 크론이 알아서 만듭니다 — 기다리세요.`)
+      console.error(`  그래도 만들어야 한다면 --force-immature 를 붙이세요(로컬 전용).`)
+      process.exit(1)
+    }
+    console.error(
+      `[regional-commentary] ⚠️ --force-immature — 경과 ${lagDays}일(최소 ${MIN_LAG_DAYS}일)인 주를 일부러 만듭니다.` +
+        ` 거래량 증감 방향을 믿지 마세요.`,
+    )
   }
 
   const supabase = createClient(supabaseUrl, serviceKey, {
