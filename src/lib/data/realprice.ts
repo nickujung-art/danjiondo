@@ -247,7 +247,28 @@ export async function ingestMonth(
   const zodFailRate = totalRows > 0 ? zodFails / totalRows : 0
   const hasCriticalFailure = zodFailRate > ZOD_FAILURE_THRESHOLD
 
-  const status = hasCriticalFailure ? 'failed' : rowsFailed > 0 ? 'partial' : 'success'
+  /*
+    🔴 **전멸은 `partial` 이 아니라 `failed` 다**(2026-09-29).
+  
+    `hasCriticalFailure` 는 **zod 파싱 실패율만** 본다. upsert/RPC 단계가 몇 건 실패하든
+    전부 `'partial'` 이었다 — **한 건도 못 넣은 경우까지** 그랬다.
+  
+    그게 세 겹으로 이어졌다.
+      ① 여기서 전멸이 `partial` 로 접히고
+      ② 호출부가 `result.status === 'failed'` 로만 세어 에러 카운터를 안 올리고
+      ③ `check-data-freshness.ts` 의 `FAILED_STATUSES` 에 `'partial'` 이 없어 위반이 아니다
+    결과: 전량 실패해도 `data_sources` 는 `success`, 워크플로 초록, exit 0.
+    2026-08-02 사고(152/152 실패 + exit 0)와 같은 모양이 upsert 경로에 남아 있었다.
+  
+    **근원 한 곳을 고치면 ②③이 따라온다** — 전멸을 `failed` 로 올리면
+    호출부의 기존 `=== 'failed'` 분기와 신선도 점검의 기존 목록이 그대로 잡는다.
+  */
+  const totalFailure = rowsUpserted === 0 && rowsFailed > 0
+  const status = hasCriticalFailure || totalFailure
+    ? 'failed'
+    : rowsFailed > 0
+      ? 'partial'
+      : 'success'
   const errorMessage = hasCriticalFailure
     ? `zod 실패율 ${(zodFailRate * 100).toFixed(1)}% (임계 ${ZOD_FAILURE_THRESHOLD * 100}% 초과)`
     : null
@@ -404,7 +425,28 @@ export async function ingestMonthVilla(
   const zodFailRate = totalRows > 0 ? zodFails / totalRows : 0
   const hasCriticalFailure = zodFailRate > ZOD_FAILURE_THRESHOLD
 
-  const status = hasCriticalFailure ? 'failed' : rowsFailed > 0 ? 'partial' : 'success'
+  /*
+    🔴 **전멸은 `partial` 이 아니라 `failed` 다**(2026-09-29).
+  
+    `hasCriticalFailure` 는 **zod 파싱 실패율만** 본다. upsert/RPC 단계가 몇 건 실패하든
+    전부 `'partial'` 이었다 — **한 건도 못 넣은 경우까지** 그랬다.
+  
+    그게 세 겹으로 이어졌다.
+      ① 여기서 전멸이 `partial` 로 접히고
+      ② 호출부가 `result.status === 'failed'` 로만 세어 에러 카운터를 안 올리고
+      ③ `check-data-freshness.ts` 의 `FAILED_STATUSES` 에 `'partial'` 이 없어 위반이 아니다
+    결과: 전량 실패해도 `data_sources` 는 `success`, 워크플로 초록, exit 0.
+    2026-08-02 사고(152/152 실패 + exit 0)와 같은 모양이 upsert 경로에 남아 있었다.
+  
+    **근원 한 곳을 고치면 ②③이 따라온다** — 전멸을 `failed` 로 올리면
+    호출부의 기존 `=== 'failed'` 분기와 신선도 점검의 기존 목록이 그대로 잡는다.
+  */
+  const totalFailure = rowsUpserted === 0 && rowsFailed > 0
+  const status = hasCriticalFailure || totalFailure
+    ? 'failed'
+    : rowsFailed > 0
+      ? 'partial'
+      : 'success'
   const errorMessage = hasCriticalFailure
     ? `zod 실패율 ${(zodFailRate * 100).toFixed(1)}% (임계 ${ZOD_FAILURE_THRESHOLD * 100}% 초과)`
     : null
