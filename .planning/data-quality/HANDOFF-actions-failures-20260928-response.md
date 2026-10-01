@@ -13,10 +13,11 @@
 
 **조치**: `BACKUP_PAT` 재발급 + Actions secrets 업데이트 후 `workflow_dispatch`로 검증 예정.
 
-## 🟡 2. 데이터 신선도 점검 — 10-01 자동 해결 예상
+## 🟡 2. 데이터 신선도 점검 — 월간 AI 해설 실행 후 해결 예상
 
 코드는 이미 `qwen/qwen3.8-27b`로 교체 완료 확인 (`generate-complex-commentary.ts:214`, `generate-regional-commentary.ts:63`).
-월간 크론이라 10-01 실행에서 풀릴 것. 10-01 이후에도 빨강이면 별도 원인 추적.
+
+~~월간 크론이라 10-01 실행에서 풀릴 것.~~ **정정 (10-01)**: 신선도 점검 자체는 **매일 크론**(`data-freshness-check.yml`, `cron: '0 23 * * *'`)이다. 풀릴 대상은 신선도 점검이 아니라 **월간 AI 해설**(`monthly-ai-commentary.yml`, `cron: '0 20 1 * *'` = 매월 1일 20:00Z). 10-02 05:00 KST 실행 후 성공하면 신선도 점검도 함께 초록으로 돌아온다.
 
 ## ✅ 3. CI — 확인 완료
 
