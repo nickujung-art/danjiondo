@@ -69,7 +69,7 @@ async function main() {
   let failed = 0
 
   for (let i = 0; i < targets.length; i++) {
-    const t = targets[i]
+    const t = targets[i]!
     process.stdout.write(`\r[${i + 1}/${targets.length}] ${t.canonical_name ?? t.kapt_code}`)
 
     try {
