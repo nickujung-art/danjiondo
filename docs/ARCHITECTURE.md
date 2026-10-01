@@ -206,8 +206,8 @@ scripts/                              # 82개 (1회성 배치·수집 스크립�
   scrape-school-contact.ts            # 전화번호·홈페이지
   scrape-school-details.ts            # 특수학급 수 (항목01, Playwright)
   ── AI / 예측 ────────────────────────────────────
-  compute-predictions.ts              # Chronos 12개월 예측
-  compute-predictions-ai.py           # Python Chronos 실행
+  compute-predictions.ts              # 고전 모델 12개월 예측 (linear·double-exp·holt-winters) — 2026-10-01 은퇴
+  compute-predictions-ai.py           # Chronos-Bolt-Small 12개월 예측 (현역, 유일한 예측원)
   crawl-presale.ts                    # 분양 정보 크롤링
   crawl-presale-news.ts               # 분양 뉴스 수집
   ── 기타 ────────────────────────────────────────
