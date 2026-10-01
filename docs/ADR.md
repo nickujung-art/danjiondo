@@ -479,7 +479,13 @@ danjiondo 소유인데, 새 정책의 조건식을 그 행들에 평가하면 �
 크론(`cafe-ingest.yml`)이 41-03 의 K-apt 재시딩 이후 자연스럽게 매칭을 재개한 것이지,
 이 Phase 가 복원한 것이 아니다.
 
-**가격예측(`compute-predictions.yml`) 미실행**: 부산 단지 1,643개에 Chronos 예측 + Groq
+**가격예측(`compute-predictions.yml`) 미실행**
+<sub>⚠️ 명칭 정정 (2026-10-01, ADR-066): 아래 본문이 이 워크플로를 "Chronos 예측"이라 적은 것은
+틀렸다. `compute-predictions.yml`은 **고전 모델**(linear·double-exp·holt-winters)이고 Chronos는
+`compute-predictions-ai.yml`이다. 아래 타임아웃 위험 서술은 맞았고 2026-09-27~09-30에 실현됐다 —
+다만 해법은 타임아웃 상향이 아니라 **은퇴**였다(ADR-066). 본문은 당시 기록이므로 고치지 않는다.</sub>
+
+부산 단지 1,643개에 Chronos 예측 + Groq
 해설을 채우는 작업으로, 이 Phase 에서 유일하게 외부 API 비용과 긴 실행시간이 드는
 항목이라 오케스트레이터 지시로 실행하지 않았다. 예상 규모는 단지 수 비례로 약
 11,500~13,500행. 최근 실행(2026-08-19, 부산 complexes 존재·거래 대부분 미존재 시점)이
@@ -625,3 +631,57 @@ plpgsql 은 지연 바인딩이라 본문 오류가 실행 시점에야 드러�
 확정지번으로 보호되고 있다.
 
 **상태**: 확정 (2026-08-21). 잔여 과제는 `.planning/data-quality/matching-integrity-20260821.md` §7
+
+---
+
+### ADR-066 — 고전 가격예측 배치 은퇴: 산출물이 읽기 시점에 전량 폐기되고 있었다
+
+**맥락**: `compute-predictions.yml`(고전 모델 — linear·double-exp·holt-winters, 크론 17:00Z)이
+2026-09-27~09-30 **나흘 연속 30분 타임아웃**으로 중단됐다. 첫 수리 방향은 `timeout-minutes`
+상향이었다. ADR Phase 41 이 이미 그 위험을 실측으로 적어 두고 후속 과제로 남긴 것이기도 하다
+("최근 실행이 이미 24m15s 로 `timeout-minutes: 30` 에 근접", 부산 거래 811,996건 유입 후 초과 위험).
+
+**그런데 올리기 전에 소비처를 봤더니 올릴 이유가 없었다.**
+
+같은 테이블 `complex_price_predictions` 의 같은 키(`complex_id, area_bucket, predicted_month`)에
+두 배치가 쓴다 — 이쪽과 `compute-predictions-ai.yml`(chronos-bolt-small, 18:00Z, **100% 성공**, 12~17분).
+소비처 `src/lib/data/invest.ts` 의 `MODEL_PRIORITY` 는 `chronos > holt-winters > double-exp > linear`
+로 **단지별 최상위 모델만 남기고 나머지 행을 버린다**(near/far 모델 혼재 차단). 읽기 범위는
+`computed_at >= 2일 전`.
+
+**실측 (2026-10-01)** — 그 2일 창 안에서 단지별로 세었다:
+
+```
+창 안 단지 3,318개 — 고전만 0 / Chronos만 1,735 / 둘다 1,583
+=> 고전 모델이 유일한 예측원인 단지: 0개   (7일 창으로 넓혀도 0개)
+```
+
+Chronos 가 고전이 계산하는 단지를 **전부** 덮고 중재에서 **항상** 이긴다. 즉 이 배치는 매일
+30분을 써서 아무도 읽지 않는 행을 만들고 있었다. **타임아웃을 올리는 것은 버려지는 계산에
+시간을 더 쓰는 것뿐이다.**
+
+**결정**: `compute-predictions.yml` 의 `schedule:` 트리거를 **주석 처리**한다(ADR-059 와 같은 방식).
+코드·시크릿·`workflow_dispatch` 는 남긴다. 이름에 `은퇴, 수동 전용` 을 적어 감시 대상에서 빠지는
+이유가 파일 안에서 읽히게 한다.
+
+**함께 고친 것 — 이 상태를 나흘간 아무도 못 본 이유**
+
+`scripts/check-data-freshness.ts` 의 `AI 가격예측` 점검이 `model_name` 을 구분하지 않고 테이블
+최신 `computed_at` 만 봤다. Chronos 가 45분 뒤에 쓰는 것만으로 **고전 배치가 통째로 죽어도
+영원히 초록**이었다 — 실제로 나흘 연속 중단 중에 `AI 가격예측 0.2일` 초록이었다.
+`transactions` 에 `embeddedFilter` 를 붙인 것과 **같은 종류의 구멍**이다(2026-08-04). 그쪽은
+출처를 조인으로만 알 수 있었지만 여기는 `model_name` 이 같은 테이블에 있어 `columnFilter` 로
+막았다. 라벨과 `job` 도 틀려 있었다 — Chronos 는 `compute-predictions-ai.yml` 이다.
+
+**교훈**: 두 배치가 한 테이블에 쓰면 **하나가 죽어도 다른 하나가 초록불을 만들어 준다.**
+이 저장소에서 같은 구멍이 세 번째다(2026-08-04 `transactions`, 2026-10-01 `complex_price_predictions`).
+새 배치를 기존 테이블에 붙일 때는 신선도 점검에 **출처 필터를 같이** 넣는다.
+
+그리고 **타임아웃은 "얼마나 오래 걸리나"가 아니라 "이 계산이 읽히나"를 먼저 묻게 하는 신호였다.**
+나흘 연속 빨간불이 실제로 알려 준 것은 느리다는 사실이 아니라 **필요 없다는 사실**이었다.
+
+**롤백**: 되살리려면 ① `schedule:` 주석 해제 ② `timeout-minutes` 를 30 초과로 올린다(30 은
+부족하다는 것이 실측됨) ③ `check-data-freshness.ts` 의 `가격예측 (고전 모델)` 점검 줄을 되살린다.
+단, 그 전에 2일 창에서 고전 단독 단지가 **0개가 아닌지** 다시 재는 것이 선행 조건이다.
+
+**상태**: 확정 (2026-10-01)

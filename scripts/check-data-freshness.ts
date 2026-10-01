@@ -74,6 +74,22 @@ interface Check {
   embeddedFilter?: { relation: string; column: string; in: readonly string[] }
 
   /**
+   * 여러 배치가 같은 테이블에 쓸 때, **출처가 같은 테이블의 한 컬럼으로 드러날 때** 쓰는 필터.
+   * `embeddedFilter` 와 같은 구멍을 막지만 조인이 필요 없다.
+   *
+   * [왜 필요한가 — 2026-10-01 발견]
+   * `complex_price_predictions` 에는 두 배치가 같은 키로 쓴다 —
+   * `compute-predictions.yml`(고전 모델, 17:00Z)과 `compute-predictions-ai.yml`(Chronos, 18:00Z).
+   * 이 점검은 `model_name` 을 구분하지 않고 테이블 최신 `computed_at` 만 봤으므로,
+   * Chronos 가 45분 뒤에 쓰는 것만으로 **고전 배치가 통째로 죽어도 영원히 초록**이었다.
+   * 실제로 09-27~09-30 나흘 연속 타임아웃으로 중단됐는데 `AI 가격예측 0.2일` 초록이었다.
+   *
+   * `transactions` 에 `embeddedFilter` 를 붙인 것과 **같은 종류의 구멍**이다(2026-08-04).
+   * 그쪽은 출처를 조인으로만 알 수 있었지만 여기는 `model_name` 이 같은 테이블에 있다.
+   */
+  columnFilter?: { column: string; in: readonly string[] }
+
+  /**
    * 원인이 밝혀졌고 **코드로 고칠 수 없어** 의식적으로 보류한 항목. 위반으로 세지 않고
    * `⏸` 로 표기만 한다.
    *
@@ -110,7 +126,13 @@ const CHECKS: Check[] = [
   { label: '실거래 (아파트·연립)', table: 'transactions',             column: 'created_at',   maxAgeDays: 4,   job: 'molit-daily.yml',     scopeFilter: { column: 'deal_date', withinDays: 90 }, embeddedFilter: { relation: 'ingest_runs', column: 'source_id', in: ['molit_trade', 'molit_villa_trade'] } },
   { label: '실거래 (오피스텔)',    table: 'transactions',             column: 'created_at',   maxAgeDays: 4,   job: 'cron/daily (Vercel)', scopeFilter: { column: 'deal_date', withinDays: 90 }, embeddedFilter: { relation: 'ingest_runs', column: 'source_id', in: ['molit_offi_trade'] } },
   { label: '단지 랭킹',            table: 'complex_rankings',         column: 'computed_at',  maxAgeDays: 1,   job: 'rankings-cron.yml' },
-  { label: 'AI 가격예측',          table: 'complex_price_predictions', column: 'computed_at',  maxAgeDays: 3,   job: 'compute-predictions.yml' },
+  // 라벨과 job 이 2026-10-01 까지 틀려 있었다 — `compute-predictions.yml` 은 고전 모델이고
+  // Chronos 는 `compute-predictions-ai.yml` 이다. 두 배치가 같은 테이블에 써서 서로를 가렸으므로
+  // `model_name` 으로 출처를 고정한다(columnFilter 주석 참조).
+  // 고전 모델 배치는 같은 날 은퇴했다(산출물이 읽기 시점에 전량 폐기되고 있었다) —
+  // 되살리면 아래 주석 처리된 줄을 함께 살린다.
+  { label: 'AI 가격예측 (Chronos)', table: 'complex_price_predictions', column: 'computed_at',  maxAgeDays: 3,   job: 'compute-predictions-ai.yml', columnFilter: { column: 'model_name', in: ['chronos-bolt-small'] } },
+  // { label: '가격예측 (고전 모델)', table: 'complex_price_predictions', column: 'computed_at',  maxAgeDays: 3,   job: 'compute-predictions.yml',    columnFilter: { column: 'model_name', in: ['linear', 'double-exp', 'holt-winters'] } },
   { label: '카페 아티클',          table: 'cafe_articles',            column: 'fetched_at',   maxAgeDays: 3,   job: 'cafe-ingest.yml' },
   { label: '주간 지역 AI 코멘트',  table: 'regional_commentary',      column: 'generated_at', maxAgeDays: 10,  job: 'weekly-regional-commentary.yml' },
   { label: '월간 AI 해설',         table: 'complex_price_predictions', column: 'ai_cached_at', maxAgeDays: 45,  job: 'monthly-ai-commentary.yml' },
@@ -210,6 +232,9 @@ async function main(): Promise<void> {
     if (check.embeddedFilter) {
       const { relation, column, in: allowed } = check.embeddedFilter
       query = query.in(`${relation}.${column}`, [...allowed])
+    }
+    if (check.columnFilter) {
+      query = query.in(check.columnFilter.column, [...check.columnFilter.in])
     }
     if (check.scopeFilter) {
       const since = new Date(Date.now() - check.scopeFilter.withinDays * 86_400_000)
