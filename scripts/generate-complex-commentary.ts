@@ -141,6 +141,10 @@ function hasRecentTrades(row: ComplexCommentaryInput): boolean {
 
 // ─── Retry Helper ────────────────────────────────────────────────────────────
 
+class TpdExhaustedError extends Error {
+  constructor(message: string) { super(message); this.name = 'TpdExhaustedError' }
+}
+
 async function retryGenerate(
   fn: () => Promise<string>,
   maxRetries = 4,
@@ -151,8 +155,11 @@ async function retryGenerate(
       return await fn()
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
-      const is503 = msg.includes('503') || msg.includes('Service Unavailable') || msg.includes('overloaded') || msg.includes('rate_limit_exceeded') || msg.includes('Rate limit')
-      if (!is503 || attempt === maxRetries) throw err
+      if (msg.includes('tokens per day') || msg.includes('"type":"tokens"')) {
+        throw new TpdExhaustedError(msg)
+      }
+      const isRetryable = msg.includes('503') || msg.includes('Service Unavailable') || msg.includes('overloaded') || msg.includes('rate_limit_exceeded') || msg.includes('Rate limit')
+      if (!isRetryable || attempt === maxRetries) throw err
       const wait = baseDelayMs * Math.pow(2, attempt)
       await new Promise<void>(r => setTimeout(r, wait))
     }
@@ -290,6 +297,12 @@ async function main(): Promise<void> {
     }
   }
 
+  allRows.sort((a, b) => {
+    const aCw = a.si === '창원시' ? 0 : 1
+    const bCw = b.si === '창원시' ? 0 : 1
+    return aCw - bCw
+  })
+
   if (args.dryRun) {
     for (const row of allRows) {
       console.log(`\n── ${row.complex_name} (${row.area_bucket}) ──`)
@@ -300,21 +313,31 @@ async function main(): Promise<void> {
   }
 
   // Groq: 30 RPM → concurrency 3, 300ms 간격 (분당 최대 18건)
+  // 실제 병목은 TPD(일일 토큰)다. RPM 페이싱은 부차적.
   // Gemini: concurrency 5, 200ms
   const concurrency = groqKey ? 3 : 5
   const delayMs     = groqKey ? 300 : 200
+
+  let tpdExhausted = false
 
   const results = await runConcurrent(
     allRows,
     concurrency,
     delayMs,
     async (row) => {
+      if (tpdExhausted) return
+
       const prompt = buildComplexPrompt(row)
 
       let commentary: string
       try {
         commentary = await retryGenerate(() => generate(prompt))
       } catch (err) {
+        if (err instanceof TpdExhaustedError) {
+          tpdExhausted = true
+          console.error(`\n[TPD] 일일 토큰 한도 소진 — 즉시 중단`)
+          return
+        }
         console.error(`[FAIL] ${row.complex_name}:`, err instanceof Error ? err.message : String(err))
         failed++
         return
@@ -349,10 +372,20 @@ async function main(): Promise<void> {
     },
   )
 
-  const totalProcessed = results.length
-  console.log(`\n[DONE] 완료: ${success}건 / 실패: ${failed}건 / 건너뜀: ${skipped}건 / 전체: ${totalProcessed}건`)
+  const total = allRows.length
+  const status = tpdExhausted ? 'partial' : (failed > 0 ? 'failed' : 'ok')
+  const reason = tpdExhausted ? 'groq_tpd_exhausted' : (failed > 0 ? 'errors' : '')
+  const runstat = `[runstat] job=monthly-commentary status=${status} done=${success} total=${total}${reason ? ` reason=${reason}` : ''}`
 
-  if (failed > 0) process.exit(1)
+  console.log(`\n[DONE] 완료: ${success}건 / 실패: ${failed}건 / 건너뜀: ${skipped}건 / 전체: ${total}건`)
+  console.log(runstat)
+
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    const { appendFileSync } = await import('fs')
+    appendFileSync(process.env.GITHUB_STEP_SUMMARY, runstat + '\n')
+  }
+
+  if (tpdExhausted || failed > 0) process.exit(1)
 }
 
 const scriptFile = fileURLToPath(import.meta.url)
