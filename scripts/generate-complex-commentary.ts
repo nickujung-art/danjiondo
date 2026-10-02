@@ -17,6 +17,7 @@ import { createClient } from '@supabase/supabase-js'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import Groq from 'groq-sdk'
 import { fileURLToPath } from 'url'
+import { markCronStatus } from '../src/lib/data/cron-status'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -373,9 +374,10 @@ async function main(): Promise<void> {
   )
 
   const total = allRows.length
-  const status = tpdExhausted ? 'partial' : (failed > 0 ? 'failed' : 'ok')
+  const cronStatus = tpdExhausted ? 'partial' : (failed > 0 ? 'failed' : 'success')
   const reason = tpdExhausted ? 'groq_tpd_exhausted' : (failed > 0 ? 'errors' : '')
-  const runstat = `[runstat] job=monthly-commentary status=${status} done=${success} total=${total}${reason ? ` reason=${reason}` : ''}`
+  const errMsg = `done=${success} total=${total}${reason ? ` reason=${reason}` : ''}`
+  const runstat = `[runstat] job=monthly-commentary status=${cronStatus} ${errMsg}`
 
   console.log(`\n[DONE] 완료: ${success}건 / 실패: ${failed}건 / 건너뜀: ${skipped}건 / 전체: ${total}건`)
   console.log(runstat)
@@ -384,6 +386,9 @@ async function main(): Promise<void> {
     const { appendFileSync } = await import('fs')
     appendFileSync(process.env.GITHUB_STEP_SUMMARY, runstat + '\n')
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await markCronStatus(supabase as any, 'monthly-commentary', cronStatus, cronStatus !== 'success' ? errMsg : undefined)
 
   if (tpdExhausted || failed > 0) process.exit(1)
 }
