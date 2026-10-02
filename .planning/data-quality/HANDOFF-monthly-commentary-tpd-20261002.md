@@ -223,3 +223,60 @@ bds 가 `4fd8e5f` 로 창원 우선 정렬을 넣은 걸 검증하다가, **내�
 ⚠️ TPD 가 소진돼도 `exit(1)` 이라 워크플로는 `failure` 로 끝난다. **그건 정상이다** —
 "하루 예산을 다 썼고 창원은 다 채웠다"는 뜻이다. 감시견은 이 경우
 `[runstat] status=partial` 과 창원 커버리지 초록을 함께 보고 판단하면 된다.
+
+---
+
+## 🔴 9. 정정 — **§7 의 제 요청이 절반 틀렸습니다. Step Summary 는 감시견이 못 읽습니다**
+
+§7 에서 두 경로를 제시했는데, 그중 하나가 **실측해 보니 안 됩니다.**
+
+| 경로 | 감시견이 읽을 수 있나 | 월간 해설이 쓰고 있나 |
+|---|---|---|
+| Actions 로그 | ✗ **403** | ✓ `console.log(runstat)` |
+| `$GITHUB_STEP_SUMMARY` | ✗ **REST API 에 노출되지 않음** | ✓ `4fd8e5f` 로 구현됨 |
+| **`data_sources`** | ✓ **매일 14행 전체 조회** | ✗ **행 자체가 없음** |
+
+**Step Summary 가 안 되는 근거** — Actions 잡은 check-run 으로도 보이는데, 그 `output` 이 비어 있다:
+
+```
+GET /repos/nickujung-art/routines/check-runs/110173904594
+→ {"annotations_count":1,"summary":null,"text":null,"title":null}
+```
+
+`collect-gmail` 은 Step Summary 에 `[runstat]` 을 쓰는 워크플로인데도 `summary: null` 이다.
+GitHub 은 잡 요약을 **UI 에서만 렌더**하고 REST 로는 주지 않는다.
+(그래서 감시견이 `collect-gmail` 에 대해서도 *"개별 `[runstat]`/`sent` 값은 열람하지 않음"* 이라고
+매일 적고 있었다 — 안 읽은 게 아니라 **못 읽은 것**이었다.)
+
+**제가 §7 에서 `$GITHUB_STEP_SUMMARY` 를 먼저 제시한 게 잘못이다.** `collect-gmail` 의 전례를
+근거로 들었는데, 그 전례가 실제로 작동하는지 확인하지 않고 적었다. 죄송하다.
+
+### 그래서 부탁을 이렇게 고칩니다 — `data_sources` 한 곳이면 됩니다
+
+감시견이 **유일하게 닿는 경로**이고, 이미 **매일 14행을 통째로 읽고 있다.**
+오늘 보고에도 이렇게 적혀 나온다:
+
+> `daily-batch` — status=partial, MOLIT API 403 (presale 38건 중 최소 5건 실패), consecutive_failures=0
+
+즉 **행만 있으면 사유까지 자동으로 보고된다. 감시견 프롬프트는 고칠 게 없다.**
+
+필요한 것 두 가지:
+
+1. `data_sources` 에 `monthly-commentary` 행 추가 (현재 14행에 없다 — `regional-commentary` 는
+   주간 지역 코멘트라 다른 배치다)
+2. `scripts/generate-complex-commentary.ts` 종료 시 그 행을 갱신.
+   `src/lib/data/cron-status.ts` 의 `markCronStatus(supabase, 'monthly-commentary', status, errorMessage)`
+   가 이미 `success`/`partial`/`failed` 를 받고, `error_message` 도 받는다
+
+   ```
+   status  = tpdExhausted ? 'partial' : (failed > 0 ? 'failed' : 'success')
+   message = `done=${success} total=${total}` + (tpdExhausted ? ' reason=groq_tpd_exhausted' : '')
+   ```
+
+`[runstat]` 출력과 Step Summary 기록은 **그대로 두시면 된다** — 사람이 UI 에서 볼 때 유용하고,
+나중에 감시견에 로그 권한이 생기면(`ax-sub` F-04-08 ①) 바로 쓸 수 있다.
+다만 **지금 감시견에 닿는 것은 `data_sources` 뿐이다.**
+
+⚠️ 이건 월간 해설만의 이야기가 아니다. §7 에서 *"앞으로 만드는 배치 전부"* 라고 적었는데,
+그 부탁의 **목적지를 `data_sources` 로 바로잡는다.** Step Summary 는 사람용이고
+`data_sources` 가 감시견용이다.
