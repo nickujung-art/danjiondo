@@ -90,6 +90,37 @@ interface Check {
   columnFilter?: { column: string; in: readonly string[] }
 
   /**
+   * **마지막 실행이 몇 행을 덮었나**까지 본다. "가장 최신 행이 신선한가"만 보는 판정의 사각을 메운다.
+   *
+   * [왜 필요한가 — 2026-10-02 발견]
+   * `monthly-ai-commentary` 가 `timeout-minutes: 120` 을 넘겨 **2h0m21s 에 잘렸는데**
+   * (conclusion=`cancelled`), 그 전에 쓴 행이 `ai_cached_at` 을 오늘 날짜로 남겨서
+   * 이 점검이 `월간 AI 해설  0.0일` → **`✅ 전부 정상`** 으로 통과시켰다.
+   * 실제 커버리지는 **26%**(6,350/24,320행, `area_bucket=84`)였다.
+   * **12회 연속 빨강이던 것이 고쳐져서가 아니라 잘려서 초록이 됐다.**
+   *
+   * 같은 구멍의 **세 번째 형태**다:
+   *   ① 다른 배치가 가림      (2026-08-04, `embeddedFilter` 로 막음)
+   *   ② 다른 모델이 가림      (2026-10-01, `columnFilter` 로 막음)
+   *   ③ 자기 부분 완료가 가림 (2026-10-02, 여기)
+   *
+   * [왜 과거 실행이 아니라 목표 대비 비율인가 — 처음 설계를 한 번 갈아엎었다]
+   * 처음에는 "마지막 정상 실행만큼 덮었나"로 짰다. **그 바닥이 가짜였다.**
+   * 실측해 보니 이 배치는 **한 번도 완주한 적이 없다**:
+   *   2026-08-04 실행 6,102행 — 그 실행도 1h35m 에 cancelled (같은 날 success 는 53초·39행)
+   *   2026-10-02 실행 6,350행 — 2h0m 에 cancelled. **오늘이 8월보다 더 많이 썼다**
+   * 잘린 실행을 바닥으로 삼으면 다음 잘린 실행이 그 바닥을 넘어 통과한다.
+   *
+   * 그래서 **범위 안 전체 행 대비 비율**로 잰다. 분모를 상수로 박지 않고 매번 세므로
+   * 단지가 늘어도 문턱이 낡지 않는다 — 이 파일의 "목록은 낡지만 판정식은 안 낡는다" 그대로다.
+   *
+   * ⚠️ **이 항목은 고쳐질 때까지 계속 빨강일 수 있다.** 그것이 의도다 —
+   * 2026-10-02 현재 26%만 덮고 있고, 그 사실이 보이지 않아 12회 연속 빨강이
+   * **고쳐져서가 아니라 잘려서** 초록이 됐다. 고칠 수 없는 항목이면 `pausedReason` 을 쓴다.
+   */
+  coverage?: { minRatio: number; basis: string }
+
+  /**
    * 원인이 밝혀졌고 **코드로 고칠 수 없어** 의식적으로 보류한 항목. 위반으로 세지 않고
    * `⏸` 로 표기만 한다.
    *
@@ -135,7 +166,9 @@ const CHECKS: Check[] = [
   // { label: '가격예측 (고전 모델)', table: 'complex_price_predictions', column: 'computed_at',  maxAgeDays: 3,   job: 'compute-predictions.yml',    columnFilter: { column: 'model_name', in: ['linear', 'double-exp', 'holt-winters'] } },
   { label: '카페 아티클',          table: 'cafe_articles',            column: 'fetched_at',   maxAgeDays: 3,   job: 'cafe-ingest.yml' },
   { label: '주간 지역 AI 코멘트',  table: 'regional_commentary',      column: 'generated_at', maxAgeDays: 10,  job: 'weekly-regional-commentary.yml' },
-  { label: '월간 AI 해설',         table: 'complex_price_predictions', column: 'ai_cached_at', maxAgeDays: 45,  job: 'monthly-ai-commentary.yml' },
+  // 이 배치는 워크플로에서 `--area-bucket=84` 로만 돈다(기본값). 그래서 범위를 84 로 고정한다 —
+  // 안 고정하면 분모에 이 배치가 건드리지도 않는 버킷이 섞여 커버리지가 실제보다 낮게 나온다.
+  { label: '월간 AI 해설',         table: 'complex_price_predictions', column: 'ai_cached_at', maxAgeDays: 45,  job: 'monthly-ai-commentary.yml', columnFilter: { column: 'area_bucket', in: ['84'] }, coverage: { minRatio: 0.8, basis: '2026-10-02 실측 26%(6,350/24,320) — 2h 타임아웃으로 잘림. 완주한 적이 한 번도 없어 과거 실행을 바닥으로 쓸 수 없다' } },
   // 네이버 2종은 보류다(2026-08-07). 네이버가 GitHub Actions IP 를 차단해 200개 단지가
   // 전부 매물 0건으로 돌아온다. 국내 IP 에서 같은 코드를 돌리면 정상 수집되는 것을 두 번
   // 확인했다(2026-08-03 로컬, 2026-08-07 프로브 — API 경로·응답 형태 모두 그대로였고
@@ -205,6 +238,69 @@ async function checkFailedJobs(
   }
 }
 
+/**
+ * 한 `Check` 의 범위 필터를 쿼리에 올린다.
+ *
+ * 최신 행 조회와 커버리지 집계가 **반드시 같은 범위**를 봐야 해서 한 곳으로 모았다.
+ * 둘이 어긋나면 "최신은 신선한데 집계는 다른 모수"가 되어 판정이 조용히 틀어진다.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyScope(query: any, check: Check): any {
+  let q = query
+  if (check.embeddedFilter) {
+    const { relation, column, in: allowed } = check.embeddedFilter
+    q = q.in(`${relation}.${column}`, [...allowed])
+  }
+  if (check.columnFilter) {
+    q = q.in(check.columnFilter.column, [...check.columnFilter.in])
+  }
+  if (check.scopeFilter) {
+    const since = new Date(Date.now() - check.scopeFilter.withinDays * 86_400_000)
+      .toISOString()
+      .slice(0, 10)
+    q = q.gte(check.scopeFilter.column, since)
+  }
+  return q
+}
+
+/** 한 실행이 남긴 행으로 묶는 창. 배치는 몇 시간씩 걸리므로 초 단위로 같지 않다. */
+const BATCH_WINDOW_HOURS = 24
+
+/**
+ * **가장 최근 실행이 남긴 행**이 몇 개인지 센다. `head: true` 라 본문 없이 카운트만 받는다.
+ *
+ * ⚠️ **신선도 한도(`maxAgeDays`) 창으로 세지 않는다.** 처음에 그렇게 짰다가 틀렸다 —
+ * 45일 창에는 **여러 실행이 누적**되므로(2026-10-02 실측 6,350행) 잘린 실행 하나를
+ * 이전 실행들이 떠받쳐 통과시킨다. 그러면 이 장치가 막으려는 바로 그 일이 다시 일어난다.
+ *
+ * 그래서 **최신 타임스탬프에서 {@link BATCH_WINDOW_HOURS} 안쪽**만 센다 —
+ * "마지막 실행이 얼마나 덮었나"를 직접 묻는다. 완주 시 전체가 몇 행인지 몰라도 판정된다.
+ *
+ * null 을 돌려주는 것은 **"세지 못했다"** 이고 0 과 다르다 — 호출부가 구분해서 다룬다.
+ * 조회 실패를 0 으로 바꾸면 "커버리지 0건"이라는 **없던 고장**을 만든다.
+ */
+async function measureCoverage(
+  supabase: ScriptSupabase,
+  check: Check,
+  latest: Date,
+): Promise<{ fresh: number; total: number } | { error: string }> {
+  const selectExpr = check.embeddedFilter
+    ? `${check.column}, ${check.embeddedFilter.relation}!inner(${check.embeddedFilter.column})`
+    : check.column
+  const head = () =>
+    applyScope(supabase.from(check.table).select(selectExpr, { count: 'exact', head: true }), check)
+
+  // 분모는 상수로 박지 않고 매번 센다 — 단지가 늘어도 문턱이 낡지 않는다.
+  const totalRes = await head()
+  if (totalRes.error) return { error: `전체 집계 실패: ${totalRes.error.message}` }
+
+  const cutoff = new Date(latest.getTime() - BATCH_WINDOW_HOURS * 3_600_000).toISOString()
+  const freshRes = await head().gte(check.column, cutoff)
+  if (freshRes.error) return { error: `최근 실행 집계 실패: ${freshRes.error.message}` }
+
+  return { fresh: freshRes.count ?? 0, total: totalRes.count ?? 0 }
+}
+
 async function main(): Promise<void> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -225,23 +321,9 @@ async function main(): Promise<void> {
       ? `${check.column}, ${check.embeddedFilter.relation}!inner(${check.embeddedFilter.column})`
       : check.column
 
-    let query = supabase
-      .from(check.table)
-      .select(selectExpr)
+    // null 제외는 여기서만 건다 — 커버리지의 분모는 **해설이 아직 없는 행도 포함**해야 한다.
+    const query = applyScope(supabase.from(check.table).select(selectExpr), check)
       .not(check.column, 'is', null)
-    if (check.embeddedFilter) {
-      const { relation, column, in: allowed } = check.embeddedFilter
-      query = query.in(`${relation}.${column}`, [...allowed])
-    }
-    if (check.columnFilter) {
-      query = query.in(check.columnFilter.column, [...check.columnFilter.in])
-    }
-    if (check.scopeFilter) {
-      const since = new Date(Date.now() - check.scopeFilter.withinDays * 86_400_000)
-        .toISOString()
-        .slice(0, 10)
-      query = query.gte(check.scopeFilter.column, since)
-    }
     const { data, error } = await query
       .order(check.column, { ascending: false })
       .limit(1)
@@ -286,9 +368,39 @@ async function main(): Promise<void> {
 
     if (stale) violations.push(`${check.label}: ${ageDays.toFixed(1)}일 경과 (한도 ${check.maxAgeDays}일) — ${check.job}`)
 
+    // 커버리지 — "최신이 신선한가" 다음에 "얼마나 신선한가"를 묻는다.
+    // 부분 완료가 최신 타임스탬프 하나로 전체를 통과시키는 것을 막는다(2026-10-02).
+    let covNote = ''
+    let covBad = false
+    if (check.coverage) {
+      const cov = await measureCoverage(supabase, check, last)
+      if ('error' in cov) {
+        // 세지 못한 것을 "충분하다"로 읽지 않는다 — 확인 불가도 위반이다(이 파일의 기존 원칙).
+        covBad = true
+        covNote = ` · 커버리지 ${cov.error}`
+        violations.push(`${check.label}: 커버리지 집계 실패 — ${cov.error}`)
+      } else if (cov.total === 0) {
+        covBad = true
+        covNote = ' · 커버리지 분모 0 — 범위 설정이 잘못됐다'
+        violations.push(`${check.label}: 커버리지 분모가 0이다 — columnFilter/scopeFilter 범위를 확인하세요`)
+      } else {
+        const ratio = cov.fresh / cov.total
+        covBad = ratio < check.coverage.minRatio
+        const pct = (ratio * 100).toFixed(1)
+        const minPct = (check.coverage.minRatio * 100).toFixed(0)
+        covNote = ` · 마지막 실행 커버리지 ${pct}% (${cov.fresh.toLocaleString()}/${cov.total.toLocaleString()}, 최소 ${minPct}%)`
+        if (covBad) {
+          violations.push(
+            `${check.label}: 마지막 실행이 범위의 ${pct}%(${cov.fresh.toLocaleString()}/${cov.total.toLocaleString()})만 덮었다 — ` +
+              `${check.job} 가 중간에 잘렸을 수 있다. 근거: ${check.coverage.basis}`,
+          )
+        }
+      }
+    }
+
     console.log(
-      `${stale ? '🔴' : '  '}    ${check.label.padEnd(22)} ${last.toISOString().slice(0, 10)}   ` +
-        `${ageDays.toFixed(1).padStart(6)}일 ${String(check.maxAgeDays).padStart(5)}일   ${check.job}`,
+      `${stale || covBad ? '🔴' : '  '}    ${check.label.padEnd(22)} ${last.toISOString().slice(0, 10)}   ` +
+        `${ageDays.toFixed(1).padStart(6)}일 ${String(check.maxAgeDays).padStart(5)}일   ${check.job}${covNote}`,
     )
   }
 
