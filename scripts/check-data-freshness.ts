@@ -114,9 +114,18 @@ interface Check {
    * 그래서 **범위 안 전체 행 대비 비율**로 잰다. 분모를 상수로 박지 않고 매번 세므로
    * 단지가 늘어도 문턱이 낡지 않는다 — 이 파일의 "목록은 낡지만 판정식은 안 낡는다" 그대로다.
    *
-   * ⚠️ **이 항목은 고쳐질 때까지 계속 빨강일 수 있다.** 그것이 의도다 —
-   * 2026-10-02 현재 26%만 덮고 있고, 그 사실이 보이지 않아 12회 연속 빨강이
-   * **고쳐져서가 아니라 잘려서** 초록이 됐다. 고칠 수 없는 항목이면 `pausedReason` 을 쓴다.
+   * [⚠️ 문턱은 **달성 가능한 범위**에 걸어야 한다 — 두 번째로 고친 지점]
+   * 처음엔 전체(24,320행) 대비 80% 로 잡았다. **그러면 정상 실행도 영원히 빨강이다.**
+   * Groq 무료 TPD 가 하루 ~6,350행이라 **설계대로 돌아도 26% 가 천장**이기 때문이다.
+   * 늘 빨강인 항목은 곧 무시당한다 — 이 파일이 `school_alimi` 를 두고 경고하는 바로 그 상태다.
+   *
+   * 그래서 **창원으로 범위를 좁혀** 잰다. 배치가 창원 우선 정렬을 받았으므로(bds `4fd8e5f`)
+   * 이제 물어야 할 것은 "전체의 몇 %"가 아니라 **"창원이 다 찼는가"**다.
+   * 창원 5,051행은 하루 예산 안에 들어가므로 정상이면 ~100%, 깨지면 바로 떨어진다.
+   *
+   * **교훈**: 커버리지 문턱을 세울 때는 *"무엇이 정상인가"* 가 아니라
+   * *"정상일 때 이 숫자가 얼마인가"* 를 먼저 재야 한다. 둘을 혼동하면
+   * 켜 둔 적 없는 경보가 매일 울린다.
    */
   coverage?: { minRatio: number; basis: string }
 
@@ -167,8 +176,16 @@ const CHECKS: Check[] = [
   { label: '카페 아티클',          table: 'cafe_articles',            column: 'fetched_at',   maxAgeDays: 3,   job: 'cafe-ingest.yml' },
   { label: '주간 지역 AI 코멘트',  table: 'regional_commentary',      column: 'generated_at', maxAgeDays: 10,  job: 'weekly-regional-commentary.yml' },
   // 이 배치는 워크플로에서 `--area-bucket=84` 로만 돈다(기본값). 그래서 범위를 84 로 고정한다 —
-  // 안 고정하면 분모에 이 배치가 건드리지도 않는 버킷이 섞여 커버리지가 실제보다 낮게 나온다.
-  { label: '월간 AI 해설',         table: 'complex_price_predictions', column: 'ai_cached_at', maxAgeDays: 45,  job: 'monthly-ai-commentary.yml', columnFilter: { column: 'area_bucket', in: ['84'] }, coverage: { minRatio: 0.8, basis: '2026-10-02 실측 26%(6,350/24,320) — 2h 타임아웃으로 잘림. 완주한 적이 한 번도 없어 과거 실행을 바닥으로 쓸 수 없다' } },
+  // 안 고정하면 분모에 이 배치가 건드리지도 않는 버킷이 섞여 판정이 실제보다 나쁘게 나온다.
+  // 이 줄은 **신선도만** 본다. 커버리지는 아래 창원 줄에서 따로 잰다(이유는 거기 주석).
+  { label: '월간 AI 해설',         table: 'complex_price_predictions', column: 'ai_cached_at', maxAgeDays: 45,  job: 'monthly-ai-commentary.yml', columnFilter: { column: 'area_bucket', in: ['84'] } },
+  // 커버리지는 **창원만** 잰다. 전체(24,320행) 대비로 재면 정상 실행도 영원히 빨강이기 때문이다 —
+  // Groq 무료 TPD 가 하루 ~6,350행이라 **설계대로 돌아도 26% 가 천장**이다.
+  // 2026-10-02 에 배치가 창원 우선 정렬을 받았으므로(bds `4fd8e5f`), 이제 물어야 할 것은
+  // "전체의 몇 %"가 아니라 **"창원이 다 찼는가"**다. 창원 5,051행은 하루 예산 안에 들어가므로
+  // 정상이면 ~100%, 깨지면 바로 떨어진다 — 노이즈 없이 구분된다.
+  // `si='창원시'` ↔ sgg_code 5구가 1:1 임을 실측 확인했다(1,406단지, 경계 오차 0).
+  { label: '월간 AI 해설 (창원)',  table: 'complex_price_predictions', column: 'ai_cached_at', maxAgeDays: 45,  job: 'monthly-ai-commentary.yml', columnFilter: { column: 'area_bucket', in: ['84'] }, embeddedFilter: { relation: 'complexes', column: 'sgg_code', in: ['48121', '48123', '48125', '48127', '48129'] }, coverage: { minRatio: 0.95, basis: '창원 5,051행 < 하루 TPD 예산 6,350행 → 정상 실행이면 창원은 다 찬다. 2026-10-02 실행은 정렬 적용 전이라 26.2%(1,323/5,051)' } },
   // 네이버 2종은 보류다(2026-08-07). 네이버가 GitHub Actions IP 를 차단해 200개 단지가
   // 전부 매물 0건으로 돌아온다. 국내 IP 에서 같은 코드를 돌리면 정상 수집되는 것을 두 번
   // 확인했다(2026-08-03 로컬, 2026-08-07 프로브 — API 경로·응답 형태 모두 그대로였고
