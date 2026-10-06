@@ -3,7 +3,7 @@ import { verifyCronSecret } from '@/lib/cron-auth'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { generatePriceAlerts } from '@/lib/notifications/generate-alerts'
 import { deliverPendingNotifications, deliverKakaoChannelNotifications } from '@/lib/notifications/deliver'
-import { markCronSuccess, markCronFailed } from '@/lib/data/cron-status'
+import { markCronSuccess, markCronFailed, markCronPartial } from '@/lib/data/cron-status'
 
 export const runtime = 'nodejs'
 
@@ -18,7 +18,13 @@ export async function POST(request: Request): Promise<NextResponse> {
     const generated = await generatePriceAlerts(supabase)
     const { sent, failed } = await deliverPendingNotifications(supabase)
     const { sent: kakaoSent, failed: kakaoFailed } = await deliverKakaoChannelNotifications(supabase)
-    await markCronSuccess(supabase, 'notify-worker')
+
+    if (failed > 0 || kakaoFailed > 0) {
+      await markCronPartial(supabase, 'notify-worker', `sent=${sent} failed=${failed} kakaoSent=${kakaoSent} kakaoFailed=${kakaoFailed}`)
+    } else {
+      await markCronSuccess(supabase, 'notify-worker')
+    }
+
     return NextResponse.json({ generated, sent, failed, kakaoSent, kakaoFailed })
   } catch (err) {
     await markCronFailed(supabase, 'notify-worker').catch(() => {})

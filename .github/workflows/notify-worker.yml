@@ -2,15 +2,17 @@ name: Notify Worker
 
 on:
   schedule:
-    # 매 5분마다 실행 (KST 06:00-24:00 = UTC 21:00-15:00)
-    - cron: '*/5 * * * *'
+    # 매일 10:00 KST (UTC 01:00)
+    #   - MOLIT 일배치(19:00 UTC = 04:00 KST) 6시간 뒤
+    #   - Weekly Digest(월 00:00 UTC = 09:00 KST) 1시간 뒤
+    - cron: '0 1 * * *'
   workflow_dispatch: {}
 
 jobs:
   notify:
     name: Poll & deliver notifications
     runs-on: ubuntu-latest
-    timeout-minutes: 4  # 5분 내 완료 보장
+    timeout-minutes: 10
 
     steps:
       - name: Call notify worker
