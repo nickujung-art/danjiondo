@@ -2,7 +2,11 @@ name: Monthly AI Commentary Batch
 
 on:
   schedule:
-    - cron: '0 20 * * *'  # 매일 05:00 KST (UTC 20:00) — staleness 필터가 커서 역할
+    # 매일 15:00 KST (UTC 06:00) — staleness 필터가 커서 역할.
+    # 06:00 UTC 로 둔 이유: 20:00 선언은 지연 2~4h 를 먹으면 22:00~00:00 UTC 에 착지하는데
+    # 그 창에 crawl-presale(00:04~00:33 착지)·weekly-regional(22:49~23:54)이 이미 있다.
+    # Groq 워크플로 셋이 한 창에 몰리면 따라잡는 날 서로 TPD 를 뺏는다.
+    - cron: '0 6 * * *'
   workflow_dispatch:
     inputs:
       area_bucket:
@@ -16,9 +20,14 @@ jobs:
   generate-commentary:
     name: 단지별 AI 코멘트 생성
     runs-on: ubuntu-latest
-    # 매일 돌면서 stale(25일) 항목만 처리. 대부분 즉시 종료(stale 0건),
-    # 활성일도 TPD 소진 시 ~2분이면 끝남. TPD 소진은 exit(0) + data_sources partial.
-    timeout-minutes: 15
+    # 매일 돌면서 stale(25일) 항목만 처리. 대부분의 날은 stale 0건이라 즉시 종료된다.
+    # 따라잡는 날(stale 가 쌓인 1~2일차)은 TPD 한도 408건까지 처리하며 23~37분 걸린다.
+    # TPD 소진은 exit(0) + data_sources partial 로 보고한다.
+    # timeout 은 그 23~37분에 여유를 더한 값이다. 15분이면 40~66% 에서 잘리고,
+    # 타임아웃으로 죽으면 잡이 cancelled 라
+    # markCronStatus() 가 아예 안 불린다 → data_sources 가 옛 상태로 남는다(2026-10-01 전례).
+    # 어차피 시간이 아니라 TPD 가 먼저 멈춘다. 타임아웃은 무한 대기만 막으면 된다.
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v4
