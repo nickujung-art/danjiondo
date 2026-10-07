@@ -26,3 +26,9 @@ jobs:
             echo "Digest worker returned $STATUS"
             exit 1
           fi
+
+      - name: Trigger notify worker
+        run: |
+          curl -sSf -X POST \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.NEXT_PUBLIC_SITE_URL }}/api/worker/notify"
