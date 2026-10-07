@@ -2,7 +2,7 @@ name: Monthly AI Commentary Batch
 
 on:
   schedule:
-    - cron: '0 20 1 * *'  # 매월 1일 05:00 KST (UTC 20:00)
+    - cron: '0 20 * * *'  # 매일 05:00 KST (UTC 20:00) — staleness 필터가 커서 역할
   workflow_dispatch:
     inputs:
       area_bucket:
@@ -16,10 +16,9 @@ jobs:
   generate-commentary:
     name: 단지별 AI 코멘트 생성
     runs-on: ubuntu-latest
-    # Groq 무료 티어(30 RPM)에 맞춰 스크립트가 429 백오프로 자체 조절하므로, 1,300건 규모는
-    # 30분 안에 못 끝난다. 예전엔 Gemini(유료)로 빠르게 돌아 30분이면 됐지만 한도 초과로
-    # 전량 실패했다(2026-08-04). 무료 경로를 쓰기로 한 이상 시간을 늘리는 게 맞다.
-    timeout-minutes: 120
+    # 매일 돌면서 stale(25일) 항목만 처리. 대부분 즉시 종료(stale 0건),
+    # 활성일도 TPD 소진 시 ~2분이면 끝남. TPD 소진은 exit(0) + data_sources partial.
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4

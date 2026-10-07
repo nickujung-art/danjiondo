@@ -242,7 +242,7 @@ async function main(): Promise<void> {
   console.log(`[START] area_bucket=${args.areaBucket} limit=${args.limit} dry-run=${args.dryRun}`)
 
   const PAGE_SIZE  = 100
-  const STALE_DAYS = 35
+  const STALE_DAYS = 25
 
   let offset      = 0
   let success     = 0
@@ -390,7 +390,7 @@ async function main(): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await markCronStatus(supabase as any, 'monthly-commentary', cronStatus, cronStatus !== 'success' ? errMsg : undefined)
 
-  if (tpdExhausted || failed > 0) process.exit(1)
+  if (failed > 0) process.exit(1)
 }
 
 const scriptFile = fileURLToPath(import.meta.url)
