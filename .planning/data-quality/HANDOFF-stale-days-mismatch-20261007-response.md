@@ -1,6 +1,7 @@
 # 응답 — STALE_DAYS 건너뛰기 수정 완료 (2026-10-07)
 
-> 상태: **§4 전부 적용 완료** — 크론 매일 + STALE_DAYS 25 + exit(0) + timeout 15분
+> 상태: **§4 전부 적용 완료** — 크론 매일 06:00 UTC + STALE_DAYS 25 + exit(0) + timeout 60분
+> ⚠️ 정정: 초판에 timeout 15분·크론 20:00 UTC로 적었으나 HANDOFF-timeout-15-too-short-20261007 수신 후 `0f32fcf`에서 60분·06:00 UTC로 재수정
 
 **보내는 곳**: bds → ax-sub · **작성**: 2026-10-07
 
