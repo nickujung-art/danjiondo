@@ -74,6 +74,12 @@ interface Check {
   embeddedFilter?: { relation: string; column: string; in: readonly string[] }
 
   /**
+   * 조인된 테이블의 숫자 컬럼에 gt 필터. `embeddedFilter.relation` 과 같은 테이블이어야 한다.
+   * 배치 대상과 점검 분모를 맞추는 데 쓴다 (2026-10-07, §4 분모 불일치 수정).
+   */
+  embeddedGt?: { column: string; gt: number }
+
+  /**
    * 여러 배치가 같은 테이블에 쓸 때, **출처가 같은 테이블의 한 컬럼으로 드러날 때** 쓰는 필터.
    * `embeddedFilter` 와 같은 구멍을 막지만 조인이 필요 없다.
    *
@@ -121,13 +127,23 @@ interface Check {
    *
    * 그래서 **창원으로 범위를 좁혀** 잰다. 배치가 창원 우선 정렬을 받았으므로(bds `4fd8e5f`)
    * 이제 물어야 할 것은 "전체의 몇 %"가 아니라 **"창원이 다 찼는가"**다.
-   * 창원 5,051행은 하루 예산 안에 들어가므로 정상이면 ~100%, 깨지면 바로 떨어진다.
+   *
+   * [분모를 배치 대상과 맞추다 — 2026-10-07 수정]
+   * 처음에는 창원 5구의 area_bucket=84 전체(5,051행)를 분모로 삼았다. 배치는 tx_count_30d > 0 인
+   * 단지만 처리하므로(612건) **분모가 4,439행 부풀어 있었다**. 정상 2회 완주해도 12% 천장이라
+   * **영구 빨강**이었다. `embeddedGt` 로 tx_count_30d > 0 을 걸어 분모를 배치 대상에 맞췄다.
+   * 같은 수정에서 `windowHours` 를 24 → 45일(1,080h)로 늘려 여러 번 나눠 도는 결과를 누적한다.
    *
    * **교훈**: 커버리지 문턱을 세울 때는 *"무엇이 정상인가"* 가 아니라
    * *"정상일 때 이 숫자가 얼마인가"* 를 먼저 재야 한다. 둘을 혼동하면
    * 켜 둔 적 없는 경보가 매일 울린다.
    */
-  coverage?: { minRatio: number; basis: string }
+  coverage?: {
+    minRatio: number
+    basis: string
+    /** 커버리지를 재는 시간 창 (시간). 기본 BATCH_WINDOW_HOURS(24). 여러 번 나눠 도는 배치는 늘려야 한다. */
+    windowHours?: number
+  }
 
   /**
    * 원인이 밝혀졌고 **코드로 고칠 수 없어** 의식적으로 보류한 항목. 위반으로 세지 않고
@@ -182,10 +198,10 @@ const CHECKS: Check[] = [
   // 커버리지는 **창원만** 잰다. 전체(24,320행) 대비로 재면 정상 실행도 영원히 빨강이기 때문이다 —
   // Groq 무료 TPD 가 하루 ~6,350행이라 **설계대로 돌아도 26% 가 천장**이다.
   // 2026-10-02 에 배치가 창원 우선 정렬을 받았으므로(bds `4fd8e5f`), 이제 물어야 할 것은
-  // "전체의 몇 %"가 아니라 **"창원이 다 찼는가"**다. 창원 5,051행은 하루 예산 안에 들어가므로
-  // 정상이면 ~100%, 깨지면 바로 떨어진다 — 노이즈 없이 구분된다.
+  // 분모 = 창원 5구 중 최근 30일 거래가 있는 단지(= 배치 대상). embeddedGt 로 tx_count_30d > 0 을 건다.
+  // 45일(= maxAgeDays) 창으로 누적 커버리지를 잰다 — 하루 예산 ~408건, 대상 ~612건이라 2회에 나눠 돈다.
   // `si='창원시'` ↔ sgg_code 5구가 1:1 임을 실측 확인했다(1,406단지, 경계 오차 0).
-  { label: '월간 AI 해설 (창원)',  table: 'complex_price_predictions', column: 'ai_cached_at', maxAgeDays: 45,  job: 'monthly-ai-commentary.yml', columnFilter: { column: 'area_bucket', in: ['84'] }, embeddedFilter: { relation: 'complexes', column: 'sgg_code', in: ['48121', '48123', '48125', '48127', '48129'] }, coverage: { minRatio: 0.95, basis: '창원 5,051행 < 하루 TPD 예산 6,350행 → 정상 실행이면 창원은 다 찬다. 2026-10-02 실행은 정렬 적용 전이라 26.2%(1,323/5,051)' } },
+  { label: '월간 AI 해설 (창원)',  table: 'complex_price_predictions', column: 'ai_cached_at', maxAgeDays: 45,  job: 'monthly-ai-commentary.yml', columnFilter: { column: 'area_bucket', in: ['84'] }, embeddedFilter: { relation: 'complexes', column: 'sgg_code', in: ['48121', '48123', '48125', '48127', '48129'] }, embeddedGt: { column: 'tx_count_30d', gt: 0 }, coverage: { minRatio: 0.95, windowHours: 45 * 24, basis: '창원 대상 ~612건(거래 있는 단지), 하루 예산 ~408건 → 2회 실행 필요. 45일 창으로 누적 커버리지 측정' } },
   // 네이버 2종은 보류다(2026-08-07). 네이버가 GitHub Actions IP 를 차단해 200개 단지가
   // 전부 매물 0건으로 돌아온다. 국내 IP 에서 같은 코드를 돌리면 정상 수집되는 것을 두 번
   // 확인했다(2026-08-03 로컬, 2026-08-07 프로브 — API 경로·응답 형태 모두 그대로였고
@@ -268,6 +284,9 @@ function applyScope(query: any, check: Check): any {
     const { relation, column, in: allowed } = check.embeddedFilter
     q = q.in(`${relation}.${column}`, [...allowed])
   }
+  if (check.embeddedGt && check.embeddedFilter) {
+    q = q.gt(`${check.embeddedFilter.relation}.${check.embeddedGt.column}`, check.embeddedGt.gt)
+  }
   if (check.columnFilter) {
     q = q.in(check.columnFilter.column, [...check.columnFilter.in])
   }
@@ -282,6 +301,14 @@ function applyScope(query: any, check: Check): any {
 
 /** 한 실행이 남긴 행으로 묶는 창. 배치는 몇 시간씩 걸리므로 초 단위로 같지 않다. */
 const BATCH_WINDOW_HOURS = 24
+
+/** PostgREST select 식을 만든다. embeddedFilter + embeddedGt 컬럼을 !inner 조인에 묶는다. */
+function buildSelectExpr(check: Check): string {
+  if (!check.embeddedFilter) return check.column
+  const cols = [check.embeddedFilter.column]
+  if (check.embeddedGt) cols.push(check.embeddedGt.column)
+  return `${check.column}, ${check.embeddedFilter.relation}!inner(${Array.from(new Set(cols)).join(',')})`
+}
 
 /**
  * **가장 최근 실행이 남긴 행**이 몇 개인지 센다. `head: true` 라 본문 없이 카운트만 받는다.
@@ -301,9 +328,7 @@ async function measureCoverage(
   check: Check,
   latest: Date,
 ): Promise<{ fresh: number; total: number } | { error: string }> {
-  const selectExpr = check.embeddedFilter
-    ? `${check.column}, ${check.embeddedFilter.relation}!inner(${check.embeddedFilter.column})`
-    : check.column
+  const selectExpr = buildSelectExpr(check)
   const head = () =>
     applyScope(supabase.from(check.table).select(selectExpr, { count: 'exact', head: true }), check)
 
@@ -311,7 +336,8 @@ async function measureCoverage(
   const totalRes = await head()
   if (totalRes.error) return { error: `전체 집계 실패: ${totalRes.error.message}` }
 
-  const cutoff = new Date(latest.getTime() - BATCH_WINDOW_HOURS * 3_600_000).toISOString()
+  const windowHours = check.coverage?.windowHours ?? BATCH_WINDOW_HOURS
+  const cutoff = new Date(latest.getTime() - windowHours * 3_600_000).toISOString()
   const freshRes = await head().gte(check.column, cutoff)
   if (freshRes.error) return { error: `최근 실행 집계 실패: ${freshRes.error.message}` }
 
@@ -333,10 +359,7 @@ async function main(): Promise<void> {
   console.log('─'.repeat(96))
 
   for (const check of CHECKS) {
-    // 조인 필터가 있으면 !inner 로 붙여 대상 행 자체를 좁힌다(left join 이면 제외가 안 된다)
-    const selectExpr = check.embeddedFilter
-      ? `${check.column}, ${check.embeddedFilter.relation}!inner(${check.embeddedFilter.column})`
-      : check.column
+    const selectExpr = buildSelectExpr(check)
 
     // null 제외는 여기서만 건다 — 커버리지의 분모는 **해설이 아직 없는 행도 포함**해야 한다.
     const query = applyScope(supabase.from(check.table).select(selectExpr), check)
