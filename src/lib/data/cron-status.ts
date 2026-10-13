@@ -48,6 +48,11 @@ export async function markCronSuccess(supabase: Client, sourceId: string): Promi
   })
 }
 
+/**
+ * ⚠️ `last_synced_at` 을 쓰지 않는다 — 그 컬럼은 **마지막으로 데이터가 들어온 시각**이다.
+ * 2026-10-13 까지는 실패에도 now() 를 밀어서, 매일 실패해도 "최종 갱신 오늘"로 보였고
+ * 경과시간으로 판정하는 외부 감시견이 영원히 안 걸렸다.
+ */
 export async function markCronFailed(
   supabase: Client,
   sourceId: string,
@@ -60,7 +65,6 @@ export async function markCronFailed(
     .maybeSingle()
   const prev = (data as { consecutive_failures: number } | null)?.consecutive_failures ?? 0
   return applyStatusUpdate(supabase, sourceId, {
-    last_synced_at: new Date().toISOString(),
     last_status: 'failed',
     consecutive_failures: prev + 1,
     ...(errorMessage !== undefined ? { error_message: errorMessage } : {}),
@@ -75,7 +79,8 @@ export async function markCronPartial(
   return applyStatusUpdate(supabase, sourceId, {
     last_synced_at: new Date().toISOString(),
     last_status: 'partial',
-    ...(errorMessage !== undefined ? { error_message: errorMessage } : {}),
+    // 사유가 없으면 지운다 — 남겨 두면 직전 실패의 사유가 부분 성공 옆에 계속 뜬다.
+    error_message: errorMessage ?? null,
   })
 }
 

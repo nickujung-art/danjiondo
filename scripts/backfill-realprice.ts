@@ -35,6 +35,7 @@ import type { Database } from '../src/types/database'
 const FAILURE_ABORT_RATE = 0.3
 import { ingestMonth, ingestMonthVilla } from '../src/lib/data/realprice'
 import { describeError, isConnectivityError } from '../src/lib/api/describe-error'
+import { markCronStatus } from '../src/lib/data/cron-status'
 import { monthRange, assertYearMonth, parseSggCodes } from '../src/lib/data/backfill-args'
 
 /**
@@ -304,23 +305,18 @@ async function main() {
       `${totalUpserted}건 upsert, ${failures}건 실패(${(failureRate * 100).toFixed(1)}%)`,
   )
 
-  const syncedAt = new Date().toISOString()
   const finalStatus = failures === 0 ? 'success' : aborted ? 'failed' : 'partial'
+  const failureSummary = `${failures}/${done} 실패 (${(failureRate * 100).toFixed(1)}%)`
   const errorMessage = aborted
-    ? `실패율 ${(failureRate * 100).toFixed(1)}% (${failures}/${done}) — 임계 ${FAILURE_ABORT_RATE * 100}% 초과`
-    : null
+    ? `실패율 ${failureSummary} — 임계 ${FAILURE_ABORT_RATE * 100}% 초과`
+    : failures > 0 ? failureSummary : undefined
 
-  const baseUpdate = { last_synced_at: syncedAt, last_status: finalStatus, error_message: errorMessage }
-  const successUpdate = { ...baseUpdate, consecutive_failures: 0 }
-  if (useApt) {
-    await supabase.from('data_sources')
-      .update(failures === 0 ? successUpdate : baseUpdate)
-      .eq('id', 'molit_trade')
-  }
-  if (useVilla) {
-    await supabase.from('data_sources')
-      .update(failures === 0 ? successUpdate : baseUpdate)
-      .eq('id', 'molit_villa_trade')
+  // 손으로 짠 update 는 실패에 consecutive_failures 를 안 올리고 last_synced_at 을 밀었다(2026-10-13).
+  // 보고 규칙은 cron-status 한 곳에 둔다. 보고 실패는 경고만 — 수집 결과(종료 코드)를 바꾸지 않는다.
+  const sourceIds = [...(useApt ? ['molit_trade'] : []), ...(useVilla ? ['molit_villa_trade'] : [])]
+  for (const id of sourceIds) {
+    const reported = await markCronStatus(supabase, id, finalStatus, errorMessage)
+    if (!reported) console.warn(`⚠️ data_sources.${id} 상태 보고 실패`)
   }
 
   // 실패율이 임계를 넘으면 **0이 아닌 코드로 종료**해 GitHub Actions를 빨간불로 만든다.

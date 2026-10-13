@@ -1,15 +1,21 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { markCronSuccess, markCronPartial, markCronStatus } from './cron-status'
+import { markCronSuccess, markCronFailed, markCronPartial, markCronStatus } from './cron-status'
 
 /**
  * `data_sources` 갱신 결과를 흉내내는 최소 스텁.
  * `.update(...).eq(...).select(...)`가 `{ data, error }`를 돌려주는 체인을 재현한다.
+ * markCronFailed 가 먼저 부르는 `.select(...).eq(...).maybeSingle()` 조회도 `prev` 로 흉내낸다.
  */
-function stubClient(result: { data: unknown[] | null; error: { message: string } | null }) {
+function stubClient(
+  result: { data: unknown[] | null; error: { message: string } | null },
+  prev: { consecutive_failures: number } | null = null,
+) {
   const select = vi.fn().mockResolvedValue(result)
   const eq = vi.fn(() => ({ select }))
   const update = vi.fn(() => ({ eq }))
-  const from = vi.fn(() => ({ update }))
+  const maybeSingle = vi.fn().mockResolvedValue({ data: prev, error: null })
+  const readSelect = vi.fn(() => ({ eq: vi.fn(() => ({ maybeSingle })) }))
+  const from = vi.fn(() => ({ update, select: readSelect }))
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return { client: { from } as any, from, update, eq, select }
 }
@@ -69,5 +75,41 @@ describe('cron-status', () => {
 
     expect(await markCronStatus(client, 'kapt', 'partial')).toBe(true)
     expect(update).toHaveBeenCalledWith(expect.objectContaining({ last_status: 'partial' }))
+  })
+
+  it('markCronSuccess는 last_synced_at을 갱신하고 카운터를 0으로 되돌린다', async () => {
+    const { client, update } = stubClient({ data: [{ id: 'kapt' }], error: null })
+
+    await markCronSuccess(client, 'kapt')
+
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({ last_synced_at: expect.any(String), consecutive_failures: 0 }),
+    )
+  })
+
+  it('markCronFailed는 last_synced_at을 건드리지 않는다 — 매일 실패해도 신선해 보이면 안 된다', async () => {
+    const { client, update } = stubClient({ data: [{ id: 'molit_trade' }], error: null }, { consecutive_failures: 2 })
+
+    expect(await markCronFailed(client, 'molit_trade', '차단')).toBe(true)
+
+    const patch = (update.mock.calls as unknown as [Record<string, unknown>][])[0]?.[0]
+    expect(patch).not.toHaveProperty('last_synced_at')
+    expect(patch).toMatchObject({ last_status: 'failed', consecutive_failures: 3, error_message: '차단' })
+  })
+
+  it('markCronFailed는 이전 카운터를 못 읽으면 1부터 센다', async () => {
+    const { client, update } = stubClient({ data: [{ id: 'x' }], error: null }, null)
+
+    await markCronFailed(client, 'x')
+
+    expect(update).toHaveBeenCalledWith(expect.objectContaining({ consecutive_failures: 1 }))
+  })
+
+  it('markCronPartial은 사유가 없으면 낡은 error_message를 지운다', async () => {
+    const { client, update } = stubClient({ data: [{ id: 'kapt' }], error: null })
+
+    await markCronPartial(client, 'kapt')
+
+    expect(update).toHaveBeenCalledWith(expect.objectContaining({ last_status: 'partial', error_message: null }))
   })
 })

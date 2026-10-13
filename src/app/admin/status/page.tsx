@@ -67,9 +67,11 @@ function formatElapsed(s: string): string {
 }
 
 function cronBadge(row: DataSourceRow): { label: string; bg: string } {
+  // failed 를 null 체크보다 먼저 본다 — 실패는 last_synced_at 을 갱신하지 않으므로(cron-status),
+  // 첫 실행부터 실패한 소스는 last_synced_at 이 null 인 채 '실패'여야 한다.
+  if (row.last_status === 'failed') return { label: '실패', bg: '#dc2626' }
   if (!row.last_synced_at) return { label: '미실행', bg: '#6b7280' }
   const elapsedHours = (Date.now() - new Date(row.last_synced_at).getTime()) / 3_600_000
-  if (row.last_status === 'failed') return { label: '실패', bg: '#dc2626' }
   if (elapsedHours > row.expected_freshness_hours * 1.5) return { label: '지연', bg: '#d97706' }
   if (row.last_status === 'partial') return { label: '부분성공', bg: '#d97706' }
   return { label: '정상', bg: '#16a34a' }

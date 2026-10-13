@@ -87,14 +87,20 @@ jobs:
         run: |
           NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           for src in molit_trade molit_villa_trade; do
+            # consecutive_failures 를 올린다 — 안 올리면 외부 감시견의 연속 실패 규칙이 이 소스에서 죽는다(2026-10-13).
+            # 조회 실패가 bash -e 로 보고 전체를 죽이지 않게 0 으로 폴백한다. last_synced_at 은 일부러 안 쓴다.
+            PREV=$(curl -sf "$SUPABASE_URL/rest/v1/data_sources?id=eq.$src&select=consecutive_failures" \
+              -H "apikey: $SUPABASE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_KEY" | jq -r '.[0].consecutive_failures // 0') || PREV=0
+            [[ "$PREV" =~ ^[0-9]+$ ]] || PREV=0
             curl -sf -X PATCH \
               "$SUPABASE_URL/rest/v1/data_sources?id=eq.$src" \
               -H "apikey: $SUPABASE_KEY" \
               -H "Authorization: Bearer $SUPABASE_KEY" \
               -H "Content-Type: application/json" \
               -H "Prefer: return=minimal" \
-              -d "{\"last_status\":\"failed\",\"error_message\":\"3회 연속 IP 차단 ($NOW)\"}"
-            echo "  → $src failed 보고 완료"
+              -d "{\"last_status\":\"failed\",\"consecutive_failures\":$((PREV + 1)),\"error_message\":\"3회 연속 IP 차단 ($NOW)\"}"
+            echo "  → $src failed 보고 완료 (연속 $((PREV + 1))회)"
           done
       - name: 3회 모두 차단이면 실패 처리
         if: needs.attempt3.outputs.blocked == 'true'
