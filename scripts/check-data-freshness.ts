@@ -134,6 +134,13 @@ interface Check {
    * **영구 빨강**이었다. `embeddedGt` 로 tx_count_30d > 0 을 걸어 분모를 배치 대상에 맞췄다.
    * 같은 수정에서 `windowHours` 를 24 → 45일(1,080h)로 늘려 여러 번 나눠 도는 결과를 누적한다.
    *
+   * [단위를 배치와 맞추다 — 2026-10-13 수정, `keyColumns`]
+   * 배치는 (complex_id, area_bucket) **키 단위**로 돌고 `.update().eq().eq()` 한 번이 그 키의
+   * 행 6~21개를 한꺼번에 갱신한다. 행으로 세면 (a) 행 많은 단지가 과대 대표되고
+   * (b) 한 키만 처리해도 비율이 ~15행씩 계단으로 뛰어 **부분 완료 탐지가 둔해진다** —
+   * 이 장치를 넣은 목적과 반대다. 실측(10-13): 행 88.1% vs 키 85.8%, 10-11→10-12 행 +10%p 는
+   * 실제로 14키였다. 감시견이 "하루 14건이라 95% 불가"로 오경보를 낸 것도 이 단위 혼동이다.
+   *
    * **교훈**: 커버리지 문턱을 세울 때는 *"무엇이 정상인가"* 가 아니라
    * *"정상일 때 이 숫자가 얼마인가"* 를 먼저 재야 한다. 둘을 혼동하면
    * 켜 둔 적 없는 경보가 매일 울린다.
@@ -143,6 +150,12 @@ interface Check {
     basis: string
     /** 커버리지를 재는 시간 창 (시간). 기본 BATCH_WINDOW_HOURS(24). 여러 번 나눠 도는 배치는 늘려야 한다. */
     windowHours?: number
+    /**
+     * 배치의 작업 단위 키. 주면 행이 아니라 **키**로 센다 — 키 하나는 그 키의 행 중 가장 오래된
+     * 타임스탬프가 창 안이어야 신선하다(실측상 한 키의 행은 타임스탬프를 공유하지만 가정하지 않는다).
+     * PostgREST count 는 DISTINCT 가 안 돼서 범위를 페이지로 끌어와 JS 에서 접는다.
+     */
+    keyColumns?: readonly string[]
   }
 
   /**
@@ -199,9 +212,9 @@ const CHECKS: Check[] = [
   // Groq 무료 TPD 가 하루 ~6,350행이라 **설계대로 돌아도 26% 가 천장**이다.
   // 2026-10-02 에 배치가 창원 우선 정렬을 받았으므로(bds `4fd8e5f`), 이제 물어야 할 것은
   // 분모 = 창원 5구 중 최근 30일 거래가 있는 단지(= 배치 대상). embeddedGt 로 tx_count_30d > 0 을 건다.
-  // 45일(= maxAgeDays) 창으로 누적 커버리지를 잰다 — 하루 예산 ~408건, 대상 ~612건이라 2회에 나눠 돈다.
+  // 45일(= maxAgeDays) 창으로 누적 커버리지를 잰다. 행이 아니라 (complex_id, area_bucket) 키로 센다(2026-10-13).
   // `si='창원시'` ↔ sgg_code 5구가 1:1 임을 실측 확인했다(1,406단지, 경계 오차 0).
-  { label: '월간 AI 해설 (창원)',  table: 'complex_price_predictions', column: 'ai_cached_at', maxAgeDays: 45,  job: 'monthly-ai-commentary.yml', columnFilter: { column: 'area_bucket', in: ['84'] }, embeddedFilter: { relation: 'complexes', column: 'sgg_code', in: ['48121', '48123', '48125', '48127', '48129'] }, embeddedGt: { column: 'tx_count_30d', gt: 0 }, coverage: { minRatio: 0.95, windowHours: 45 * 24, basis: '창원 대상 ~612건(거래 있는 단지), 하루 예산 ~408건 → 2회 실행 필요. 45일 창으로 누적 커버리지 측정' } },
+  { label: '월간 AI 해설 (창원)',  table: 'complex_price_predictions', column: 'ai_cached_at', maxAgeDays: 45,  job: 'monthly-ai-commentary.yml', columnFilter: { column: 'area_bucket', in: ['84'] }, embeddedFilter: { relation: 'complexes', column: 'sgg_code', in: ['48121', '48123', '48125', '48127', '48129'] }, embeddedGt: { column: 'tx_count_30d', gt: 0 }, coverage: { minRatio: 0.95, windowHours: 45 * 24, keyColumns: ['complex_id', 'area_bucket'], basis: '창원 대상 ~162키(= (complex_id, area_bucket), 거래 있는 단지). 배치는 키 단위로 돌고 한 키가 6~21행을 한꺼번에 갱신한다. 45일 창으로 키 단위 누적 커버리지 측정' } },
   // 네이버 2종은 보류다(2026-08-07). 네이버가 GitHub Actions IP 를 차단해 200개 단지가
   // 전부 매물 0건으로 돌아온다. 국내 IP 에서 같은 코드를 돌리면 정상 수집되는 것을 두 번
   // 확인했다(2026-08-03 로컬, 2026-08-07 프로브 — API 경로·응답 형태 모두 그대로였고
@@ -303,11 +316,51 @@ function applyScope(query: any, check: Check): any {
 const BATCH_WINDOW_HOURS = 24
 
 /** PostgREST select 식을 만든다. embeddedFilter + embeddedGt 컬럼을 !inner 조인에 묶는다. */
-function buildSelectExpr(check: Check): string {
-  if (!check.embeddedFilter) return check.column
+function buildSelectExpr(check: Check, extraColumns: readonly string[] = []): string {
+  const own = Array.from(new Set([check.column, ...extraColumns])).join(', ')
+  if (!check.embeddedFilter) return own
   const cols = [check.embeddedFilter.column]
   if (check.embeddedGt) cols.push(check.embeddedGt.column)
-  return `${check.column}, ${check.embeddedFilter.relation}!inner(${Array.from(new Set(cols)).join(',')})`
+  return `${own}, ${check.embeddedFilter.relation}!inner(${Array.from(new Set(cols)).join(',')})`
+}
+
+const COVERAGE_PAGE_SIZE = 1000
+
+/**
+ * 키 단위 커버리지. 범위를 키 순으로 정렬해 페이지로 끌어오고 키마다 **가장 오래된** 타임스탬프로 접는다.
+ * 키 순 정렬이라 한 키의 행은 연속하므로, 페이지 경계에서 키 안의 행 순서가 흔들려도 키 자체는 빠지지 않는다.
+ */
+async function measureKeyCoverage(
+  supabase: ScriptSupabase,
+  check: Check,
+  keyColumns: readonly string[],
+  cutoff: Date,
+): Promise<{ fresh: number; total: number } | { error: string }> {
+  const selectExpr = buildSelectExpr(check, keyColumns)
+  // null(한 번도 안 쓰임)은 -Infinity 로 둔다 — 키의 어느 행이든 비어 있으면 그 키는 신선하지 않다.
+  const oldestByKey = new Map<string, number>()
+
+  for (let from = 0; ; from += COVERAGE_PAGE_SIZE) {
+    let q = applyScope(supabase.from(check.table).select(selectExpr), check)
+    for (const col of keyColumns) q = q.order(col, { ascending: true })
+    const { data, error } = await q.range(from, from + COVERAGE_PAGE_SIZE - 1)
+    if (error) return { error: `범위 조회 실패: ${error.message}` }
+
+    const rows = (data ?? []) as Record<string, unknown>[]
+    for (const r of rows) {
+      const key = keyColumns.map(c => String(r[c])).join('|')
+      const raw = r[check.column]
+      const ts = raw ? new Date(String(raw)).getTime() : -Infinity
+      const prev = oldestByKey.get(key)
+      oldestByKey.set(key, prev === undefined ? ts : Math.min(prev, ts))
+    }
+    if (rows.length < COVERAGE_PAGE_SIZE) break
+  }
+
+  const cutoffMs = cutoff.getTime()
+  let fresh = 0
+  for (const ts of oldestByKey.values()) if (ts >= cutoffMs) fresh++
+  return { fresh, total: oldestByKey.size }
 }
 
 /**
@@ -328,6 +381,12 @@ async function measureCoverage(
   check: Check,
   latest: Date,
 ): Promise<{ fresh: number; total: number } | { error: string }> {
+  const windowHours = check.coverage?.windowHours ?? BATCH_WINDOW_HOURS
+  const cutoffDate = new Date(latest.getTime() - windowHours * 3_600_000)
+
+  const keyColumns = check.coverage?.keyColumns
+  if (keyColumns?.length) return measureKeyCoverage(supabase, check, keyColumns, cutoffDate)
+
   const selectExpr = buildSelectExpr(check)
   const head = () =>
     applyScope(supabase.from(check.table).select(selectExpr, { count: 'exact', head: true }), check)
@@ -336,8 +395,7 @@ async function measureCoverage(
   const totalRes = await head()
   if (totalRes.error) return { error: `전체 집계 실패: ${totalRes.error.message}` }
 
-  const windowHours = check.coverage?.windowHours ?? BATCH_WINDOW_HOURS
-  const cutoff = new Date(latest.getTime() - windowHours * 3_600_000).toISOString()
+  const cutoff = cutoffDate.toISOString()
   const freshRes = await head().gte(check.column, cutoff)
   if (freshRes.error) return { error: `최근 실행 집계 실패: ${freshRes.error.message}` }
 
@@ -428,10 +486,11 @@ async function main(): Promise<void> {
         covBad = ratio < check.coverage.minRatio
         const pct = (ratio * 100).toFixed(1)
         const minPct = (check.coverage.minRatio * 100).toFixed(0)
-        covNote = ` · 마지막 실행 커버리지 ${pct}% (${cov.fresh.toLocaleString()}/${cov.total.toLocaleString()}, 최소 ${minPct}%)`
+        const unit = check.coverage.keyColumns?.length ? '키' : '행'
+        covNote = ` · 커버리지 ${pct}% (${cov.fresh.toLocaleString()}/${cov.total.toLocaleString()}${unit}, 최소 ${minPct}%)`
         if (covBad) {
           violations.push(
-            `${check.label}: 마지막 실행이 범위의 ${pct}%(${cov.fresh.toLocaleString()}/${cov.total.toLocaleString()})만 덮었다 — ` +
+            `${check.label}: 범위의 ${pct}%(${cov.fresh.toLocaleString()}/${cov.total.toLocaleString()}${unit})만 신선하다 — ` +
               `${check.job} 가 중간에 잘렸을 수 있다. 근거: ${check.coverage.basis}`,
           )
         }
