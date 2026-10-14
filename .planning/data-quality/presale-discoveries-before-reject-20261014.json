@@ -1,0 +1,1046 @@
+[
+  {
+    "id": "9debb450-6a1d-46ef-8a91-0b4aec315aa1",
+    "name": "의 하나로 2천여 가구 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:18:59.429518+00:00"
+  },
+  {
+    "id": "16f51c42-af05-4a9f-bd6f-4b5d03217398",
+    "name": "의 비극 경남 창원시 진해구 풍호동의 한 아파트",
+    "region": "창원시",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:00.557393+00:00"
+  },
+  {
+    "id": "c6e59173-13d4-445a-a929-996d072edcf7",
+    "name": "두정역 푸르지오",
+    "region": "경남",
+    "hssply_adres": "충남 천안시 서북구 두정동 2037",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:01.625786+00:00"
+  },
+  {
+    "id": "9107ac2e-a6ad-4ed9-a310-f348b7e9e040",
+    "name": "이 대세 김해 신문 센트럴 아이파크",
+    "region": "김해시",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:02.692496+00:00"
+  },
+  {
+    "id": "00a68d2a-9396-4157-92d9-eafdb3d29956",
+    "name": "주거 대안으로 부상 새 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:04.094339+00:00"
+  },
+  {
+    "id": "6aa8f6db-9a7e-4afa-bae0-5ea8b89d4598",
+    "name": "북오산자이 드포레",
+    "region": "경남",
+    "hssply_adres": "경기 오산시 내삼미동 288",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:05.441201+00:00"
+  },
+  {
+    "id": "7ade1fe0-d5cb-451d-979b-068bd5fc732e",
+    "name": "청약 주상복합 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:06.491803+00:00"
+  },
+  {
+    "id": "50fdf163-aa3f-40d3-8d1e-9e928733df58",
+    "name": "출격 주상복합 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:07.593817+00:00"
+  },
+  {
+    "id": "da928b0f-f664-46a9-a1bc-32c38b0f4b76",
+    "name": "청약 돌입 주상복합 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:08.638377+00:00"
+  },
+  {
+    "id": "db5a2fed-15ef-433a-96f3-7ebe3c411b0d",
+    "name": "등 4천808가구 분양 주상복합 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:09.976269+00:00"
+  },
+  {
+    "id": "30085309-109c-4cd6-948b-2983a6d1a4b9",
+    "name": "상동역 롯데캐슬",
+    "region": "경남",
+    "hssply_adres": "경기 부천시 원미구 상동 540-1",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:11.026109+00:00"
+  },
+  {
+    "id": "97083807-71ae-4dd8-a0f0-8b371e160e21",
+    "name": "천안 휴먼빌 퍼스트시티",
+    "region": "경남",
+    "hssply_adres": "충남 천안시 서북구 부대동 416-1",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:12.111569+00:00"
+  },
+  {
+    "id": "2d77c331-c81e-46fc-a01f-af02cbbb6185",
+    "name": "8월 분양 대단지 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:13.155208+00:00"
+  },
+  {
+    "id": "03a6879e-df97-4ce4-97c8-16f49780dbfd",
+    "name": "특례 수혜가 기대되는 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:14.227813+00:00"
+  },
+  {
+    "id": "45f53fb4-82cd-4bfc-b08e-5c33b222b4b7",
+    "name": "르네오션 고성 퍼스트뷰",
+    "region": "고성군",
+    "hssply_adres": "강원특별자치도 고성군 토성면 청간리 1",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:15.286756+00:00"
+  },
+  {
+    "id": "e4ea9c41-96bd-474b-861d-b68fa6e1e677",
+    "name": "보류지 공개경쟁입찰 실시 청담삼익아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:16.332372+00:00"
+  },
+  {
+    "id": "95cd07f2-1897-4e6c-a4f6-1edf6eafd98e",
+    "name": "등 순위 내 마감 성공 이번 주 분양 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:17.395646+00:00"
+  },
+  {
+    "id": "77cf2fb5-2426-4813-9656-389258745670",
+    "name": "등 17곳 청약 전국에서 분양 및 공공지원민간임대 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:18.455086+00:00"
+  },
+  {
+    "id": "cec23903-80c7-4230-8b5a-e2cb0a61711f",
+    "name": "세종우미린센터파크",
+    "region": "경남",
+    "hssply_adres": "세종특별자치시 다솜동 5204-1",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:19.492079+00:00"
+  },
+  {
+    "id": "391ba852-b284-41d7-9a60-fafd80abfef2",
+    "name": "급증 com 전국 월별 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:20.517661+00:00"
+  },
+  {
+    "id": "8f4d8d70-f11f-4827-967d-e9141a5e03d7",
+    "name": "업성 푸르지오 레이크시티",
+    "region": "경남",
+    "hssply_adres": "충남 천안시 서북구 업성동 478",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:21.5374+00:00"
+  },
+  {
+    "id": "26c0a738-c9b6-4706-9d02-9e6f7c9dc9f7",
+    "name": "오산헤리티지자이",
+    "region": "양산시",
+    "hssply_adres": "경기 오산시 양산동 223",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:22.589067+00:00"
+  },
+  {
+    "id": "256172b6-ea12-4f4f-bc6e-fab33c48da3f",
+    "name": "오산 헤리티지 자이",
+    "region": "양산시",
+    "hssply_adres": "경기 오산시 양산동 223",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:23.647736+00:00"
+  },
+  {
+    "id": "b0cdc059-0608-40dc-b958-7a593d3b695e",
+    "name": "둔산 자이 아이파크",
+    "region": "경남",
+    "hssply_adres": "대전 서구 탄방동 1500",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:24.690706+00:00"
+  },
+  {
+    "id": "47d586e1-636a-4240-bdcc-5faf6a81843c",
+    "name": "또 2018년 7월 경남 의령군의 한 미분양 아파트",
+    "region": "의령군",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:25.901596+00:00"
+  },
+  {
+    "id": "c287329d-f012-435e-bc83-0b7ac91bdaa6",
+    "name": "는 가야읍 최초의 1000세대 규모 대단지 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:26.986634+00:00"
+  },
+  {
+    "id": "2e3c4d26-f65e-4266-b16e-00e734a85d98",
+    "name": "10년 만에 새 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:28.062922+00:00"
+  },
+  {
+    "id": "3992fd77-8114-43a5-9290-b23767907e43",
+    "name": "인 가야읍 지역주택아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:29.139252+00:00"
+  },
+  {
+    "id": "51dff8e8-5cb9-4586-be38-4179075164fe",
+    "name": "오늘 특별공급 인근 분양아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:30.185117+00:00"
+  },
+  {
+    "id": "452f312a-72a9-44b4-87a7-ee240c3fcc8f",
+    "name": "대구 복현 아이파크",
+    "region": "경남",
+    "hssply_adres": "대구 북구 복현동 432-7",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:31.220978+00:00"
+  },
+  {
+    "id": "fbaf225c-a3cb-493a-a47a-561a6630f4b1",
+    "name": "주민 숙원 풀려 창녕군 창녕읍 송현리 도원아파트",
+    "region": "창녕군",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:32.266158+00:00"
+  },
+  {
+    "id": "8a4542e1-4d2a-44cf-8359-53b8d08a850f",
+    "name": "양극화 이들 단지를 제외한 강원지역 내 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:33.320951+00:00"
+  },
+  {
+    "id": "a74652e7-4a7b-4463-91c4-700eef8bac52",
+    "name": "8월 분양 예정 신축 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:34.369034+00:00"
+  },
+  {
+    "id": "654d8a4b-bb56-44f9-a903-2beaa367b385",
+    "name": "성료 신규 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:35.412996+00:00"
+  },
+  {
+    "id": "7a6495d0-1156-44a6-ac55-a1a8f7451fe4",
+    "name": "두산위브 트리니뷰",
+    "region": "경남",
+    "hssply_adres": "부산 북구 구포동 999",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:36.47131+00:00"
+  },
+  {
+    "id": "8eee0035-4182-4c2d-9dad-52106e758d97",
+    "name": "수세권 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:37.516549+00:00"
+  },
+  {
+    "id": "dae539a2-5908-4ec0-8796-c4fb4247a7c8",
+    "name": "구리역 하이니티 리버파크",
+    "region": "경남",
+    "hssply_adres": "경기 구리시 수택동 496-6",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:38.56266+00:00"
+  },
+  {
+    "id": "5d85e852-1fc0-47af-a460-75e45efe1db1",
+    "name": "리버힐삼성아파트",
+    "region": "경남",
+    "hssply_adres": "서울 용산구 산천동 193",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:40.644484+00:00"
+  },
+  {
+    "id": "de67adcb-efc4-4a69-b43d-20f2d8d27a3f",
+    "name": "하노이 하동 지역에서 오랫동안 중단됐던 부영 국제아파트",
+    "region": "하동군",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:39.600128+00:00"
+  },
+  {
+    "id": "c93d9fa0-e841-4677-a994-b5492e93b15a",
+    "name": "올해 서울로 향하는 신설 고속전철역을 중심으로 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:44.809485+00:00"
+  },
+  {
+    "id": "a8cdc3c2-1352-4649-8d49-235091291451",
+    "name": "지난달 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:47.201571+00:00"
+  },
+  {
+    "id": "19bd6714-adc0-47de-8ae5-944be2b77465",
+    "name": "울산 에피트 스타시티",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:41.670486+00:00"
+  },
+  {
+    "id": "8c0540b6-750f-420d-8398-04bd11629d2a",
+    "name": "구미 그랑포레",
+    "region": "경남",
+    "hssply_adres": "경북 구미시 고아읍 원호리 산 42-4",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:42.722171+00:00"
+  },
+  {
+    "id": "ca88e485-8c51-4630-ac86-74a2353aa943",
+    "name": "구미 아이파크",
+    "region": "경남",
+    "hssply_adres": "경북 구미시 원평동 1134",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:43.783731+00:00"
+  },
+  {
+    "id": "8177a5b2-65df-4b19-a91e-0d1ae60344b0",
+    "name": "2026년 6월 민간아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:46.176817+00:00"
+  },
+  {
+    "id": "8a296412-5a5b-4913-b977-1451d02d8b14",
+    "name": "창원메가시티자이",
+    "region": "창원시",
+    "hssply_adres": "경남 창원시 진해구 여좌동 843-1",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:48.758718+00:00"
+  },
+  {
+    "id": "01dc3e94-bf73-41b3-952f-e478b93cc16d",
+    "name": "2025년 베스트 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:49.800483+00:00"
+  },
+  {
+    "id": "bf3aa902-eee1-41d0-aefa-c7be011a4f9c",
+    "name": "분양 예정 창원 도심에 공급되는 일반 아파트",
+    "region": "창원시",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:50.855004+00:00"
+  },
+  {
+    "id": "387517c0-d1e1-4d4f-92cf-27b9925acf62",
+    "name": "6월 분양 중흥건설그룹 중흥토건이 부산 에코델타시티",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:51.902586+00:00"
+  },
+  {
+    "id": "7a211f95-dd83-4fc2-a269-d5d1eae3bc52",
+    "name": "분양 선보이는 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-10T02:19:52.948358+00:00"
+  },
+  {
+    "id": "54441fb8-bd8f-4184-8bdf-e2cd5a034e03",
+    "name": "경상남도 진주 이현동에서 21년 만에 새 아파트",
+    "region": "진주시",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-17T00:59:45.158277+00:00"
+  },
+  {
+    "id": "73bfa809-2de9-4265-b59f-9196524e7e3e",
+    "name": "분양 공급되는 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-17T00:59:46.560289+00:00"
+  },
+  {
+    "id": "bffbe82f-05a5-4e94-a26d-463ad6c79a63",
+    "name": "21년 만의 새 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-17T00:59:47.894158+00:00"
+  },
+  {
+    "id": "3c2ed441-c1ce-449b-8f70-f241553cb3f9",
+    "name": "본격화된 e편한세상",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-17T00:59:49.707096+00:00"
+  },
+  {
+    "id": "20fd5bed-675a-4e08-860e-19312a5fec17",
+    "name": "행신한신더휴",
+    "region": "경남",
+    "hssply_adres": "경기 고양시 덕양구 행신동 173-1",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-17T00:59:51.289833+00:00"
+  },
+  {
+    "id": "b51693dd-84a8-4851-8e6c-596d261c747e",
+    "name": "눈길 신축 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-17T00:59:54.748768+00:00"
+  },
+  {
+    "id": "e2e3b89b-d44c-47f2-9dad-488d65362b84",
+    "name": "충정로역자이",
+    "region": "경남",
+    "hssply_adres": "서울 중구 만리동2가",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-17T00:59:58.451376+00:00"
+  },
+  {
+    "id": "3656e1da-c996-4f2d-9cab-e8eb74e12aae",
+    "name": "인 동시에 이현동에서 21년 만에 공급되는 신축 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-17T01:00:00.962019+00:00"
+  },
+  {
+    "id": "f6b1bbe0-dfaa-4735-862a-256cea0de1ca",
+    "name": "쏟아진다 진주는 새 아파트",
+    "region": "진주시",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-17T01:00:02.342198+00:00"
+  },
+  {
+    "id": "582049d9-90d2-4c99-98f1-c6b764666adb",
+    "name": "는 21년 만에 공급되는 신축 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-17T01:00:03.796536+00:00"
+  },
+  {
+    "id": "6105ca73-4524-4604-b3db-8020f085f1a4",
+    "name": "공급 대단지 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-17T01:00:05.318595+00:00"
+  },
+  {
+    "id": "c38e4825-38ed-496e-b962-e8a11aafcde7",
+    "name": "챔피언스시티",
+    "region": "경남",
+    "hssply_adres": "전남광주통합특별시 북구 임동 100-1",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-17T01:00:16.169082+00:00"
+  },
+  {
+    "id": "09311a47-f563-4fb4-9078-aea697dad9ba",
+    "name": "새뜸10단지더샵힐스테이트",
+    "region": "경남",
+    "hssply_adres": "세종특별자치시 새롬동 558",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-24T00:53:25.651073+00:00"
+  },
+  {
+    "id": "6e847901-aa73-47ab-b0cb-6b1b88997581",
+    "name": "제주 유명아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-24T00:53:27.71239+00:00"
+  },
+  {
+    "id": "303b1fbc-ffc5-44b4-b8ff-259fa3fb55ef",
+    "name": "세종 우미 린 센터파크",
+    "region": "경남",
+    "hssply_adres": "세종특별자치시 다솜동 5204-1",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-24T00:53:30.127003+00:00"
+  },
+  {
+    "id": "4e0dfb10-f839-44ed-885c-af7a22960abe",
+    "name": "천안 아이파크 시티",
+    "region": "경남",
+    "hssply_adres": "충남 천안시 서북구 부대동 409-1",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-24T00:53:36.2806+00:00"
+  },
+  {
+    "id": "607e76f1-58a3-4e8d-9346-4552558ed123",
+    "name": "등 13곳 청약 분양 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-24T00:53:39.880219+00:00"
+  },
+  {
+    "id": "72a4f784-89b5-4275-ac54-086223f26496",
+    "name": "상동역롯데캐슬",
+    "region": "경남",
+    "hssply_adres": "경기 부천시 원미구 상동 540-1",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-24T00:53:41.656082+00:00"
+  },
+  {
+    "id": "5ad94d6a-7083-44fe-9434-d7b5e77ff214",
+    "name": "의왕역한신더휴",
+    "region": "경남",
+    "hssply_adres": "경기 의왕시 삼동 244-1",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-24T00:53:43.008047+00:00"
+  },
+  {
+    "id": "88e14a9f-e29d-4429-b71d-b46b1ccda467",
+    "name": "이런 가운데 8월에는 전국에서 4만가구에 가까운 새 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-24T00:54:01.359184+00:00"
+  },
+  {
+    "id": "55844237-1693-41d2-aee3-2779fdf8ee05",
+    "name": "용산공원 아파트",
+    "region": "하동군",
+    "hssply_adres": "전남광주통합특별시 남구 송하동 177-1",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-24T00:54:12.49639+00:00"
+  },
+  {
+    "id": "79de58e4-ae40-42eb-9757-e2f4dd346c6e",
+    "name": "로 쏠리는 수요 대단지 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-31T02:48:58.557054+00:00"
+  },
+  {
+    "id": "70a5a348-c376-421a-a46a-aa5638200c5b",
+    "name": "598가구 분양 일대 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-31T02:49:59.283251+00:00"
+  },
+  {
+    "id": "9e19128d-966a-48b7-bed2-0a8c6cf63ada",
+    "name": "단지로 눈 돌린다 민간아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-31T02:51:00.182084+00:00"
+  },
+  {
+    "id": "f45ad4d5-d8fa-4ab0-972e-494c73385495",
+    "name": "2024년 하반기 한경주거문화대상 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-31T02:52:01.767158+00:00"
+  },
+  {
+    "id": "7b9e8d46-6cdf-4f80-836e-8afa028f462b",
+    "name": "힐스테이트 구월아트파크",
+    "region": "경남",
+    "hssply_adres": "인천 남동구 구월동 1455",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-31T02:53:09.74709+00:00"
+  },
+  {
+    "id": "5ae70ee5-74e5-4e07-8349-f7076e281151",
+    "name": "9월 전국 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-08-31T02:54:08.825355+00:00"
+  },
+  {
+    "id": "71a37981-8ef3-423e-8b3b-f897953e0ca0",
+    "name": "경남 사천 e편한세상",
+    "region": "사천시",
+    "hssply_adres": "경남 사천시 용현면 선진리 1116",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-09-07T02:16:01.737781+00:00"
+  },
+  {
+    "id": "61a5a93c-9d28-4852-b6cc-d3a8410dd022",
+    "name": "주목 최근 신규 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-09-07T02:17:02.535143+00:00"
+  },
+  {
+    "id": "68fc3629-e6b1-47f4-9565-f627cdc0ea6f",
+    "name": "기분양 단지 재조명 민간아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-09-07T02:18:01.73473+00:00"
+  },
+  {
+    "id": "d80c5501-920f-4253-aa6b-7a7ca556177c",
+    "name": "을 비롯해 남양주 진주아파트",
+    "region": "진주시",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-09-07T02:19:03.676641+00:00"
+  },
+  {
+    "id": "5c5c7d53-a757-4438-94fe-2f4f159df484",
+    "name": "잠실래미안아이파크",
+    "region": "경남",
+    "hssply_adres": "서울 송파구 신천동 20-4",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-09-07T02:20:03.573899+00:00"
+  },
+  {
+    "id": "01ca8748-bd0c-4850-8551-931bd3ae5642",
+    "name": "사천 스카이시티",
+    "region": "진주시",
+    "hssply_adres": "경남 진주시 가좌동 1958",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-09-07T02:21:10.319765+00:00"
+  },
+  {
+    "id": "e370acc4-cc41-4d49-babf-ba6f25ec1e8b",
+    "name": "올뉴챔피언스시티",
+    "region": "경남",
+    "hssply_adres": "전남광주통합특별시 북구 임동 100-1",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-09-07T02:22:13.454447+00:00"
+  },
+  {
+    "id": "705f8e28-3cc4-4c03-af4b-f33c7cf12e55",
+    "name": "그린홈 으뜸아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-09-07T02:23:27.74602+00:00"
+  },
+  {
+    "id": "52387df0-093b-4c9c-9b58-1a0e1dbe7866",
+    "name": "기분양 단지 뜬다 민간아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-09-14T02:47:35.9412+00:00"
+  },
+  {
+    "id": "b7488c60-2103-4464-af67-15dba1c9ac77",
+    "name": "10년 민간임대아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-09-14T02:47:45.923051+00:00"
+  },
+  {
+    "id": "ffd61339-a9cf-4c2a-8713-a4c271f0f523",
+    "name": "10월 분양 새 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-09-14T02:47:47.660308+00:00"
+  },
+  {
+    "id": "86eb2b39-cd7b-4a5d-91bb-4d1f6d408c8a",
+    "name": "연제갤러리자이",
+    "region": "경남",
+    "hssply_adres": "부산 연제구 연산동 1123-1",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-09-14T02:47:48.577933+00:00"
+  },
+  {
+    "id": "8f9d5a53-f02f-4554-9823-98d9dcfa3e03",
+    "name": "8일 대구 달서구 상인동의 한 신축 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-09-14T02:47:50.180849+00:00"
+  },
+  {
+    "id": "4136b6d2-6001-4022-8cb7-58ae630647ad",
+    "name": "등 전국 4개 현장 공개 수십년간 대단지 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-09-21T02:45:05.102058+00:00"
+  },
+  {
+    "id": "67c29fca-6dd2-4789-9acd-88d9a495534f",
+    "name": "아파트 분양 돌입 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-09-21T02:46:09.516187+00:00"
+  },
+  {
+    "id": "b20d821c-4643-41c2-b4ca-f7ac5d246d26",
+    "name": "광주 챔피언스시티",
+    "region": "경남",
+    "hssply_adres": "전남광주통합특별시 북구 임동 100-1",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-09-21T02:47:20.604333+00:00"
+  },
+  {
+    "id": "84ebc323-dd20-4504-b69e-0e42ada7c053",
+    "name": "11월 공급 구미에서는 최근 몇 년간 신규 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-09-21T02:48:22.192806+00:00"
+  },
+  {
+    "id": "8f499f49-5cc1-46c6-9acf-0ed5bd395f4b",
+    "name": "2026년 7월 민간아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-09-28T02:57:35.187829+00:00"
+  },
+  {
+    "id": "7dc82fd6-6d5c-4b3e-9441-a01668db707d",
+    "name": "등 10곳 청약 분양 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-09-28T02:57:36.515253+00:00"
+  },
+  {
+    "id": "09102cbf-0080-4cd5-a08c-f03e49a7615f",
+    "name": "음성자이 센트럴시티",
+    "region": "경남",
+    "hssply_adres": "충북 음성군 금왕읍 무극리 776",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-09-28T02:57:37.88632+00:00"
+  },
+  {
+    "id": "52c8cdbe-2612-4e7b-94c6-557028b26626",
+    "name": "서 신분평 에피트 더웨이시티",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-09-28T02:57:39.570661+00:00"
+  },
+  {
+    "id": "133ab591-de27-44ce-94f5-0c6f23ca7ffe",
+    "name": "엘리프 한신더휴",
+    "region": "경남",
+    "hssply_adres": "경기 수원시 권선구 당수동 728-13",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-09-28T02:58:12.755398+00:00"
+  },
+  {
+    "id": "229452ce-a3d9-4a42-a327-3b534c6c7d7e",
+    "name": "은 스트레이트뉴스 전문기자가 새 분양 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-10-05T03:26:22.069994+00:00"
+  },
+  {
+    "id": "4cf1ca3d-a440-4b28-84ff-edd279a72c81",
+    "name": "천안아산역그랑시티",
+    "region": "경남",
+    "hssply_adres": "충남 아산시 배방읍 휴대리 132-3",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-10-05T03:26:33.526267+00:00"
+  },
+  {
+    "id": "d2226181-5d47-43d1-803e-36e05c76814e",
+    "name": "아이파크 무등산 스카이포레",
+    "region": "경남",
+    "hssply_adres": "전남광주통합특별시 동구 학동 633-3",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-10-05T03:26:34.734199+00:00"
+  },
+  {
+    "id": "b184306e-8b19-4b63-bda1-d3f637cc0b32",
+    "name": "천안아산역 그랑시티",
+    "region": "경남",
+    "hssply_adres": "충남 아산시 배방읍 휴대리 132-3",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-10-05T03:26:35.935181+00:00"
+  },
+  {
+    "id": "7185cd20-d2a3-47d7-ae96-b58e90bda579",
+    "name": "닮은 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-10-05T03:26:37.120693+00:00"
+  },
+  {
+    "id": "b1963c37-a430-4866-99d5-01d9c2ae6b0d",
+    "name": "겨냥 상품 경쟁 늘며 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-10-12T03:42:00.218563+00:00"
+  },
+  {
+    "id": "67b9b31e-885c-4ca3-812f-17e2a2c33e44",
+    "name": "에는 단지 내 반려동물 놀이터인 펫파크",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-10-12T03:43:01.384859+00:00"
+  },
+  {
+    "id": "826441ee-ed6d-48dc-9fb9-814cf386ee3c",
+    "name": "신설동역자이",
+    "region": "경남",
+    "hssply_adres": "서울 성북구 보문동6가 458",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-10-12T03:44:07.769928+00:00"
+  },
+  {
+    "id": "e2d704cb-1035-442e-b4ad-b406c675efbf",
+    "name": "프로젝트에도 참여하며 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-10-12T03:45:07.861457+00:00"
+  },
+  {
+    "id": "f772d2b8-d695-4f1a-b796-9270bbe011d9",
+    "name": "철도 개통이 주변 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-10-12T03:46:20.263615+00:00"
+  },
+  {
+    "id": "e58d7fb3-7425-4679-b788-f3f9886c7ecd",
+    "name": "선호 아파트",
+    "region": "경남",
+    "hssply_adres": "대전 중구 선화동 152-1",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-10-12T03:47:19.754664+00:00"
+  },
+  {
+    "id": "72115d8f-2ae5-4564-bd0c-0bdf300d2ebe",
+    "name": "리뉴얼 자이",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-10-12T03:48:20.426967+00:00"
+  },
+  {
+    "id": "47118d37-0281-41f8-a952-03b128a10759",
+    "name": "아르뮤제자이",
+    "region": "경남",
+    "hssply_adres": "경기 안산시 상록구 성포동 586",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-10-12T03:49:43.461983+00:00"
+  },
+  {
+    "id": "29c6f447-4cbe-499a-ac61-5cc925bd97c0",
+    "name": "역시 신축 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-10-14T08:07:28.940944+00:00"
+  },
+  {
+    "id": "de8c74ae-b96e-4211-9f2a-8c6227c75d0f",
+    "name": "청라 아크원 푸르지오",
+    "region": "경남",
+    "hssply_adres": "인천 서해구 청라동 86-1",
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-10-14T08:08:29.434261+00:00"
+  },
+  {
+    "id": "5306f52f-e918-48cd-897e-f5a84f1dbcba",
+    "name": "눈길 라이프스타일이 아파트",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-10-14T08:09:32.286639+00:00"
+  },
+  {
+    "id": "ba18f6a2-9b10-46ea-b96b-4e0b70198d13",
+    "name": "단지 내부에도 펫파크",
+    "region": "경남",
+    "hssply_adres": null,
+    "status": "pending",
+    "admin_notes": null,
+    "updated_at": "2026-10-14T08:10:32.329421+00:00"
+  }
+]
