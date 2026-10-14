@@ -1,24 +1,33 @@
 /**
- * 네이버 뉴스에서 분양 예정 아파트를 감지하고 presale_discoveries에 저장
+ * 네이버 뉴스에서 창원·김해 분양 예정 아파트를 감지하고 presale_discoveries에 저장
  *
  * 실행: npx tsx --env-file=.env.local scripts/crawl-presale-news.ts
  *      npx tsx --env-file=.env.local scripts/crawl-presale-news.ts --dry-run
  *
  * 환경변수: NAVER_CLIENT_ID, NAVER_CLIENT_SECRET, KAKAO_REST_API_KEY
- *          MOLIT_API_KEY, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+ *          NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
  *
  * 플로우:
  *   1. 뉴스 수집 → 단지명 추출
  *   2. new_listings / complexes 에 이미 존재하면 스킵
- *   3. presale_discoveries 에 이미 있으면 스킵
- *   4. 건축HUB 매칭 시도 (matchArchHub)
- *   5. presale_discoveries 에 upsert (status: 'pending')
+ *   3. 카카오 지오코딩 → 주소가 창원시·김해시가 아니면(모르면 포함) 스킵
+ *   4. presale_discoveries 에 이미 있으면 스킵 → 없으면 upsert (status: 'pending')
  *   → new_listings 등록은 관리자가 /admin 페이지에서 confirm 시 실행
+ *
+ * 마지막 줄은 항상 `[runstat] … items=N target=M` 이다. target=0 은 정상일 수 있다(주당 0~1건).
+ *
+ * 2026-10-14: 건축HUB 매칭 단계 제거. 그 API 는 이름 검색을 지원하지 않아(`bldNm` 단독 → 빈 body)
+ * 9주간 매칭 0건이었고, data.go.kr 러너 차단 주엔 단지당 ~58초를 먹어 10-12 타임아웃을 냈다.
  */
 import { loadEnvConfig } from '@next/env'
 import { createClient } from '@supabase/supabase-js'
-import { matchArchHub } from '../src/services/arch-hub/client'
 import { cleanSecret } from '../src/lib/api/clean-secret'
+import {
+  buildNewsQueries,
+  formatRunstat,
+  mentionsTargetCity,
+  resolveTargetRegion,
+} from '../src/lib/data/presale-news'
 
 loadEnvConfig(process.cwd(), true)
 
@@ -27,9 +36,6 @@ const NAVER_ID  = cleanSecret(process.env.NAVER_CLIENT_ID)
 const NAVER_SEC = cleanSecret(process.env.NAVER_CLIENT_SECRET)
 const KAKAO_KEY = cleanSecret(process.env.KAKAO_REST_API_KEY)
 
-if (!NAVER_ID || !NAVER_SEC) { console.error('❌ NAVER_CLIENT_ID/SECRET 없음'); process.exit(1) }
-if (!KAKAO_KEY)               { console.error('❌ KAKAO_REST_API_KEY 없음');      process.exit(1) }
-
 const DRY_RUN = process.argv.includes('--dry-run')
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -37,26 +43,13 @@ const supabase = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } },
 )
 
-interface RegionCity { short: string; full: string } // short: '진주' 접미사 제거, full: regions.si 원문('진주시')
+// 모든 종료 경로가 같은 runstat 을 찍도록 진행 상황을 여기 모은다
+const progress = { items: 0, target: 0 }
 
-/** regions 테이블(is_active=true)에서 시/군 목록을 동적으로 로드. 창원 구 통합 이전 옛 지명(마산/진해)은 뉴스 검색 관행상 유지 */
-async function loadRegionCities(): Promise<RegionCity[]> {
-  const { data, error } = await supabase.from('regions').select('si').eq('is_active', true)
-  if (error) throw new Error(`regions 조회 실패: ${error.message}`)
-  const uniqueSi = [...new Set((data ?? []).map(r => r.si as string))]
-  const cities = uniqueSi.map(si => ({ short: si.replace(/(시|군)$/, ''), full: si }))
-  if (cities.some(c => c.short === '창원')) {
-    cities.push({ short: '마산', full: '창원시 마산' }, { short: '진해', full: '창원시 진해' })
-  }
-  return cities
-}
-
-function buildQueries(cities: RegionCity[]): string[] {
-  const queries: string[] = []
-  for (const { short } of cities) {
-    queries.push(`${short} 아파트 분양 예정`, `${short} 아파트 분양`, `${short} 분양 2026`)
-  }
-  return queries
+function fail(message: string): never {
+  console.error(message)
+  console.log(formatRunstat({ status: 'failed', ...progress }))
+  process.exit(1)
 }
 
 // ── 아파트명 추출 패턴 ─────────────────────────────────────────────
@@ -97,11 +90,6 @@ function extractAptNames(title: string, desc: string): string[] {
   return [...new Set(names)]
 }
 
-function isTargetCity(title: string, desc: string, cities: RegionCity[]): boolean {
-  const text = cleanHtml(title + ' ' + desc)
-  return cities.some(c => text.includes(c.short))
-}
-
 // ── 네이버 뉴스 검색 ──────────────────────────────────────────────
 interface NaverNewsItem {
   title: string
@@ -136,61 +124,33 @@ async function geocode(query: string): Promise<{ lat: number; lng: number; addre
   return { lat: parseFloat(doc.y), lng: parseFloat(doc.x), address: doc.address_name }
 }
 
-// ── 지역명 추출 ────────────────────────────────────────────────────
-function extractRegion(address: string | undefined, aptName: string, cities: RegionCity[]): string {
-  // 마산/진해처럼 short가 짧고 겹칠 수 있는 지명을 먼저 매칭하도록 길이 내림차순 정렬
-  const sorted = [...cities].sort((a, b) => b.short.length - a.short.length)
-  if (address) {
-    const hit = sorted.find(c => address.includes(c.short))
-    if (hit) return hit.full
-  }
-  // 주소 없을 경우 단지명에서 지역 추출
-  const hit = sorted.find(c => aptName.includes(c.short))
-  return hit ? hit.full : '경남'
-}
-
 // ── DB 존재 여부 확인 ─────────────────────────────────────────────
+// 조회 에러는 throw 한다 — "없음"으로 읽으면 중복 적재로 이어진다.
+
+async function existsBy(table: string, column: string, value: string, exact: boolean, extra?: [string, string]): Promise<boolean> {
+  let query = supabase.from(table).select('id')
+  query = exact ? query.eq(column, value) : query.ilike(column, `%${value.replace(/\s+/g, '%')}%`)
+  if (extra) query = query.eq(extra[0], extra[1])
+  const { data, error } = await query.limit(1)
+  if (error) throw new Error(`${table} 조회 실패: ${error.message}`)
+  return (data?.length ?? 0) > 0
+}
 
 /** new_listings에 이미 등록된 단지인지 확인 */
-async function existsInNewListings(name: string): Promise<boolean> {
-  const pattern = `%${name.replace(/\s+/g, '%')}%`
-  const { data } = await supabase
-    .from('new_listings')
-    .select('id')
-    .ilike('name', pattern)
-    .limit(1)
-  return (data?.length ?? 0) > 0
-}
-
+const existsInNewListings = (name: string) => existsBy('new_listings', 'name', name, false)
 /** complexes(canonical_name)에 이미 있는 단지인지 확인 */
-async function existsInComplexes(name: string): Promise<boolean> {
-  const pattern = `%${name.replace(/\s+/g, '%')}%`
-  const { data } = await supabase
-    .from('complexes')
-    .select('id')
-    .ilike('canonical_name', pattern)
-    .limit(1)
-  return (data?.length ?? 0) > 0
-}
-
-/** presale_discoveries에 이미 있는지 확인 (name+region unique) */
-async function existsInDiscoveries(name: string, region: string): Promise<boolean> {
-  const { data } = await supabase
-    .from('presale_discoveries')
-    .select('id')
-    .eq('name', name)
-    .eq('region', region)
-    .limit(1)
-  return (data?.length ?? 0) > 0
-}
+const existsInComplexes = (name: string) => existsBy('complexes', 'canonical_name', name, false)
+/** presale_discoveries에 이미 있는지 확인 (name+region unique). rejected 행도 막는다 — 의도 */
+const existsInDiscoveries = (name: string, region: string) =>
+  existsBy('presale_discoveries', 'name', name, true, ['region', region])
 
 // ── 메인 ─────────────────────────────────────────────────────────
 async function main() {
   console.log(`== 분양 예정 뉴스 크롤링 시작 ${DRY_RUN ? '[DRY-RUN]' : ''} ==`)
+  if (!NAVER_ID || !NAVER_SEC) fail('❌ NAVER_CLIENT_ID/SECRET 없음')
+  if (!KAKAO_KEY)               fail('❌ KAKAO_REST_API_KEY 없음')
 
-  const cities = await loadRegionCities()
-  const queries = buildQueries(cities)
-  console.log(`대상 지역(regions is_active=true + 창원 구지명): ${cities.map(c => c.short).join(', ')}`)
+  const queries = buildNewsQueries()
 
   // 1. 뉴스 수집
   const allItems: NaverNewsItem[] = []
@@ -203,24 +163,22 @@ async function main() {
       searchFailed++
       console.warn(`  ⚠ "${q}" 검색 실패: ${String(err)}`)
     }
-    await new Promise(r => setTimeout(r, 150)) // 지역 확대(6→60개 쿼리)로 Naver 뉴스 API 429 방지
+    await new Promise(r => setTimeout(r, 150)) // Naver 뉴스 API 429 방지
   }
 
   // 검색이 **전부** 실패하면 실패로 끝낸다.
   //
-  // 2026-08-10 이전에는 60개 쿼리가 전부 터져도 warn 만 찍고 exit 0 이라 워크플로가
-  // 매일 초록불이었다. 그동안 presale_discoveries 는 0행이었고 아무도 몰랐다
-  // (신선도 감시의 CHECKS 목록에도 이 테이블이 없다).
+  // 2026-08-10 이전에는 쿼리가 전부 터져도 warn 만 찍고 exit 0 이라 워크플로가
+  // 매일 초록불이었다. 그동안 presale_discoveries 는 0행이었고 아무도 몰랐다.
   // 원인은 시크릿 BOM 이었는데(cleanSecret 주석 참고), 원인이 무엇이든
   // "전부 실패"는 언제나 고장이다 — 이 저장소가 반복해서 당한 부류다(ADR-056/057).
   //
   // 일부 실패는 정상이다(429·일시 오류). 전량 실패만 막는다.
   if (queries.length > 0 && searchFailed === queries.length) {
-    console.error(
+    fail(
       `\n❌ 검색 쿼리 ${queries.length}건이 전부 실패했습니다 — 시크릿 오염(BOM·공백)이나 ` +
       `API 차단을 의심하세요. 위 경고의 에러 메시지를 확인할 것.`,
     )
-    process.exit(1)
   }
 
   // 2. 중복 제거 (link 기준)
@@ -236,7 +194,7 @@ async function main() {
   // 3. 아파트명 추출
   const aptMap = new Map<string, { pubDate: string; link: string }>()
   for (const item of uniqueItems) {
-    if (!isTargetCity(item.title, item.description, cities)) continue
+    if (!mentionsTargetCity(cleanHtml(item.title + ' ' + item.description))) continue
     const names = extractAptNames(item.title, item.description)
     for (const name of names) {
       if (!aptMap.has(name) || new Date(item.pubDate) > new Date(aptMap.get(name)!.pubDate)) {
@@ -252,19 +210,15 @@ async function main() {
     if (isSubset) aptMap.delete(name)
   }
 
+  progress.items = aptMap.size
   console.log(`\n감지된 분양 예정 단지: ${aptMap.size}개`)
   for (const [name] of aptMap) {
     console.log(`  - ${name}`)
   }
 
-  if (aptMap.size === 0) {
-    console.log('감지된 단지 없음.')
-    return
-  }
-
   // 4. 각 단지 처리
-  let inserted = 0
   let skipped = 0
+  let outOfTarget = 0
   const errors: string[] = []
 
   for (const [name, meta] of aptMap) {
@@ -282,11 +236,15 @@ async function main() {
       continue
     }
 
-    // ── 4-3. 카카오 지오코딩 ──────────────────────────────────────
+    // ── 4-3. 카카오 지오코딩 → 창원·김해만 ─────────────────────────
     const geo = await geocode(name + ' 아파트')
-    console.log(`  [GEO] ${name} → ${geo ? `${geo.address} (${geo.lat}, ${geo.lng})` : '위치 없음'}`)
-
-    const region = extractRegion(geo?.address, name, cities)
+    const region = resolveTargetRegion(geo?.address)
+    if (!region) {
+      console.log(`  [SKIP] 대상 외: ${name} → ${geo?.address ?? '주소 없음'}`)
+      outOfTarget++
+      continue
+    }
+    console.log(`  [GEO] ${name} → ${geo!.address} (${geo!.lat}, ${geo!.lng})`)
 
     // ── 4-4. presale_discoveries 중복 확인 ───────────────────────
     if (await existsInDiscoveries(name, region)) {
@@ -295,38 +253,16 @@ async function main() {
       continue
     }
 
-    // ── 4-5. 건축HUB 매칭 ────────────────────────────────────────
-    let archHubId: string | null = null
-    let archHubData: Record<string, unknown> | null = null
-    let archHubMatchedAt: string | null = null
-
-    try {
-      const archMatch = await matchArchHub(name)
-      if (archMatch) {
-        archHubId = archMatch.mgmPmsrgstPk ?? null
-        archHubData = archMatch as unknown as Record<string, unknown>
-        archHubMatchedAt = new Date().toISOString()
-        console.log(`  [ARCH] ${name} → ${archMatch.bldNm ?? '?'} (${archMatch.hhldCnt ?? '?'}세대)`)
-      } else {
-        console.log(`  [ARCH] ${name} → 매칭 없음 (admin 수동 입력 필요)`)
-      }
-    } catch (err) {
-      console.warn(`  [ARCH] ${name} 건축HUB 조회 실패: ${String(err)}`)
-    }
-
-    // ── 4-6. presale_discoveries upsert ──────────────────────────
+    // ── 4-5. presale_discoveries upsert ──────────────────────────
     const row = {
       name,
       region,
-      hssply_adres:        geo?.address ?? null,
-      lat:                 geo?.lat ?? null,
-      lng:                 geo?.lng ?? null,
-      source_url:          meta.link,
-      discovered_at:       new Date(meta.pubDate).toISOString(),
-      arch_hub_id:         archHubId,
-      arch_hub_data:       archHubData,
-      arch_hub_matched_at: archHubMatchedAt,
-      status:              'pending' as const,
+      hssply_adres:  geo!.address,
+      lat:           geo!.lat,
+      lng:           geo!.lng,
+      source_url:    meta.link,
+      discovered_at: new Date(meta.pubDate).toISOString(),
+      status:        'pending' as const,
     }
 
     if (!DRY_RUN) {
@@ -335,21 +271,25 @@ async function main() {
         .upsert(row, { onConflict: 'name,region', ignoreDuplicates: true })
       if (error) {
         errors.push(`${name}: ${error.message}`)
-      } else {
-        console.log(`  [INSERT] presale_discoveries: ${name} @ ${region}`)
-        inserted++
+        continue
       }
+      console.log(`  [INSERT] presale_discoveries: ${name} @ ${region}`)
     } else {
-      console.log(`  [DRY] 저장 예정: ${name} @ ${region}${archHubId ? ` (arch_hub: ${archHubId})` : ''}`)
-      inserted++
+      console.log(`  [DRY] 저장 예정: ${name} @ ${region}`)
     }
+    progress.target++
   }
 
   console.log('\n== 결과 ==')
-  console.log(`  신규 등록: ${inserted}건`)
+  console.log(`  신규 등록: ${progress.target}건 (창원·김해)`)
+  console.log(`  대상 외:   ${outOfTarget}건`)
   console.log(`  스킵:      ${skipped}건`)
-  if (errors.length > 0) errors.forEach(e => console.error(`  ❌ ${e}`))
-  else console.log('  errors: 0')
+  if (errors.length > 0) {
+    errors.forEach(e => console.error(`  ❌ ${e}`))
+    fail(`❌ 적재 실패 ${errors.length}건`)
+  }
+  console.log('  errors: 0')
+  console.log(formatRunstat({ status: 'ok', ...progress }))
 }
 
-main().catch(console.error)
+main().catch(err => fail(`❌ ${err instanceof Error ? err.message : String(err)}`))
