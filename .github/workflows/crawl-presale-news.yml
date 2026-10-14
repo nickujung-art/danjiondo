@@ -8,7 +8,7 @@ on:
 jobs:
   crawl:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30  # 건축HUB(data.go.kr) 러너 차단 주엔 신규 단지당 ~58s(10s×5회+backoff). 10-19 완주 시간 실측 후 재조정
 
     steps:
       - uses: actions/checkout@v4
