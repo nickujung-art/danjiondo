@@ -8,7 +8,7 @@ on:
 jobs:
   crawl:
     runs-on: ubuntu-latest
-    timeout-minutes: 30  # 건축HUB(data.go.kr) 러너 차단 주엔 신규 단지당 ~58s(10s×5회+backoff). 10-19 완주 시간 실측 후 재조정
+    timeout-minutes: 10  # 10-19 정기 실행 1m01s(건축HUB 제거 c124a28 후 첫 실측). 차단 주에 58s×N 먹던 단계가 없어졌다
 
     steps:
       - uses: actions/checkout@v4
@@ -25,6 +25,5 @@ jobs:
           NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
           NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
           KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
-          MOLIT_API_KEY: ${{ secrets.MOLIT_API_KEY }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
