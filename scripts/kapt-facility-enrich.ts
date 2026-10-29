@@ -39,8 +39,12 @@ const MISSING_ONLY = process.argv.includes('--missing-only')
 const limitArg = process.argv.indexOf('--limit')
 const LIMIT = limitArg !== -1 ? parseInt(process.argv[limitArg + 1] ?? '10', 10) : null
 const RATE_LIMIT_DELAY_MS = 100
-/** 이만큼 연속으로 API 가 null 을 주면 단지 문제가 아니라 API 문제로 보고 중단한다 */
+/** 이만큼 연속으로 API 가 null 을 주면 단지 문제가 아니라 API 쪽 속도 제한으로 본다 */
 const MAX_CONSECUTIVE_NULL = 20
+/** 속도 제한에 걸렸을 때 한 번 기다리는 시간. 10-29 실측으로 막힘은 수 분 안에 풀렸다 */
+const BACKOFF_MS = 3 * 60_000
+/** 한 실행에서 기다리는 최대 횟수. 3분×15 = 45분 — workflow timeout 120분 안에 작업 시간을 남긴다 */
+const MAX_BACKOFFS = 15
 
 /**
  * 마지막 수집 시점(해당 월 1일). **시계열 키가 아니다.**
@@ -163,6 +167,7 @@ async function main(): Promise<void> {
   let debugCount = 0
   let consecutiveNull = 0
   let aborted = false
+  let backoffCount = 0
 
   for (let i = 0; i < complexes.length; i++) {
     const complex = complexes[i]!
@@ -199,15 +204,29 @@ async function main(): Promise<void> {
         consecutiveNull++
         // 연속 null 은 단지 문제가 아니라 API 쪽 문제다(2026-10-29). 그날 77건 뒤로 1,421건이
         // 12분 내내 null 이었는데 스킵으로 세고 **성공**으로 끝났다 — 초록불인데 적재 5%.
-        // 더 돌아 봐야 호출만 낭비하므로 멈추고 실패로 끝낸다. 남은 단지는 다음 실행이
-        // --missing-only 로 이어받는다.
+        // 15분 뒤 재실행은 178건을 처리하고 또 막혔다 — 일일 한도가 아니라 **몰아 부르면
+        // 몇 분간 막히는 속도 제한**이다. 그래서 멈추지 않고 기다렸다가 연속 구간의 첫 단지부터
+        // 다시 시도한다. 대기를 다 써도 안 풀리면 그때 실패로 끝낸다(남은 단지는 다음 실행이
+        // --missing-only 로 이어받는다).
         if (consecutiveNull >= MAX_CONSECUTIVE_NULL) {
-          console.error(
-            `[kapt-facility] API null 이 ${consecutiveNull}건 연속 — 한도 초과·장애로 보고 중단한다. ` +
-              `마지막 응답: ${JSON.stringify(raw)?.slice(0, 300)}`,
+          if (backoffCount >= MAX_BACKOFFS) {
+            console.error(
+              `[kapt-facility] API null 이 ${consecutiveNull}건 연속, 대기 ${MAX_BACKOFFS}회로도 안 풀림 — 중단. ` +
+                `마지막 응답: ${JSON.stringify(raw)?.slice(0, 300)}`,
+            )
+            aborted = true
+            break
+          }
+          backoffCount++
+          console.warn(
+            `[kapt-facility] API null ${consecutiveNull}건 연속 — ${BACKOFF_MS / 60_000}분 대기 후 재시도 ` +
+              `(${backoffCount}/${MAX_BACKOFFS}). 응답: ${JSON.stringify(raw)?.slice(0, 200)}`,
           )
-          aborted = true
-          break
+          skipCount -= consecutiveNull
+          i -= consecutiveNull // 루프의 i++ 로 연속 구간 첫 단지로 돌아간다
+          consecutiveNull = 0
+          await delay(BACKOFF_MS)
+          continue
         }
         await delay(RATE_LIMIT_DELAY_MS)
         continue
@@ -285,7 +304,8 @@ async function main(): Promise<void> {
   console.log(`  실패: ${failCount}/${total}`)
   console.log(`  완료 시각: ${new Date().toISOString()}`)
 
-  if (aborted) console.log(`  ⛔ 중단: API null ${MAX_CONSECUTIVE_NULL}건 연속 — 미처리 ${total - successCount - skipCount - failCount}건은 다음 실행이 이어받는다`)
+  console.log(`  속도 제한 대기: ${backoffCount}회`)
+  if (aborted) console.log(`  ⛔ 중단: API null 연속이 대기 ${MAX_BACKOFFS}회로도 안 풀림 — 미처리 ${total - successCount - skipCount - failCount}건은 다음 실행이 이어받는다`)
 
   if (failCount > 0 || aborted) process.exit(1)
 }
