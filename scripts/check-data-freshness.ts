@@ -34,6 +34,17 @@ type ScriptSupabase = SupabaseClient<any, 'public', any>
 
 const warnOnly = process.argv.includes('--warn-only')
 
+/**
+ * 조인된 테이블의 한 컬럼으로 대상을 좁힌다. `in`(값 목록)과 `notNull` 중 하나 이상을 준다.
+ *
+ * `notNull` 은 2026-10-29 추가 — `facility_kapt` 에는 **kapt_code 를 잃은 단지 203곳**의 행이
+ * 05월 data_month 그대로 남아 있다. 적재 스크립트는 kapt_code 가 있는 단지만 돌므로 이 행들은
+ * 다시는 갱신되지 않는다. 커버리지 분모에 넣으면 **정상 운영에서도 93% 천장**이 생긴다.
+ */
+type EmbeddedFilter =
+  | { relation: string; column: string; in: readonly string[]; notNull?: true }
+  | { relation: string; column: string; in?: undefined; notNull: true }
+
 interface Check {
   /** 화면에 보일 이름 */
   label: string
@@ -71,7 +82,7 @@ interface Check {
    * `source_run_id → ingest_runs.source_id` 가 유일하게 정확한 출처다. 실제로 이 기준으로 보면
    * molit_trade 의 최종 적재는 08-01 에 멈춰 있었다.
    */
-  embeddedFilter?: { relation: string; column: string; in: readonly string[] }
+  embeddedFilter?: EmbeddedFilter
 
   /**
    * 조인된 테이블의 숫자 컬럼에 gt 필터. `embeddedFilter.relation` 과 같은 테이블이어야 한다.
@@ -222,7 +233,14 @@ const CHECKS: Check[] = [
   // ADR-059 참고. 데이터가 더 나빠지지는 않는다(중단 후 50일간 신규 단지 1곳).
   { label: '네이버 호가',          table: 'listing_prices',           column: 'created_at',   maxAgeDays: 21,  job: 'naver-listings-biweekly.yml',   pausedReason: '네이버가 GitHub Actions IP 차단 (ADR-059)' },
   { label: '네이버 평형',          table: 'complex_area_types',       column: 'created_at',   maxAgeDays: 45,  job: 'naver-area-types-monthly.yml',  pausedReason: '네이버가 GitHub Actions IP 차단 (ADR-059)' },
-  { label: 'K-apt 시설',           table: 'facility_kapt',            column: 'created_at',   maxAgeDays: 45,  job: 'cron/daily (Vercel)' },
+  // K-apt 는 updated_at 으로 재고, 커버리지로 "전 단지가 45일 안에 한 번은 돌았나"를 본다(2026-10-29).
+  // ① created_at 은 틀린 컬럼이었다 — 적재가 upsert(onConflict: complex_id)라 행이 처음 생길 때만 찍힌다.
+  //    10월에 1,428행이 실제로 갱신됐는데 이 점검은 "52일 묵음"으로 매일 빨강이었다.
+  // ② 그렇다고 updated_at 만 보면 반대 방향으로 틀린다 — Vercel 일배치가 매일 51행씩 쓰므로 최신 행은
+  //    늘 신선하다. 그 뒤에서 kapt-facility-refresh 가 `--missing-only` 버그로 매일 0건을 처리하고 있었고
+  //    (필요 65행/일), 가장 오래된 행이 44.4일까지 밀려 있었다. 최신값 판정으로는 영원히 초록이다.
+  //    Check.coverage 주석의 ③(부분 완료가 가림)과 같은 구멍이라 같은 장치로 막는다.
+  { label: 'K-apt 시설',           table: 'facility_kapt',            column: 'updated_at',   maxAgeDays: 45,  job: 'kapt-facility-refresh.yml + cron/daily (Vercel)', embeddedFilter: { relation: 'complexes', column: 'kapt_code', notNull: true }, coverage: { minRatio: 0.99, windowHours: 45 * 24, basis: 'kapt_code 가 있는 단지 1행씩(~2,926). 두 배치가 나눠 갱신하므로 45일 창 누적. 미갱신분은 refresh 워크플로가 매일 메워야 한다' } },
   // 지역 미분양도 보류다(2026-08-18). 상대 API 가 고장났고 우리가 고칠 수 없다.
   // 08-01 실행은 HTTP 502 로 죽었고(그땐 재시도가 없었다 — 08-04 에 추가됨),
   // 08-18 에 수동 재실행하니 이번엔 다른 실패가 나왔다:
@@ -294,8 +312,9 @@ async function checkFailedJobs(
 function applyScope(query: any, check: Check): any {
   let q = query
   if (check.embeddedFilter) {
-    const { relation, column, in: allowed } = check.embeddedFilter
-    q = q.in(`${relation}.${column}`, [...allowed])
+    const { relation, column, in: allowed, notNull } = check.embeddedFilter
+    if (allowed) q = q.in(`${relation}.${column}`, [...allowed])
+    if (notNull) q = q.not(`${relation}.${column}`, 'is', null)
   }
   if (check.embeddedGt && check.embeddedFilter) {
     q = q.gt(`${check.embeddedFilter.relation}.${check.embeddedGt.column}`, check.embeddedGt.gt)

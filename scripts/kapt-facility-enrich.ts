@@ -123,6 +123,13 @@ async function main(): Promise<void> {
       const { data: page, error } = await supabase
         .from('facility_kapt')
         .select('complex_id, parking_count, elevator_count, building_count, mgmt_area')
+        // 이번 달 행만 "완료" 후보로 본다(2026-10-29). 이 조건이 빠져 있어서 한 번이라도 채워진
+        // 단지는 달이 바뀌어도 영원히 완료로 세어졌다 — 9월 하순부터 refresh 워크플로가 매일
+        // "2926개 중 2926개 완료됨, 0개 남음"으로 아무것도 하지 않았고, Vercel 일배치(51행/일)
+        // 혼자서는 45일 SLA(65행/일)를 못 지켜 가장 오래된 행이 44.4일까지 밀렸다.
+        // 위 13행 주석과 워크플로 헤더는 처음부터 이 동작을 약속하고 있었다.
+        .eq('data_month', DATA_MONTH)
+        .order('complex_id')
         .range(offset, offset + PAGE - 1)
       if (error) {
         console.error('[kapt-facility] facility_kapt 조회 실패:', error.message)
