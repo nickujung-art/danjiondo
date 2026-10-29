@@ -328,7 +328,10 @@ export async function fetchKaptDetailInfo(kaptCode: string): Promise<{ parsed: K
   if (!res.ok) throw new Error(describeHttpFailure('K-apt DetailInfo API', res.status, raw))
 
   const json: unknown = JSON.parse(raw)
-  const item = (json as { response?: { body?: { item?: unknown } } })?.response?.body?.item
+  const response = (json as { response?: { header?: unknown; body?: { item?: unknown } } })?.response
+  const item = response?.body?.item
   const parsed = kaptDetailInfoSchema.safeParse(item)
-  return { parsed: parsed.success ? parsed.data : null, raw: item }
+  // item 이 없으면 header(resultCode·resultMsg)를 돌려준다(2026-10-29). 한도 초과 등으로
+  // HTTP 200 + 빈 body 가 오면 호출부가 "null" 이라는 것밖에 몰라 원인을 가릴 수 없었다.
+  return { parsed: parsed.success ? parsed.data : null, raw: item ?? response?.header ?? json }
 }
